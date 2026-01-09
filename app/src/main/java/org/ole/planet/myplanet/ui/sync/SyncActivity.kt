@@ -51,7 +51,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
@@ -558,7 +557,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
                             databaseService.withRealm { realm ->
-                                backgroundDownload(
+                                service.backgroundDownload(
                                     downloadAllFiles(getAllLibraryList(realm)),
                                     activityContext
                                 )

@@ -70,6 +70,8 @@ abstract class BaseResourceFragment : Fragment() {
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
+    lateinit var dataService: DataService
+    @Inject
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
@@ -187,7 +189,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+        dataService.isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 val userId = profileDbHandler.userModel?.id
@@ -311,7 +313,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun startDownload(urls: ArrayList<String>) {
         if (!isFragmentActive()) return
-        DataService(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+        dataService.isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isFragmentActive()) return
                 if (urls.isNotEmpty()) {
@@ -536,17 +538,6 @@ abstract class BaseResourceFragment : Fragment() {
             return libList
         }
 
-        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
-                    if (urls.isNotEmpty()) {
-                        DownloadUtils.openDownloadService(context, urls, false)
-                    }
-                }
-
-                override fun notAvailable() {}
-            })
-        }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()

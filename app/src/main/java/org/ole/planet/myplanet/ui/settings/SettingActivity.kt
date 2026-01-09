@@ -35,8 +35,8 @@ import kotlinx.coroutines.yield
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -117,6 +117,8 @@ class SettingActivity : AppCompatActivity() {
         @Inject
         @AppPreferences
         lateinit var settings: SharedPreferences
+        @Inject
+        lateinit var dataService: DataService
         var user: RealmUserModel? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -167,7 +169,7 @@ class SettingActivity : AppCompatActivity() {
                                     realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
                                 }
                             }
-                            backgroundDownload(downloadAllFiles(files), requireContext())
+                            dataService.backgroundDownload(downloadAllFiles(files), requireContext())
                         } finally {
                             preference.isEnabled = true
                         }

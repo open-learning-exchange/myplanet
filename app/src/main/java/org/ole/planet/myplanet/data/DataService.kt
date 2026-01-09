@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -268,6 +269,18 @@ class DataService constructor(
                 }
             })
         }
+    }
+
+    fun backgroundDownload(urls: ArrayList<String>, context: Context) {
+        isPlanetAvailable(object : PlanetAvailableListener {
+            override fun isAvailable() {
+                if (urls.isNotEmpty()) {
+                    DownloadUtils.openDownloadService(context, urls, false)
+                }
+            }
+
+            override fun notAvailable() {}
+        })
     }
 
     fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataListener? = null) {
