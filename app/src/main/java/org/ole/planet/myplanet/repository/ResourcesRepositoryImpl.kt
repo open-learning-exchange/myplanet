@@ -176,6 +176,12 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getLibraryForOffline(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", false)
+        }.filter { it.needToUpdate() }
+    }
+
     override suspend fun saveSearchActivity(
         userName: String,
         searchText: String,

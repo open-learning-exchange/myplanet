@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -162,10 +161,8 @@ class SettingActivity : AppCompatActivity() {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
                     lifecycleScope.launch {
                         try {
-                            val files = libraryList ?: withContext(Dispatchers.IO) {
-                                databaseService.withRealm { realm ->
-                                    realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
-                                }
+                            val files = libraryList ?: resourcesRepository.getLibraryForOffline().also {
+                                libraryList = it
                             }
                             backgroundDownload(downloadAllFiles(files), requireContext())
                         } finally {
