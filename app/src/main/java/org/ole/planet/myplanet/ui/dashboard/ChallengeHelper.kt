@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -33,7 +34,8 @@ class ChallengeHelper(
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,
     private val progressRepository: ProgressRepository,
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val voicesRepository: VoicesRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -49,10 +51,10 @@ class ChallengeHelper(
                     progressRepository.fetchCourseData(user?.id)
                 }
 
+                val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, user?.id)
+                val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
                 val realmData = databaseService.withRealmAsync { realm ->
                     object {
-                        val uniqueDates = fetchVoiceDates(realm, startTime, endTime, user?.id)
-                        val allUniqueDates = fetchVoiceDates(realm, startTime, endTime, null)
                         val courseName = realm.where(RealmMyCourse::class.java)
                             .equalTo("courseId", courseId)
                             .findFirst()?.courseTitle
@@ -73,48 +75,11 @@ class ChallengeHelper(
                 val today = LocalDate.now()
                 if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
                     val courseStatus = getCourseStatus(progress, realmData.courseName)
-                    challengeDialog(realmData.uniqueDates.size, courseStatus, realmData.allUniqueDates.size, realmData.hasUnfinishedSurvey)
+                    challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, realmData.hasUnfinishedSurvey)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-        }
-    }
-
-    private fun fetchVoiceDates(realm: Realm, start: Long, end: Long, userId: String?): List<String> {
-        val query = realm.where(RealmNews::class.java)
-            .greaterThanOrEqualTo("time", start)
-            .lessThanOrEqualTo("time", end)
-        if (userId != null) query.equalTo("userId", userId)
-        val results = query.findAll()
-        return results.filter { isCommunitySection(it) }
-            .map { ChallengeHelper.getDateFromTimestamp(it.time) }
-            .distinct()
-    }
-
-    private fun isCommunitySection(news: RealmNews): Boolean {
-        news.viewIn?.let { viewInStr ->
-            try {
-                val viewInArray = JSONArray(viewInStr)
-                for (i in 0 until viewInArray.length()) {
-                    val viewInObj = viewInArray.getJSONObject(i)
-                    if (viewInObj.optString("section") == "community") {
-                        return true
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return false
-    }
-
-    companion object {
-        private val dateFormat = object : ThreadLocal<SimpleDateFormat>() {
-            override fun initialValue() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        }
-        private fun getDateFromTimestamp(timestamp: Long): String {
-            return dateFormat.get()!!.format(Date(timestamp))
         }
     }
 
