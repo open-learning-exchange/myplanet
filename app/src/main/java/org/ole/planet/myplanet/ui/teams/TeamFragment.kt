@@ -181,8 +181,9 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
                                     Utilities.toast(activity, getString(R.string.team_created))
                                     refreshTeamList()
                                     dialog.dismiss()
-                                }.onFailure {
-                                    Utilities.toast(activity, failureMessage)
+                                    }.onFailure {
+                                        Utilities.toast(activity, failureMessage)
+                                    }
                                 }
                             } else {
                                 val targetTeamId = team._id ?: team.teamId
