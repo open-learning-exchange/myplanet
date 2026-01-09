@@ -45,13 +45,13 @@ class LifeAdapter(
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
-        return ViewHolderLife(v)
+        return LifeViewHolder(v)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val myLife = getItem(position)
-        if (holder is ViewHolderLife) {
+        if (holder is LifeViewHolder) {
             holder.title.text = myLife.title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLife.imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
@@ -105,7 +105,7 @@ class LifeAdapter(
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
-        (holder as ViewHolderLife).visibility.setImageResource(imageId)
+        (holder as LifeViewHolder).visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
     }
 
@@ -120,7 +120,7 @@ class LifeAdapter(
         return true
     }
 
-    internal inner class ViewHolderLife(itemView: View) : RecyclerView.ViewHolder(itemView),
+    internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
         ItemTouchHelperViewHolder {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
@@ -137,7 +137,7 @@ class LifeAdapter(
             if (viewHolder != null) {
                 val myLife = getItem(viewHolder.bindingAdapterPosition)
                 if (!myLife.isVisible) {
-                    (viewHolder as ViewHolderLife?)?.rvItemContainer?.alpha = hide
+                    (viewHolder as LifeViewHolder?)?.rvItemContainer?.alpha = hide
                 }
             }
         }

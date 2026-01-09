@@ -99,11 +99,11 @@ class ResourcesAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val rowLibraryBinding =
             RowLibraryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderLibrary(rowLibraryBinding)
+        return ResourcesViewHolder(rowLibraryBinding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHolderLibrary) {
+        if (holder is ResourcesViewHolder) {
             val library = libraryList.getOrNull(position) ?: return
             holder.bind()
             holder.rowLibraryBinding.title.text = library.title ?: ""
@@ -187,7 +187,7 @@ class ResourcesAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (holder is ViewHolderLibrary && payloads.isNotEmpty()) {
+        if (holder is ResourcesViewHolder && payloads.isNotEmpty()) {
             val library = libraryList.getOrNull(position) ?: return
             var handled = false
             if (payloads.contains(TAGS_PAYLOAD)) {
@@ -214,7 +214,7 @@ class ResourcesAdapter(
         }
     }
 
-    private fun displayTagCloud(holder: ViewHolderLibrary, position: Int) {
+    private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {
         val flexboxDrawable = holder.rowLibraryBinding.flexboxDrawable
         val resourceId = libraryList.getOrNull(position)?.id
         if (resourceId == null) {
@@ -360,7 +360,7 @@ class ResourcesAdapter(
         }
     }
 
-    private fun bindRating(holder: ViewHolderLibrary, library: RealmMyLibrary) {
+    private fun bindRating(holder: ResourcesViewHolder, library: RealmMyLibrary) {
         if (ratingMap.containsKey(library.resourceId)) {
             val ratingData = ratingMap[library.resourceId]
             CourseRatingUtils.showRating(
@@ -379,7 +379,7 @@ class ResourcesAdapter(
         }
     }
 
-    internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :
+    internal inner class ResourcesViewHolder(val rowLibraryBinding: RowLibraryBinding) :
         RecyclerView.ViewHolder(rowLibraryBinding.root) {
             init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
