@@ -275,4 +275,35 @@ class VoicesRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun editNews(newsId: String, message: String, imageUrls: List<String>?) {
+        databaseService.executeTransactionAsync { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            news?.updateMessage(message)
+            news?.imageUrls?.clear()
+            imageUrls?.forEach { news?.imageUrls?.add(it) }
+        }
+    }
+
+    override suspend fun createReply(
+        parentNewsId: String,
+        message: String,
+        imageUrls: List<String>?,
+        user: RealmUserModel?
+    ) {
+        databaseService.executeTransactionAsync { realm ->
+            val parentNews = realm.where(RealmNews::class.java).equalTo("id", parentNewsId).findFirst()
+            val map = HashMap<String?, String>()
+            map["message"] = message
+            map["viewableBy"] = parentNews?.viewableBy ?: ""
+            map["viewableId"] = parentNews?.viewableId ?: ""
+            map["replyTo"] = parentNews?.id ?: ""
+            map["messageType"] = parentNews?.messageType ?: ""
+            map["messagePlanetCode"] = parentNews?.messagePlanetCode ?: ""
+            map["viewIn"] = parentNews?.viewIn ?: ""
+            val images = io.realm.RealmList<String>()
+            imageUrls?.forEach { images.add(it) }
+            createNews(map, realm, user, images, true)
+        }
+    }
 }

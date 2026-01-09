@@ -343,7 +343,9 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     true,
                     currentUser,
                     listener,
-                    holder,
+                    voicesRepository,
+                    scope,
+                    holder
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -530,7 +532,9 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     false,
                     currentUser,
                     listener,
-                    viewHolder,
+                    voicesRepository,
+                    scope,
+                    viewHolder
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
