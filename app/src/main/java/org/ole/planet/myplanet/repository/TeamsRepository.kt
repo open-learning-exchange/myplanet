@@ -128,6 +128,7 @@ interface TeamsRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
+    suspend fun getJoinedMemberCount(teamId: String): Int
     suspend fun getAssignee(userId: String): RealmUserModel?
     suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean

@@ -209,6 +209,7 @@ open class RealmMyTeam : RealmObject() {
             return getUsers(teamId, realm, "membership")
         }
 
+        @Deprecated("Use TeamsRepository.getJoinedMemberCount instead")
         @JvmStatic
         fun getJoinedMemberCount(teamId: String, realm: Realm): Int {
             return getUsers(teamId, realm, "membership").size
