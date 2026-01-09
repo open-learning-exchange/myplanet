@@ -28,8 +28,10 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-
+import java.io.IOException
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.Sha256Utils
 
 class ConfigurationRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -89,8 +91,31 @@ class ConfigurationRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
+            if (response.isSuccessful) {
+                val checksum = response.body()?.string()
+                if (!checksum.isNullOrEmpty()) {
+                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    if (f.exists()) {
+                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
+                        return@withContext checksum.contains(sha256)
+                    }
+                }
+            }
+            false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     override fun checkVersion(callback: ConfigurationRepository.CheckVersionCallback, settings: SharedPreferences) {
         serviceScope.launch {
+            withContext(Dispatchers.Main) {
+                callback.onCheckingVersion()
+            }
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
