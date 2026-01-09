@@ -1,49 +1,41 @@
 package org.ole.planet.myplanet.ui.references
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
-import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
-import org.ole.planet.myplanet.ui.references.ReferencesAdapter.ViewHolderOtherInfo
+import org.ole.planet.myplanet.databinding.RowReferenceBinding
+import org.ole.planet.myplanet.model.Reference
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
-class ReferencesAdapter(private val context: Context, list: List<String>) :
-    ListAdapter<String, ViewHolderOtherInfo>(DIFF_CALLBACK) {
+class ReferencesAdapter(private val onReferenceClicked: (Reference) -> Unit) :
+    ListAdapter<Reference, ReferencesAdapter.ViewHolder>(DIFF_CALLBACK) {
 
-    init {
-        submitList(list)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderOtherInfo {
-        val binding = RowOtherInfoBinding.inflate(
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = RowReferenceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolderOtherInfo(binding)
+        return ViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderOtherInfo, position: Int) {
-        val jsonString = getItem(position)
-        val `object` = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
-        val res = """
-            ${getString("name", `object`)}
-            ${getString("relationship", `object`)}
-            ${getString("phone", `object`)}
-            ${getString("email", `object`)}
-            """.trimIndent()
-        holder.rowOtherInfoBinding.tvDescription.text = res
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val reference = getItem(position)
+        holder.bind(reference)
+        holder.itemView.setOnClickListener { onReferenceClicked(reference) }
     }
 
-    class ViewHolderOtherInfo(var rowOtherInfoBinding: RowOtherInfoBinding) : RecyclerView.ViewHolder(rowOtherInfoBinding.root)
+    class ViewHolder(private val binding: RowReferenceBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        fun bind(reference: Reference) {
+            binding.title.text = reference.title
+            binding.icon.setImageResource(reference.icon)
+        }
+    }
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<String>(
-            { oldItem, newItem -> oldItem == newItem },
-            { oldItem, newItem -> oldItem == newItem }
+        val DIFF_CALLBACK = DiffUtils.itemCallback<Reference>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.title == newItem.title },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
     }
 }
