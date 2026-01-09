@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -214,42 +215,86 @@ class UploadToShelfService @Inject constructor(
     }
 
     suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
+        val userName = obj["name"]?.asString ?: "unknown"
+        Log.d(TAG, "[UploadToShelf] saveKeyIv started for username: $userName")
+
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        Log.d(TAG, "[UploadToShelf] Target table: $table")
+
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
 
         if (!TextUtils.isEmpty(model.iv)) {
+            Log.d(TAG, "[UploadToShelf] Using existing IV from model")
             iv = model.iv
+        } else {
+            Log.d(TAG, "[UploadToShelf] Generated new IV")
         }
         if (!TextUtils.isEmpty(model.key)) {
+            Log.d(TAG, "[UploadToShelf] Using existing key from model")
             keyString = model.key
+        } else {
+            Log.d(TAG, "[UploadToShelf] Generated new key")
         }
 
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
+        Log.d(TAG, "[UploadToShelf] Prepared key/IV document for POST")
 
         val maxAttempts = 3
         val retryDelayMs = 2000L
+        val dbUrl = "${UrlUtils.getUrl()}/$table"
+        Log.d(TAG, "[UploadToShelf] Database URL: $dbUrl")
+
+        // First, create the database if it doesn't exist
+        Log.d(TAG, "[UploadToShelf] Creating user database: $table")
+        val createDbResponse = withContext(Dispatchers.IO) {
+            try {
+                apiInterface?.putDocSuspend(header, "application/json", dbUrl, JsonObject())
+            } catch (e: Exception) {
+                Log.w(TAG, "[UploadToShelf] Database creation attempt - ${e.message}")
+                null
+            }
+        }
+        Log.d(TAG, "[UploadToShelf] Database creation response - code: ${createDbResponse?.code()}, successful: ${createDbResponse?.isSuccessful}")
+
+        Log.d(TAG, "[UploadToShelf] Will POST key/IV to URL: $dbUrl with $maxAttempts max attempts")
 
         val response = withContext(Dispatchers.IO) {
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
                 delayMs = retryDelayMs,
-                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+                shouldRetry = { resp ->
+                    val needsRetry = resp == null || !resp.isSuccessful || resp.body() == null
+                    if (needsRetry) {
+                        when {
+                            resp == null -> Log.w(TAG, "[UploadToShelf] Response is null, needs retry")
+                            !resp.isSuccessful -> Log.w(TAG, "[UploadToShelf] Response not successful (code: ${resp.code()}), needs retry")
+                            resp.body() == null -> Log.w(TAG, "[UploadToShelf] Response body is null, needs retry")
+                        }
+                    }
+                    needsRetry
+                }
             ) {
-                apiInterface?.postDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+                Log.d(TAG, "[UploadToShelf] Making POST request to save key/IV")
+                val result = apiInterface?.postDocSuspend(header, "application/json", dbUrl, ob)
+                Log.d(TAG, "[UploadToShelf] POST response - successful: ${result?.isSuccessful}, code: ${result?.code()}, hasBody: ${result?.body() != null}")
+                result
             }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
+            Log.d(TAG, "[UploadToShelf] Successfully saved key/IV, updating model and changing security for username: $userName")
             model.key = keyString
             model.iv = iv
             changeUserSecurity(model, obj)
+            Log.d(TAG, "[UploadToShelf] saveKeyIv completed successfully for username: $userName")
         } else {
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
+            Log.e(TAG, "[UploadToShelf] $errorMessage for username: $userName - response: ${response?.code()}, hasBody: ${response?.body() != null}")
             throw IOException(errorMessage)
         }
     }
@@ -431,6 +476,8 @@ class UploadToShelfService @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "BECOME_MEMBER"
+
         private suspend fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"

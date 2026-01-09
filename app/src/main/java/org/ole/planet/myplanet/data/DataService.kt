@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.JsonObject
@@ -52,6 +53,10 @@ class DataService @Inject constructor(
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
 ) {
+    companion object {
+        private const val TAG = "BECOME_MEMBER"
+    }
+
     constructor(context: Context) : this(
         context,
         EntryPointAccessors.fromApplication(
@@ -271,24 +276,33 @@ class DataService @Inject constructor(
     }
 
     fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataListener? = null) {
+        val username = obj["name"]?.asString ?: "unknown"
+        Log.d(TAG, "[DataService] becomeMember called for username: $username")
         serviceScope.launch {
+            Log.d(TAG, "[DataService] Calling userRepository.becomeMember for username: $username")
             val result = userRepository.becomeMember(obj)
+            Log.d(TAG, "[DataService] userRepository.becomeMember result - success: ${result.first}, message: ${result.second}")
             withContext(Dispatchers.Main) {
                 if (result.first) { // success
+                    Log.d(TAG, "[DataService] Member creation successful for username: $username")
                     if (context is ProcessUserDataActivity) {
                         val userName = obj["name"].asString
+                        Log.d(TAG, "[DataService] Context is ProcessUserDataActivity, starting upload for: $userName")
                         context.startUpload("becomeMember", userName, securityCallback)
                     }
 
                     // Handle offline logic regardless of context
                     if (result.second == context.getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        Log.d(TAG, "[DataService] User created offline, triggering callbacks for username: $username")
                         Utilities.toast(MainApplication.context, result.second)
                         securityCallback?.onSecurityDataUpdated()
                     }
 
+                    Log.d(TAG, "[DataService] Calling success callback with message: ${result.second}")
                     callback.onSuccess(result.second)
                 } else {
                     // failure
+                    Log.e(TAG, "[DataService] Member creation failed for username: $username, message: ${result.second}")
                     callback.onSuccess(result.second)
                     securityCallback?.onSecurityDataUpdated()
                 }

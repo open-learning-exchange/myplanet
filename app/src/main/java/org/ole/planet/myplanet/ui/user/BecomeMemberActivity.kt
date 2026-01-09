@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.widget.ArrayAdapter
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
@@ -36,7 +37,11 @@ class BecomeMemberActivity : BaseActivity() {
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
-    
+
+    companion object {
+        private const val TAG = "BECOME_MEMBER"
+    }
+
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -71,44 +76,57 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
-    private fun collectMemberInfo() = MemberInfo(
-        activityBecomeMemberBinding.etUsername.text.toString(),
-        activityBecomeMemberBinding.etPassword.text.toString(),
-        activityBecomeMemberBinding.etRePassword.text.toString(),
-        activityBecomeMemberBinding.etFname.text.toString(),
-        activityBecomeMemberBinding.etLname.text.toString(),
-        activityBecomeMemberBinding.etMname.text.toString(),
-        activityBecomeMemberBinding.etEmail.text.toString(),
-        activityBecomeMemberBinding.spnLang.selectedItem.toString(),
-        activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
-        activityBecomeMemberBinding.etPhone.text.toString(),
-        dob,
-        selectedGender()
-    )
+    private fun collectMemberInfo(): MemberInfo {
+        val info = MemberInfo(
+            activityBecomeMemberBinding.etUsername.text.toString(),
+            activityBecomeMemberBinding.etPassword.text.toString(),
+            activityBecomeMemberBinding.etRePassword.text.toString(),
+            activityBecomeMemberBinding.etFname.text.toString(),
+            activityBecomeMemberBinding.etLname.text.toString(),
+            activityBecomeMemberBinding.etMname.text.toString(),
+            activityBecomeMemberBinding.etEmail.text.toString(),
+            activityBecomeMemberBinding.spnLang.selectedItem.toString(),
+            activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
+            activityBecomeMemberBinding.etPhone.text.toString(),
+            dob,
+            selectedGender()
+        )
+        Log.d(TAG, "Collected member info: username=${info.username}, email=${info.email}, gender=${info.gender}")
+        return info
+    }
 
     private fun validateMemberInfo(info: MemberInfo): Boolean {
+        Log.d(TAG, "Validating member info for username: ${info.username}")
         return when {
             info.password.isEmpty() -> {
+                Log.w(TAG, "Validation failed: password is empty")
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
                 false
             }
             info.password != info.rePassword -> {
+                Log.w(TAG, "Validation failed: passwords don't match")
                 activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
                 false
             }
             info.email.isNotEmpty() && !Utilities.isValidEmail(info.email) -> {
+                Log.w(TAG, "Validation failed: invalid email - ${info.email}")
                 activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
                 false
             }
             info.gender == null -> {
+                Log.w(TAG, "Validation failed: gender not selected")
                 Utilities.toast(this, getString(R.string.please_select_gender))
                 false
             }
-            else -> true
+            else -> {
+                Log.d(TAG, "Validation passed for username: ${info.username}")
+                true
+            }
         }
     }
 
     private fun buildMemberJson(info: MemberInfo) = JsonObject().apply {
+        Log.d(TAG, "Building member JSON for username: ${info.username}")
         addProperty("name", info.username)
         addProperty("firstName", info.fName)
         addProperty("lastName", info.lName)
@@ -131,23 +149,29 @@ class BecomeMemberActivity : BaseActivity() {
         addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         val roles = JsonArray().apply { add("learner") }
         add("roles", roles)
+        Log.d(TAG, "Member JSON built successfully for username: ${info.username}")
     }
 
     private fun addMember(info: MemberInfo) {
+        Log.d(TAG, "Starting addMember process for username: ${info.username}")
         val obj = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
         }
+        Log.d(TAG, "Progress dialog shown, calling DataService.becomeMember()")
 
         DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
             override fun onSuccess(success: String) {
+                Log.d(TAG, "DataService.becomeMember callback onSuccess: $success")
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
         }, object : SecurityDataListener {
             override fun onSecurityDataUpdated() {
+                Log.d(TAG, "SecurityDataListener callback triggered - member creation completed")
                 runOnUiThread {
                     customProgressDialog.dismiss()
+                    Log.d(TAG, "Progress dialog dismissed, navigating to auto-login")
                     autoLoginNewMember(info.username, info.password)
                 }
             }
@@ -156,6 +180,7 @@ class BecomeMemberActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "BecomeMemberActivity onCreate started")
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityBecomeMemberBinding.root)
@@ -173,6 +198,7 @@ class BecomeMemberActivity : BaseActivity() {
 
         val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
+        Log.d(TAG, "Intent extras - username: $username, guest: $guest")
 
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         setupTextWatchers()
@@ -180,29 +206,39 @@ class BecomeMemberActivity : BaseActivity() {
         if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
             activityBecomeMemberBinding.etUsername.isFocusable = false
+            Log.d(TAG, "Guest mode - username field pre-filled and locked")
         }
 
 
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
+            Log.d(TAG, "Cancel button clicked")
             finish()
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            Log.d(TAG, "Submit button clicked - starting member registration")
             val info = collectMemberInfo()
             lifecycleScope.launch {
+                Log.d(TAG, "Validating username: ${info.username}")
                 val error = userRepository.validateUsername(info.username)
                 withContext(Dispatchers.Main) {
                     if (error != null) {
+                        Log.w(TAG, "Username validation failed: $error")
                         activityBecomeMemberBinding.etUsername.error = error
                     } else if (validateMemberInfo(info)) {
+                        Log.d(TAG, "All validations passed, proceeding to add member")
                         addMember(info)
+                    } else {
+                        Log.w(TAG, "Member info validation failed")
                     }
                 }
             }
         }
+        Log.d(TAG, "BecomeMemberActivity onCreate completed")
     }
 
     override fun onDestroy() {
+        Log.d(TAG, "BecomeMemberActivity onDestroy")
         activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
         activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
         usernameWatcher = null
@@ -211,18 +247,24 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun autoLoginNewMember(username: String, password: String) {
+        Log.d(TAG, "Starting auto-login for new member: $username")
         lifecycleScope.launch {
+            Log.d(TAG, "Cleaning up duplicate users before auto-login")
             userRepository.cleanupDuplicateUsers()
+            Log.d(TAG, "Duplicate users cleaned up, preparing intent for LoginActivity")
             val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
             intent.putExtra("username", username)
             intent.putExtra("password", password)
             intent.putExtra("auto_login", true)
             if (guest) {
                 intent.putExtra("guest", guest)
+                Log.d(TAG, "Guest flag added to auto-login intent")
             }
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            Log.d(TAG, "Launching LoginActivity with auto-login for username: $username")
             startActivity(intent)
             finish()
+            Log.d(TAG, "BecomeMemberActivity finished, auto-login flow initiated")
         }
     }
 

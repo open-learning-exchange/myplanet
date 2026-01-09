@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.Normalizer
@@ -33,6 +34,9 @@ class UserRepositoryImpl @Inject constructor(
     private val uploadToShelfService: UploadToShelfService,
     @ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), UserRepository {
+    companion object {
+        private const val TAG = "BECOME_MEMBER"
+    }
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return withRealm { realm ->
             realm.where(RealmUserModel::class.java)
@@ -236,101 +240,141 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
+        val userName = obj["name"]?.asString ?: "unknown"
+        Log.d(TAG, "[Repository] becomeMember started for username: $userName")
+
         val isAvailable = withContext(Dispatchers.IO) {
             try {
-                val response = apiInterface.isPlanetAvailableSuspend(UrlUtils.getUpdateUrl(settings))
-                response.code() == 200
+                val updateUrl = UrlUtils.getUpdateUrl(settings)
+                Log.d(TAG, "[Repository] Checking server availability at: $updateUrl")
+                val response = apiInterface.isPlanetAvailableSuspend(updateUrl)
+                val available = response.code() == 200
+                Log.d(TAG, "[Repository] Server available: $available (response code: ${response.code()})")
+                available
             } catch (e: Exception) {
+                Log.e(TAG, "[Repository] Server availability check failed: ${e.message}", e)
                 false
             }
         }
 
         if (isAvailable) {
+            Log.d(TAG, "[Repository] Server is online, proceeding with online user creation for: $userName")
             return try {
                 val header = UrlUtils.header
-                val userName = obj["name"].asString
                 val userUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
+                Log.d(TAG, "[Repository] User URL: $userUrl")
 
+                Log.d(TAG, "[Repository] Checking if user already exists: $userName")
                 val existsResponse = withContext(Dispatchers.IO) {
                     apiInterface.getJsonObjectSuspended(header, userUrl)
                 }
+                Log.d(TAG, "[Repository] Check user exists response - successful: ${existsResponse.isSuccessful}, code: ${existsResponse.code()}")
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
+                    Log.w(TAG, "[Repository] User already exists: $userName")
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
+                    Log.d(TAG, "[Repository] User does not exist, creating new user: $userName")
                     val createResponse = withContext(Dispatchers.IO) {
                         apiInterface.putDocSuspend(null, "application/json", userUrl, obj)
                     }
+                    Log.d(TAG, "[Repository] Create user response - successful: ${createResponse.isSuccessful}, code: ${createResponse.code()}")
 
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
                         val id = createResponse.body()?.get("id")?.asString ?: ""
+                        Log.d(TAG, "[Repository] User created successfully on server with ID: $id")
 
                         // Fire and forget uploadToShelf
+                        Log.d(TAG, "[Repository] Starting uploadToShelf in background for: $userName")
                         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                             uploadToShelf(obj)
                         }
 
+                        Log.d(TAG, "[Repository] Saving user to local database with ID: $id")
                         val result = saveUserToDb(id, obj)
                         if (result.isSuccess) {
+                            Log.d(TAG, "[Repository] User saved to database successfully for: $userName")
                             Pair(true, context.getString(R.string.user_created_successfully))
                         } else {
+                            Log.e(TAG, "[Repository] Failed to save user to database for: $userName")
                             Pair(false, context.getString(R.string.unable_to_save_user_please_sync))
                         }
                     } else {
+                        Log.e(TAG, "[Repository] Failed to create user on server for: $userName, response code: ${createResponse.code()}")
                         Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "[Repository] Exception during online user creation for: $userName - ${e.message}", e)
                 e.printStackTrace()
                 Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
-            val userName = obj["name"].asString
+            Log.d(TAG, "[Repository] Server is offline, proceeding with offline user creation for: $userName")
             val existingUser = getUserByName(userName)
             if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
+                Log.w(TAG, "[Repository] User already exists locally (not a guest): $userName")
                 return Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
             }
 
+            Log.d(TAG, "[Repository] Generating encryption keys for offline user: $userName")
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
+            Log.d(TAG, "[Repository] Saving user offline with generated keys for: $userName")
             saveUser(obj, settings, keyString, iv)
+            Log.d(TAG, "[Repository] Offline user created successfully for: $userName")
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
 
     private suspend fun uploadToShelf(obj: JsonObject) {
+        val userName = obj["name"]?.asString ?: "unknown"
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
-            apiInterface.putDocSuspend(null, "application/json", url, JsonObject())
+            Log.d(TAG, "[Repository] uploadToShelf started for username: $userName, URL: $url")
+            val response = apiInterface.putDocSuspend(null, "application/json", url, JsonObject())
+            Log.d(TAG, "[Repository] uploadToShelf completed for username: $userName, successful: ${response.isSuccessful}, code: ${response.code()}")
         } catch (e: Exception) {
+            Log.e(TAG, "[Repository] uploadToShelf failed for username: $userName - ${e.message}", e)
             e.printStackTrace()
         }
     }
 
     private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<RealmUserModel?> {
+        val userName = obj["name"]?.asString ?: "unknown"
+        Log.d(TAG, "[Repository] saveUserToDb started for username: $userName, ID: $id")
         return try {
             val userModel = withTimeout(20000) {
+                val url = "${UrlUtils.getUrl()}/_users/$id"
+                Log.d(TAG, "[Repository] Fetching user data from server: $url")
                 val response = apiInterface.getJsonObjectSuspended(
                     UrlUtils.header,
-                    "${UrlUtils.getUrl()}/_users/$id"
+                    url
                 )
+                Log.d(TAG, "[Repository] Fetch user data response - successful: ${response.isSuccessful}, code: ${response.code()}")
 
                 ensureActive()
 
                 if (response.isSuccessful) {
+                    Log.d(TAG, "[Repository] Saving user to local database for username: $userName")
                     response.body()?.let { saveUser(it, settings) }
                 } else {
+                    Log.e(TAG, "[Repository] Failed to fetch user data from server for ID: $id")
                     null
                 }
             }
 
             if (userModel != null) {
+                Log.d(TAG, "[Repository] User saved to database, saving key/IV for username: $userName")
                 uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                Log.d(TAG, "[Repository] saveUserToDb completed successfully for username: $userName")
                 Result.success(userModel)
             } else {
+                Log.e(TAG, "[Repository] saveUserToDb failed - user model is null for username: $userName")
                 Result.failure(Exception("Failed to save user or user model was null"))
             }
         } catch (e: Exception) {
+            Log.e(TAG, "[Repository] saveUserToDb exception for username: $userName - ${e.message}", e)
             e.printStackTrace()
             Result.failure(e)
         }
@@ -384,40 +428,65 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun validateUsername(username: String): String? {
+        Log.d(TAG, "[Repository] validateUsername called for: $username")
         val specialCharPattern = Pattern.compile(
             ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
         )
 
         val firstChar = username.firstOrNull()
         when {
-            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
-            username.contains(" ") -> return context.getString(R.string.invalid_username)
-            firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
+            username.isEmpty() -> {
+                Log.w(TAG, "[Repository] Username validation failed: empty username")
+                return context.getString(R.string.username_cannot_be_empty)
+            }
+            username.contains(" ") -> {
+                Log.w(TAG, "[Repository] Username validation failed: contains spaces - $username")
+                return context.getString(R.string.invalid_username)
+            }
+            firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() -> {
+                Log.w(TAG, "[Repository] Username validation failed: doesn't start with letter or number - $username")
                 return context.getString(R.string.must_start_with_letter_or_number)
+            }
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
             specialCharPattern.matcher(username).matches() ||
             !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
-            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
+            } -> {
+                Log.w(TAG, "[Repository] Username validation failed: invalid characters - $username")
+                return context.getString(R.string.only_letters_numbers_and_are_allowed)
+            }
         }
 
+        Log.d(TAG, "[Repository] Checking if username is already taken: $username")
         val isTaken = withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("name", username)
                 .not().beginsWith("_id", "guest")
                 .count() > 0L
         }
+        Log.d(TAG, "[Repository] Username taken check result for $username: $isTaken")
 
-        return if (isTaken) context.getString(R.string.username_taken) else null
+        return if (isTaken) {
+            Log.w(TAG, "[Repository] Username validation failed: username taken - $username")
+            context.getString(R.string.username_taken)
+        } else {
+            Log.d(TAG, "[Repository] Username validation passed for: $username")
+            null
+        }
     }
 
     override suspend fun cleanupDuplicateUsers() {
+        Log.d(TAG, "[Repository] cleanupDuplicateUsers started")
         withRealm { realm ->
             val allUsers = realm.where(RealmUserModel::class.java).findAll()
+            Log.d(TAG, "[Repository] Found ${allUsers.size} total users in database")
             val usersByName = allUsers.groupBy { it.name }
+            Log.d(TAG, "[Repository] Grouped into ${usersByName.size} unique usernames")
 
-            usersByName.forEach { (_, users) ->
+            var duplicatesRemoved = 0
+            usersByName.forEach { (name, users) ->
                 if (users.size > 1) {
+                    Log.d(TAG, "[Repository] Found ${users.size} duplicate users for username: $name")
                     val sortedUsers = users.sortedWith { user1, user2 ->
                         when {
                             user1._id?.startsWith("org.couchdb.user:") == true &&
@@ -428,11 +497,15 @@ class UserRepositoryImpl @Inject constructor(
                         }
                     }
 
+                    Log.d(TAG, "[Repository] Keeping user with ID: ${sortedUsers[0]._id}, removing ${sortedUsers.size - 1} duplicates")
                     for (i in 1 until sortedUsers.size) {
+                        Log.d(TAG, "[Repository] Removing duplicate user with ID: ${sortedUsers[i]._id}")
                         sortedUsers[i].deleteFromRealm()
+                        duplicatesRemoved++
                     }
                 }
             }
+            Log.d(TAG, "[Repository] cleanupDuplicateUsers completed - removed $duplicatesRemoved duplicate users")
         }
     }
 }
