@@ -56,8 +56,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -108,7 +106,7 @@ abstract class BaseResourceFragment : Fragment() {
             !requireActivity().isFinishing && !requireActivity().isDestroyed
     }
 
-    private fun showProgressDialog() {
+    internal fun showProgressDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             if (isFragmentActive()) {
                 prgDialog.show()
@@ -116,7 +114,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    private fun showNotConnectedToast() {
+    internal fun showNotConnectedToast() {
         if (isFragmentActive()) {
             Utilities.toast(requireActivity(),
                 getString(R.string.device_not_connected_to_planet))
@@ -187,60 +185,74 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (!isAdded) return
-                val userId = profileDbHandler.userModel?.id
-                val librariesForDialog = if (userId.isNullOrBlank()) {
-                    dbMyLibrary
-                } else {
-                    val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
-                    if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
-                }
+        val userId = profileDbHandler.userModel?.id
+        val librariesForDialog = if (userId.isNullOrBlank()) {
+            dbMyLibrary
+        } else {
+            val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
+            if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
+        }
 
-                if (librariesForDialog.isEmpty()) {
-                    return
-                }
+        if (librariesForDialog.isEmpty()) {
+            return
+        }
 
-                activity?.let { fragmentActivity ->
-                    val inflater = fragmentActivity.layoutInflater
-                    val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
-                    convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
+        activity?.let { fragmentActivity ->
+            val inflater = fragmentActivity.layoutInflater
+            val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
+            convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
-                    val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
-                    alertDialogBuilder.setView(convertView)
-                        .setTitle(R.string.download_suggestion)
-                        .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                            lv?.selectedItemsList?.let {
-                                addToLibrary(librariesForDialog, it)
-                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
-                                resourcesRepository.downloadResources(selectedLibraries.filterNotNull())
+            val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            alertDialogBuilder.setView(convertView)
+                .setTitle(R.string.download_suggestion)
+                .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                    lifecycleScope.launch {
+                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+                            override fun isAvailable() {
+                                lifecycleScope.launch {
+                                    lv?.selectedItemsList?.let {
+                                        addToLibrary(librariesForDialog, it)
+                                        val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
+                                        if (resourcesRepository.downloadResources(selectedLibraries.filterNotNull())) {
+                                            showProgressDialog()
+                                        }
+                                    }
+                                }
                             }
-                        }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            addAllToLibrary(librariesForDialog)
-                            resourcesRepository.downloadResources(librariesForDialog.filterNotNull())
-                        }.setNegativeButton(R.string.txt_cancel, null)
-                    downloadSuggestionDialog?.dismiss()
-                    downloadSuggestionDialog = alertDialogBuilder.create()
-                    downloadSuggestionDialog?.let { dialog ->
-                        createListView(librariesForDialog, dialog)
-                        dialog.setOnDismissListener {
-                            downloadSuggestionDialog = null
-                        }
-                        dialog.show()
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
-                            ?: 0) > 0
+                            override fun notAvailable() {
+                                showNotConnectedToast()
+                            }
+                        })
                     }
+                }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                    lifecycleScope.launch {
+                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+                            override fun isAvailable() {
+                                lifecycleScope.launch {
+                                    addAllToLibrary(librariesForDialog)
+                                    if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
+                                        showProgressDialog()
+                                    }
+                                }
+                            }
+                            override fun notAvailable() {
+                                showNotConnectedToast()
+                            }
+                        })
+                    }
+                }.setNegativeButton(R.string.txt_cancel, null)
+            downloadSuggestionDialog?.dismiss()
+            downloadSuggestionDialog = alertDialogBuilder.create()
+            downloadSuggestionDialog?.let { dialog ->
+                createListView(librariesForDialog, dialog)
+                dialog.setOnDismissListener {
+                    downloadSuggestionDialog = null
                 }
+                dialog.show()
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
+                    ?: 0) > 0
             }
-
-            override fun notAvailable() {
-                if (!isAdded) return
-                activity?.let {
-                    Utilities.toast(it, getString(R.string.planet_not_available))
-                }
-            }
-        })
+        }
     }
 
     fun showPendingSurveyDialog() {
@@ -307,7 +319,6 @@ abstract class BaseResourceFragment : Fragment() {
             resourceNotFoundDialog?.show()
         }
     }
-
 
     fun setProgress(download: Download) {
         prgDialog.setProgress(download.progress)
