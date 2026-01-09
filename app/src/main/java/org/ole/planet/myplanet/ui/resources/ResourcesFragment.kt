@@ -182,11 +182,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
             val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
             val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
+            val filteredLibraryList: List<RealmMyLibrary> =
                 if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
+                    applyFilter(libraryList.filterNotNull())
                 } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
                 }
 
             adapterLibrary.setLibraryList(filteredLibraryList)
@@ -201,8 +201,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
+        val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
+        adapterLibrary.setLibraryList(libraryList)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
