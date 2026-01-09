@@ -215,6 +215,35 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deletePost(newsId: String, teamName: String) {
+        withRealm { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                if (news != null) {
+                    val ar = try {
+                        gson.fromJson(news.viewIn, JsonArray::class.java)
+                    } catch (e: Exception) {
+                        null
+                    }
+
+                    if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
+                        deleteRepliesOf(news.id!!, transactionRealm)
+                        news.deleteFromRealm()
+                    } else {
+                        val filtered = JsonArray().apply {
+                            ar.forEach { elem ->
+                                if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
+                                    add(elem)
+                                }
+                            }
+                        }
+                        news.viewIn = gson.toJson(filtered)
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
         return withRealm { realm ->
             val query = realm.where(RealmNews::class.java)

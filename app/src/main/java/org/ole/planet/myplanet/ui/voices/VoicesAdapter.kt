@@ -321,7 +321,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                         if (adjustedPos >= 0 && adjustedPos < currentList.size) {
                             val newsToDelete = currentList[adjustedPos]
                             scope.launch {
-                                newsToDelete?.id?.let { voicesRepository.deleteNews(it) }
+                                newsToDelete?.id?.let { voicesRepository.deletePost(it, teamName) }
                                 withContext(Dispatchers.Main) {
                                     val newList = currentList.toMutableList().apply { removeAt(adjustedPos) }
                                     submitListSafely(newList)
