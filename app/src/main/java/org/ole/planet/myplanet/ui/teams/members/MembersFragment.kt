@@ -12,7 +12,7 @@ import io.realm.Realm
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
 class MembersFragment : BaseMemberFragment() {
-    private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
+    private var onMemberChangeListener: OnMemberChangeListener = object : OnMemberChangeListener {
         override fun onMemberChanged() {
             viewLifecycleOwner.lifecycleScope.launch {
                 loadAndDisplayJoinedMembers()
@@ -30,8 +30,8 @@ class MembersFragment : BaseMemberFragment() {
     private var adapterJoined: MembersAdapter? = null
     private var cachedJoinedMembers: List<JoinedMemberData>? = null
 
-    fun setMemberChangeListener(listener: MemberChangeListener) {
-        this.memberChangeListener = listener
+    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+        this.onMemberChangeListener = listener
     }
 
     private suspend fun loadAndDisplayJoinedMembers() {
@@ -102,7 +102,7 @@ class MembersFragment : BaseMemberFragment() {
                         }
 
                         loadAndDisplayJoinedMembers()
-                        memberChangeListener.onMemberChanged()
+                        onMemberChangeListener.onMemberChanged()
 
                         Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
 
@@ -157,7 +157,7 @@ class MembersFragment : BaseMemberFragment() {
 
                     teamsRepository.removeMember(teamId, memberId)
                     loadAndDisplayJoinedMembers()
-                    memberChangeListener.onMemberChanged()
+                    onMemberChangeListener.onMemberChanged()
                 } else {
                     Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                 }
@@ -177,7 +177,7 @@ class MembersFragment : BaseMemberFragment() {
                 }
                 loadAndDisplayJoinedMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-                memberChangeListener.onMemberChanged()
+                onMemberChangeListener.onMemberChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }
