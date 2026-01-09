@@ -8,6 +8,7 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -31,7 +33,8 @@ class UserRepositoryImpl @Inject constructor(
     @AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val uploadToShelfService: UploadToShelfService,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val scope: CoroutineScope
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return withRealm { realm ->
@@ -265,8 +268,10 @@ class UserRepositoryImpl @Inject constructor(
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
                         val id = createResponse.body()?.get("id")?.asString ?: ""
 
-                        // Fire and forget uploadToShelf
-                        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                        // Use the injected application-level scope for this fire-and-forget operation.
+                        // This ensures the operation is tied to the application's lifecycle and uses a shared,
+                        // SupervisorJob-based scope to prevent failures from canceling other unrelated work.
+                        scope.launch {
                             uploadToShelf(obj)
                         }
 
