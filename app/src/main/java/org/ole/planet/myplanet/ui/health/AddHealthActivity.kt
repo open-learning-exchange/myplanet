@@ -17,7 +17,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
+import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
@@ -32,8 +32,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class AddMyHealthActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityAddMyHealthBinding
+class AddHealthActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityAddHealthBinding
     @Inject
     lateinit var databaseService: DatabaseService
     var userId: String? = null
@@ -41,7 +41,7 @@ class AddMyHealthActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityAddMyHealthBinding.inflate(layoutInflater)
+        binding = ActivityAddHealthBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -49,7 +49,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         userId = intent.getStringExtra("userId")
         findViewById<View>(R.id.btn_submit).setOnClickListener {
             createMyHealth()
-            Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
+            Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)
