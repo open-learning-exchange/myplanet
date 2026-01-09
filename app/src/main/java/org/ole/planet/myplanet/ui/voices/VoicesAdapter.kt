@@ -343,7 +343,9 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     true,
                     currentUser,
                     listener,
-                    holder,
+                    voicesRepository,
+                    scope,
+                    holder
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -411,7 +413,6 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
         userCache.clear()
-        // The list is already detached, no need to copy from Realm
         submitList(list, commitCallback)
     }
 
@@ -530,7 +531,9 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     false,
                     currentUser,
                     listener,
-                    viewHolder,
+                    voicesRepository,
+                    scope,
+                    viewHolder
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {

@@ -122,11 +122,9 @@ class VoicesRepositoryImpl @Inject constructor(
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+        .flowOn(Dispatchers.Main)
 
         return allNewsFlow.map { allNews ->
-            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
-            // It is safe to process them on a background thread.
             allNews.filter { news ->
                 isVisibleToUser(news, userIdentifier)
             }.map { news ->
@@ -273,6 +271,37 @@ class VoicesRepositoryImpl @Inject constructor(
                 val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
                 news?.labels?.remove(label)
             }
+        }
+    }
+
+    override suspend fun editNews(newsId: String, message: String, imageUrls: List<String>?) {
+        databaseService.executeTransactionAsync { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            news?.updateMessage(message)
+            news?.imageUrls?.clear()
+            imageUrls?.forEach { news?.imageUrls?.add(it) }
+        }
+    }
+
+    override suspend fun createReply(
+        parentNewsId: String,
+        message: String,
+        imageUrls: List<String>?,
+        user: RealmUserModel?
+    ) {
+        databaseService.executeTransactionAsync { realm ->
+            val parentNews = realm.where(RealmNews::class.java).equalTo("id", parentNewsId).findFirst()
+            val map = HashMap<String?, String>()
+            map["message"] = message
+            map["viewableBy"] = parentNews?.viewableBy ?: ""
+            map["viewableId"] = parentNews?.viewableId ?: ""
+            map["replyTo"] = parentNews?.id ?: ""
+            map["messageType"] = parentNews?.messageType ?: ""
+            map["messagePlanetCode"] = parentNews?.messagePlanetCode ?: ""
+            map["viewIn"] = parentNews?.viewIn ?: ""
+            val images = io.realm.RealmList<String>()
+            imageUrls?.forEach { images.add(it) }
+            createNews(map, realm, user, images, true)
         }
     }
 }
