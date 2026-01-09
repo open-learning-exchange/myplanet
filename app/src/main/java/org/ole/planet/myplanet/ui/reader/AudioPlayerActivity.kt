@@ -29,6 +29,7 @@ class AudioPlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityAudioPlayerBinding
     private var exoPlayer: ExoPlayer? = null
+    private var playerListener: Player.Listener? = null
     private var filePath: String? = null
     private var isFullPath = false
     private lateinit var playButton: ImageButton
@@ -107,7 +108,7 @@ class AudioPlayerActivity : AppCompatActivity() {
                     setUnplayedColor(ContextCompat.getColor(this@AudioPlayerActivity, R.color.disable_color))
                 }
 
-                player.addListener(object : Player.Listener {
+                playerListener = object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
                         Utilities.toast(this@AudioPlayerActivity, "Unable to play audio.")
                     }
@@ -117,7 +118,8 @@ class AudioPlayerActivity : AppCompatActivity() {
                             player.seekTo(0)
                         }
                     }
-                })
+                }
+                player.addListener(playerListener!!)
             }
         } catch (e: Exception) {
             Utilities.toast(this, "Unable to play audio.")
@@ -184,8 +186,10 @@ class AudioPlayerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         binding.playerView.player = null
+        playerListener?.let { exoPlayer?.removeListener(it) }
         exoPlayer?.release()
         exoPlayer = null
+        playerListener = null
         super.onDestroy()
     }
 }
