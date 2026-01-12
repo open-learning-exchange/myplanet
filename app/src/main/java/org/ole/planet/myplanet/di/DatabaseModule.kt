@@ -15,11 +15,8 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabaseService(
-        @ApplicationContext context: Context,
-        dispatcherProvider: DispatcherProvider
-    ): DatabaseService {
-        return DatabaseService(context, dispatcherProvider)
+    fun provideDatabaseService(@ApplicationContext context: Context): DatabaseService {
+        return DatabaseService(context)
     }
 
     // Realm initialization is handled in DatabaseService
