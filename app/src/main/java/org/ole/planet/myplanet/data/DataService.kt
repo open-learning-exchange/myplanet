@@ -45,7 +45,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class DataService @Inject constructor(
+class DataService constructor(
     private val context: Context,
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,
