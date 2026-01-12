@@ -38,8 +38,11 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
+import io.realm.Realm
+
 class ResourcesAdapter(
     private val context: Context,
+    private val realm: Realm,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
     private val tagsRepository: TagsRepository,
@@ -71,7 +74,7 @@ class ResourcesAdapter(
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary>, onComplete: (() -> Unit)? = null) {
-        submitList(libraryList.toMutableList(), onComplete)
+        submitList(libraryList, onComplete)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -366,7 +369,7 @@ class ResourcesAdapter(
     override fun refreshWithDiff() {
         (context as? LifecycleOwner)?.lifecycleScope?.launch {
             val newLibraryList = resourcesRepository.getAllLibraryItems()
-            submitList(newLibraryList)
+            submitList(realm.copyFromRealm(newLibraryList))
         }
     }
 
