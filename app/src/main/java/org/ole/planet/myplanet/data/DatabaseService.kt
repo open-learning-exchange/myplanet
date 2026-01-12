@@ -8,12 +8,12 @@ import io.realm.RealmQuery
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.di.DispatcherProvider
 
-class DatabaseService(context: Context) {
-    val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider) {
+    val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
 
     init {
         Realm.init(context)
