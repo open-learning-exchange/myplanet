@@ -313,7 +313,12 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
         AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
-                viewModel.leaveTeam(team._id!!, user?.id)
+                team._id?.let { teamId ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        viewModel.leaveTeam(teamId, user?.id)
+                        refreshTeamList()
+                    }
+                }
             }
             .setNegativeButton(R.string.no, null)
             .show()
