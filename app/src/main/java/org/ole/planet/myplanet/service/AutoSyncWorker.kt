@@ -35,8 +35,6 @@ class AutoSyncWorker(
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
-    private lateinit var dataService: DataService
-    private lateinit var dataService: DataService
     private val workerScope = CoroutineScope(Dispatchers.IO)
     override fun doWork(): Result {
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
@@ -44,8 +42,6 @@ class AutoSyncWorker(
         syncManager = entryPoint.syncManager()
         uploadManager = entryPoint.uploadManager()
         uploadToShelfService = entryPoint.uploadToShelfService()
-        dataService = entryPoint.dataService()
-        dataService = entryPoint.dataService()
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
@@ -53,7 +49,7 @@ class AutoSyncWorker(
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            dataService.checkVersion(this, preferences)
+            DataService(context).checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -79,7 +75,7 @@ class AutoSyncWorker(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                dataService.healthAccess {
+                DataService(MainApplication.context).healthAccess {
                     uploadToShelfService.uploadHealth()
                 }
             }
