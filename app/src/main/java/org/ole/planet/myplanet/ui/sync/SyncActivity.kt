@@ -8,6 +8,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
+import android.util.Log
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.ContextThemeWrapper
@@ -496,7 +497,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                while (true) {
+                val maxAttempts = 3 // Maximum 3 seconds wait
+                while (attempt < maxAttempts) {
                     val hasUser = databaseService.withRealm { realm ->
                         realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                     }
@@ -505,6 +507,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                     attempt++
                     delay(1000)
+                }
+
+                if (attempt >= maxAttempts) {
+                    Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
                 }
 
                 withContext(Dispatchers.Main) {

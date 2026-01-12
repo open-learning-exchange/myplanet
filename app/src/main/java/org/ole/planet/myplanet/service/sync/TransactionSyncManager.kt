@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service.sync
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,17 +41,47 @@ class TransactionSyncManager @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope
 ) {
     fun authenticate(): Boolean {
+        Log.d("ServerSync", "=== Starting authentication ===")
         try {
+            val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
+            val sanitizedUrl = targetUrl.replace(Regex("://[^:]+:[^@]+@"), "://***:***@")
+            Log.d("ServerSync", "Attempting to authenticate with URL: $sanitizedUrl")
+            Log.d("ServerSync", "Using authorization header: Basic ***")
+
             val response: Response<DocumentResponse>? = apiInterface.getDocuments(
                 UrlUtils.header,
-                "${UrlUtils.getUrl()}/tablet_users/_all_docs"
+                targetUrl
             ).execute()
+
             if (response != null) {
-                return response.code() == 200
+                val code = response.code()
+                val isSuccess = code == 200
+                Log.d("ServerSync", "Response code: $code")
+
+                if (isSuccess) {
+                    Log.d("ServerSync", "Authentication successful")
+                } else {
+                    Log.e("ServerSync", "Authentication failed with code: $code")
+                    Log.e("ServerSync", "Response message: ${response.message()}")
+                    val errorBody = response.errorBody()?.string()
+                    if (!errorBody.isNullOrEmpty()) {
+                        Log.e("ServerSync", "Error body: $errorBody")
+                    }
+                }
+                Log.d("ServerSync", "=== Authentication finished ===")
+                return isSuccess
+            } else {
+                Log.e("ServerSync", "Authentication failed: response is null")
             }
         } catch (e: IOException) {
+            Log.e("ServerSync", "Authentication failed with IOException: ${e.message}", e)
+            Log.e("ServerSync", "Possible causes: network unavailable, server unreachable, wrong URL/port")
+            e.printStackTrace()
+        } catch (e: Exception) {
+            Log.e("ServerSync", "Authentication failed with unexpected exception: ${e.message}", e)
             e.printStackTrace()
         }
+        Log.d("ServerSync", "=== Authentication finished with failure ===")
         return false
     }
 

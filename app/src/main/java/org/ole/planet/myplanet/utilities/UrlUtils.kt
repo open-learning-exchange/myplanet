@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utilities
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
+import android.util.Log
 import androidx.core.net.toUri
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -24,24 +25,31 @@ object UrlUtils {
             val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
             val alternativeUrl = settings.getString("processedAlternativeUrl", "")
 
+            Log.d("ServerSync", "hostUrl - scheme: $scheme, host: $hostIp, isAlternativeUrl: $isAlternativeUrl")
+
             if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
                 try {
                     val uri = alternativeUrl.toUri()
                     hostIp = uri.host ?: hostIp
                     scheme = uri.scheme ?: scheme
+                    Log.d("ServerSync", "hostUrl - using alternative URL, updated scheme: $scheme, host: $hostIp")
                 } catch (e: Exception) {
+                    Log.e("ServerSync", "hostUrl - failed to parse alternative URL: $alternativeUrl", e)
                     e.printStackTrace()
                 }
             }
 
-            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+            val finalUrl = if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
                 "$scheme://$hostIp/ml/"
             } else {
                 "$scheme://$hostIp:5000/"
             }
+            Log.d("ServerSync", "hostUrl returning: $finalUrl")
+            return finalUrl
         }
     fun baseUrl(settings: SharedPreferences): String {
-        var url = if (settings.getBoolean("isAlternativeUrl", false)) {
+        val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+        var url = if (isAlternativeUrl) {
             settings.getString("processedAlternativeUrl", "")
         } else {
             settings.getString("couchdbURL", "")
@@ -49,6 +57,8 @@ object UrlUtils {
         if (url != null && url.endsWith("/db")) {
             url = url.removeSuffix("/db")
         }
+        val sanitizedUrl = url?.replace(Regex("://[^:]+:[^@]+@"), "://***:***@") ?: "(empty)"
+        Log.d("ServerSync", "baseUrl() - isAlternativeUrl: $isAlternativeUrl, URL: $sanitizedUrl")
         return url ?: ""
     }
 
@@ -75,7 +85,19 @@ object UrlUtils {
 
     fun getUrl(): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return dbUrl(settings)
+        val url = dbUrl(settings)
+        val sanitizedUrl = url.replace(Regex("://[^:]+:[^@]+@"), "://***:***@")
+        Log.d("ServerSync", "getUrl() returning: $sanitizedUrl")
+
+        // Log all relevant configuration for debugging
+        Log.d("ServerSync", "Configuration details:")
+        Log.d("ServerSync", "  - serverURL: ${settings.getString("serverURL", "(not set)")}")
+        Log.d("ServerSync", "  - url_Scheme: ${settings.getString("url_Scheme", "(not set)")}")
+        Log.d("ServerSync", "  - url_Host: ${settings.getString("url_Host", "(not set)")}")
+        Log.d("ServerSync", "  - url_Port: ${settings.getInt("url_Port", -1)}")
+        Log.d("ServerSync", "  - isAlternativeUrl: ${settings.getBoolean("isAlternativeUrl", false)}")
+
+        return url
     }
 
     fun getUpdateUrl(settings: SharedPreferences): String {

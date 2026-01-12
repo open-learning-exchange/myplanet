@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -45,17 +46,30 @@ fun SyncActivity.showConfigurationUIElements(
 }
 
 fun SyncActivity.performSync(dialog: MaterialDialog) {
+    Log.d("ServerSync", "=== performSync called ===")
     serverConfigAction = "sync"
     val protocol = "${settings.getString("serverProtocol", "")}"
     var url = "${serverUrl.text}"
     val pin = "${serverPassword.text}"
+
+    Log.d("ServerSync", "User input - URL: $url, Protocol: $protocol")
+    Log.d("ServerSync", "PIN provided: ${if (pin.isEmpty()) "NO" else "YES"}")
+
     editor.putString("serverURL", url).apply()
     editor.putString("serverPin", pin).apply()
+    Log.d("ServerSync", "Saved to preferences - serverURL: $url, serverPin: ${if (pin.isEmpty()) "(empty)" else "(set)"}")
+
     url = protocol + url
+    Log.d("ServerSync", "Full URL with protocol: $url")
+
     if (isUrlValid(url)) {
+        Log.d("ServerSync", "URL validation passed, proceeding with getMinApk")
         currentDialog = dialog
         service.getMinApk(this, url, pin, this, "SyncActivity")
+    } else {
+        Log.e("ServerSync", "URL validation failed, sync aborted")
     }
+    Log.d("ServerSync", "=== performSync finished ===")
 }
 
 fun SyncActivity.onChangeServerUrl() {
