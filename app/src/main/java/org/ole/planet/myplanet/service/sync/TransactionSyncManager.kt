@@ -3,19 +3,13 @@ package org.ole.planet.myplanet.service.sync
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -32,22 +26,19 @@ import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
-    @ApplicationContext private val context: Context,
-    @ApplicationScope private val scope: CoroutineScope
+    @ApplicationContext private val context: Context
 ) {
     fun authenticate(): Boolean {
-        Log.d("ServerSync", "=== Starting authentication ===")
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
-            val sanitizedUrl = targetUrl.replace(Regex("://[^:]+:[^@]+@"), "://***:***@")
-            Log.d("ServerSync", "Attempting to authenticate with URL: $sanitizedUrl")
-            Log.d("ServerSync", "Using authorization header: Basic ***")
-
             val response: Response<DocumentResponse>? = apiInterface.getDocuments(
                 UrlUtils.header,
                 targetUrl
@@ -56,32 +47,13 @@ class TransactionSyncManager @Inject constructor(
             if (response != null) {
                 val code = response.code()
                 val isSuccess = code == 200
-                Log.d("ServerSync", "Response code: $code")
-
-                if (isSuccess) {
-                    Log.d("ServerSync", "Authentication successful")
-                } else {
-                    Log.e("ServerSync", "Authentication failed with code: $code")
-                    Log.e("ServerSync", "Response message: ${response.message()}")
-                    val errorBody = response.errorBody()?.string()
-                    if (!errorBody.isNullOrEmpty()) {
-                        Log.e("ServerSync", "Error body: $errorBody")
-                    }
-                }
-                Log.d("ServerSync", "=== Authentication finished ===")
                 return isSuccess
-            } else {
-                Log.e("ServerSync", "Authentication failed: response is null")
             }
         } catch (e: IOException) {
-            Log.e("ServerSync", "Authentication failed with IOException: ${e.message}", e)
-            Log.e("ServerSync", "Possible causes: network unavailable, server unreachable, wrong URL/port")
             e.printStackTrace()
         } catch (e: Exception) {
-            Log.e("ServerSync", "Authentication failed with unexpected exception: ${e.message}", e)
             e.printStackTrace()
         }
-        Log.d("ServerSync", "=== Authentication finished with failure ===")
         return false
     }
 

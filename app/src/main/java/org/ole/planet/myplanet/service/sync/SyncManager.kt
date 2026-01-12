@@ -13,9 +13,6 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import java.util.Date
-import java.util.concurrent.Executors
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -50,8 +47,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
-import org.ole.planet.myplanet.service.sync.SyncMode
-import org.ole.planet.myplanet.service.sync.ThreadSafeRealmManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -61,6 +56,9 @@ import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.UrlUtils
+import java.util.Date
+import java.util.concurrent.Executors
+import javax.inject.Singleton
 
 @Singleton
 class SyncManager constructor(
@@ -769,29 +767,12 @@ class SyncManager constructor(
     }
 
     private fun handleException(message: String?) {
-        Log.e("ServerSync", "=== SYNC FAILED ===")
-        Log.e("ServerSync", "Error message: $message")
-        Log.e("ServerSync", "Sync failure count: ${MainApplication.syncFailedCount + 1}")
-
-        // Log current configuration for debugging
-        val settings = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val serverUrl = settings.getString("serverURL", "(not set)")
-        val scheme = settings.getString("url_Scheme", "(not set)")
-        val host = settings.getString("url_Host", "(not set)")
-        val port = settings.getInt("url_Port", -1)
-        Log.e("ServerSync", "Current server configuration:")
-        Log.e("ServerSync", "  - Server URL: $serverUrl")
-        Log.e("ServerSync", "  - Scheme: $scheme")
-        Log.e("ServerSync", "  - Host: $host")
-        Log.e("ServerSync", "  - Port: $port")
-
         if (listener != null) {
             isSyncing = false
             MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
             _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
         }
-        Log.e("ServerSync", "=== END SYNC FAILURE ===")
     }
 
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
