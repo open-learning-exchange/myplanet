@@ -21,6 +21,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.DiffRefreshableCallback
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -28,6 +29,8 @@ import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -38,7 +41,6 @@ class ResourcesAdapter(
     private val context: Context,
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
-    private var tagMap: Map<String, List<RealmTag>>,
     private val userModel: RealmUserModel?
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private var diffJob: Job? = null
@@ -49,6 +51,7 @@ class ResourcesAdapter(
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
+    private var tagMap: Map<String, List<RealmTag>> = emptyMap()
 
     private data class DiffData(
         val _id: String?,
@@ -118,7 +121,7 @@ class ResourcesAdapter(
                     String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDouble())
                 }
             holder.rowLibraryBinding.tvDate.text = library.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
-            displayTagCloud(holder, position)
+            displayTagCloud(holder)
             holder.itemView.setOnClickListener {
                 openLibrary(library)
             }
@@ -188,7 +191,7 @@ class ResourcesAdapter(
                 val resourceId = library.id
                 if (resourceId != null) {
                     val tags = tagMap[resourceId].orEmpty()
-                    renderTagCloud(holder.rowLibraryBinding.flexboxDrawable, tags)
+                    renderTags(holder.rowLibraryBinding.flexboxDrawable, tags)
                     handled = true
                 }
             }
@@ -208,35 +211,26 @@ class ResourcesAdapter(
         }
     }
 
-    private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {
-        val flexboxDrawable = holder.rowLibraryBinding.flexboxDrawable
-        val resourceId = libraryList.getOrNull(position)?.id
-        if (resourceId == null) {
-            flexboxDrawable.removeAllViews()
-            return
-        }
-        val tags = tagMap[resourceId].orEmpty()
-        renderTagCloud(flexboxDrawable, tags)
+    fun setTagMap(tagMap: Map<String, List<RealmTag>>) {
+        this.tagMap = tagMap
+        notifyItemRangeChanged(0, libraryList.size, TAGS_PAYLOAD)
     }
 
-    private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {
-        flexboxDrawable.removeAllViews()
-        if (tags.isEmpty()) {
-            return
-        }
-        val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        tags.forEach { tag ->
-            try {
-                chipCloud.addChip(tag.name ?: "--")
-            } catch (err: Exception) {
-                chipCloud.addChip("--")
-            }
-        }
-        chipCloud.setListener { index: Int, _: Boolean, isSelected: Boolean ->
+    private fun displayTagCloud(holder: ResourcesViewHolder) {
+        val library = libraryList.getOrNull(holder.bindingAdapterPosition) ?: return
+        val resourceId = library.id
+        val tags = tagMap[resourceId].orEmpty()
+        renderTags(holder.rowLibraryBinding.flexboxDrawable, tags)
+    }
+
+    private fun renderTags(flexbox: FlexboxLayout, tags: List<RealmTag>) {
+        flexbox.removeAllViews()
+        if (tags.isEmpty()) return
+        val chipCloud = ChipCloud(context, flexbox, config)
+        chipCloud.addChips(tags.mapNotNull { it.name })
+        chipCloud.setListener { index, _, isSelected ->
             if (isSelected) {
-                tags.getOrNull(index)?.let { selectedTag ->
-                    listener?.onTagClicked(selectedTag)
-                }
+                listener?.onTagClicked(tags[index])
             }
         }
     }
@@ -321,11 +315,6 @@ class ResourcesAdapter(
                 notifyItemChanged(index, RATING_PAYLOAD)
             }
         }
-    }
-
-    fun setTagMap(tagMap: Map<String, List<RealmTag>>) {
-        this.tagMap = tagMap
-        notifyItemRangeChanged(0, libraryList.size, TAGS_PAYLOAD)
     }
 
     private fun bindRating(holder: ResourcesViewHolder, library: RealmMyLibrary) {
