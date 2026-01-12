@@ -18,7 +18,9 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 import org.ole.planet.myplanet.R
@@ -152,11 +154,12 @@ object NewsActions {
             } else {
                 news?.id?.let { repository.createReply(it, s, imageUrls, currentUser) }
             }
+            withContext(Dispatchers.Main) {
+                dialog.dismiss()
+                listener?.clearImages()
+                listener?.onDataChanged()
+            }
         }
-
-        dialog.dismiss()
-        listener?.clearImages()
-        listener?.onDataChanged()
     }
 
     fun showEditAlert(
