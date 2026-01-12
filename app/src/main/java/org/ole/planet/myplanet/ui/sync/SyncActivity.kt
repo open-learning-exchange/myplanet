@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
@@ -293,10 +294,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
+        Log.d("ServerSync", "=== isServerReachable called ===")
+        Log.d("ServerSync", "processedUrl: $processedUrl")
+        Log.d("ServerSync", "type: $type")
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         try {
-            val url = if (settings.getBoolean("isAlternativeUrl", false)) {
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+            val url = if (isAlternativeUrl) {
                 if (processedUrl?.contains("/db") == true) {
                     processedUrl.replace("/db", "") + "/db/_all_dbs"
                 } else {
@@ -305,29 +310,65 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             } else {
                 "$processedUrl/_all_dbs"
             }
+            val sanitizedUrl = url.replace(Regex("://[^:]+:[^@]+@"), "://***:***@")
+            Log.d("ServerSync", "Checking server at: $sanitizedUrl")
+            Log.d("ServerSync", "isAlternativeUrl: $isAlternativeUrl")
+
             val response = apiInterface.isPlanetAvailableSuspend(url)
+            val code = response.code()
+            Log.d("ServerSync", "Response code from /_all_dbs: $code")
 
             if (response.isSuccessful) {
                 val ss = response.body()?.string()
+                Log.d("ServerSync", "Response body: $ss")
                 val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
 
-                return if ((myList?.size ?: 0) < 8) {
+                val dbCount = myList?.size ?: 0
+                Log.d("ServerSync", "Database count: $dbCount")
+                Log.d("ServerSync", "Databases found: ${myList?.take(10)?.joinToString(", ") ?: "none"}")
+
+                return if (dbCount < 8) {
+                    Log.e("ServerSync", "FAILED: Not enough databases (found $dbCount, need 8+)")
+                    Log.e("ServerSync", "This is NOT a valid Planet server")
                     withContext(Dispatchers.Main) {
                         customProgressDialog.dismiss()
                         alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     }
                     false
                 } else {
+                    Log.d("ServerSync", "SUCCESS: Server has $dbCount databases, proceeding with sync")
                     withContext(Dispatchers.Main) {
                         startSync(type)
                     }
                     true
                 }
+            } else if (code == 401) {
+                // CouchDB v3 restricts /_all_dbs to server admins only (401 unauthorized)
+                // If we reached this point, configuration was already validated successfully
+                // So we can safely proceed with sync despite not being able to list all databases
+                Log.w("ServerSync", "/_all_dbs returned 401 (likely CouchDB v3 admin-only restriction)")
+                Log.d("ServerSync", "Configuration was already validated, proceeding with sync")
+                val errorBody = response.errorBody()?.string()
+                if (!errorBody.isNullOrEmpty()) {
+                    Log.d("ServerSync", "Error body: $errorBody")
+                }
+                withContext(Dispatchers.Main) {
+                    startSync(type)
+                }
+                return true
+            } else {
+                Log.e("ServerSync", "Request to /_all_dbs failed with code: $code")
+                val errorBody = response.errorBody()?.string()
+                if (!errorBody.isNullOrEmpty()) {
+                    Log.e("ServerSync", "Error body: $errorBody")
+                }
             }
         } catch (e: Exception) {
+            Log.e("ServerSync", "Exception in isServerReachable: ${e.javaClass.simpleName}: ${e.message}", e)
             e.printStackTrace()
         }
 
+        Log.e("ServerSync", "isServerReachable returning FALSE")
         syncFailed = true
         val protocol = extractProtocol("$processedUrl")
         val errorMessage = when (protocol) {
@@ -335,6 +376,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
             else -> ""
         }
+
+        Log.e("ServerSync", "Showing error: $errorMessage")
         withContext(Dispatchers.Main) {
             customProgressDialog.dismiss()
             alertDialogOkay(errorMessage)
@@ -779,7 +822,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
+        if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {

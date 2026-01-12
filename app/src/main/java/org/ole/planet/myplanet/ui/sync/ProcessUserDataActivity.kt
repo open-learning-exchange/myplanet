@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
@@ -141,23 +142,33 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
     }
 
     fun setUrlParts(url: String, password: String): String {
+        Log.d("ServerSync", "=== Starting setUrlParts ===")
+        Log.d("ServerSync", "Input URL: $url")
+        Log.d("ServerSync", "PIN provided: ${if (password.isEmpty()) "NO" else "YES (length: ${password.length})"}")
         val editor = settings.edit()
         val uri = url.toUri()
+        Log.d("ServerSync", "Parsed URI - scheme: ${uri.scheme}, host: ${uri.host}, port: ${uri.port}")
         var couchdbURL: String
         val urlUser: String
         val urlPwd: String
         if (url.contains("@")) {
+            Log.d("ServerSync", "URL contains embedded credentials (@)")
             val userinfo = getUserInfo(uri)
             urlUser = userinfo[0]
             urlPwd = userinfo[1]
             couchdbURL = url
+            Log.d("ServerSync", "Extracted user: $urlUser")
         } else if (TextUtils.isEmpty(password)) {
+            Log.e("ServerSync", "PIN validation failed: PIN is required but not provided")
             showAlert(this, "", getString(R.string.pin_is_required))
             return ""
         } else {
+            Log.d("ServerSync", "Using default user 'satellite' with provided PIN")
             urlUser = "satellite"
             urlPwd = password
-            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            val port = if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
+            Log.d("ServerSync", "Constructed couchdbURL with port: $port")
         }
         editor.putString("serverPin", password)
         saveUrlScheme(editor, uri, url, couchdbURL)
@@ -166,17 +177,36 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         editor.putString("url_Scheme", uri.scheme)
         editor.putString("url_Host", uri.host)
         editor.apply()
+        Log.d("ServerSync", "Saved to SharedPreferences:")
+        Log.d("ServerSync", "  - serverURL: $url")
+        Log.d("ServerSync", "  - serverPin: ${if (password.isEmpty()) "(empty)" else "(set)"}")
+        Log.d("ServerSync", "  - url_user: $urlUser")
+        Log.d("ServerSync", "  - url_Scheme: ${uri.scheme}")
+        Log.d("ServerSync", "  - url_Host: ${uri.host}")
+        Log.d("ServerSync", "  - couchdbURL: ${couchdbURL.replace(Regex("://[^:]+:[^@]+@"), "://***:***@")}")
         if (!couchdbURL.endsWith("db")) {
             couchdbURL += "/db"
+            Log.d("ServerSync", "Appended '/db' suffix to couchdbURL")
         }
+
+        Log.d("ServerSync", "Final couchdbURL: ${couchdbURL.replace(Regex("://[^:]+:[^@]+@"), "://***:***@")}")
+        Log.d("ServerSync", "=== Finished setUrlParts ===")
         return couchdbURL
     }
 
     fun isUrlValid(url: String): Boolean {
-        if (!URLUtil.isValidUrl(url) || url == "http://" || url == "https://") {
+        Log.d("ServerSync", "Validating URL: $url")
+        if (!URLUtil.isValidUrl(url)) {
+            Log.e("ServerSync", "URL validation failed: URLUtil.isValidUrl returned false for URL: $url")
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
+        if (url == "http://" || url == "https://") {
+            Log.e("ServerSync", "URL validation failed: URL is just protocol without host: $url")
+            showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
+            return false
+        }
+        Log.d("ServerSync", "URL validation successful: $url")
         return true
     }
 
