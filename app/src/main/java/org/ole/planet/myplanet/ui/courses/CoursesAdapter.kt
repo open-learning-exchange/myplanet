@@ -50,7 +50,7 @@ class CoursesAdapter(
     private var userModel: RealmUserModel?,
     private val tagsRepository: TagsRepository
 ) : ListAdapter<CourseItem, RecyclerView.ViewHolder>(COURSE_COMPARATOR) {
-    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
+    private val selectedItemIds: MutableSet<String> = mutableSetOf()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -244,7 +244,7 @@ class CoursesAdapter(
             holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
             holder.rowCourseBinding.tvDate.visibility = View.GONE
             try {
-                holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yy")
+                holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
             } catch (e: Exception) {
                 throw RuntimeException(e)
             }
@@ -253,7 +253,7 @@ class CoursesAdapter(
             holder.rowCourseBinding.tvDate2.visibility = View.GONE
             holder.rowCourseBinding.holder.visibility = View.GONE
             try {
-                holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yy")
+                holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
             } catch (e: Exception) {
                 throw RuntimeException(e)
             }
@@ -278,12 +278,22 @@ class CoursesAdapter(
                 holder.rowCourseBinding.checkbox.visibility = View.GONE
             } else {
                 holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                holder.rowCourseBinding.checkbox.isChecked = selectedItemIds.contains(course.id)
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                    val isChecked = (view as CheckBox).isChecked
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
-                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, currentList.map { it.course })
-                    listener?.onSelectedListChange(selectedItems)
+
+                    course.id?.let {
+                        if (isChecked) {
+                            selectedItemIds.add(it)
+                        } else {
+                            selectedItemIds.remove(it)
+                        }
+                    }
+
+                    val selectedCourses = currentList.map { it.course }.filter { selectedItemIds.contains(it.id) }
+                    listener?.onSelectedListChange(selectedCourses)
                 }
             }
         } else {
@@ -301,31 +311,32 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.map { it.course }.filterNotNull().filter { !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
+        val selectableCourses = currentList.map { it.course }.filter { !it.isMyCourse }
+        areAllSelected = selectedItemIds.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
-        selectedItems.clear()
-
+        selectedItemIds.clear()
         if (selectAll) {
-            val selectableCourses = currentList.map { it.course }.filterNotNull().filter { !it.isMyCourse }
-            selectedItems.addAll(selectableCourses)
+            val selectableCourseIds = currentList.map { it.course }
+                .filter { !it.isMyCourse }
+                .mapNotNull { it.id }
+            selectedItemIds.addAll(selectableCourseIds)
         }
 
         val updatedPositions = mutableListOf<Int>()
         currentList.forEachIndexed { index, courseItem ->
-            if (courseItem.course != null && !courseItem.course.isMyCourse) {
+            if (!courseItem.course.isMyCourse) {
                 updatedPositions.add(index)
             }
         }
-
         updatedPositions.forEach { position ->
             notifyItemChanged(position)
         }
 
-        listener?.onSelectedListChange(selectedItems)
+        val selectedCourses = currentList.map { it.course }.filter { selectedItemIds.contains(it.id) }
+        listener?.onSelectedListChange(selectedCourses)
     }
 
     override fun onBindViewHolder(

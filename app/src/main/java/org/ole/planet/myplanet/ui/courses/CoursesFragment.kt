@@ -549,8 +549,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return builder.create()
     }
 
-    override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
-        selectedItems = list
+    override fun onSelectedListChange(list: List<RealmMyCourse>) {
+        selectedItems = list.toMutableList()
         changeButtonStatus()
         hideButtons()
     }
