@@ -124,4 +124,12 @@ interface TeamsRepository {
     suspend fun getAssignee(userId: String): RealmUserModel?
     suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
+    suspend fun createEnterprise(
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        isPublic: Boolean,
+        user: RealmUserModel,
+    ): Result<String>
 }
