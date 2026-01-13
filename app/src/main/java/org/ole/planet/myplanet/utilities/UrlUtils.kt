@@ -24,6 +24,7 @@ object UrlUtils {
             val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
             val alternativeUrl = settings.getString("processedAlternativeUrl", "")
 
+
             if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
                 try {
                     val uri = alternativeUrl.toUri()
@@ -34,14 +35,16 @@ object UrlUtils {
                 }
             }
 
-            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+            val finalUrl = if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
                 "$scheme://$hostIp/ml/"
             } else {
                 "$scheme://$hostIp:5000/"
             }
+            return finalUrl
         }
     fun baseUrl(settings: SharedPreferences): String {
-        var url = if (settings.getBoolean("isAlternativeUrl", false)) {
+        val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+        var url = if (isAlternativeUrl) {
             settings.getString("processedAlternativeUrl", "")
         } else {
             settings.getString("couchdbURL", "")
@@ -75,7 +78,8 @@ object UrlUtils {
 
     fun getUrl(): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return dbUrl(settings)
+        val url = dbUrl(settings)
+        return url
     }
 
     fun getUpdateUrl(settings: SharedPreferences): String {

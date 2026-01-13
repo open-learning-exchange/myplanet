@@ -38,6 +38,7 @@ class ConfigurationManager(
         activity: SyncActivity,
         callerActivity: String
     ) {
+
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(url)
         val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
@@ -99,11 +100,17 @@ class ConfigurationManager(
 
     private suspend fun checkConfigurationUrl(currentUrl: String, pin: String, customProgressDialog: CustomProgressDialog): UrlCheckResult {
         return try {
+            val versionsUrl = "$currentUrl/versions"
+
             val versionsResponse = withTimeout(15_000) {
-                retrofitInterface?.getConfiguration("$currentUrl/versions")
+                retrofitInterface?.getConfiguration(versionsUrl)
             }
 
-            if (versionsResponse?.isSuccessful == true) {
+            if (versionsResponse == null) {
+                return UrlCheckResult.Failure(currentUrl)
+            }
+
+            if (versionsResponse.isSuccessful) {
                 val jsonObject = versionsResponse.body()
                 val minApkVersion = jsonObject?.get("minapk")?.asString
                 val currentVersion = context.getString(R.string.app_version)
@@ -117,6 +124,7 @@ class ConfigurationManager(
 
                     fetchConfiguration(couchdbURL)?.let { (id, code) ->
                         return UrlCheckResult.Success(id, code, currentUrl)
+                    } ?: run {
                     }
                 }
             }
@@ -132,12 +140,18 @@ class ConfigurationManager(
 
     private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
         return try {
+            val configUrl = "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
             val configResponse = withTimeout(15_000) {
-                retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")
+                retrofitInterface?.getConfiguration(configUrl)
             }
 
-            if (configResponse?.isSuccessful == true) {
+            if (configResponse == null) {
+                return null
+            }
+
+            if (configResponse.isSuccessful) {
                 val rows = configResponse.body()?.getAsJsonArray("rows")
+
                 if (rows != null && rows.size() > 0) {
                     val firstRow = rows[0].asJsonObject
                     val id = firstRow.getAsJsonPrimitive("id").asString
