@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.res.Configuration
 import android.os.Bundle
@@ -12,26 +12,26 @@ import io.realm.Realm
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
-class MemberFragment : BaseMemberFragment() {
-    private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
+class MembersFragment : BaseMemberFragment() {
+    private var onMemberChangeListener: OnMemberChangeListener = object : OnMemberChangeListener {
         override fun onMemberChanged() {
             viewLifecycleOwner.lifecycleScope.launch {
                 loadAndDisplayJoinedMembers()
             }
         }
     }
-    private var adapterJoined: MemberAdapter? = null
+    private var adapterJoined: MembersAdapter? = null
     private var cachedJoinedMembers: List<JoinedMemberData>? = null
 
-    fun setMemberChangeListener(listener: MemberChangeListener) {
-        this.memberChangeListener = listener
+    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+        this.onMemberChangeListener = listener
     }
 
     private suspend fun loadAndDisplayJoinedMembers() {
@@ -60,9 +60,9 @@ class MemberFragment : BaseMemberFragment() {
     override val adapter: RecyclerView.Adapter<*>
         get() {
             if (adapterJoined == null) {
-                adapterJoined = MemberAdapter(
+                adapterJoined = MembersAdapter(
                     requireActivity(), user?.id,
-                    object : MemberAdapter.MemberActionListener {
+                    object : MembersAdapter.MemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
                             handleRemoveMember(member)
                         }
@@ -77,7 +77,7 @@ class MemberFragment : BaseMemberFragment() {
                     }
                 )
             }
-            return adapterJoined as MemberAdapter
+            return adapterJoined as MembersAdapter
         }
 
     private fun handleLeaveTeam() {
@@ -102,7 +102,7 @@ class MemberFragment : BaseMemberFragment() {
                         }
 
                         loadAndDisplayJoinedMembers()
-                        memberChangeListener.onMemberChanged()
+                        onMemberChangeListener.onMemberChanged()
 
                         Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
 
@@ -157,7 +157,7 @@ class MemberFragment : BaseMemberFragment() {
 
                     teamsRepository.removeMember(teamId, memberId)
                     loadAndDisplayJoinedMembers()
-                    memberChangeListener.onMemberChanged()
+                    onMemberChangeListener.onMemberChanged()
                 } else {
                     Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                 }
@@ -177,7 +177,7 @@ class MemberFragment : BaseMemberFragment() {
                 }
                 loadAndDisplayJoinedMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-                memberChangeListener.onMemberChanged()
+                onMemberChangeListener.onMemberChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }

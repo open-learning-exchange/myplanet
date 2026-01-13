@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
+import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -21,10 +21,10 @@ class SurveyAdapter(
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val onAdoptSurveyListener: OnSurveyAdoptListener,
+    private val onAdoptSurveyListener: SurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<RealmStepExam, SurveyAdapter.ViewHolderSurvey>(SurveyDiffCallback()) {
+) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(SurveyDiffCallback()) {
     private var listener: OnHomeItemClickListener? = null
     private var isTitleAscending = true
     private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
@@ -72,16 +72,16 @@ class SurveyAdapter(
         submitList(sortedList)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveysViewHolder {
         val binding = RowSurveyBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderSurvey(binding)
+        return SurveysViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderSurvey, position: Int) {
+    override fun onBindViewHolder(holder: SurveysViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
 
-    inner class ViewHolderSurvey(private val binding: RowSurveyBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class SurveysViewHolder(private val binding: RowSurveyBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.startSurvey.visibility = View.VISIBLE
             binding.sendSurvey.visibility = View.GONE

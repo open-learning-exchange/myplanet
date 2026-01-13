@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
-class UserProfileDbHandler @Inject constructor(
+class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
@@ -33,18 +33,6 @@ class UserProfileDbHandler @Inject constructor(
     private val userRepository: UserRepository,
 ) {
     private val fullName: String
-
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext, ServiceEntryPoint::class.java
-        ).applicationScope(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext, ServiceEntryPoint::class.java
-        ).userRepository()
-    )
 
     init {
         try {

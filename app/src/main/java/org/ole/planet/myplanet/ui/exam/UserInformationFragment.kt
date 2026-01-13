@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.NavigationHelper
@@ -52,7 +52,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
     @Inject
@@ -77,7 +77,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        userModel = userProfileDbHandler.userModel
+        userModel = userSessionManager.userModel
         shouldHideElements = arguments?.getBoolean("shouldHideElements") == true
         initViews()
         return fragmentUserInformationBinding.root

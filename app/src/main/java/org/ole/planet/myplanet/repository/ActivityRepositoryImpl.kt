@@ -4,7 +4,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.model.RealmRemovedLog
+import java.util.UUID
 
 class ActivityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -19,7 +21,30 @@ class ActivityRepositoryImpl @Inject constructor(
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
         return queryListFlow(RealmOfflineActivity::class.java) {
             equalTo("userName", userName)
-            equalTo("type", UserProfileDbHandler.KEY_LOGIN)
+            equalTo("type", UserSessionManager.KEY_LOGIN)
+        }
+    }
+
+    override suspend fun markResourceAdded(userId: String?, resourceId: String) {
+        withRealmAsync { realm ->
+            if (!realm.isInTransaction) realm.beginTransaction()
+            realm.where(RealmRemovedLog::class.java)
+                .equalTo("type", "resources")
+                .equalTo("userId", userId)
+                .equalTo("docId", resourceId)
+                .findAll().deleteAllFromRealm()
+            realm.commitTransaction()
+        }
+    }
+
+    override suspend fun markResourceRemoved(userId: String, resourceId: String) {
+        withRealmAsync { realm ->
+            if (!realm.isInTransaction) realm.beginTransaction()
+            val log = realm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
+            log.docId = resourceId
+            log.userId = userId
+            log.type = "resources"
+            realm.commitTransaction()
         }
     }
 }

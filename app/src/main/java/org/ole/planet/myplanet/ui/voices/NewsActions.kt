@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.ui.teams.member.MemberDetailFragment
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 object NewsActions {
@@ -234,11 +234,11 @@ object NewsActions {
 
     fun showMemberDetails(
         userModel: RealmUserModel?,
-        profileDbHandler: UserProfileDbHandler
-    ): MemberDetailFragment? {
+        profileDbHandler: UserSessionManager
+    ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
-        val fragment = MemberDetailFragment.newInstance(
+        val fragment = MembersDetailFragment.newInstance(
             userName.toString(),
             userModel.email.toString(),
             userModel.dob.toString().substringBefore("T"),

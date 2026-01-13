@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.member
+package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.Context
 import android.content.res.Configuration
@@ -13,27 +13,27 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.MemberChangeListener
+import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
-class MembersFragment : BaseMemberFragment() {
+class RequestsFragment : BaseMemberFragment() {
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
 
-    private val viewModel: MembersViewModel by viewModels()
+    private val viewModel: RequestsViewModel by viewModels()
     private lateinit var currentUser: RealmUserModel
-    private var memberChangeListener: MemberChangeListener? = null
-    fun setMemberChangeListener(listener: MemberChangeListener) {
-        this.memberChangeListener = listener
+    private var onMemberChangeListener: OnMemberChangeListener? = null
+    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+        this.onMemberChangeListener = listener
     }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userProfileDbHandler.userModel ?: RealmUserModel()
+        currentUser = userSessionManager.userModel ?: RealmUserModel()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -53,7 +53,7 @@ class MembersFragment : BaseMemberFragment() {
                 }
                 launch {
                     viewModel.successAction.collect {
-                        memberChangeListener?.onMemberChanged()
+                        onMemberChangeListener?.onMemberChanged()
                     }
                 }
             }

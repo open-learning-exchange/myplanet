@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -95,10 +95,10 @@ class TransactionSyncManager @Inject constructor(
         mRealm: Realm,
         settings: SharedPreferences,
         listener: SyncListener,
-        userProfileDbHandler: UserProfileDbHandler
+        userSessionManager: UserSessionManager
     ) {
         listener.onSyncStarted()
-        val model = userProfileDbHandler.userModel
+        val model = userSessionManager.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)

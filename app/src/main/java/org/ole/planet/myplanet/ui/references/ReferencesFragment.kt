@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.model.Reference
 import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
 import org.ole.planet.myplanet.ui.maps.OfflineMapsActivity
 
-class ReferenceFragment : Fragment() {
+class ReferencesFragment : Fragment() {
     private var _binding: FragmentReferenceBinding? = null
     private val binding get() = _binding!!
     private lateinit var rowReferenceBinding: RowReferenceBinding

@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.user.ProfileAdapter
+import org.ole.planet.myplanet.ui.user.UserProfileAdapter
 import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -55,14 +55,14 @@ import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
-class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
+class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
     private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUserModel>? = null
-    private var mAdapter: ProfileAdapter? = null
+    private var mAdapter: UserProfileAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
@@ -86,7 +86,6 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
-        service = DataService(this)
 
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
@@ -482,7 +481,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         }
 
         if (mAdapter == null) {
-        mAdapter = ProfileAdapter(this)
+        mAdapter = UserProfileAdapter(this)
             binding.recyclerView.layoutManager = LinearLayoutManager(this)
             binding.recyclerView.adapter = mAdapter
         }
