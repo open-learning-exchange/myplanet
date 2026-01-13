@@ -10,18 +10,23 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class EnterprisesFinancesAdapter(
     private val context: Context,
-) : ListAdapter<Transaction, EnterprisesFinancesAdapter.FinanceViewHolder>(TransactionDiffCallback()) {
+) : ListAdapter<Transaction, EnterprisesFinancesAdapter.FinanceViewHolder>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
