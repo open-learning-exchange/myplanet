@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -115,6 +116,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
+
+    @Inject
+    lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
@@ -122,7 +126,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService, voicesRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
