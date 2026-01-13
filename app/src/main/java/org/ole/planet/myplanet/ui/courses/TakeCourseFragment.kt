@@ -86,7 +86,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val course: RealmMyCourse? = coursesRepository.getDetachedCourseById(courseId)
+            val course: RealmMyCourse? = courseId?.let { coursesRepository.getCourseById(it) }
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
                 Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()
@@ -332,18 +332,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val isCurrentlyJoined = withContext(Dispatchers.IO) {
-                    databaseService.withRealm { realm ->
-                        val course = realm.where(RealmMyCourse::class.java)
-                            .equalTo("courseId", courseId)
-                            .findFirst()
-                        course?.userId?.contains(userModel?.id) == true
-                    }
+                val isJoined = withContext(Dispatchers.IO) {
+                    val course = courseId?.let { coursesRepository.getCourseById(it) }
+                    course?.userId?.contains(userModel?.id) == true
                 }
 
                 userModel?.id?.let { userId ->
                     courseId?.let { cId ->
-                        if (isCurrentlyJoined) {
+                        if (isJoined) {
                             coursesRepository.leaveCourse(cId, userId)
                         } else {
                             coursesRepository.joinCourse(cId, userId)
@@ -351,23 +347,21 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
 
-                withContext(Dispatchers.Main) {
-                    val updatedCourse = mRealm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
+                withContext(Dispatchers.IO) {
+                    val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
                     if (updatedCourse != null) {
-                        currentCourse = mRealm.copyFromRealm(updatedCourse)
+                        currentCourse = updatedCourse
                     }
-
-                    val statusMessage = if (isCurrentlyJoined) {
-                        getString(R.string.removed_from)
-                    } else {
-                        getString(R.string.added_to)
-                    }
-
-                    Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
-                    setCourseData()
                 }
+
+                val statusMessage = if (isJoined) {
+                    getString(R.string.removed_from)
+                } else {
+                    getString(R.string.added_to)
+                }
+
+                Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
+                setCourseData()
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     e.printStackTrace()
