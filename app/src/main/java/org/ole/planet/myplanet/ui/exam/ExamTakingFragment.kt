@@ -21,7 +21,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
-import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
@@ -85,17 +84,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch {
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-            var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                    id + "@" + exam?.courseId
-                } else {
-                    id
-                }).sort("startTime", Sort.DESCENDING)
-            if (type == "exam") {
-                q = q.equalTo("status", "pending")
+            val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
+                "$id@${exam?.courseId}"
+            } else {
+                id
             }
-            sub = q.findFirst() as RealmSubmission?
+            val submissions = submissionsRepository.getSubmissionsByParentId(
+                parentId,
+                user?.id,
+                if (type == "exam") "pending" else null
+            )
+            sub = submissions.firstOrNull()
             val courseId = exam?.courseId
             isCertified = isCourseCertified(mRealm, courseId)
 
