@@ -59,6 +59,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         return getLibraryListForUser(userId)
     }
 
+    override suspend fun getLibraryList(userId: String): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+        return filterLibrariesNeedingUpdate(results)
+            .filterNot { it.userId == userId }
+    }
+
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("userId", userId)

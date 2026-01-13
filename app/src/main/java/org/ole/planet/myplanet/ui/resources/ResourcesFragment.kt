@@ -178,21 +178,26 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         try {
             map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
-                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
+            val userId = model?.id ?: return
+            lifecycleScope.launch {
+                val libraryList = if (isMyCourseLib) {
+                    resourcesRepository.getMyLibrary(userId)
                 } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+                    resourcesRepository.getLibraryList(userId)
+                }
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+                val filteredLibraryList = if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                    applyFilter(libraryList)
+                } else {
+                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
                 }
 
-            adapterLibrary.setLibraryList(filteredLibraryList)
-            adapterLibrary.setRatingMap(map!!)
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
+                adapterLibrary.setLibraryList(filteredLibraryList)
+                adapterLibrary.setRatingMap(map!!)
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -200,8 +205,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
+        adapterLibrary = ResourcesAdapter(requireActivity(), emptyList(), map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
