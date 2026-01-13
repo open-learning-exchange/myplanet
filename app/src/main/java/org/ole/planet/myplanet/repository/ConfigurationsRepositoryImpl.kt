@@ -31,12 +31,12 @@ import retrofit2.Response
 
 import org.ole.planet.myplanet.di.AppPreferences
 
-class ConfigurationRepositoryImpl @Inject constructor(
+class ConfigurationsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     @ApplicationScope private val serviceScope: CoroutineScope,
     @AppPreferences private val preferences: SharedPreferences
-) : ConfigurationRepository {
+) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: SuccessListener) {
@@ -89,7 +89,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun checkVersion(callback: ConfigurationRepository.CheckVersionCallback, settings: SharedPreferences) {
+    override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, settings: SharedPreferences) {
         serviceScope.launch {
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
@@ -159,7 +159,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun checkServerAvailability(callback: ConfigurationRepository.PlanetAvailableListener?) {
+    override fun checkServerAvailability(callback: ConfigurationsRepository.PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
@@ -253,7 +253,7 @@ class ConfigurationRepositoryImpl @Inject constructor(
         return cleaned.toIntOrNull()
     }
 
-    private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationRepository.CheckVersionCallback) {
+    private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
             serviceScope.launch {
