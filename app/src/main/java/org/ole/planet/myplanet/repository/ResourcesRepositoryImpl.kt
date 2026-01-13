@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    private val activityRepository: ActivityRepository
+    private val activitiesRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -90,7 +90,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        activityRepository.markResourceAdded(userId, resourceId)
+        activitiesRepository.markResourceAdded(userId, resourceId)
     }
 
     override suspend fun updateUserLibrary(
@@ -110,9 +110,9 @@ class ResourcesRepositoryImpl @Inject constructor(
                 }
         }
         if (isAdd) {
-            activityRepository.markResourceAdded(userId, resourceId)
+            activitiesRepository.markResourceAdded(userId, resourceId)
         } else {
-            activityRepository.markResourceRemoved(userId, resourceId)
+            activitiesRepository.markResourceRemoved(userId, resourceId)
         }
         return getLibraryItemByResourceId(resourceId)
             ?: getLibraryItemById(resourceId)

@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.repository.ActivityRepository
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -47,7 +47,7 @@ class DashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
-    private val activityRepository: ActivityRepository,
+    private val activitiesRepository: ActivitiesRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -136,7 +136,7 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { it.copy(fullName = fullName) }
 
                 if (userName != null) {
-                    activityRepository.getOfflineLogins(userName).collect { logins ->
+                    activitiesRepository.getOfflineLogins(userName).collect { logins ->
                         _uiState.update { it.copy(offlineLogins = logins.size) }
                     }
                 }
@@ -148,7 +148,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
-        return activityRepository.getOfflineActivities(userName, type)
+        return activitiesRepository.getOfflineActivities(userName, type)
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
