@@ -1,38 +1,24 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.app.DatePickerDialog
 import android.content.Context
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonObject
-import java.util.Calendar
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
-    private val teamsRepository: TeamsRepository,
-    private val scope: CoroutineScope,
-    private val prefData: SharedPrefManager
+    private val prefData: SharedPrefManager,
+    private val onEdit: (RealmMyTeam) -> Unit,
+    private val onDelete: (RealmMyTeam) -> Unit
 ) : ListAdapter<RealmMyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
-    private var startTimeStamp: String? = null
-    private var endTimeStamp: String? = null
     private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
@@ -74,175 +60,17 @@ class EnterprisesReportsAdapter(
 
         binding.edit.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
-            if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
-            val currentReport = getItem(adapterPosition) ?: return@setOnClickListener
-            val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(context))
-            val v: View = dialogAddReportBinding.root
-            val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            builder.setTitle("Edit Report")
-                .setView(v)
-                .setPositiveButton("submit", null)
-                .setNegativeButton("cancel", null)
-            val dialog = builder.create()
-            dialog.show()
-            val submit = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-
-            val calendar = Calendar.getInstance()
-            calendar.set(Calendar.DAY_OF_MONTH, 1)
-
-            startTimeStamp = currentReport.startDate.toString()
-            endTimeStamp = currentReport.endDate.toString()
-
-            dialogAddReportBinding.startDate.text = context.getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.startDate, " MMM dd, yyyy"))
-            dialogAddReportBinding.endDate.text = context.getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.endDate, " MMM dd, yyyy"))
-            dialogAddReportBinding.summary.setText(context.getString(R.string.message_placeholder, currentReport.description))
-            dialogAddReportBinding.beginningBalance.setText(context.getString(R.string.number_placeholder, currentReport.beginningBalance))
-            dialogAddReportBinding.sales.setText(context.getString(R.string.number_placeholder, currentReport.sales))
-            dialogAddReportBinding.otherIncome.setText(context.getString(R.string.number_placeholder, currentReport.otherIncome))
-            dialogAddReportBinding.personnel.setText(context.getString(R.string.number_placeholder, currentReport.wages))
-            dialogAddReportBinding.nonPersonnel.setText(context.getString(R.string.number_placeholder, currentReport.otherExpenses))
-
-            dialogAddReportBinding.ltStartDate.setOnClickListener {
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH)
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                val dpd = DatePickerDialog(context, { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.startDate.text = context.getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
-                    calendar.set(Calendar.YEAR, selectedYear)
-                    calendar.set(Calendar.MONTH, selectedMonth)
-                    calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-
-                    startTimeStamp = context.getString(R.string.number_placeholder, calendar.timeInMillis)
-                }, year, month, day)
-
-                dpd.show()
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                getItem(adapterPosition)?.let { onEdit(it) }
             }
-
-            dialogAddReportBinding.ltEndDate.setOnClickListener {
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH)
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                val dpd = DatePickerDialog(context, { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.endDate.text = context.getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
-                    calendar.set(Calendar.YEAR, selectedYear)
-                    calendar.set(Calendar.MONTH, selectedMonth)
-                    calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-
-                    endTimeStamp = "${calendar.timeInMillis}"
-                }, year, month, day)
-
-                dpd.show()
-            }
-
-            submit.setOnClickListener {
-                if (dialogAddReportBinding.startDate.text == "Start Date"){
-                    dialogAddReportBinding.startDate.error = "start date is required"
-                } else if (dialogAddReportBinding.endDate.text == "End Date"){
-                    dialogAddReportBinding.endDate.error = "start date is required"
-                } else if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
-                    dialogAddReportBinding.summary.error = "summary is required"
-                } else if (TextUtils.isEmpty("${dialogAddReportBinding.beginningBalance.text}")) {
-                    dialogAddReportBinding.beginningBalance.error = "beginning balance is required"
-                } else if (TextUtils.isEmpty("${dialogAddReportBinding.sales.text}")) {
-                    dialogAddReportBinding.sales.error = "sales is required"
-                } else if (TextUtils.isEmpty("${dialogAddReportBinding.otherIncome.text}")) {
-                    dialogAddReportBinding.otherIncome.error = "other income is required"
-                } else if (TextUtils.isEmpty("${dialogAddReportBinding.personnel.text}")) {
-                    dialogAddReportBinding.personnel.error = "personnel is required"
-                } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
-                    dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
-                } else {
-                    val reportId = currentReport._id
-                    if (reportId.isNullOrBlank()) {
-                        Snackbar.make(
-                            binding.root,
-                            "Failed to update report. Please try again.",
-                            Snackbar.LENGTH_LONG,
-                        ).show()
-                        return@setOnClickListener
-                    }
-                    val doc = JsonObject().apply {
-                        addProperty("description", dialogAddReportBinding.summary.text.toString())
-                        addProperty(
-                            "beginningBalance",
-                            dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull()
-                                ?: currentReport.beginningBalance,
-                        )
-                        addProperty(
-                            "sales",
-                            dialogAddReportBinding.sales.text.toString().toIntOrNull()
-                                ?: currentReport.sales,
-                        )
-                        addProperty(
-                            "otherIncome",
-                            dialogAddReportBinding.otherIncome.text.toString().toIntOrNull()
-                                ?: currentReport.otherIncome,
-                        )
-                        addProperty(
-                            "wages",
-                            dialogAddReportBinding.personnel.text.toString().toIntOrNull()
-                                ?: currentReport.wages,
-                        )
-                        addProperty(
-                            "otherExpenses",
-                            dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull()
-                                ?: currentReport.otherExpenses,
-                        )
-                        addProperty("startDate", startTimeStamp?.toLongOrNull() ?: currentReport.startDate)
-                        addProperty("endDate", endTimeStamp?.toLongOrNull() ?: currentReport.endDate)
-                        addProperty("updatedDate", System.currentTimeMillis())
-                        addProperty("updated", true)
-                    }
-                    scope.launch {
-                        try {
-                            withContext(Dispatchers.IO) {
-                                teamsRepository.updateReport(reportId, doc)
-                            }
-                            dialog.dismiss()
-                        } catch (e: Exception) {
-                            Snackbar.make(
-                                binding.root,
-                                "Failed to update report. Please try again.",
-                                Snackbar.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
-            }
-
-            cancel.setOnClickListener { dialog.dismiss() }
         }
 
         binding.delete.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
-            if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
-            val reportToDelete = getItem(adapterPosition)
-            reportToDelete?._id?.let { reportId ->
-                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                builder.setTitle(context.getString(R.string.delete_report))
-                    .setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok) { _, _ ->
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    teamsRepository.archiveReport(reportId)
-                                }
-                            } catch (e: Exception) {
-                                binding.root.let { view ->
-                                    Snackbar.make(view, context.getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()
-                                }
-                            }
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                getItem(adapterPosition)?.let { onDelete(it) }
             }
-
         }
-
     }
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
