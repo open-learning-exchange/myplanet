@@ -1,18 +1,25 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
+import org.ole.planet.myplanet.model.RealmUserModel
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmUserModel
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
 ) : RealmRepository(databaseService), RatingsRepository {
+    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
+        return withRealmAsync { realm ->
+            getRatingsById(realm, type, resourceId, userId) as? JsonObject
+        }
+    }
 
     override suspend fun getRatingSummary(
         type: String,
