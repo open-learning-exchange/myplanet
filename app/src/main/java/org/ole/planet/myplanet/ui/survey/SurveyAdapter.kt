@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.survey
 
-import org.ole.planet.myplanet.model.SurveyInfo
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SurveyFormState
 

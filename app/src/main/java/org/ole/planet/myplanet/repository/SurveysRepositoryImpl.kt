@@ -1,25 +1,25 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
-import org.ole.planet.myplanet.model.SurveyInfo
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import android.content.SharedPreferences
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
+import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
-import java.util.UUID
 
 class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,

@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.ui.survey.SurveyFormState
 
 interface SurveysRepository {
     suspend fun getExamQuestions(examId: String): List<RealmExamQuestion>

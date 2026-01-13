@@ -9,11 +9,11 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
-import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ResourcesTagsAdapter(
