@@ -14,4 +14,6 @@ interface ProgressRepository {
         stepNum: Int,
         passed: Boolean?
     )
+
+    suspend fun getCurrentProgress(courseId: String?, userId: String?): Int
 }
