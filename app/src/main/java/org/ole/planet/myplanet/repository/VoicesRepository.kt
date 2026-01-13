@@ -22,4 +22,5 @@ interface VoicesRepository {
     suspend fun deletePost(newsId: String, teamName: String)
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
+    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
 }
