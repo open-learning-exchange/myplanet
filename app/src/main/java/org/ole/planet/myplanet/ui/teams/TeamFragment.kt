@@ -162,7 +162,12 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
                                 teamsRepository.createTeamAndAddMember(teamObject, userModel).onSuccess {
                                     binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
-                                    Utilities.toast(activity, getString(R.string.team_created))
+                                    val successMessage = if (type == "enterprise") {
+                                        getString(R.string.enterprise_created)
+                                    } else {
+                                        getString(R.string.team_created)
+                                    }
+                                    Utilities.toast(activity, successMessage)
                                     refreshTeamList()
                                     dialog.dismiss()
                                 }.onFailure {
