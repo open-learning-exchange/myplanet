@@ -8,6 +8,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
+import android.util.Log
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.ContextThemeWrapper
@@ -293,10 +294,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
+
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         try {
-            val url = if (settings.getBoolean("isAlternativeUrl", false)) {
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+            val url = if (isAlternativeUrl) {
                 if (processedUrl?.contains("/db") == true) {
                     processedUrl.replace("/db", "") + "/db/_all_dbs"
                 } else {
@@ -305,13 +308,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             } else {
                 "$processedUrl/_all_dbs"
             }
+
             val response = apiInterface.isPlanetAvailableSuspend(url)
+            val code = response.code()
 
             if (response.isSuccessful) {
                 val ss = response.body()?.string()
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
 
-                return if ((myList?.size ?: 0) < 8) {
+                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                val dbCount = myList?.size ?: 0
+
+                return if (dbCount < 8) {
                     withContext(Dispatchers.Main) {
                         customProgressDialog.dismiss()
                         alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
@@ -323,6 +330,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                     true
                 }
+            } else if (code == 401) {
+                withContext(Dispatchers.Main) {
+                    startSync(type)
+                }
+                return true
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -496,7 +508,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                while (true) {
+                val maxAttempts = 3 // Maximum 3 seconds wait
+                while (attempt < maxAttempts) {
                     val hasUser = databaseService.withRealm { realm ->
                         realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                     }
@@ -505,6 +518,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                     attempt++
                     delay(1000)
+                }
+
+                if (attempt >= maxAttempts) {
+                    Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
                 }
 
                 withContext(Dispatchers.Main) {
@@ -779,7 +796,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
+        if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {
@@ -824,7 +841,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        if (customProgressDialog.isShowing() == true) {
+        if (customProgressDialog.isShowing()) {
             customProgressDialog.dismiss()
         }
         if (!blockSync) {

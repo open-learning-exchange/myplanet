@@ -7,14 +7,9 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -31,24 +26,32 @@ import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
-    @ApplicationContext private val context: Context,
-    @ApplicationScope private val scope: CoroutineScope
+    @ApplicationContext private val context: Context
 ) {
     fun authenticate(): Boolean {
         try {
+            val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
             val response: Response<DocumentResponse>? = apiInterface.getDocuments(
                 UrlUtils.header,
-                "${UrlUtils.getUrl()}/tablet_users/_all_docs"
+                targetUrl
             ).execute()
+
             if (response != null) {
-                return response.code() == 200
+                val code = response.code()
+                val isSuccess = code == 200
+                return isSuccess
             }
         } catch (e: IOException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
             e.printStackTrace()
         }
         return false
