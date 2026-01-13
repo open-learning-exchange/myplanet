@@ -74,14 +74,8 @@ interface TeamsRepository {
         userParentCode: String?,
         teamType: String?,
     )
-    suspend fun createTeam(
-        category: String?,
-        name: String,
-        description: String,
-        teamType: String?,
-        isPublic: Boolean,
-        user: RealmUserModel,
-    ): Result<String>
+
+    suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUserModel): Result<String>
     suspend fun updateTeam(
         teamId: String,
         name: String,

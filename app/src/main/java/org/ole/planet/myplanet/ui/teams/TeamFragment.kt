@@ -150,40 +150,28 @@ class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteL
                             }
 
                             if (team == null) {
-                                if (type == "enterprise") {
-                                    teamsRepository.createEnterprise(
-                                        name = name,
-                                        description = description,
-                                        services = services,
-                                        rules = rules,
-                                        isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                        user = userModel,
-                                    ).onSuccess {
-                                        binding.etSearch.visibility = View.VISIBLE
-                                        binding.tableTitle.visibility = View.VISIBLE
-                                        Utilities.toast(activity, getString(R.string.enterprise_created))
-                                        refreshTeamList()
-                                        dialog.dismiss()
-                                    }.onFailure {
-                                        Utilities.toast(activity, failureMessage)
-                                    }
-                                } else {
-                                    teamsRepository.createTeam(
-                                        category = type,
-                                        name = name,
-                                        description = description,
-                                        teamType = selectedTeamType,
-                                        isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                        user = userModel,
-                                    ).onSuccess {
-                                        binding.etSearch.visibility = View.VISIBLE
+                                val teamObject = com.google.gson.JsonObject().apply {
+                                    addProperty("name", name)
+                                    addProperty("description", description)
+                                    addProperty("services", services)
+                                    addProperty("rules", rules)
+                                    addProperty("teamType", selectedTeamType)
+                                    addProperty("isPublic", alertCreateTeamBinding.switchPublic.isChecked)
+                                    addProperty("category", type)
+                                }
+                                teamsRepository.createTeamAndAddMember(teamObject, userModel).onSuccess {
+                                    binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
-                                    Utilities.toast(activity, getString(R.string.team_created))
+                                    val successMessage = if (type == "enterprise") {
+                                        getString(R.string.enterprise_created)
+                                    } else {
+                                        getString(R.string.team_created)
+                                    }
+                                    Utilities.toast(activity, successMessage)
                                     refreshTeamList()
                                     dialog.dismiss()
-                                    }.onFailure {
-                                        Utilities.toast(activity, failureMessage)
-                                    }
+                                }.onFailure {
+                                    Utilities.toast(activity, failureMessage)
                                 }
                             } else {
                                 val targetTeamId = team._id ?: team.teamId

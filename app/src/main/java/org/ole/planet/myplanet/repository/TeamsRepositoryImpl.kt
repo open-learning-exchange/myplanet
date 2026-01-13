@@ -51,6 +51,47 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUserModel): Result<String> {
+        return runCatching {
+            val teamId = AndroidDecrypter.generateIv()
+            executeTransaction { realm ->
+                val team = realm.createObject(RealmMyTeam::class.java, teamId)
+                team.status = "active"
+                team.createdDate = Date().time
+                val category = JsonUtils.getString("category", teamObject)
+                if (category == "enterprise") {
+                    team.type = "enterprise"
+                    team.services = JsonUtils.getString("services", teamObject)
+                    team.rules = JsonUtils.getString("rules", teamObject)
+                } else {
+                    team.type = "team"
+                    team.teamType = JsonUtils.getString("teamType", teamObject)
+                }
+                team.name = JsonUtils.getString("name", teamObject)
+                team.description = JsonUtils.getString("description", teamObject)
+                team.createdBy = user._id
+                team.teamId = ""
+                team.isPublic = teamObject.get("isPublic")?.asBoolean ?: false
+                team.userId = user._id
+                team.parentCode = user.parentCode
+                team.teamPlanetCode = user.planetCode
+                team.updated = true
+
+                val membershipId = AndroidDecrypter.generateIv()
+                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
+                membership.userId = user._id
+                membership.teamId = teamId
+                membership.teamPlanetCode = user.planetCode
+                membership.userPlanetCode = user.planetCode
+                membership.docType = "membership"
+                membership.isLeader = true
+                membership.teamType = JsonUtils.getString("teamType", teamObject)
+                membership.updated = true
+            }
+            teamId
+        }
+    }
+
     override suspend fun getTasks(userId: String?): List<RealmTeamTask> {
         return queryList(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")
@@ -681,47 +722,6 @@ class TeamsRepositoryImpl @Inject constructor(
             log.teamType = teamType
             log.parentCode = userParentCode
             log.time = Date().time
-        }
-    }
-
-    override suspend fun createTeam(
-        category: String?,
-        name: String,
-        description: String,
-        teamType: String?,
-        isPublic: Boolean,
-        user: RealmUserModel,
-    ): Result<String> {
-        return runCatching {
-            val teamId = AndroidDecrypter.generateIv()
-            executeTransaction { realm ->
-                val team = realm.createObject(RealmMyTeam::class.java, teamId)
-                team.status = "active"
-                team.createdDate = Date().time
-                team.type = "team"
-                team.teamType = teamType
-                team.name = name
-                team.description = description
-                team.createdBy = user._id
-                team.teamId = ""
-                team.isPublic = isPublic
-                team.userId = user.id
-                team.parentCode = user.parentCode
-                team.teamPlanetCode = user.planetCode
-                team.updated = true
-
-                val membershipId = AndroidDecrypter.generateIv()
-                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
-                membership.userId = user._id
-                membership.teamId = teamId
-                membership.teamPlanetCode = user.planetCode
-                membership.userPlanetCode = user.planetCode
-                membership.docType = "membership"
-                membership.isLeader = true
-                membership.teamType = teamType
-                membership.updated = true
-            }
-            teamId
         }
     }
 
