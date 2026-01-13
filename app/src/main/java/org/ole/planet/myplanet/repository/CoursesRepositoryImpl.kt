@@ -8,9 +8,17 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
+import com.google.gson.JsonArray
+import io.realm.Realm
+import io.realm.RealmResults
+import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -25,23 +33,20 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
-            return null
-        }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
-    }
-
-    override suspend fun getDetachedCourseById(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
-            return null
-        }
+    override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
             course?.let { realm.copyFromRealm(it) }
         }
+    }
+
+    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
+        if (courseId.isNullOrBlank()) {
+            return null
+        }
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
@@ -183,7 +188,7 @@ class CoursesRepositoryImpl @Inject constructor(
             activity.parentCode = parentCode
             activity.text = searchText
             activity.type = "courses"
-            val filter = JsonObject()
+            val filter = com.google.gson.JsonObject()
 
             filter.add("tags", RealmTag.getTagsArray(tags))
             filter.addProperty("doc.gradeLevel", grade)
@@ -220,5 +225,57 @@ class CoursesRepositoryImpl @Inject constructor(
             equalTo("courseId", courseId)
             equalTo("userId", userId)
         }.isNotEmpty()
+    }
+
+    override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData? {
+        return withRealm { realm ->
+            val stepsList = org.ole.planet.myplanet.model.RealmMyCourse.getCourseSteps(realm, courseId)
+            val max = stepsList.size
+            val current = org.ole.planet.myplanet.model.RealmCourseProgress.getCurrentProgress(stepsList, realm, userId, courseId)
+
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            val title = course?.courseTitle
+
+            val array = com.google.gson.JsonArray()
+            stepsList.forEach { step ->
+                val ob = com.google.gson.JsonObject()
+                ob.addProperty("stepId", step.id)
+                val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()
+                getExamObject(realm, exams, ob, userId)
+                array.add(ob)
+            }
+            org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
+        }
+    }
+
+    private fun getExamObject(
+        realm: io.realm.Realm,
+        exams: io.realm.RealmResults<RealmStepExam>,
+        ob: com.google.gson.JsonObject,
+        userId: String?
+    ) {
+        exams.forEach { it ->
+            it.id?.let { it1 ->
+                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
+                    .contains("parentId", it1).equalTo("type", "exam").findAll()
+            }?.map {
+                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
+                var examId = it.parentId
+                if (it.parentId?.contains("@") == true) {
+                    examId = it.parentId!!.split("@")[0]
+                }
+                val questions = realm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
+                val questionCount = questions.size
+                if (questionCount == 0) {
+                    ob.addProperty("completed", false)
+                    ob.addProperty("percentage", 0)
+                } else {
+                    ob.addProperty("completed", answers.size == questionCount)
+                    val percentage = (answers.size.toDouble() / questionCount) * 100
+                    ob.addProperty("percentage", percentage)
+                }
+                ob.addProperty("status", it.status)
+            }
+        }
     }
 }

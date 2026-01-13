@@ -215,6 +215,35 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deletePost(newsId: String, teamName: String) {
+        withRealm { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                if (news != null) {
+                    val ar = try {
+                        gson.fromJson(news.viewIn, JsonArray::class.java)
+                    } catch (e: Exception) {
+                        null
+                    }
+
+                    if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
+                        deleteRepliesOf(news.id!!, transactionRealm)
+                        news.deleteFromRealm()
+                    } else {
+                        val filtered = JsonArray().apply {
+                            ar.forEach { elem ->
+                                if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
+                                    add(elem)
+                                }
+                            }
+                        }
+                        news.viewIn = gson.toJson(filtered)
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
         return withRealm { realm ->
             val query = realm.where(RealmNews::class.java)
@@ -274,5 +303,43 @@ class VoicesRepositoryImpl @Inject constructor(
                 news?.labels?.remove(label)
             }
         }
+    }
+
+    override suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String> {
+        return withRealm { realm ->
+            val query = realm.where(RealmNews::class.java)
+                .greaterThanOrEqualTo("time", startTime)
+                .lessThanOrEqualTo("time", endTime)
+            if (userId != null) query.equalTo("userId", userId)
+            val results = query.findAll()
+            results.filter { isCommunitySection(it) }
+                .map { getDateFromTimestamp(it.time) }
+                .distinct()
+        }
+    }
+
+    private fun isCommunitySection(news: RealmNews): Boolean {
+        news.viewIn?.let { viewInStr ->
+            try {
+                val viewInArray = org.json.JSONArray(viewInStr)
+                for (i in 0 until viewInArray.length()) {
+                    val viewInObj = viewInArray.getJSONObject(i)
+                    if (viewInObj.optString("section") == "community") {
+                        return true
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return false
+    }
+
+    private val dateFormat = object : ThreadLocal<java.text.SimpleDateFormat>() {
+        override fun initialValue() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+    }
+
+    private fun getDateFromTimestamp(timestamp: Long): String {
+        return dateFormat.get()!!.format(java.util.Date(timestamp))
     }
 }

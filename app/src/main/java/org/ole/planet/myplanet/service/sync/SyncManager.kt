@@ -13,9 +13,6 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
-import java.util.Date
-import java.util.concurrent.Executors
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -50,8 +47,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
-import org.ole.planet.myplanet.service.sync.SyncMode
-import org.ole.planet.myplanet.service.sync.ThreadSafeRealmManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -61,6 +56,9 @@ import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.UrlUtils
+import java.util.Date
+import java.util.concurrent.Executors
+import javax.inject.Singleton
 
 @Singleton
 class SyncManager constructor(
