@@ -64,14 +64,13 @@ class ResourcesRepositoryImpl @Inject constructor(
             equalTo("isPrivate", false)
         }
         return filterLibrariesNeedingUpdate(results)
-            .filterNot { it.userId?.contains(userId) == true }
+            .filterNot { it.userId == userId }
     }
 
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
-        if (userId == null) return emptyList()
-
-        return queryList(RealmMyLibrary::class.java)
-            .filter { it.userId?.contains(userId) == true }
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+        }
     }
 
     override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
