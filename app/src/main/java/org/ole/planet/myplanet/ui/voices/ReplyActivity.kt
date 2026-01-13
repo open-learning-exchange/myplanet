@@ -25,6 +25,7 @@ import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.voices.NewsActions
-import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath

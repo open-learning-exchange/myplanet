@@ -23,6 +23,9 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
+import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,9 +48,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.UrlUtils
-import java.util.concurrent.atomic.AtomicInteger
-import javax.inject.Inject
-import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListener {

@@ -13,13 +13,13 @@ import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.callback.OnTeamActionsListener
-import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager

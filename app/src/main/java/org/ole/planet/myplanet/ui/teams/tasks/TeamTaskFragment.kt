@@ -26,6 +26,7 @@ import java.util.Date
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.health.UserSelectionAdapter
-import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate

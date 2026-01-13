@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.model.RealmRemovedLog
-import java.util.UUID
+import org.ole.planet.myplanet.service.UserSessionManager
 
 class ActivityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService

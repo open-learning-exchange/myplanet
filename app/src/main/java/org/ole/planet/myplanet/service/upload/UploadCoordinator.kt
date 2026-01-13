@@ -4,18 +4,17 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
 import io.realm.RealmObject
+import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.reflect.KClass
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.UrlUtils
-import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlin.reflect.KClass
 
 @Singleton
 class UploadCoordinator @Inject constructor(

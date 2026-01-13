@@ -8,9 +8,9 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
-import android.util.Log
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
