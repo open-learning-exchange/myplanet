@@ -20,6 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -76,6 +77,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
+    private var isAscending = true
+    private var isTitleAscending = false
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -650,14 +653,34 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             bottomSheet.visibility = View.GONE
         }
         binding.orderByDateButton.setOnClickListener {
-            adapterLibrary.toggleSortOrder {
-                if (isAdded) recyclerView.scrollToPosition(0)
-            }
+            toggleSortOrder()
         }
         binding.orderByTitleButton.setOnClickListener {
-            adapterLibrary.toggleTitleSortOrder {
-                if (isAdded) recyclerView.scrollToPosition(0)
-            }
+            toggleTitleSortOrder()
+        }
+    }
+
+    private fun toggleSortOrder() {
+        isAscending = !isAscending
+        val sortedList = if (isAscending) {
+            adapterLibrary.currentList.sortedBy { it.createdDate }
+        } else {
+            adapterLibrary.currentList.sortedByDescending { it.createdDate }
+        }
+        adapterLibrary.submitList(sortedList) {
+            if (isAdded) recyclerView.scrollToPosition(0)
+        }
+    }
+
+    private fun toggleTitleSortOrder() {
+        isTitleAscending = !isTitleAscending
+        val sortedList = if (isTitleAscending) {
+            adapterLibrary.currentList.sortedBy { it.title?.lowercase(Locale.ROOT) }
+        } else {
+            adapterLibrary.currentList.sortedByDescending { it.title?.lowercase(Locale.ROOT) }
+        }
+        adapterLibrary.submitList(sortedList) {
+            if (isAdded) recyclerView.scrollToPosition(0)
         }
     }
 
