@@ -690,7 +690,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         .filterIsInstance<RealmMyCourse?>()
                         .filter { !it?.courseTitle.isNullOrBlank() }
                     val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-                    adapterCourses.updateData(sortedCourseList, map, progressMap)
+                    val tagMap = fetchTagsForCourses(sortedCourseList)
+                    adapterCourses.updateData(sortedCourseList, map, progressMap, tagMap)
                 }
             } else {
                 recyclerView.adapter = getAdapter()
