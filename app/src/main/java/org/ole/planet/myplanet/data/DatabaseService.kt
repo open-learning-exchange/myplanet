@@ -58,9 +58,7 @@ class DatabaseService(context: Context) {
         withContext(ioDispatcher) {
             val realm = Realm.getDefaultInstance()
             try {
-                realm.beginTransaction()
-                transaction(realm)
-                realm.commitTransaction()
+                realm.executeTransaction { transaction(it) }
             } catch (e: Exception) {
                 if (realm.isInTransaction) {
                     realm.cancelTransaction()
