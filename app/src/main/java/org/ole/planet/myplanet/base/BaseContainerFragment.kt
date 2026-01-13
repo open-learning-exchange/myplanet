@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.reader.WebViewActivity
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.ResourceOpener
@@ -75,15 +75,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             CourseRatingUtils.showRating(requireContext(), `object`, rating, timesRated, ratingBar)
         }
     }
-    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
-        for (library in lib) {
-            val url = UrlUtils.getUrl(library)
-            if (!FileUtils.checkFileExist(requireContext(), url) && !TextUtils.isEmpty(url)) {
-                urls.add(url)
-            }
-        }
-        if (urls.isNotEmpty()) {
-            startDownload(urls)
+
+    private fun startDownload(urls: ArrayList<String>) {
+        if (isAdded) {
+            DownloadUtils.openDownloadService(requireContext(), urls, false)
         }
     }
     fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
@@ -332,7 +327,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             btnResources.text = getString(R.string.resources_size, resources.size)
             btnResources.setOnClickListener {
                 if (resources.isNotEmpty()) {
-                    showDownloadDialog(resources)
+                    lifecycleScope.launch {
+                        showDownloadDialog(resources)
+                    }
                 }
             }
         }

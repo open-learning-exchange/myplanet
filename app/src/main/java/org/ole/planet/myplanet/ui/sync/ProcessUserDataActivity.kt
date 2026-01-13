@@ -23,9 +23,6 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.atomic.AtomicInteger
-import javax.inject.Inject
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,6 +45,9 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.UrlUtils
+import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
+import kotlin.math.roundToInt
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListener {
@@ -141,8 +141,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
     }
 
     fun setUrlParts(url: String, password: String): String {
+
         val editor = settings.edit()
         val uri = url.toUri()
+
         var couchdbURL: String
         val urlUser: String
         val urlPwd: String
@@ -157,8 +159,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         } else {
             urlUser = "satellite"
             urlPwd = password
-            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            val port = if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
+
         editor.putString("serverPin", password)
         saveUrlScheme(editor, uri, url, couchdbURL)
         editor.putString("url_user", urlUser)
@@ -166,14 +170,21 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         editor.putString("url_Scheme", uri.scheme)
         editor.putString("url_Host", uri.host)
         editor.apply()
+
+
         if (!couchdbURL.endsWith("db")) {
             couchdbURL += "/db"
         }
+
         return couchdbURL
     }
 
     fun isUrlValid(url: String): Boolean {
-        if (!URLUtil.isValidUrl(url) || url == "http://" || url == "https://") {
+        if (!URLUtil.isValidUrl(url)) {
+            showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
+            return false
+        }
+        if (url == "http://" || url == "https://") {
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
