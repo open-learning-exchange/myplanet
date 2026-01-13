@@ -200,21 +200,19 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val stepsSize = steps.size
 
         lifecycleScope.launch {
-            withContext(Dispatchers.Main) {
-                if (!isGuest && !containsUserId) {
-                    binding.btnRemove.visibility = View.VISIBLE
-                    binding.btnRemove.text = getString(R.string.join)
-                    joinDialog = getDialog(
-                        requireActivity(),
-                        getString(R.string.do_you_want_to_join_this_course),
-                        getString(R.string.join_this_course)
-                    ) { _: DialogInterface?, _: Int ->
-                        addRemoveCourse()
-                    }
-                    joinDialog?.show()
-                } else {
-                    binding.btnRemove.visibility = View.GONE
+            if (!isGuest && !containsUserId) {
+                binding.btnRemove.visibility = View.VISIBLE
+                binding.btnRemove.text = getString(R.string.join)
+                joinDialog = getDialog(
+                    requireActivity(),
+                    getString(R.string.do_you_want_to_join_this_course),
+                    getString(R.string.join_this_course)
+                ) { _: DialogInterface?, _: Int ->
+                    addRemoveCourse()
                 }
+                joinDialog?.show()
+            } else {
+                binding.btnRemove.visibility = View.GONE
             }
 
             val detachedUserModel = userModel
@@ -231,19 +229,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             }
 
-            withContext(Dispatchers.Main) {
-                binding.courseProgress.max = stepsSize
+            binding.courseProgress.max = stepsSize
 
-                if (containsUserId) {
-                    if(position < steps.size - 1){
-                        binding.nextStep.visibility = View.VISIBLE
-                    }
-                    binding.courseProgress.visibility = View.VISIBLE
-                } else {
-                    binding.nextStep.visibility = View.GONE
-                    binding.previousStep.visibility = View.GONE
-                    binding.courseProgress.visibility = View.GONE
+            if (containsUserId) {
+                if(position < steps.size - 1){
+                    binding.nextStep.visibility = View.VISIBLE
                 }
+                binding.courseProgress.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.GONE
+                binding.previousStep.visibility = View.GONE
+                binding.courseProgress.visibility = View.GONE
             }
         }
     }
