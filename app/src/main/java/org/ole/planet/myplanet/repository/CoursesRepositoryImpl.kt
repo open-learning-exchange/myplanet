@@ -31,7 +31,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
         if (userId == null) return myCourses
         for (course in courses) {
-            if (course.userId.contains(userId)) {
+            if (course.userId?.contains(userId) == true) {
                 myCourses.add(course)
             }
         }
