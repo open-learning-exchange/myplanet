@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.TeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
@@ -211,7 +211,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {

@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.DashboardActionListener
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActionListener,
-    SyncListener {
+    OnSyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private val realm get() = requireRealmInstance()
