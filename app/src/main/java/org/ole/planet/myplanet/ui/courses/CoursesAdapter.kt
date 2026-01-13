@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
@@ -41,9 +40,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 class CoursesAdapter(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
+    private var map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
-    private val tagsRepository: TagsRepository
+    private var tagCache: Map<String, List<RealmTag>>,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -54,8 +53,6 @@ class CoursesAdapter(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -81,12 +78,15 @@ class CoursesAdapter(
     private fun dispatchDiff(
         newList: List<RealmMyCourse?>,
         newMap: HashMap<String?, JsonObject>? = null,
-        newProgressMap: HashMap<String?, JsonObject>? = null
+        newProgressMap: HashMap<String?, JsonObject>? = null,
+        newTagsMap: Map<String, List<RealmTag>>? = null,
     ) {
         val oldMap = HashMap(map)
         val oldProgressMap = progressMap?.let { HashMap(it) }
+        val oldTagsMap = HashMap(tagCache)
         val currentMap = newMap ?: map
         val currentProgressMap = newProgressMap ?: progressMap
+        val currentTagsMap = newTagsMap ?: tagCache
 
         val diffResult = DiffUtils.calculateDiff(
             courseList,
@@ -95,6 +95,7 @@ class CoursesAdapter(
             areContentsTheSame = { old, new ->
                 val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
                 val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
+                val tagsSame = oldTagsMap[old?.id] == currentTagsMap[new?.id]
 
                 old?.courseTitle == new?.courseTitle &&
                         old?.description == new?.description &&
@@ -104,7 +105,8 @@ class CoursesAdapter(
                         old?.isMyCourse == new?.isMyCourse &&
                         old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
                         ratingSame &&
-                        progressSame
+                        progressSame &&
+                        tagsSame
             },
             getChangePayload = { old, new ->
                 val bundle = Bundle()
@@ -114,30 +116,36 @@ class CoursesAdapter(
                 if (oldProgressMap?.get(old?.courseId) != currentProgressMap?.get(new?.courseId)) {
                     bundle.putBoolean(PROGRESS_PAYLOAD, true)
                 }
+                if (oldTagsMap[old?.id] != currentTagsMap[new?.id]) {
+                    bundle.putBoolean(TAG_PAYLOAD, true)
+                }
                 if (bundle.isEmpty) null else bundle
             }
         )
 
         courseList = newList
         newMap?.let {
-            map.clear()
-            map.putAll(it)
+            map = it
         }
         this.progressMap = newProgressMap ?: this.progressMap
+        newTagsMap?.let {
+            tagCache = it
+        }
         diffResult.dispatchUpdatesTo(this)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         if (this.courseList === courseList) return
-        dispatchDiff(courseList, null, null)
+        dispatchDiff(courseList, null, null, null)
     }
 
     fun updateData(
         newCourseList: List<RealmMyCourse?>,
         newMap: HashMap<String?, JsonObject>,
-        newProgressMap: HashMap<String?, JsonObject>?
+        newProgressMap: HashMap<String?, JsonObject>?,
+        newTagsMap: Map<String, List<RealmTag>>,
     ) {
-        dispatchDiff(newCourseList, newMap, newProgressMap)
+        dispatchDiff(newCourseList, newMap, newProgressMap, newTagsMap)
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
@@ -359,22 +367,20 @@ class CoursesAdapter(
             return
         }
 
-        val hasTagPayload = payloads.any { it == TAG_PAYLOAD }
         val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle()) { acc, b -> acc.apply { putAll(b) } }
         val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
         val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
+        val hasTagPayload = bundle.containsKey(TAG_PAYLOAD)
 
-        if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
-            if (hasTagPayload) {
-                val courseId = courseList.getOrNull(position)?.id ?: return
-                val tags = tagCache[courseId].orEmpty()
-                renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
-            }
+        if (hasRatingPayload || hasProgressPayload || hasTagPayload) {
             if (hasRatingPayload) {
                 updateRatingViews(holder, position)
             }
             if (hasProgressPayload) {
                 updateProgressViews(holder, position)
+            }
+            if (hasTagPayload) {
+                displayTagCloud(holder, position)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -388,33 +394,8 @@ class CoursesAdapter(
             flexboxDrawable.removeAllViews()
             return
         }
-
-        val cachedTags = tagCache[courseId]
-        if (cachedTags != null) {
-            renderTagCloud(flexboxDrawable, cachedTags)
-            return
-        }
-
-        flexboxDrawable.removeAllViews()
-
-        if (!tagRequestsInProgress.add(courseId)) {
-            return
-        }
-
-        holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-            try {
-                val tags = tagsRepository.getTagsForCourse(courseId)
-                tagCache[courseId] = tags
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        notifyItemChanged(adapterPosition, TAG_PAYLOAD)
-                    }
-                }
-            } finally {
-                tagRequestsInProgress.remove(courseId)
-            }
-        }
+        val tags = tagCache[courseId].orEmpty()
+        renderTagCloud(flexboxDrawable, tags)
     }
 
     private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {

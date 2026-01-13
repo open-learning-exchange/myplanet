@@ -177,6 +177,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    private suspend fun fetchTagsForCourses(courseList: List<RealmMyCourse?>): Map<String, List<RealmTag>> {
+        val tagMap = mutableMapOf<String, List<RealmTag>>()
+        for (course in courseList) {
+            course?.id?.let { courseId ->
+                tagMap[courseId] = tagsRepository.getTagsForCourse(courseId)
+            }
+        }
+        return tagMap
+    }
 
     private fun loadDataAsync() {
         if (!isAdded || requireActivity().isFinishing) return
@@ -190,26 +199,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val progressMap = progressRepository.getCourseProgress(model?.id)
                 val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
                 val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+                val tagMap = fetchTagsForCourses(sortedCourseList)
+
 
                 if (isMyCourseLib) {
                     val courseIds = courseList.mapNotNull { it?.id }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
-
-                recyclerView.adapter = null
-                adapterCourses = CoursesAdapter(
-                    requireActivity(),
-                    sortedCourseList,
-                    map,
-                    userModel,
-                    tagsRepository
-                )
-                adapterCourses.setProgressMap(progressMap)
-                adapterCourses.setListener(this@CoursesFragment)
-                adapterCourses.setRatingChangeListener(this@CoursesFragment)
-                recyclerView.adapter = adapterCourses
-
+                adapterCourses.updateData(sortedCourseList, map, progressMap, tagMap)
                 checkList()
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             } catch (e: Exception) {
@@ -229,9 +227,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = HashMap<String?, com.google.gson.JsonObject>()
+        val tagMap: Map<String, List<RealmTag>> = HashMap()
 
-        adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, tagsRepository)
-        adapterCourses.setProgressMap(progressMap)
+        adapterCourses = CoursesAdapter(requireActivity(), emptyList(), HashMap(), userModel, HashMap())
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         return adapterCourses
@@ -501,13 +499,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val tagNames = searchTags.mapNotNull { it.name }
 
         lifecycleScope.launch {
-            val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
+            val (filteredCourses, map, progressMap, tagMap) = withContext(Dispatchers.IO) {
                 val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val ratings = databaseService.withRealm { realm -> getRatings(realm, "course", model?.id) }
                 val progress = progressRepository.getCourseProgress(model?.id)
-                Triple(courses, ratings, progress)
+                val tags = fetchTagsForCourses(courses)
+                Quad(courses, ratings, progress, tags)
             }
-            adapterCourses.updateData(filteredCourses, map, progressMap)
+            adapterCourses.updateData(filteredCourses, map, progressMap, tagMap)
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         }
@@ -722,3 +721,5 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         filterCoursesAndUpdateUi()
     }
 }
+
+private data class Quad<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
