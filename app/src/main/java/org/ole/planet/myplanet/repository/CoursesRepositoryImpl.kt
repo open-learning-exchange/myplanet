@@ -27,6 +27,17 @@ class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), CoursesRepository {
 
+    override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
+        val myCourses: MutableList<RealmMyCourse> = ArrayList()
+        if (userId == null) return myCourses
+        for (course in courses) {
+            if (course.userId.contains(userId)) {
+                myCourses.add(course)
+            }
+        }
+        return myCourses
+    }
+
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
         return queryListFlow(RealmMyCourse::class.java) {
             equalTo("userId", userId)
