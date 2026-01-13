@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
-import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -181,17 +180,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         try {
             map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+            val libraryList = getList(RealmMyLibrary::class.java)
             val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
             val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
+            val filteredLibraryList =
                 if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
+                    applyFilter(libraryList)
                 } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
                 }
 
-            adapterLibrary.submitList(filteredLibraryList)
+            adapterLibrary.submitList(mRealm.copyFromRealm(filteredLibraryList))
             adapterLibrary.setRatingMap(map!!)
             checkList()
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -645,8 +644,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             } else {
                 adapterLibrary.currentList.sortedByDescending { it?.createdDate }
             }
-            adapterLibrary.submitList(sortedList)
-            recyclerView.scrollToPosition(0)
+            adapterLibrary.submitList(sortedList) {
+                recyclerView.scrollToPosition(0)
+            }
         }
         binding.orderByTitleButton.setOnClickListener {
             isTitleAscending = !isTitleAscending
@@ -655,8 +655,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             } else {
                 adapterLibrary.currentList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
             }
-            adapterLibrary.submitList(sortedList)
-            recyclerView.scrollToPosition(0)
+            adapterLibrary.submitList(sortedList) {
+                recyclerView.scrollToPosition(0)
+            }
         }
     }
     
