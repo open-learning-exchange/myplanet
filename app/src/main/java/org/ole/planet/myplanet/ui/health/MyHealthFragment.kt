@@ -452,9 +452,8 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.VISIBLE
                 binding.tvDataPlaceholder.visibility = View.GONE
             }
-        })
-            viewModel.fetchHealthData(userId!!, currentUser)
         }
+        viewModel.fetchHealthData(userId!!, currentUser)
     }
 
     private fun disableDobField() {
