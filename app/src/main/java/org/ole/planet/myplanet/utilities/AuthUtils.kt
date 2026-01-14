@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.utilities
 
 import android.widget.Toast
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
@@ -29,7 +29,7 @@ object AuthUtils {
             return
         }
 
-        LoginSyncManager.instance.login(name, password, object : SyncListener {
+        LoginSyncManager.instance.login(name, password, object : OnSyncListener {
             override fun onSyncStarted() {
                 activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
                 activity.customProgressDialog.show()

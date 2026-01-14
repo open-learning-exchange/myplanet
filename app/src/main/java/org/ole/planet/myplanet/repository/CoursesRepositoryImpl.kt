@@ -5,12 +5,14 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
 import java.util.Calendar
+import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -26,6 +28,17 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), CoursesRepository {
+
+    override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
+        val myCourses: MutableList<RealmMyCourse> = ArrayList()
+        if (userId == null) return myCourses
+        for (course in courses) {
+            if (course.userId?.contains(userId) == true) {
+                myCourses.add(course)
+            }
+        }
+        return myCourses
+    }
 
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
         return queryListFlow(RealmMyCourse::class.java) {
@@ -276,6 +289,25 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
                 ob.addProperty("status", it.status)
             }
+        }
+    }
+
+    override suspend fun logCourseVisit(
+        userId: String?,
+        courseId: String?,
+        courseTitle: String?,
+        planetCode: String?,
+        parentCode: String?
+    ) {
+        executeTransaction { realm ->
+            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
+            activity.type = "visit"
+            activity.title = courseTitle
+            activity.courseId = courseId
+            activity.time = Date().time
+            activity.parentCode = parentCode
+            activity.createdOn = planetCode
+            activity.user = userId
         }
     }
 }

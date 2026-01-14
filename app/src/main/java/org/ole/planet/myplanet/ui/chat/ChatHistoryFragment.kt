@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.di.AppPreferences
@@ -205,7 +205,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 if (view != null && isAdded) {
                     viewLifecycleOwner.lifecycleScope.launch {
