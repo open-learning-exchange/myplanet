@@ -373,4 +373,16 @@ class SubmissionsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
+        if (stepId == null) return true
+        val exam = findByField<RealmStepExam, String>(RealmStepExam::class.java, "stepId", stepId) ?: return true
+        return exam.id?.let {
+            count(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+                    .contains("parentId", it)
+                    .notEqualTo("status", "pending")
+            } > 0
+        } ?: false
+    }
 }

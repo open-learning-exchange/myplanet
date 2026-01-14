@@ -1181,5 +1181,6 @@
     <string name="no_images_to_download">لا توجد صور لتنزيلها</string>
     <string name="app_theme">سمة التطبيق</string>
     <string name="team_surveys">استطلاعات الفريق</string>
+    <string name="enterprise_created">تم إنشاء المؤسسة</string>
 
 </resources>
