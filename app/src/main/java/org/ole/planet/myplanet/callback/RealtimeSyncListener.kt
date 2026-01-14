@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.callback
 
 import org.ole.planet.myplanet.model.TableDataUpdate
 
-interface RealtimeSyncListener : SyncListener {
+interface RealtimeSyncListener : OnSyncListener {
 
     fun onTableSyncStarted(table: String, totalItems: Int)
 

@@ -10,7 +10,7 @@ import io.realm.Realm
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.DocumentResponse
@@ -57,7 +57,7 @@ class TransactionSyncManager @Inject constructor(
         return false
     }
 
-    fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
+    fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: OnSyncListener) {
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
@@ -97,7 +97,7 @@ class TransactionSyncManager @Inject constructor(
     fun syncKeyIv(
         mRealm: Realm,
         settings: SharedPreferences,
-        listener: SyncListener,
+        listener: OnSyncListener,
         userSessionManager: UserSessionManager
     ) {
         listener.onSyncStarted()

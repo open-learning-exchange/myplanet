@@ -16,7 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.sync.AdaptiveBatchProcessor
@@ -40,7 +40,7 @@ class ImprovedSyncManager @Inject constructor(
     private val poolManager = RealmPoolManager.getInstance()
 
     private var isSyncing = false
-    private var listener: SyncListener? = null
+    private var listener: OnSyncListener? = null
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // Table sync order for dependencies
@@ -72,7 +72,7 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     fun start(
-        listener: SyncListener?,
+        listener: OnSyncListener?,
         syncMode: SyncMode = SyncMode.Standard,
         syncTables: List<String>? = null
     ) {
