@@ -337,7 +337,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                NewsActions.showEditAlert(
+                VoicesActions.showEditAlert(
                     context,
                     news.id,
                     true,
@@ -524,7 +524,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                NewsActions.showEditAlert(
+                VoicesActions.showEditAlert(
                     context,
                     finalNews?.id,
                     false,
