@@ -123,8 +123,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService, voicesRepository, submissionsRepository)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository, surveysRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false

@@ -11,12 +11,12 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
@@ -28,9 +28,10 @@ class ChallengeHelper(
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,
     private val progressRepository: ProgressRepository,
-    private val databaseService: DatabaseService,
     private val voicesRepository: VoicesRepository,
-    private val submissionsRepository: SubmissionsRepository
+    private val submissionsRepository: SubmissionsRepository,
+    private val coursesRepository: CoursesRepository,
+    private val surveysRepository: SurveysRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -48,12 +49,8 @@ class ChallengeHelper(
 
                 val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, user?.id)
                 val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
-                val courseName = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()?.courseTitle
-                }
-                val hasUnfinishedSurvey = hasPendingSurvey(courseId)
+                val courseName = coursesRepository.getCourseTitle(courseId)
+                val hasUnfinishedSurvey = surveysRepository.hasPendingSurvey(courseId, user?.id)
 
                 val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
                 val validUrls = listOf(
@@ -74,23 +71,6 @@ class ChallengeHelper(
                 e.printStackTrace()
             }
         }
-    }
-
-    private suspend fun hasPendingSurvey(courseId: String): Boolean {
-        val surveys = databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmStepExam::class.java)
-                    .equalTo("courseId", courseId)
-                    .equalTo("type", "survey")
-                    .findAll()
-            )
-        }
-        for (survey in surveys) {
-            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, user?.id, "survey")) {
-                return true
-            }
-        }
-        return false
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
@@ -115,25 +95,20 @@ class ChallengeHelper(
     }
 
     private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
-        databaseService.withRealm { realm ->
-            val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
-            val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-            var hasValidSync = false
-            val syncTaskDone = if (prereqsMet) {
-                hasValidSync = realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("actionType", "sync")
-                    .count() > 0
+        val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+        var hasValidSync = false
+        val syncTaskDone = if (prereqsMet) {
+            hasValidSync = submissionsRepository.hasRecentSync(user?.id)
+            if (hasValidSync) "✅" else "[ ]"
+        } else "[ ]"
+        val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-                if (hasValidSync) "✅" else "[ ]"
-            } else "[ ]"
-            val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
-
-            val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
+        val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
 
             val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
-            if (isCompleted && hasShownCongrats) return@withRealm
+            if (isCompleted && hasShownCongrats) return
 
             if (isCompleted && !hasShownCongrats) {
                 editor.putBoolean("has_shown_congrats", true).apply()

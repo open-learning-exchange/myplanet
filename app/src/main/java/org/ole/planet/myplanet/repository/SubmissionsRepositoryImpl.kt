@@ -385,4 +385,13 @@ class SubmissionsRepositoryImpl @Inject constructor(
             } > 0
         } ?: false
     }
+
+    override fun hasRecentSync(userId: String?): Boolean {
+        return databaseService.realmInstance.use { realm ->
+            realm.where(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java)
+                .equalTo("userId", userId)
+                .equalTo("actionType", "sync")
+                .count() > 0
+        }
+    }
 }
