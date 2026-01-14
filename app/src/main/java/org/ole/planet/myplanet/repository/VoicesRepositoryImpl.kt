@@ -64,7 +64,7 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createTeamNews(newsData: Map<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?): Boolean {
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?): Boolean {
         return try {
             databaseService.executeTransactionAsync { realm ->
                 RealmNews.createNews(newsData, realm, user, imageList)
