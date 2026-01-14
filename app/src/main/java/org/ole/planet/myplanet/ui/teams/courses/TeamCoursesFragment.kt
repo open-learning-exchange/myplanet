@@ -6,10 +6,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
+import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class TeamCoursesFragment : BaseTeamFragment() {
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
@@ -27,11 +33,15 @@ class TeamCoursesFragment : BaseTeamFragment() {
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
-        binding.rvCourse.layoutManager = LinearLayoutManager(activity)
-        binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+        lifecycleScope.launch {
+            val teamCreatorId = teamsRepository.getTeamCreator(teamId)
+            val isCreator = teamCreatorId == settings?.getString("userId", "--")
+            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), courses.toMutableList(), isCreator)
+            binding.rvCourse.layoutManager = LinearLayoutManager(activity)
+            binding.rvCourse.adapter = adapterTeamCourse
+            adapterTeamCourse?.let {
+                showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+            }
         }
     }
     override fun onNewsItemClick(news: RealmNews?) {}

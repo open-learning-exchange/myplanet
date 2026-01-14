@@ -132,4 +132,5 @@ interface TeamsRepository {
         isPublic: Boolean,
         user: RealmUserModel,
     ): Result<String>
+    suspend fun getTeamCreator(teamId: String): String?
 }

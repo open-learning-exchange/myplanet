@@ -11,30 +11,22 @@ import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class TeamCoursesAdapter(
     private val context: Context,
     private var list: MutableList<RealmMyCourse>,
-    mRealm: Realm?,
-    teamId: String?,
-    settings: SharedPreferences
+    private val isCreator: Boolean
 ) : RecyclerView.Adapter<TeamCoursesAdapter.ViewHolder>() {
     private var listener: OnHomeItemClickListener? = null
-    private val settings: SharedPreferences
-    private val teamCreator: String
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
     }
 
     fun getList(): List<RealmMyCourse> = list
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolder(binding)
@@ -51,7 +43,7 @@ class TeamCoursesAdapter(
                 listener?.openCallFragment(TakeCourseFragment.newInstance(b))
             }
         }
-        if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {
+        if (!isCreator) {
             holder.binding.ivRemove.visibility = View.GONE
         }
     }
