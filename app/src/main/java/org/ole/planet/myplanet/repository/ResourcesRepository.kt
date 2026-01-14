@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmTag
 
 interface ResourcesRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
@@ -30,7 +31,11 @@ interface ResourcesRepository {
         searchText: String,
         planetCode: String,
         parentCode: String,
-        filterPayload: String
+        tags: List<RealmTag>,
+        subjects: Set<String>,
+        languages: Set<String>,
+        levels: Set<String>,
+        mediums: Set<String>
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
 }
