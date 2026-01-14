@@ -223,7 +223,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                         dialog.dismiss()
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        Utilities.toast(requireContext(), getString(R.string.err_msg))
+                        Utilities.toast(requireContext(), "Failed to add report. Please try again.")
                     }
                 }
             }
