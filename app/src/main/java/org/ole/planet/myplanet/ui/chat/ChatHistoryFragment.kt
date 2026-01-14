@@ -81,7 +81,7 @@ class ChatHistoryFragment : Fragment() {
     @Inject
     lateinit var chatApiService: ChatApiService
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -373,7 +373,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "chats" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
@@ -382,12 +382,12 @@ class ChatHistoryFragment : Fragment() {
                 }
             }
         }
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncCoordinator.addListener(onRealtimeSyncListener)
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
+        if (::onRealtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(onRealtimeSyncListener)
         }
         searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
         _binding = null

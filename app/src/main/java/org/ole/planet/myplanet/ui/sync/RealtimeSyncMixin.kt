@@ -28,7 +28,7 @@ class RealtimeSyncHelper(
     
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     
-    private val realtimeSyncListener = object : BaseRealtimeSyncListener() {
+    private val onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
         override fun onTableDataUpdated(update: TableDataUpdate) {
             if (mixin.getWatchedTables().contains(update.table)) {
                 mixin.onDataUpdated(update.table, update)
@@ -44,7 +44,7 @@ class RealtimeSyncHelper(
     }
     
     fun setupRealtimeSync() {
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncCoordinator.addListener(onRealtimeSyncListener)
         
         // Listen to data update flow
         fragment.lifecycleScope.launch {
@@ -81,6 +81,6 @@ class RealtimeSyncHelper(
     }
     
     fun cleanup() {
-        syncCoordinator.removeListener(realtimeSyncListener)
+        syncCoordinator.removeListener(onRealtimeSyncListener)
     }
 }

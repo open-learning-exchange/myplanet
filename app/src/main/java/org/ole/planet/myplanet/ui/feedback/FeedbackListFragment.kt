@@ -52,7 +52,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         get() = settings.getString("serverURL", "") ?: ""
 
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
     private lateinit var feedbackAdapter: FeedbackAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,7 +79,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "feedback" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
@@ -92,7 +92,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             override fun onSyncComplete() {}
             override fun onSyncFailed(msg: String?) {}
         }
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncCoordinator.addListener(onRealtimeSyncListener)
     }
 
     private fun refreshFeedbackListData() {
@@ -179,8 +179,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
+        if (::onRealtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(onRealtimeSyncListener)
         }
         _binding = null
         super.onDestroyView()
