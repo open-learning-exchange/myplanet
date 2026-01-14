@@ -19,6 +19,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -28,10 +29,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.PlanetAvailableListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -77,6 +78,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var configurationRepository: ConfigurationRepository
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
@@ -207,7 +210,7 @@ abstract class BaseResourceFragment : Fragment() {
                 .setTitle(R.string.download_suggestion)
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+                        configurationRepository.checkServerAvailability(object : ConfigurationRepository.PlanetAvailableListener {
                             override fun isAvailable() {
                                 lifecycleScope.launch {
                                     lv?.selectedItemsList?.let {
@@ -226,7 +229,7 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+                        configurationRepository.checkServerAvailability(object : ConfigurationRepository.PlanetAvailableListener {
                             override fun isAvailable() {
                                 lifecycleScope.launch {
                                     addAllToLibrary(librariesForDialog)
@@ -527,7 +530,8 @@ abstract class BaseResourceFragment : Fragment() {
         }
 
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
+            val repositoryEntryPoint = EntryPointAccessors.fromApplication(context, RepositoryEntryPoint::class.java)
+            repositoryEntryPoint.configurationRepository().checkServerAvailability(object : ConfigurationRepository.PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)

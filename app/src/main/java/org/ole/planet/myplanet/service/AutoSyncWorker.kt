@@ -17,9 +17,10 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.repository.ConfigurationRepository
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -30,18 +31,21 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AutoSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters
-) : Worker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
+) : Worker(context, workerParams), OnSyncListener, ConfigurationRepository.CheckVersionCallback, OnSuccessListener {
     private lateinit var preferences: SharedPreferences
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
+    private lateinit var configurationRepository: ConfigurationRepository
     private val workerScope = CoroutineScope(Dispatchers.IO)
     override fun doWork(): Result {
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
+        val repositoryEntryPoint = EntryPointAccessors.fromApplication(context, RepositoryEntryPoint::class.java)
         preferences = entryPoint.sharedPreferences()
         syncManager = entryPoint.syncManager()
         uploadManager = entryPoint.uploadManager()
         uploadToShelfService = entryPoint.uploadToShelfService()
+        configurationRepository = repositoryEntryPoint.configurationRepository()
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
@@ -49,7 +53,7 @@ class AutoSyncWorker(
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            DataService(context).checkVersion(this, preferences)
+            configurationRepository.checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -75,7 +79,7 @@ class AutoSyncWorker(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                DataService(MainApplication.context).healthAccess {
+                configurationRepository.checkHealth {
                     uploadToShelfService.uploadHealth()
                 }
             }
