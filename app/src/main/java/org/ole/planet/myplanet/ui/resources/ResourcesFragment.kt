@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
@@ -40,7 +39,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -597,24 +595,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 return@launch
             }
 
-            val filter = JsonObject().apply {
-                add("tags", getTagsArray(searchTags))
-                add("subjects", getJsonArrayFromList(subjects))
-                add("language", getJsonArrayFromList(languages))
-                add("level", getJsonArrayFromList(levels))
-                add("mediaType", getJsonArrayFromList(mediums))
-            }
-            val filterPayload = Gson().toJson(filter)
-
-            lifecycleScope.launch {
-                resourcesRepository.saveSearchActivity(
-                    userName,
-                    searchText,
-                    planetCode,
-                    parentCode,
-                    filterPayload
-                )
-            }
+            resourcesRepository.saveSearchActivity(
+                userName,
+                searchText,
+                planetCode,
+                parentCode,
+                searchTags,
+                subjects,
+                languages,
+                levels,
+                mediums
+            )
         }
     }
 

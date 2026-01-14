@@ -10,15 +10,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(
-    private val databaseService: DatabaseService
+    private val progressRepository: ProgressRepository,
+    private val coursesRepository: CoursesRepository,
 ) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
@@ -38,37 +41,63 @@ class BellDashboardViewModel @Inject constructor(
         }
     }
 
-    fun loadCompletedCourses(userId: String?) {
+    fun loadCompletedCourses(userId: String) {
         viewModelScope.launch {
-            val completed = databaseService.withRealmAsync { realm ->
-                val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+            android.util.Log.d("BadgeConditions", "========== LOADING BADGES (WEB MATCHING MODE) ==========")
+            android.util.Log.d("BadgeConditions", "Starting badge load for userId: $userId")
 
-                val completedCourses = mutableListOf<CourseCompletion>()
-                myCourses.forEachIndexed { _, course ->
-                    val hasValidId = !course.courseId.isNullOrBlank()
-                    val hasValidTitle = !course.courseTitle.isNullOrBlank()
+            val myCourses = coursesRepository.getMyCoursesFlow(userId).first()
+            android.util.Log.d("BadgeConditions", "Total user courses found: ${myCourses.size}")
 
-                    val progressRecords = realm.where(RealmCourseProgress::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("courseId", course.courseId)
-                        .findAll()
+            // Get all progress records for this user
+            val allProgressRecords = progressRepository.getProgressRecords(userId)
+            android.util.Log.d("BadgeConditions", "Total progress records found: ${allProgressRecords.size}")
 
-                    val passedStepNumbers = progressRecords
-                        .filter { it.passed }
-                        .map { it.stepNum }
-                        .toSet()
-                    val passedSteps = passedStepNumbers.size
-                    val totalSteps = course.courseSteps?.size ?: 0
+            val completedCourses = mutableListOf<CourseCompletion>()
+            myCourses.forEachIndexed { index, course ->
+                val hasValidId = !course.courseId.isNullOrBlank()
+                val hasValidTitle = !course.courseTitle.isNullOrBlank()
 
-                    val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
+                // Get progress records for this specific course
+                val courseProgressRecords = allProgressRecords.filter { it.courseId == course.courseId }
 
-                    if (allStepsPassed && hasValidId && hasValidTitle) {
-                        completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
+                // Count UNIQUE steps that are passed (matches web: step.passed === true)
+                val passedStepNumbers = courseProgressRecords
+                    .filter { it.passed }
+                    .map { it.stepNum }
+                    .toSet()
+                val passedSteps = passedStepNumbers.size
+                val totalSteps = course.courseSteps?.size ?: 0
+
+                // Web logic: ALL steps must be passed AND course must have at least one step
+                val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
+
+                android.util.Log.d("BadgeConditions", "Course #${index + 1}: ${course.courseTitle}")
+                android.util.Log.d("BadgeConditions", "  - Course ID: ${course.courseId}")
+                android.util.Log.d("BadgeConditions", "  - Total steps: $totalSteps")
+                android.util.Log.d("BadgeConditions", "  - Passed steps: $passedSteps")
+                android.util.Log.d("BadgeConditions", "  - All steps passed: $allStepsPassed")
+                android.util.Log.d("BadgeConditions", "  - Has Valid ID: $hasValidId")
+                android.util.Log.d("BadgeConditions", "  - Has Valid Title: $hasValidTitle")
+
+                // Match web behavior: Show badge if ALL steps are passed AND course has steps
+                if (allStepsPassed && hasValidId && hasValidTitle) {
+                    completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
+                    android.util.Log.d("BadgeConditions", "  ✓ ADDED TO BADGE LIST (all steps passed)")
+                } else {
+                    when {
+                        totalSteps == 0 -> android.util.Log.d("BadgeConditions", "  ✗ NO STEPS - Badge not shown")
+                        !allStepsPassed -> android.util.Log.d("BadgeConditions", "  ✗ NOT ALL STEPS PASSED ($passedSteps/$totalSteps) - Badge not shown")
+                        !hasValidId || !hasValidTitle -> android.util.Log.d("BadgeConditions", "  ✗ INVALID DATA - Badge not shown")
                     }
                 }
-                completedCourses
             }
-            _completedCourses.value = completed
+
+            android.util.Log.d("BadgeConditions", "Total completed courses (badges to show): ${completedCourses.size}")
+            android.util.Log.d("BadgeConditions", "Web matching logic: Showing courses where ALL steps are passed")
+            android.util.Log.d("BadgeConditions", "========== BADGE LOADING COMPLETE ==========")
+
+            _completedCourses.value = completedCourses
         }
     }
 
