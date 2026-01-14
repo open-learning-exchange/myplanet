@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.callback
 
 import org.ole.planet.myplanet.model.TableDataUpdate
 
-abstract class BaseRealtimeSyncListener : OnRealtimeSyncListener {
+abstract class OnBaseRealtimeSyncListener : OnRealtimeSyncListener {
 
     override fun onSyncStarted() {
         // Default implementation - can be overridden

@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface TeamUpdateListener {
+interface OnTeamUpdateListener {
     fun onTeamDetailsUpdated()
 }

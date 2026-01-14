@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.DiffRefreshableCallback
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
@@ -28,7 +28,7 @@ class RealtimeSyncHelper(
     
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     
-    private val onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
+    private val onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
         override fun onTableDataUpdated(update: TableDataUpdate) {
             if (mixin.getWatchedTables().contains(update.table)) {
                 mixin.onDataUpdated(update.table, update)
