@@ -383,18 +383,30 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    private fun checkSurveyCompletion() {
-        val hasUnfinishedSurvey = steps.any { step ->
-            val stepSurvey = mRealm.where(RealmStepExam::class.java)
-                .equalTo("stepId", step?.id)
-                .equalTo("type", "surveys")
-                .findAll()
-            stepSurvey.any { survey -> !existsSubmission(mRealm, survey.id, "survey") }
+    private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
+        var hasUnfinishedSurvey = false
+        run loop@{
+            steps.forEach { step ->
+                val stepSurvey = mRealm.copyFromRealm(
+                    mRealm.where(RealmStepExam::class.java)
+                        .equalTo("stepId", step?.id)
+                        .equalTo("type", "survey")
+                        .findAll()
+                )
+
+                stepSurvey.forEach { survey ->
+                    if (!submissionsRepository.hasSubmission(survey.id, courseId, userModel?.id, "survey")) {
+                        hasUnfinishedSurvey = true
+                        return@loop
+                    }
+                }
+            }
         }
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             binding.finishStep.setOnClickListener {
-                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
+                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show()
+            }
         } else {
             binding.finishStep.isEnabled = true
             binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
@@ -439,27 +451,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val takeCourseFragment = TakeCourseFragment()
             takeCourseFragment.arguments = b
             return takeCourseFragment
-        }
-
-        fun existsSubmission(mRealm: Realm, firstStepId: String?, submissionType: String): Boolean {
-            val questions = mRealm.where(RealmExamQuestion::class.java)
-                .equalTo("examId", firstStepId)
-                .findAll()
-
-            var isPresent = false
-            if (questions != null && questions.isNotEmpty()) {
-                val examId = questions[0]?.examId
-                val isSubmitted = courseId?.let { courseId ->
-                    val parentId = "$examId@$courseId"
-                    mRealm.where(RealmSubmission::class.java)
-                        .equalTo("userId", userModel?.id)
-                        .equalTo("parentId", parentId)
-                        .equalTo("type", submissionType)
-                        .findFirst() != null
-                } == true
-                isPresent = isSubmitted
-            }
-            return isPresent
         }
     }
 }
