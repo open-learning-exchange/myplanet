@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import io.realm.Realm
 
 class ResourcesAdapter(
     private val context: Context,
@@ -43,7 +44,8 @@ class ResourcesAdapter(
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
     private val userModel: RealmUserModel?,
-    private var tagsMap: Map<String, List<RealmTag>>
+    private var tagsMap: Map<String, List<RealmTag>>,
+    private val mRealm: Realm
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableCallback {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -126,7 +128,8 @@ class ResourcesAdapter(
             holder.itemView.setOnClickListener {
                 openLibrary(library)
             }
-            if (library.isResourceOffline() == true) {
+            val isResourceOpened = library.id?.let { resourcesRepository.isResourceOpened(it, mRealm) }
+            if (library.isResourceOffline() == true || isResourceOpened == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
