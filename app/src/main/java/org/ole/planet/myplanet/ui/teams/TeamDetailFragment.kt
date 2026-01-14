@@ -292,7 +292,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
         }
 
         binding.viewPager2.adapter = null
-        binding.viewPager2.adapter = TeamPagerAdapter(
+        binding.viewPager2.adapter = TeamsTabsAdapter(
             requireActivity(),
             pageConfigs,
             team?._id,
@@ -303,7 +303,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
         binding.tabLayout.isInlineLabel = true
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+            val title = (binding.viewPager2.adapter as TeamsTabsAdapter).getPageTitle(position)
             val pageConfig = pageConfigs.getOrNull(position)
             tab.text = title
         }.attach()
