@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.survey
+package org.ole.planet.myplanet.ui.surveys
 
 import android.os.Bundle
 import android.text.Editable
@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
+import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
