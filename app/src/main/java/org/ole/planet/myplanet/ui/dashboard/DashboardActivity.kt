@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.NotificationsListener
+import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -80,7 +80,7 @@ import org.ole.planet.myplanet.ui.settings.SettingActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
+import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
@@ -98,7 +98,7 @@ import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint  
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationsListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
 
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null

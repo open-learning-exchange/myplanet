@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
@@ -46,7 +46,7 @@ class UploadToShelfService @Inject constructor(
 ) {
     lateinit var mRealm: Realm
 
-    fun uploadUserData(listener: SuccessListener) {
+    fun uploadUserData(listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync({ realm: Realm ->
@@ -74,7 +74,7 @@ class UploadToShelfService @Inject constructor(
             }
         }, {
             mRealm.close()
-            uploadToShelf(object : SuccessListener {
+            uploadToShelf(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     listener.onSuccess(success)
                 }
@@ -85,7 +85,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    fun uploadSingleUserData(userName: String?, listener: SuccessListener) {
+    fun uploadSingleUserData(userName: String?, listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
 
@@ -279,7 +279,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    fun uploadSingleUserHealth(userId: String?, listener: SuccessListener?) {
+    fun uploadSingleUserHealth(userId: String?, listener: OnSuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
 
@@ -319,7 +319,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun uploadToShelf(listener: SuccessListener) {
+    private fun uploadToShelf(listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             val unmanagedUsers = dbService.realmInstance.use { realm ->
@@ -366,7 +366,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun uploadSingleUserToShelf(userName: String?, listener: SuccessListener) {
+    private fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
