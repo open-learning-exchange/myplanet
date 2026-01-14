@@ -211,7 +211,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupToolbarActions()
         hideWifi()
         handleNotificationIntent(intent)
-        setupRealmListeners()
+        setupDashboardDataObserver()
 
         binding.root.post {
             setupSystemNotificationReceiver()
@@ -576,18 +576,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         lastException?.printStackTrace()
     }
 
-    private fun setupRealmListeners() {
+    private fun setupDashboardDataObserver() {
         lifecycleScope.launch {
-            resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            submissionsRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
+            dashboardViewModel.dashboardDataFlow(user?.id).collect { onRealmDataChange() }
         }
     }
 
