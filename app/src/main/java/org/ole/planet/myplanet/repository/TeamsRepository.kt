@@ -132,4 +132,7 @@ interface TeamsRepository {
         isPublic: Boolean,
         user: RealmUserModel,
     ): Result<String>
+
+    suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
+    suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUserModel?
 }
