@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -67,7 +67,7 @@ class MyHealthFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
@@ -233,7 +233,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "health" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
