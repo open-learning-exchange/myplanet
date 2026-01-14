@@ -197,42 +197,27 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = settings.getString("userId", "--")
+            selectedItems?.forEach { item ->
+                val realmObject = item as? RealmObject
+                if (realmObject is RealmMyLibrary) {
+                    realmObject.resourceId?.let {
+                        resourcesRepository.removeFromUserShelf(it, userId)
+                    }
+                } else if (realmObject is RealmMyCourse) {
+                    realmObject.courseId?.let {
+                        coursesRepository.removeFromUserCourses(it, userId, deleteProgress)
+                    }
                 }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
             }
+            recyclerView.adapter = getAdapter()
+            showNoData(tvMessage, getAdapter().itemCount, "")
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
-    }
-
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
-        }
     }
 
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {

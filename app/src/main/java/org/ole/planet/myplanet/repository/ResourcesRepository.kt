@@ -38,4 +38,5 @@ interface ResourcesRepository {
         mediums: Set<String>
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
+    suspend fun removeFromUserShelf(resourceId: String, userId: String)
 }

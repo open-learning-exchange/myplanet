@@ -242,4 +242,14 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun removeFromUserShelf(resourceId: String, userId: String) {
+        val resource = getLibraryItemByResourceId(resourceId)
+        resource?.let {
+            if (it.userId.contains(userId)) {
+                it.removeUserId(userId)
+                saveLibraryItem(it)
+            }
+        }
+    }
 }
