@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -36,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
@@ -54,12 +54,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var progressRepository: ProgressRepository
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
     private var cachedCourseProgress: Int? = null
+    private var currentCourseProgress = 0
     private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
 
@@ -110,6 +113,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
 
             currentStep = cachedCourseProgress ?: 0
+            currentCourseProgress = currentStep
 
             if (steps.isEmpty()) {
                 binding.nextStep.visibility = View.GONE
@@ -170,8 +174,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.finishStep.setOnClickListener(this)
         binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-                if (b && i <= currentProgress + 1) {
+                if (b && i <= currentCourseProgress + 1) {
                     binding.viewPager2.currentItem = i
                 }
             }
@@ -189,11 +192,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
 
-        val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-        if (currentProgress < steps.size) {
-            binding.courseProgress.secondaryProgress = currentProgress + 1
+        lifecycleScope.launch {
+            val currentProgress = progressRepository.getCurrentProgress(steps, userModel?.id, courseId)
+            currentCourseProgress = currentProgress
+            if (currentProgress < steps.size) {
+                binding.courseProgress.secondaryProgress = currentProgress + 1
+            }
+            binding.courseProgress.progress = currentProgress
         }
-        binding.courseProgress.progress = currentProgress
     }
 
     private fun setCourseData() {
@@ -375,11 +381,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private suspend fun getCourseProgress(): Int {
         return withContext(Dispatchers.IO) {
-            databaseService.withRealm { realm ->
-                val user = userSessionManager.userModel
-                val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-                courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-            }
+            val user = userSessionManager.userModel
+            val courseProgressMap = progressRepository.getCourseProgress(user?.id)
+            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
         }
     }
 
