@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
@@ -60,7 +60,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     lateinit var syncManager: SyncManager
 
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
 
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
@@ -491,7 +491,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "teams" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
