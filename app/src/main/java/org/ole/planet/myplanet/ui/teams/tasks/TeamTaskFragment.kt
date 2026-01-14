@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.health.UserSelectionAdapter
+import org.ole.planet.myplanet.ui.health.HealthUserSelectionAdapter
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -131,7 +131,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 }
 
                 val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-                val adapter: ArrayAdapter<RealmUserModel> = UserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+                val adapter: ArrayAdapter<RealmUserModel> = HealthUserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
                 alertUsersSpinnerBinding.spnUser.adapter = adapter
 
                 AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -308,7 +308,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
             }
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter: ArrayAdapter<RealmUserModel> = UserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+            val adapter: ArrayAdapter<RealmUserModel> = HealthUserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
             alertUsersSpinnerBinding.spnUser.adapter = adapter
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(R.string.select_member)
