@@ -18,16 +18,12 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
-import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.repository.HealthData
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.UserHealthUpdates
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -35,7 +31,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AddHealthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHealthBinding
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var healthRepository: HealthRepository
     var userId: String? = null
     private var myHealth: RealmMyHealth? = null
 
@@ -71,57 +67,29 @@ class AddHealthActivity : AppCompatActivity() {
     }
 
     private fun createMyHealth() {
+        val health = RealmMyHealthProfile()
+        health.emergencyContactName = "${binding.etEmergency.editText?.text}".trim { ch -> ch <= ' ' }
+        health.emergencyContact = "${binding.etContact.editText?.text}".trim { ch -> ch <= ' ' }
+        health.emergencyContactType = "${binding.spnContactType.selectedItem}".trim { ch -> ch <= ' ' }
+        health.specialNeeds = "${binding.etSpecialNeed.editText?.text}".trim { ch -> ch <= ' ' }
+        health.notes = "${binding.etOtherNeed.editText?.text}".trim { ch -> ch <= ' ' }
+        if (myHealth == null) {
+            myHealth = RealmMyHealth()
+        }
+        myHealth?.profile = health
+
+        val userUpdates = UserHealthUpdates(
+            firstName = "${binding.etFname.editText?.text}".trim { ch -> ch <= ' ' },
+            middleName = "${binding.etMname.editText?.text}".trim { ch -> ch <= ' ' },
+            lastName = "${binding.etLname.editText?.text}".trim { ch -> ch <= ' ' },
+            email = "${binding.etEmail.editText?.text}".trim { ch -> ch <= ' ' },
+            dob = "${binding.etBirthdateLayout.editText?.text}".trim { ch -> ch <= ' ' },
+            birthPlace = "${binding.etBirthplace.editText?.text}".trim { ch -> ch <= ' ' },
+            phoneNumber = "${binding.etPhone.editText?.text}".trim { ch -> ch <= ' ' }
+        )
         lifecycleScope.launch {
-            databaseService.executeTransactionAsync { realm ->
-                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                val oldProfile = myHealth?.profile
-                val health = RealmMyHealthProfile()
-                userModel?.firstName = "${binding.etFname.editText?.text}".trim { ch -> ch <= ' ' }
-                userModel?.middleName = "${binding.etMname.editText?.text}".trim { ch -> ch <= ' ' }
-                userModel?.lastName = "${binding.etLname.editText?.text}".trim { ch -> ch <= ' ' }
-                userModel?.email = "${binding.etEmail.editText?.text}".trim { ch -> ch <= ' ' }
-                val dobInput = "${binding.etBirthdateLayout.editText?.text}".trim { ch -> ch <= ' ' }
-                userModel?.dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
-                userModel?.birthPlace = "${binding.etBirthplace.editText?.text}".trim { ch -> ch <= ' ' }
-                userModel?.phoneNumber = "${binding.etPhone.editText?.text}".trim { ch -> ch <= ' ' }
-                health.emergencyContactName = "${binding.etEmergency.editText?.text}".trim { ch -> ch <= ' ' }
-                val emergencyContact = "${binding.etContact.editText?.text}".trim { ch -> ch <= ' ' }
-                health.emergencyContact = if (TextUtils.isEmpty(emergencyContact)) {
-                    oldProfile?.emergencyContact ?: ""
-                } else {
-                    emergencyContact
-                }
-                val emergencyContactType = "${binding.spnContactType.selectedItem}".trim { ch -> ch <= ' ' }
-                health.emergencyContactType = if (TextUtils.isEmpty(emergencyContactType)) {
-                    oldProfile?.emergencyContactType ?: ""
-                } else {
-                    emergencyContactType
-                }
-                health.specialNeeds = "${binding.etSpecialNeed.editText?.text}".trim { ch -> ch <= ' ' }
-                health.notes = "${binding.etOtherNeed.editText?.text}".trim { ch -> ch <= ' ' }
-                if (myHealth == null) {
-                    myHealth = RealmMyHealth()
-                }
-                if (TextUtils.isEmpty(myHealth?.userKey)) {
-                    myHealth?.userKey = generateKey()
-                }
-                myHealth?.profile = health
-                var healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-                if (healthPojo == null) {
-                    healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
-                }
-                if (healthPojo == null) {
-                    healthPojo = realm.createObject(RealmHealthExamination::class.java, userId)
-                }
-                healthPojo.isUpdated = true
-                healthPojo.userId = userModel?._id
-                try {
-                    val key = userModel?.key ?: generateKey().also { newKey -> userModel?.key = newKey }
-                    val iv = userModel?.iv ?: generateIv().also { newIv -> userModel?.iv = newIv }
-                    healthPojo.data = encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            userId?.let {
+                healthRepository.saveHealthData(it, health, userUpdates)
             }
             finish()
         }
@@ -134,61 +102,32 @@ class AddHealthActivity : AppCompatActivity() {
     private fun populate() {
         val progressBar = findViewById<View>(R.id.progressBar)
         progressBar.visibility = View.VISIBLE
-
         lifecycleScope.launch {
-            val healthData = databaseService.withRealmAsync { realm ->
-                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-                    ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
-
-                var decodedHealth: RealmMyHealth? = null
-                if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
-                    try {
-                        decodedHealth = JsonUtils.gson.fromJson(
-                            decrypt(healthPojo.data, userModel?.key, userModel?.iv),
-                            RealmMyHealth::class.java
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+            userId?.let {
+                val healthData = healthRepository.getHealthDataForUser(it)
+                progressBar.visibility = View.GONE
+                myHealth = healthData?.myHealth
+                val health = myHealth?.profile
+                binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                binding.etContact.editText?.setText(health?.emergencyContact)
+                val contactTypes = resources.getStringArray(R.array.contact_type)
+                val contactType = health?.emergencyContactType
+                if (!contactType.isNullOrEmpty()) {
+                    val index = contactTypes.indexOf(contactType)
+                    if (index >= 0) {
+                        binding.spnContactType.setSelection(index)
                     }
                 }
-
-                HealthData(
-                    decodedHealth,
-                    userModel?.firstName,
-                    userModel?.middleName,
-                    userModel?.lastName,
-                    userModel?.email,
-                    userModel?.phoneNumber,
-                    userModel?.dob,
-                    userModel?.birthPlace
-                )
+                binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+                binding.etOtherNeed.editText?.setText(health?.notes)
+                binding.etFname.editText?.setText(healthData?.firstName)
+                binding.etMname.editText?.setText(healthData?.middleName)
+                binding.etLname.editText?.setText(healthData?.lastName)
+                binding.etEmail.editText?.setText(healthData?.email)
+                binding.etPhone.editText?.setText(healthData?.phoneNumber)
+                binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(healthData?.dob))
+                binding.etBirthplace.editText?.setText(healthData?.birthPlace)
             }
-
-            progressBar.visibility = View.GONE
-            myHealth = healthData.myHealth
-            val health = myHealth?.profile
-
-            binding.etEmergency.editText?.setText(health?.emergencyContactName)
-            binding.etContact.editText?.setText(health?.emergencyContact)
-            val contactTypes = resources.getStringArray(R.array.contact_type)
-            val contactType = health?.emergencyContactType
-            if (!contactType.isNullOrEmpty()) {
-                val index = contactTypes.indexOf(contactType)
-                if (index >= 0) {
-                    binding.spnContactType.setSelection(index)
-                }
-            }
-            binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
-            binding.etOtherNeed.editText?.setText(health?.notes)
-
-            binding.etFname.editText?.setText(healthData.firstName)
-            binding.etMname.editText?.setText(healthData.middleName)
-            binding.etLname.editText?.setText(healthData.lastName)
-            binding.etEmail.editText?.setText(healthData.email)
-            binding.etPhone.editText?.setText(healthData.phoneNumber)
-            binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(healthData.dob))
-            binding.etBirthplace.editText?.setText(healthData.birthPlace)
         }
     }
 
@@ -197,14 +136,4 @@ class AddHealthActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    data class HealthData(
-        val myHealth: RealmMyHealth?,
-        val firstName: String?,
-        val middleName: String?,
-        val lastName: String?,
-        val email: String?,
-        val phoneNumber: String?,
-        val dob: String?,
-        val birthPlace: String?
-    )
 }

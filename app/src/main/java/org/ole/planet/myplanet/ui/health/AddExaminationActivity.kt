@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
@@ -45,11 +46,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
+    lateinit var healthRepository: HealthRepository
+    @Inject
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private lateinit var binding: ActivityAddExaminationBinding
-    lateinit var mRealm: Realm
     var userId: String? = null
     var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null
@@ -81,18 +83,18 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initViews()
         currentUser = userSessionManager.userModel
         mapConditions = HashMap()
-        mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-        if (pojo == null) {
-            pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+        val realm = databaseService.realmInstance
+        userId?.let {
+            pojo = healthRepository.getHealthExaminationByUserId(it)
+            user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         }
-        user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         if (user != null && (user?.key == null || user?.iv == null)) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            user?.key = generateKey()
-            user?.iv = generateIv()
-            mRealm.commitTransaction()
+            realm.executeTransaction { realm ->
+                val userInTransaction = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                userInTransaction?.key = generateKey()
+                userInTransaction?.iv = generateIv()
+            }
         }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
             health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
@@ -103,7 +105,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initExamination()
         validateFields()
         findViewById<View>(R.id.btn_save).setOnClickListener {
-            if(!allowSubmission){
+            if (!allowSubmission) {
                 scrollToView(binding.etBloodpressure)
             }
             if (!isValidInput || !allowSubmission) {
@@ -115,7 +117,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun initExamination() {
         if (intent.hasExtra("id")) {
-            examination = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
+            examination = databaseService.realmInstance.where(RealmHealthExamination::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
             binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
             binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
@@ -234,62 +236,62 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
     private fun initHealth() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        health = RealmMyHealth()
-        val profile = RealmMyHealthProfile()
-        health?.lastExamination = Date().time
-        health?.userKey = generateKey()
-        health?.profile = profile
-        mRealm.commitTransaction()
+        databaseService.realmInstance.executeTransaction {
+            health = RealmMyHealth()
+            val profile = RealmMyHealthProfile()
+            health?.lastExamination = Date().time
+            health?.userKey = generateKey()
+            health?.profile = profile
+        }
     }
 
     private fun saveData() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        createPojo()
-        if (examination == null) {
-            val userId = generateIv()
-            examination = mRealm.createObject(RealmHealthExamination::class.java, userId)
-            examination?.userId = userId
+        databaseService.realmInstance.executeTransaction {
+            createPojo()
+            if (examination == null) {
+                val userId = generateIv()
+                examination = databaseService.realmInstance.createObject(RealmHealthExamination::class.java, userId)
+                examination?.userId = userId
+            }
+            examination?.profileId = health?.userKey
+            examination?.creatorId = health?.userKey
+            examination?.gender = user?.gender
+            examination?.age = user?.dob?.let { getAge(it) }!!
+            examination?.isSelfExamination = currentUser?._id == pojo?._id
+            examination?.date = Date().time
+            examination?.planetCode = user?.planetCode
+            val sign = RealmExamination()
+            sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
+            sign.createdBy = currentUser?._id
+            examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
+            examination?.setTemperature(getFloat("${binding.etTemperature.text}".trim { it <= ' ' }))
+            examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
+            examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
+            examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
+            otherConditions
+            examination?.conditions = JsonUtils.gson.toJson(mapConditions)
+            examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
+            sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
+            sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
+            sign.xrays = "${binding.etXray.text}".trim { it <= ' ' }
+            examination?.vision = "${binding.etVision.text}".trim { it <= ' ' }
+            sign.treatments = "${binding.etTreatments.text}".trim { it <= ' ' }
+            sign.referrals = "${binding.etReferrals.text}".trim { it <= ' ' }
+            sign.notes = "${binding.etObservation.text}".trim { it <= ' ' }
+            sign.diagnosis = "${binding.etDiag.text}".trim { it <= ' ' }
+            sign.medications = "${binding.etMedications.text}".trim { it <= ' ' }
+            examination?.date = Date().time
+            examination?.isUpdated = true
+            examination?.isHasInfo = hasInfo
+            pojo?.isUpdated = true
+            try {
+                val key = user?.key ?: generateKey().also { user?.key = it }
+                val iv = user?.iv ?: generateIv().also { user?.iv = it }
+                examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
-        examination?.profileId = health?.userKey
-        examination?.creatorId = health?.userKey
-        examination?.gender = user?.gender
-        examination?.age = user?.dob?.let { getAge(it) }!!
-        examination?.isSelfExamination = currentUser?._id == pojo?._id
-        examination?.date = Date().time
-        examination?.planetCode = user?.planetCode
-        val sign = RealmExamination()
-        sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
-        sign.createdBy = currentUser?._id
-        examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
-        examination?.setTemperature(getFloat("${binding.etTemperature.text}".trim { it <= ' ' }))
-        examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
-        examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
-        examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
-        otherConditions
-        examination?.conditions = JsonUtils.gson.toJson(mapConditions)
-        examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
-        sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
-        sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
-        sign.xrays = "${binding.etXray.text}".trim { it <= ' ' }
-        examination?.vision = "${binding.etVision.text}".trim { it <= ' ' }
-        sign.treatments = "${binding.etTreatments.text}".trim { it <= ' ' }
-        sign.referrals = "${binding.etReferrals.text}".trim { it <= ' ' }
-        sign.notes = "${binding.etObservation.text}".trim { it <= ' ' }
-        sign.diagnosis = "${binding.etDiag.text}".trim { it <= ' ' }
-        sign.medications = "${binding.etMedications.text}".trim { it <= ' ' }
-        examination?.date = Date().time
-        examination?.isUpdated = true
-        examination?.isHasInfo = hasInfo
-        pojo?.isUpdated = true
-        try {
-            val key = user?.key ?: generateKey().also { user?.key = it }
-            val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        mRealm.commitTransaction()
         Utilities.toast(this, getString(R.string.added_successfully))
         super.finish()
     }
@@ -371,7 +373,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun createPojo() {
         try {
             if (pojo == null) {
-                pojo = mRealm.createObject(RealmHealthExamination::class.java, userId)
+                pojo = databaseService.realmInstance.createObject(RealmHealthExamination::class.java, userId)
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
@@ -407,9 +409,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         binding.etBloodpressure.removeTextChangedListener(textWatcher)
         textWatcher = null
         super.onDestroy()
