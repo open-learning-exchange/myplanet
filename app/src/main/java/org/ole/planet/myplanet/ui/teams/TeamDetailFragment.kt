@@ -371,11 +371,18 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.btnLeave.setOnClickListener {
             AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    team?.leave(user, mRealm)
-                    Utilities.toast(activity, getString(R.string.left_team))
-                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                    setupViewPager(false, lastPageId)
-                    binding.llActionButtons.visibility = View.GONE
+                    team?.let { currentTeam ->
+                        user?.let { currentUser ->
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                teamsRepository.leaveTeam(currentTeam._id!!, currentUser.id)
+                                Utilities.toast(activity, getString(R.string.left_team))
+                                val lastPageId =
+                                    currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                                setupViewPager(false, lastPageId)
+                                binding.llActionButtons.visibility = View.GONE
+                            }
+                        }
+                    }
                 }.setNegativeButton(R.string.no, null).show()
         }
 
