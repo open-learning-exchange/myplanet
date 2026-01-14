@@ -33,4 +33,11 @@ interface ResourcesRepository {
         filterPayload: String
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
+    suspend fun getAttachmentUrls(resourceId: String): AttachmentResult
+}
+
+sealed class AttachmentResult {
+    data class Success(val urls: List<String>) : AttachmentResult()
+    object ResourceNotFound : AttachmentResult()
+    object NoAttachments : AttachmentResult()
 }

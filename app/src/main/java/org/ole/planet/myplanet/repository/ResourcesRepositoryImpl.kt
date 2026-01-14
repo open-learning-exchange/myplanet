@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -217,6 +218,25 @@ class ResourcesRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    override suspend fun getAttachmentUrls(resourceId: String): AttachmentResult {
+        val resource = getLibraryItemByResourceId(resourceId) ?: return AttachmentResult.ResourceNotFound
+        val attachments = resource.attachments
+        if (attachments.isNullOrEmpty()) {
+            return AttachmentResult.NoAttachments
+        }
+        val urls = attachments?.mapNotNull { attachment ->
+            attachment.name?.let { name ->
+                UrlUtils.getUrl(resourceId, name)
+            }
+        } ?: emptyList()
+
+        return if (urls.isNotEmpty()) {
+            AttachmentResult.Success(urls)
+        } else {
+            AttachmentResult.NoAttachments
         }
     }
 }
