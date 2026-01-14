@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnTagClickListener
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
@@ -71,6 +71,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var searchTags: MutableList<RealmTag>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
+    private var tagsMap: Map<String, List<RealmTag>> = emptyMap()
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -129,7 +130,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing && view != null) {
@@ -176,32 +177,40 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
-                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
-                } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+        lifecycleScope.launch {
+            try {
+                map = getRatings(mRealm, "resource", model?.id)
+                val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+                val filteredLibraryList: List<RealmMyLibrary> =
+                    if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                    applyFilter(libraryList.filterNotNull())
+                    } else {
+                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
+                    }
+
+                val resourceIds = filteredLibraryList.mapNotNull { it.id }
+                tagsMap = tagsRepository.getTagsForResources(resourceIds)
+
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setLibraryList(filteredLibraryList)
+                    adapterLibrary.setRatingMap(map!!)
+                    adapterLibrary.setTagsMap(tagsMap)
                 }
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
-            adapterLibrary.setLibraryList(filteredLibraryList)
-            adapterLibrary.setRatingMap(map!!)
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
-        } catch (e: Exception) {
-            e.printStackTrace()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
+        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap())
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -285,16 +294,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
-                        )
-                    )
-                ) {
-                    recyclerView.scrollToPosition(0)
+                val filteredList = applyFilter(filterLibraryByTag(etSearch.text.toString().trim(), searchTags))
+                val resourceIds = filteredList.mapNotNull { it?.id }
+                lifecycleScope.launch {
+                    tagsMap = tagsRepository.getTagsForResources(resourceIds)
+                    adapterLibrary.setTagsMap(tagsMap)
+                    adapterLibrary.setLibraryList(filteredList) {
+                        recyclerView.scrollToPosition(0)
+                    }
+                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 }
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
 
             override fun afterTextChanged(s: Editable) {}

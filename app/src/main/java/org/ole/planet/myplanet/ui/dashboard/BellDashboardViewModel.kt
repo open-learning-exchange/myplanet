@@ -48,9 +48,13 @@ class BellDashboardViewModel @Inject constructor(
 
             val completed = myCourses.filter { course ->
                 val progress = courseProgress[course.courseId]
-                progress?.let {
+                val isCompleted = progress?.let {
                     it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
                 } == true
+                val hasValidId = !course.courseId.isNullOrBlank()
+                val hasValidTitle = !course.courseTitle.isNullOrBlank()
+
+                isCompleted && hasValidId && hasValidTitle
             }.map {
                 CourseCompletion(it.courseId, it.courseTitle)
             }
