@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -91,6 +90,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var progressRepository: ProgressRepository
+
+    @Inject
+    lateinit var ratingsRepository: RatingsRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -186,7 +188,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (!mRealm.isInTransaction) {
                     mRealm.refresh()
                 }
-                val map = getRatings(mRealm, "course", model?.id)
+                val map = ratingsRepository.getCourseRatings(model?.id)
                 val progressMap = progressRepository.getCourseProgress(model?.id)
                 val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
                 val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
@@ -219,15 +221,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val allCourses: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
-
-        val courseList = if (isMyCourseLib) {
-            allCourses.filter { it?.isMyCourse == true }
-        } else {
-            allCourses.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        }
-
-        val map = getRatings(mRealm, "course", model?.id)
+        val courseList = emptyList<RealmMyCourse?>()
+        val map = HashMap<String?, com.google.gson.JsonObject>()
         val progressMap = HashMap<String?, com.google.gson.JsonObject>()
 
         adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, tagsRepository)
@@ -503,7 +498,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         lifecycleScope.launch {
             val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
                 val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = databaseService.withRealm { realm -> getRatings(realm, "course", model?.id) }
+                val ratings = ratingsRepository.getCourseRatings(model?.id)
                 val progress = progressRepository.getCourseProgress(model?.id)
                 Triple(courses, ratings, progress)
             }
@@ -684,8 +679,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
-                val map = getRatings(mRealm, "course", model?.id)
                 lifecycleScope.launch {
+                    val map = ratingsRepository.getCourseRatings(model?.id)
                     val progressMap = progressRepository.getCourseProgress(model?.id)
                     val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
                         .filterIsInstance<RealmMyCourse?>()

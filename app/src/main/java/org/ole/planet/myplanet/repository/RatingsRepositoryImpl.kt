@@ -15,6 +15,12 @@ class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
 ) : RealmRepository(databaseService), RatingsRepository {
+    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmRating.getRatings(realm, "course", userId)
+        }
+    }
+
     override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
         return withRealmAsync { realm ->
             getRatingsById(realm, type, resourceId, userId) as? JsonObject

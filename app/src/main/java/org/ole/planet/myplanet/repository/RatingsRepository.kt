@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
+
 interface RatingsRepository {
+    suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): com.google.gson.JsonObject?
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
 
