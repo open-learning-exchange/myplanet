@@ -77,41 +77,53 @@ class BellDashboardViewModel @Inject constructor(
 
                 val completedCourses = mutableListOf<CourseCompletion>()
                 myCourses.forEachIndexed { index, course ->
-                    val progress = courseProgress[course.id]
-                    val current = progress?.asJsonObject?.get("current")?.asInt ?: 0
-                    val max = progress?.asJsonObject?.get("max")?.asInt ?: 0
-                    val isCompleted = progress?.let {
-                        it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
-                    } == true
                     val hasValidId = !course.courseId.isNullOrBlank()
                     val hasValidTitle = !course.courseTitle.isNullOrBlank()
 
-                    // Check if this course is part of any certification (matches web behavior)
+                    // Get all progress records for this course and user
+                    val progressRecords = realm.where(org.ole.planet.myplanet.model.RealmCourseProgress::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("courseId", course.courseId)
+                        .findAll()
+
+                    // Count UNIQUE steps that are passed (handles duplicate progress records)
+                    val passedStepNumbers = progressRecords
+                        .filter { it.passed }
+                        .map { it.stepNum }
+                        .toSet()
+                    val passedSteps = passedStepNumbers.size
+                    val totalSteps = course.courseSteps?.size ?: 0
+
+                    // Web logic: ALL steps must be passed AND course must have at least one step
+                    val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
+
+                    // Check if this course is part of any certification (for badge color)
                     val isPartOfCertification = RealmCertification.isCourseCertified(realm, course.courseId)
 
                     android.util.Log.d("BadgeConditions", "Course #${index + 1}: ${course.courseTitle}")
                     android.util.Log.d("BadgeConditions", "  - Course ID: ${course.courseId}")
-                    android.util.Log.d("BadgeConditions", "  - Progress: $current/$max")
-                    android.util.Log.d("BadgeConditions", "  - Is Completed: $isCompleted")
+                    android.util.Log.d("BadgeConditions", "  - Total steps: $totalSteps")
+                    android.util.Log.d("BadgeConditions", "  - Passed steps: $passedSteps")
+                    android.util.Log.d("BadgeConditions", "  - All steps passed: $allStepsPassed")
                     android.util.Log.d("BadgeConditions", "  - Has Valid ID: $hasValidId")
                     android.util.Log.d("BadgeConditions", "  - Has Valid Title: $hasValidTitle")
                     android.util.Log.d("BadgeConditions", "  - Part of Certification: $isPartOfCertification")
 
-                    // Only show badge if course is completed AND part of a certification (matches web)
-                    if (isCompleted && hasValidId && hasValidTitle && isPartOfCertification) {
+                    // Match web behavior: Show badge if ALL steps are passed AND course has steps
+                    if (allStepsPassed && hasValidId && hasValidTitle) {
                         completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
-                        android.util.Log.d("BadgeConditions", "  ✓ ADDED TO BADGE LIST (certified course)")
+                        android.util.Log.d("BadgeConditions", "  ✓ ADDED TO BADGE LIST (all steps passed)")
                     } else {
                         when {
-                            !isCompleted -> android.util.Log.d("BadgeConditions", "  ✗ NOT COMPLETED")
-                            !hasValidId || !hasValidTitle -> android.util.Log.d("BadgeConditions", "  ✗ INVALID DATA")
-                            !isPartOfCertification -> android.util.Log.d("BadgeConditions", "  ✗ NOT PART OF CERTIFICATION - Badge not shown (web behavior)")
+                            totalSteps == 0 -> android.util.Log.d("BadgeConditions", "  ✗ NO STEPS - Badge not shown")
+                            !allStepsPassed -> android.util.Log.d("BadgeConditions", "  ✗ NOT ALL STEPS PASSED ($passedSteps/$totalSteps) - Badge not shown")
+                            !hasValidId || !hasValidTitle -> android.util.Log.d("BadgeConditions", "  ✗ INVALID DATA - Badge not shown")
                         }
                     }
                 }
 
                 android.util.Log.d("BadgeConditions", "Total completed courses (badges to show): ${completedCourses.size}")
-                android.util.Log.d("BadgeConditions", "Matching web version: Only showing certified courses")
+                android.util.Log.d("BadgeConditions", "Web matching logic: Showing courses where ALL steps are passed")
                 completedCourses
             }
             _completedCourses.value = completed
