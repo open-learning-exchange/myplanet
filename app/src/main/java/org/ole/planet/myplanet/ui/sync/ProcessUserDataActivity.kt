@@ -32,7 +32,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.SecurityDataListener
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 @AndroidEntryPoint
-abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListener {
+abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     
     @Inject
     @AppPreferences
@@ -193,9 +193,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataListener? = null) {
         if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
+            uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
                         override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
@@ -249,13 +249,13 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
                 checkAllOperationsComplete()
             }
 
-            uploadManager.uploadUserActivities(object : SuccessListener {
+            uploadManager.uploadUserActivities(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            uploadManager.uploadExamResult(object : SuccessListener {
+            uploadManager.uploadExamResult(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
@@ -268,19 +268,19 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
                 }
             }
 
-            uploadManager.uploadResource(object : SuccessListener {
+            uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            uploadManager.uploadSubmitPhotos(object : SuccessListener {
+            uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            uploadManager.uploadActivities(object : SuccessListener {
+            uploadManager.uploadActivities(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }

@@ -135,7 +135,6 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
             filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
-            initList()
         }
     }
 

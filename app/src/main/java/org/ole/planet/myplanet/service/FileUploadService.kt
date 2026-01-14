@@ -5,7 +5,7 @@ import java.io.File
 import java.io.IOException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -19,7 +19,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 open class FileUploadService {
-    fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: SuccessListener) {
+    fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: OnSuccessListener) {
         val f = personal.path?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.path)
         if (f != null) {
@@ -27,7 +27,7 @@ open class FileUploadService {
         }
     }
 
-    fun uploadAttachment(id: String, rev: String, personal: RealmMyLibrary, listener: SuccessListener) {
+    fun uploadAttachment(id: String, rev: String, personal: RealmMyLibrary, listener: OnSuccessListener) {
         val f = personal.resourceLocalAddress?.let { File(it) }
         val name = FileUtils.getFileNameFromLocalAddress(personal.resourceLocalAddress)
         if (f != null) {
@@ -35,7 +35,7 @@ open class FileUploadService {
         }
     }
 
-    fun uploadAttachment(id: String, rev: String, personal: RealmSubmitPhotos, listener: SuccessListener) {
+    fun uploadAttachment(id: String, rev: String, personal: RealmSubmitPhotos, listener: OnSuccessListener) {
         val f = personal.photoLocation?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
         if (f != null) {
@@ -43,7 +43,7 @@ open class FileUploadService {
         }
     }
 
-    private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
+    private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
             val connection = f.toURI().toURL().openConnection()
@@ -66,7 +66,7 @@ open class FileUploadService {
         }
     }
 
-    private fun onDataReceived(`object`: JsonObject?, listener: SuccessListener) {
+    private fun onDataReceived(`object`: JsonObject?, listener: OnSuccessListener) {
         if (`object` != null) {
             if (JsonUtils.getBoolean("ok", `object`)) {
                 listener.onSuccess("Uploaded successfully")

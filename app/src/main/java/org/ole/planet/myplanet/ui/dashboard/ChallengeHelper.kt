@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,10 +16,10 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class ChallengeHelper(
     private val activity: DashboardActivity,
@@ -30,7 +29,8 @@ class ChallengeHelper(
     private val viewModel: DashboardViewModel,
     private val progressRepository: ProgressRepository,
     private val databaseService: DatabaseService,
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val submissionsRepository: SubmissionsRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -48,14 +48,12 @@ class ChallengeHelper(
 
                 val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, user?.id)
                 val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
-                val realmData = databaseService.withRealmAsync { realm ->
-                    object {
-                        val courseName = realm.where(RealmMyCourse::class.java)
-                            .equalTo("courseId", courseId)
-                            .findFirst()?.courseTitle
-                        val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
-                    }
+                val courseName = databaseService.withRealmAsync { realm ->
+                    realm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()?.courseTitle
                 }
+                val hasUnfinishedSurvey = hasPendingSurvey(courseId)
 
                 val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
                 val validUrls = listOf(
@@ -69,8 +67,8 @@ class ChallengeHelper(
 
                 val today = LocalDate.now()
                 if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-                    val courseStatus = getCourseStatus(progress, realmData.courseName)
-                    challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, realmData.hasUnfinishedSurvey)
+                    val courseStatus = getCourseStatus(progress, courseName)
+                    challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -78,12 +76,21 @@ class ChallengeHelper(
         }
     }
 
-    private fun hasPendingSurvey(realm: Realm, courseId: String): Boolean {
-        return realm.where(RealmStepExam::class.java)
-            .equalTo("courseId", courseId)
-            .equalTo("type", "survey")
-            .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey") }
+    private suspend fun hasPendingSurvey(courseId: String): Boolean {
+        val surveys = databaseService.withRealmAsync { realm ->
+            realm.copyFromRealm(
+                realm.where(RealmStepExam::class.java)
+                    .equalTo("courseId", courseId)
+                    .equalTo("type", "survey")
+                    .findAll()
+            )
+        }
+        for (survey in surveys) {
+            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, user?.id, "survey")) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {

@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataListener
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
@@ -81,7 +81,7 @@ class DataService constructor(
         ConfigurationManager(context, preferences, retrofitInterface)
 
     @Deprecated("Use ConfigurationRepository.checkHealth instead")
-    fun healthAccess(listener: SuccessListener) {
+    fun healthAccess(listener: OnSuccessListener) {
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
             if (healthUrl.isBlank()) {
@@ -295,7 +295,7 @@ class DataService constructor(
         }
     }
 
-    suspend fun syncPlanetServers(callback: SuccessListener) {
+    suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
             val response = withContext(Dispatchers.IO) {
                 retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()

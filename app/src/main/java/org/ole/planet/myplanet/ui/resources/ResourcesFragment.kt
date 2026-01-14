@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
@@ -40,7 +39,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -71,6 +69,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var searchTags: MutableList<RealmTag>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
+    private var tagsMap: Map<String, List<RealmTag>> = emptyMap()
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -176,32 +175,40 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary?> =
-                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull()).map { it }
-                } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags)).map { it }
+        lifecycleScope.launch {
+            try {
+                map = getRatings(mRealm, "resource", model?.id)
+                val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+                val filteredLibraryList: List<RealmMyLibrary> =
+                    if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                    applyFilter(libraryList.filterNotNull())
+                    } else {
+                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
+                    }
+
+                val resourceIds = filteredLibraryList.mapNotNull { it.id }
+                tagsMap = tagsRepository.getTagsForResources(resourceIds)
+
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setLibraryList(filteredLibraryList)
+                    adapterLibrary.setRatingMap(map!!)
+                    adapterLibrary.setTagsMap(tagsMap)
                 }
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
-            adapterLibrary.setLibraryList(filteredLibraryList)
-            adapterLibrary.setRatingMap(map!!)
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
-        } catch (e: Exception) {
-            e.printStackTrace()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, tagsRepository, profileDbHandler?.userModel)
+        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap())
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -285,16 +292,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
-                        )
-                    )
-                ) {
-                    recyclerView.scrollToPosition(0)
+                val filteredList = applyFilter(filterLibraryByTag(etSearch.text.toString().trim(), searchTags))
+                val resourceIds = filteredList.mapNotNull { it?.id }
+                lifecycleScope.launch {
+                    tagsMap = tagsRepository.getTagsForResources(resourceIds)
+                    adapterLibrary.setTagsMap(tagsMap)
+                    adapterLibrary.setLibraryList(filteredList) {
+                        recyclerView.scrollToPosition(0)
+                    }
+                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 }
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -588,24 +595,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 return@launch
             }
 
-            val filter = JsonObject().apply {
-                add("tags", getTagsArray(searchTags))
-                add("subjects", getJsonArrayFromList(subjects))
-                add("language", getJsonArrayFromList(languages))
-                add("level", getJsonArrayFromList(levels))
-                add("mediaType", getJsonArrayFromList(mediums))
-            }
-            val filterPayload = Gson().toJson(filter)
-
-            lifecycleScope.launch {
-                resourcesRepository.saveSearchActivity(
-                    userName,
-                    searchText,
-                    planetCode,
-                    parentCode,
-                    filterPayload
-                )
-            }
+            resourcesRepository.saveSearchActivity(
+                userName,
+                searchText,
+                planetCode,
+                parentCode,
+                searchTags,
+                subjects,
+                languages,
+                levels,
+                mediums
+            )
         }
     }
 

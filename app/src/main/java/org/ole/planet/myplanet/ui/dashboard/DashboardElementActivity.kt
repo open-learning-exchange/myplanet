@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.sync
+package org.ole.planet.myplanet.ui.dashboard
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -28,10 +28,11 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME

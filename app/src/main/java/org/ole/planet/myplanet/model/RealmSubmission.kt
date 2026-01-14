@@ -207,6 +207,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use SubmissionsRepository.isStepCompleted instead")
         fun isStepCompleted(realm: Realm, id: String?, userId: String?): Boolean {
             val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
             return exam.id?.let {

@@ -6,13 +6,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -23,10 +25,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
@@ -38,24 +37,20 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
-    var userModel: RealmUserModel? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    private val viewModel: FeedbackListViewModel by viewModels()
 
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
-    @Inject
-    lateinit var feedbackRepository: FeedbackRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
     private val serverUrlMapper = ServerUrlMapper()
-    
+
     @Inject
     lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-    
+
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private lateinit var feedbackAdapter: FeedbackAdapter
@@ -69,7 +64,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        userModel = userSessionManager.userModel
 
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
@@ -83,7 +77,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
         return binding.root
     }
-    
+
     private fun setupRealtimeSync() {
         realtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
@@ -93,16 +87,16 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                     }
                 }
             }
-            
+
             override fun onSyncStarted() {}
             override fun onSyncComplete() {}
             override fun onSyncFailed(msg: String?) {}
         }
         syncCoordinator.addListener(realtimeSyncListener)
     }
-    
+
     private fun refreshFeedbackListData() {
-        onFeedbackSubmitted()
+        viewModel.refreshFeedback()
     }
 
     private fun startFeedbackSync() {
@@ -140,7 +134,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        onFeedbackSubmitted()
+                        refreshFeedbackListData()
                         prefManager.setFeedbackSynced(true)
                     }
                 }
@@ -171,7 +165,17 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         feedbackAdapter = FeedbackAdapter()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         binding.rvFeedback.adapter = feedbackAdapter
-        onFeedbackSubmitted()
+        observeFeedbackList()
+    }
+
+    private fun observeFeedbackList() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.feedbackList.collect { feedbackList ->
+                    updatedFeedbackList(feedbackList)
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
@@ -189,11 +193,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onFeedbackSubmitted() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            feedbackRepository.getFeedback(userModel).collectLatest { feedbackList ->
-                updatedFeedbackList(feedbackList)
-            }
-        }
+        refreshFeedbackListData()
     }
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {

@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AutoSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters
-) : Worker(context, workerParams), OnSyncListener, CheckVersionCallback, SuccessListener {
+) : Worker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
     private lateinit var preferences: SharedPreferences
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager

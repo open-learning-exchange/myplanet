@@ -243,14 +243,9 @@ object DownloadUtils {
 
     @JvmStatic
     fun updateResourceOfflineStatus(url: String) {
-        val currentFileName = FileUtils.getFileNameFromUrl(url)
-        if (currentFileName.isBlank()) {
-            return
-        }
-
         MainApplication.applicationScope.launch {
             try {
-                resourcesRepository.markResourceOfflineByLocalAddress(currentFileName)
+                resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
