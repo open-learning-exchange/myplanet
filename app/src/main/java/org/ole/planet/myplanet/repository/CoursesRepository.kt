@@ -36,4 +36,5 @@ interface CoursesRepository {
         subject: String
     )
     suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData?
+    suspend fun logCourseVisit(userId: String?, courseId: String?, courseTitle: String?, planetCode: String?, parentCode: String?)
 }

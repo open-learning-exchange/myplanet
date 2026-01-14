@@ -26,7 +26,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
-import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -223,13 +222,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val detachedCurrentCourse = currentCourse
 
             withContext(Dispatchers.IO) {
-                val backgroundRealm = databaseService.realmInstance
                 try {
-                    createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
+                    coursesRepository.logCourseVisit(
+                        detachedUserModel?.name,
+                        detachedCurrentCourse?.courseId,
+                        detachedCurrentCourse?.courseTitle,
+                        detachedUserModel?.planetCode,
+                        detachedUserModel?.parentCode
+                    )
                 } catch (e: Exception) {
                     e.printStackTrace()
-                } finally {
-                    backgroundRealm.close()
                 }
             }
 
