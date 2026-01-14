@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.callback.TeamUpdateListener
+import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdateListener {
+class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
