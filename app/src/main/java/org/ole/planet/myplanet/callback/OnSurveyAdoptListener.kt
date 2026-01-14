@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface SurveyAdoptListener {
+interface OnSurveyAdoptListener {
     fun onAdoptSurvey(surveyId: String)
 }
