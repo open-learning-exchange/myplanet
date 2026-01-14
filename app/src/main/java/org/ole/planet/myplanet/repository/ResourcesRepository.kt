@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmTag
 
 interface ResourcesRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
@@ -21,6 +22,7 @@ interface ResourcesRepository {
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
+    suspend fun markResourceOfflineByUrl(url: String)
     suspend fun markResourceOfflineByLocalAddress(localAddress: String)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun markAllResourcesOffline(isOffline: Boolean)
@@ -29,7 +31,11 @@ interface ResourcesRepository {
         searchText: String,
         planetCode: String,
         parentCode: String,
-        filterPayload: String
+        tags: List<RealmTag>,
+        subjects: Set<String>,
+        languages: Set<String>,
+        levels: Set<String>,
+        mediums: Set<String>
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
 }

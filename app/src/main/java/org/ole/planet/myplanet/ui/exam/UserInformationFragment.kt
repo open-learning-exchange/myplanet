@@ -30,7 +30,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -388,7 +388,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private suspend fun uploadExamResultWrapper() {
         try {
-            val successListener = object : SuccessListener {
+            val successListener = object : OnSuccessListener {
                 override fun onSuccess(success: String?) {}
             }
             uploadManager.uploadExamResult(successListener)
