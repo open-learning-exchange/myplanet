@@ -16,12 +16,14 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val coursesRepository: CoursesRepository,
+    private val teamsRepository: TeamsRepository,
 ) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
@@ -73,6 +75,8 @@ class BellDashboardViewModel @Inject constructor(
         updateNetworkStatus(if (reachable) NetworkStatus.Connected else NetworkStatus.Disconnected)
         return reachable
     }
+
+    suspend fun getTeamById(teamId: String) = teamsRepository.getTeamById(teamId)
 }
 
 data class CourseCompletion(val courseId: String?, val courseTitle: String?)
