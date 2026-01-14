@@ -75,7 +75,7 @@ class MyHealthFragment : Fragment() {
     var userId: String? = null
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
-    lateinit var adapter: UserSelectionAdapter
+    lateinit var adapter: HealthUserSelectionAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -198,7 +198,7 @@ class MyHealthFragment : Fragment() {
 
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
-        adapter = UserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
+        adapter = HealthUserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
         setupInitialData()
         setupButtons()
     }
@@ -351,7 +351,7 @@ class MyHealthFragment : Fragment() {
                     if (isAdded) {
                         alertHealthListBinding?.searchProgress?.visibility = View.GONE
                         lv.visibility = View.VISIBLE
-                        val adapter = UserSelectionAdapter(
+                        val adapter = HealthUserSelectionAdapter(
                             requireActivity(),
                             android.R.layout.simple_list_item_1,
                             userModelList
