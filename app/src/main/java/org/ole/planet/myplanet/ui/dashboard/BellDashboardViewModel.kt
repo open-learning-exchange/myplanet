@@ -42,16 +42,22 @@ class BellDashboardViewModel @Inject constructor(
         viewModelScope.launch {
             val completed = databaseService.withRealmAsync { realm ->
                 val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
-                val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
 
-                myCourses.filter { course ->
+                val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+                val completedCourses = mutableListOf<CourseCompletion>()
+                myCourses.forEachIndexed { _, course ->
                     val progress = courseProgress[course.id]
-                    progress?.let {
+                    val isCompleted = progress?.let {
                         it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
                     } == true
-                }.map {
-                    CourseCompletion(it.courseId, it.courseTitle)
+                    val hasValidId = !course.courseId.isNullOrBlank()
+                    val hasValidTitle = !course.courseTitle.isNullOrBlank()
+
+                    if (isCompleted && hasValidId && hasValidTitle) {
+                        completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
+                    }
                 }
+                completedCourses
             }
             _completedCourses.value = completed
         }
