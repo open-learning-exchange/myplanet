@@ -165,7 +165,7 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun dashboardDataFlow(userId: String?): Flow<Unit> {
+    suspend fun dashboardDataFlow(userId: String?): Flow<Unit> {
         return merge(
             resourcesRepository.getRecentResources(userId ?: "").map {},
             resourcesRepository.getPendingDownloads(userId ?: "").map {},
