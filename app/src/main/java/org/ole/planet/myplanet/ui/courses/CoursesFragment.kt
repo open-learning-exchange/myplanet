@@ -203,7 +203,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     sortedCourseList,
                     map,
                     userModel,
-                    tagsRepository
+                    ::fetchTags
                 )
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
@@ -230,7 +230,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = HashMap<String?, com.google.gson.JsonObject>()
 
-        adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, tagsRepository)
+        adapterCourses = CoursesAdapter(requireActivity(), courseList, map, userModel, ::fetchTags)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
@@ -549,6 +549,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
 
         return builder.create()
+    }
+
+    private suspend fun fetchTags(courseId: String): List<RealmTag> {
+        return tagsRepository.getTagsForCourse(courseId)
     }
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
