@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.callback.TeamUpdateListener
+import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdateListener {
+class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -60,7 +60,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
     lateinit var syncManager: SyncManager
 
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
 
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
@@ -491,7 +491,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "teams" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
@@ -500,7 +500,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
                 }
             }
         }
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncCoordinator.addListener(onRealtimeSyncListener)
     }
 
     private fun shouldQueryRealm(teamId: String): Boolean {
@@ -510,8 +510,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, TeamUpdat
     override fun onDestroyView() {
         loadTeamJob?.cancel()
         loadTeamJob = null
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
+        if (::onRealtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(onRealtimeSyncListener)
         }
         super.onDestroyView()
         _binding = null
