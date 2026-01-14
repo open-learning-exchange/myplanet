@@ -317,7 +317,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         val course = getCourseByCourseId(courseId)
         course?.let {
-            if (it.userId.contains(userId)) {
+            if (it.userId?.contains(userId) == true) {
                 it.removeUserId(userId)
                 save(it)
             }

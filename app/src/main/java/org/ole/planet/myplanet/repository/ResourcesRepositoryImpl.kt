@@ -246,7 +246,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun removeFromUserShelf(resourceId: String, userId: String) {
         val resource = getLibraryItemByResourceId(resourceId)
         resource?.let {
-            if (it.userId.contains(userId)) {
+            if (it.userId?.contains(userId) == true) {
                 it.removeUserId(userId)
                 saveLibraryItem(it)
             }
