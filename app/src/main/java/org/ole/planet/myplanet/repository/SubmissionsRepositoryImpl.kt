@@ -385,4 +385,11 @@ class SubmissionsRepositoryImpl @Inject constructor(
             } > 0
         } ?: false
     }
+
+    override suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("courseId", courseId)
+            equalTo("type", "survey")
+        }
+    }
 }

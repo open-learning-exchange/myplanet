@@ -310,4 +310,12 @@ class CoursesRepositoryImpl @Inject constructor(
             activity.user = userId
         }
     }
+
+    override suspend fun getCourseTitleById(courseId: String): String? {
+        return withRealm { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()?.courseTitle
+        }
+    }
 }
