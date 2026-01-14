@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.callback
+package org.ole.planet.myplanet.base
 
 import androidx.recyclerview.widget.RecyclerView
 

@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.ItemTouchHelperListener
-import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.base.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
