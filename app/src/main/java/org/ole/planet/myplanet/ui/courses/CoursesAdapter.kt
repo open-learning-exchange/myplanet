@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -44,7 +43,7 @@ class CoursesAdapter(
     private var userModel: RealmUserModel?,
     private var tagCache: Map<String, List<RealmTag>>,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
+    private val selectedItems: MutableSet<String?> = mutableSetOf()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -307,12 +306,17 @@ class CoursesAdapter(
                 holder.rowCourseBinding.checkbox.visibility = View.GONE
             } else {
                 holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course.id)
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
-                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                    listener?.onSelectedListChange(selectedItems)
+                    if ((view as CheckBox).isChecked) {
+                        selectedItems.add(course.id)
+                    } else {
+                        selectedItems.remove(course.id)
+                    }
+                    val selectedCourses = courseList.filter { selectedItems.contains(it?.id) }
+                    listener?.onSelectedListChange(selectedCourses.toMutableList())
                 }
             }
         } else {
@@ -340,7 +344,7 @@ class CoursesAdapter(
 
         if (selectAll) {
             val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
-            selectedItems.addAll(selectableCourses)
+            selectedItems.addAll(selectableCourses.map { it.id })
         }
 
         val updatedPositions = mutableListOf<Int>()
@@ -353,8 +357,8 @@ class CoursesAdapter(
         updatedPositions.forEach { position ->
             notifyItemChanged(position)
         }
-
-        listener?.onSelectedListChange(selectedItems)
+        val selectedCourses = courseList.filter { selectedItems.contains(it?.id) }
+        listener?.onSelectedListChange(selectedCourses.toMutableList())
     }
 
     override fun onBindViewHolder(
