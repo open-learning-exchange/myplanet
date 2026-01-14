@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface TeamPageListener {
+interface OnTeamPageListener {
     fun onAddDocument()
 }
