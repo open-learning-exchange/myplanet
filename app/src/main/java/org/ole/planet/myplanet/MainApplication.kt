@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
@@ -80,7 +80,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var isCollectionSwitchOn = false
         var showDownload = false
         var isSyncRunning = false
-        var listener: TeamPageListener? = null
+        var listener: OnTeamPageListener? = null
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)

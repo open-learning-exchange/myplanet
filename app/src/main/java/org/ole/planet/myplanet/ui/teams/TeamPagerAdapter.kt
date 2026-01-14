@@ -6,7 +6,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.callback.TeamUpdateListener
+import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
@@ -23,7 +23,7 @@ class TeamPagerAdapter(
     private val pages: List<TeamPageConfig>,
     private val teamId: String?,
     private val onMemberChangeListener: OnMemberChangeListener,
-    private val teamUpdateListener: TeamUpdateListener
+    private val teamUpdateListener: OnTeamUpdateListener
 ) : FragmentStateAdapter(fm) {
 
     override fun getItemCount(): Int = pages.size
