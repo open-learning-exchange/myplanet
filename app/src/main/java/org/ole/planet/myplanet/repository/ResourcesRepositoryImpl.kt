@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.utilities.DownloadUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -120,6 +121,13 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
         update(RealmMyLibrary::class.java, "id", id, updater)
+    }
+
+    override suspend fun markResourceOfflineByUrl(url: String) {
+        val localAddress = FileUtils.getFileNameFromUrl(url)
+        if (localAddress.isNotBlank()) {
+            markResourceOfflineByLocalAddress(localAddress)
+        }
     }
 
     override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {

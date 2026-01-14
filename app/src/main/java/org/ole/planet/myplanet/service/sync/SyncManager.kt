@@ -35,7 +35,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
@@ -73,7 +73,7 @@ class SyncManager constructor(
     private var td: Thread? = null
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
-    private var listener: SyncListener? = null
+    private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
     private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
@@ -85,7 +85,7 @@ class SyncManager constructor(
         }
     }
 
-    fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
+    fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
             _syncStatus.value = SyncStatus.Idle
@@ -116,7 +116,7 @@ class SyncManager constructor(
         data class Error(val message: String) : SyncStatus()
     }
 
-    private fun initializeAndStartImprovedSync(listener: SyncListener?, syncTables: List<String>?) {
+    private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
                 initializationJob.join()
