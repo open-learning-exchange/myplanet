@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.MyPlanet
 
-interface ConfigurationRepository {
+interface ConfigurationsRepository {
     fun checkHealth(listener: OnSuccessListener)
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences)
     fun checkServerAvailability(callback: PlanetAvailableListener?)

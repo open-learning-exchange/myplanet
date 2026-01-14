@@ -63,7 +63,7 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
-import org.ole.planet.myplanet.repository.ConfigurationRepository
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
@@ -91,7 +91,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback,
     ConfigurationIdListener {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
@@ -140,7 +140,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     @Inject
-    lateinit var configurationRepository: ConfigurationRepository
+    lateinit var configurationsRepository: ConfigurationsRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -195,7 +195,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                 }
                 isSync = false
                 forceSync = true
-                configurationRepository.checkVersion(this, settings)
+                configurationsRepository.checkVersion(this, settings)
             }
             else -> {
                 if (serverConfigAction == "sync") {
