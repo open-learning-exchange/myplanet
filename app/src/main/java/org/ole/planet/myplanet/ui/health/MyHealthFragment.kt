@@ -21,6 +21,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -44,7 +45,6 @@ import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -66,6 +66,7 @@ class MyHealthFragment : Fragment() {
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var userRepository: UserRepository
+    private val viewModel: MyHealthViewModel by viewModels()
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
@@ -398,11 +399,10 @@ class MyHealthFragment : Fragment() {
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
-            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
-
-            if (healthRecord != null) {
-                val (mh, mm, list, userMap) = healthRecord
-                val myHealths = mm.profile
+            viewModel.healthData.observe(viewLifecycleOwner) { healthRecord ->
+                if (healthRecord != null) {
+                    val (mh, mm, list, userMap) = healthRecord
+                    val myHealths = mm.profile
                 binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
                 binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
                 binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
@@ -451,6 +451,8 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.VISIBLE
                 binding.tvDataPlaceholder.visibility = View.GONE
             }
+        })
+            viewModel.fetchHealthData(userId!!, currentUser)
         }
     }
 
