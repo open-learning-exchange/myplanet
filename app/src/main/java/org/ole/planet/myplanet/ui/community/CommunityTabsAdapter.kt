@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.teams.TeamCalendarFragment
 import org.ole.planet.myplanet.ui.voices.VoicesFragment
 
-class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: String, private var fromLogin: Boolean, val settings: SharedPreferences) : FragmentStateAdapter(fm) {
+class CommunityTabsAdapter(private val fm: FragmentActivity, private val id: String, private var fromLogin: Boolean, val settings: SharedPreferences) : FragmentStateAdapter(fm) {
     override fun createFragment(position: Int): Fragment {
         val fragment: Fragment = when (position) {
             0 -> {
