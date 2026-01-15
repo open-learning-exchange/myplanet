@@ -81,7 +81,7 @@ class DataService constructor(
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
-    @Deprecated("Use ConfigurationRepository.checkHealth instead")
+    @Deprecated("Use ConfigurationsRepository.checkHealth instead")
     fun healthAccess(listener: OnSuccessListener) {
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
@@ -152,7 +152,7 @@ class DataService constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkVersion instead")
+    @Deprecated("Use ConfigurationsRepository.checkVersion instead")
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (shouldPromptForSettings(settings)) return
 
@@ -205,7 +205,7 @@ class DataService constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkServerAvailability instead")
+    @Deprecated("Use ConfigurationsRepository.checkServerAvailability instead")
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->

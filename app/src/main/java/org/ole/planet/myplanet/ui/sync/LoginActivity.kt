@@ -111,7 +111,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            configurationRepository.checkVersion(this, settings)
+            configurationsRepository.checkVersion(this, settings)
         }
         checkUsagesPermission()
         forceSyncTrigger()
