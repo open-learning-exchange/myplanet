@@ -87,14 +87,9 @@ class MembersFragment : BaseMemberFragment() {
                 val currentUser = user
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
-                        val nextLeaderId = databaseService.withRealm { realm ->
-                            getNextOfKinSync(realm)?.id
-                        }
-
-                        if (nextLeaderId != null) {
-                            databaseService.executeTransactionAsync { realm ->
-                                makeLeaderSync(realm, nextLeaderId)
-                            }
+                        val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, currentUser?.id)
+                        if (nextLeader != null) {
+                            nextLeader.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
                         }
 
                         currentUser?.id?.let { userId ->
@@ -133,48 +128,29 @@ class MembersFragment : BaseMemberFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val removalResult = databaseService.withRealm { realm ->
-                    if (currentUserId != memberId) {
-                        RemovalResult(canRemove = true, newLeaderId = null)
+                if (currentUserId == memberId) {
+                    val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, currentUserId)
+                    if (nextLeader != null) {
+                        nextLeader.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
                     } else {
-                        val nextOfKin = getNextOfKinSync(realm)
-
-                        val nextOfKinId = nextOfKin?.id
-                        if (nextOfKinId != null) {
-                            RemovalResult(canRemove = true, newLeaderId = nextOfKinId)
-                        } else {
-                            RemovalResult(canRemove = false, newLeaderId = null)
-                        }
+                        Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                        return@launch
                     }
                 }
 
-                if (removalResult.canRemove) {
-                    if (removalResult.newLeaderId != null && currentUserId == memberId) {
-                        databaseService.executeTransactionAsync { realm ->
-                            makeLeaderSync(realm, removalResult.newLeaderId)
-                        }
-                    }
-
-                    teamsRepository.removeMember(teamId, memberId)
-                    loadAndDisplayJoinedMembers()
-                    onMemberChangeListener.onMemberChanged()
-                } else {
-                    Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
-                }
+                teamsRepository.removeMember(teamId, memberId)
+                loadAndDisplayJoinedMembers()
+                onMemberChangeListener.onMemberChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private data class RemovalResult(val canRemove: Boolean, val newLeaderId: String?)
-
     private fun handleMakeLeader(userId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    makeLeaderSync(realm, userId)
-                }
+                teamsRepository.updateTeamLeader(teamId, userId)
                 loadAndDisplayJoinedMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
                 onMemberChangeListener.onMemberChanged()
@@ -182,60 +158,6 @@ class MembersFragment : BaseMemberFragment() {
                 Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun makeLeaderSync(realm: Realm, userId: String) {
-        val currentLeaders = realm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", true)
-            .findAll()
-        currentLeaders.forEach { it.isLeader = false }
-
-        val newLeader = realm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("userId", userId)
-            .findFirst()
-
-        if (newLeader != null) {
-            newLeader.isLeader = true
-        }
-    }
-
-    private fun getNextOfKinSync(realm: Realm): RealmUserModel? {
-        val members = realm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", false)
-            .notEqualTo("status", "archived")
-            .findAll()
-
-        if (members.isEmpty()) {
-            return null
-        }
-
-        val userIds = members.mapNotNull { it.userId }.toTypedArray()
-        if (userIds.isEmpty()) {
-            return null
-        }
-
-        val users = realm.where(RealmUserModel::class.java)
-            .`in`("id", userIds)
-            .findAll()
-
-        val userMap = users.associateBy { it.id }
-        val successorMember = members.maxByOrNull { member ->
-            userMap[member.userId]?.let { user ->
-                val visitCount = RealmTeamLog.getVisitCount(realm, user.name, teamId)
-                visitCount
-            } ?: 0L
-        }
-
-        val result = successorMember?.userId?.let { id ->
-            userMap[id]?.let {
-                val copy = realm.copyFromRealm(it)
-                copy
-            }
-        }
-        return result
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
