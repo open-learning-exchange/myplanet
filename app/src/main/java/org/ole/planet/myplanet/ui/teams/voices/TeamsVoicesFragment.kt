@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.discussion
+package org.ole.planet.myplanet.ui.teams.voices
 
 import android.content.res.Configuration
 import android.os.Bundle
@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
-class DiscussionListFragment : BaseTeamFragment() {
+class TeamsVoicesFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
 

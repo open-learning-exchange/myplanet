@@ -7,7 +7,7 @@ import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
-import org.ole.planet.myplanet.ui.teams.discussion.DiscussionListFragment
+import org.ole.planet.myplanet.ui.teams.voices.TeamsVoicesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
@@ -17,7 +17,7 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment
 
     object ChatPage : TeamPageConfig("CHAT", R.string.chat) {
-        override fun createFragment() = DiscussionListFragment()
+        override fun createFragment() = TeamsVoicesFragment()
     }
 
     object PlanPage : TeamPageConfig("PLAN", R.string.plan) {
