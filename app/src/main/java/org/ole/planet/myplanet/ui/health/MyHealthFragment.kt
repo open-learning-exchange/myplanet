@@ -404,56 +404,57 @@ class MyHealthFragment : Fragment() {
                 if (healthRecord != null) {
                     val (mh, mm, list, userMap) = healthRecord
                     val myHealths = mm.profile
-                binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-                binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-                binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
-                val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
-                binding.txtEmergencyContact.text = getString(
-                    R.string.emergency_contact_details,
-                    Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
-                    Utilities.checkNA(contact)
-                ).trimIndent()
+                    binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
+                    binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
+                    binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
+                    val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
+                    binding.txtEmergencyContact.text = getString(
+                        R.string.emergency_contact_details,
+                        Utilities.checkNA(myHealths?.emergencyContactName),
+                        Utilities.checkNA(myHealths?.emergencyContactType),
+                        Utilities.checkNA(contact)
+                    ).trimIndent()
 
-                if (list.isNotEmpty()) {
-                    binding.rvRecords.visibility = View.VISIBLE
-                    binding.tvNoRecords.visibility = View.GONE
-                    binding.tvDataPlaceholder.visibility = View.VISIBLE
+                    if (list.isNotEmpty()) {
+                        binding.rvRecords.visibility = View.VISIBLE
+                        binding.tvNoRecords.visibility = View.GONE
+                        binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                    if (!::healthAdapter.isInitialized) {
-                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
-                    } else {
-                        healthAdapter.updateData(mh, currentUser, userMap)
-                    }
-                    binding.rvRecords.apply {
-                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                        isNestedScrollingEnabled = false
-                        adapter = healthAdapter
-                    }
-                    healthAdapter.submitList(list)
-                    binding.rvRecords.post {
-                        val lastPosition = list.size - 1
-                        if (lastPosition >= 0) {
-                            binding.rvRecords.scrollToPosition(lastPosition)
+                        if (!::healthAdapter.isInitialized) {
+                            healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
+                        } else {
+                            healthAdapter.updateData(mh, currentUser, userMap)
                         }
+                        binding.rvRecords.apply {
+                            layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                            isNestedScrollingEnabled = false
+                            adapter = healthAdapter
+                        }
+                        healthAdapter.submitList(list)
+                        binding.rvRecords.post {
+                            val lastPosition = list.size - 1
+                            if (lastPosition >= 0) {
+                                binding.rvRecords.scrollToPosition(lastPosition)
+                            }
+                        }
+                    } else {
+                        binding.rvRecords.visibility = View.GONE
+                        binding.tvNoRecords.visibility = View.GONE
+                        binding.tvDataPlaceholder.visibility = View.VISIBLE
                     }
                 } else {
+                    binding.txtOtherNeed.text = getString(R.string.empty_text)
+                    binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+                    binding.txtBirthPlace.text = getString(R.string.empty_text)
+                    binding.txtEmergencyContact.text = getString(R.string.empty_text)
+                    binding.rvRecords.adapter = null
                     binding.rvRecords.visibility = View.GONE
-                    binding.tvNoRecords.visibility = View.GONE
-                    binding.tvDataPlaceholder.visibility = View.VISIBLE
+                    binding.tvNoRecords.visibility = View.VISIBLE
+                    binding.tvDataPlaceholder.visibility = View.GONE
                 }
-            } else {
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.VISIBLE
-                binding.tvDataPlaceholder.visibility = View.GONE
             }
+            viewModel.fetchHealthData(userId!!, currentUser)
         }
-        viewModel.fetchHealthData(userId!!, currentUser)
     }
 
     private fun disableDobField() {
