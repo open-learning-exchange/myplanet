@@ -131,9 +131,11 @@ class HealthRepositoryImpl @Inject constructor(private val databaseService: Data
         }
     }
 
-    override suspend fun saveExamination(userId: String, examinationId: String?, data: ExaminationData, currentUser: RealmUserModel?, user: RealmUserModel?) {
+    override suspend fun saveExamination(userId: String, examinationId: String?, data: ExaminationData, currentUserId: String?) {
         withContext(Dispatchers.IO) {
             databaseService.realmInstance.executeTransaction { realm ->
+                val user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val currentUser = realm.where(RealmUserModel::class.java).equalTo("_id", currentUserId).findFirst()
                 var pojo = getHealthExaminationByUserId(userId, realm)
                 if (pojo == null) {
                     pojo = realm.createObject(RealmHealthExamination::class.java, userId)

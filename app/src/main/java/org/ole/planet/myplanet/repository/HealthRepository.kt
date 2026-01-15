@@ -8,7 +8,7 @@ interface HealthRepository {
     fun getHealthExaminationByUserId(userId: String): RealmHealthExamination?
     suspend fun saveHealthData(userId: String, healthProfile: RealmMyHealth.RealmMyHealthProfile, userUpdates: UserHealthUpdates)
     suspend fun getHealthDataForUser(userId: String): HealthData?
-    suspend fun saveExamination(userId: String, examinationId: String?, data: ExaminationData, currentUser: RealmUserModel?, user: RealmUserModel?)
+    suspend fun saveExamination(userId: String, examinationId: String?, data: ExaminationData, currentUserId: String?)
     suspend fun checkUserKeys(userId: String)
 }
 

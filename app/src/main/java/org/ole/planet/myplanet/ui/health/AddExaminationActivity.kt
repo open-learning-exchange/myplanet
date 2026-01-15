@@ -257,7 +257,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
         lifecycleScope.launch {
             userId?.let {
-                healthRepository.saveExamination(it, intent.getStringExtra("id"), data, currentUser, user)
+                healthRepository.saveExamination(it, intent.getStringExtra("id"), data, currentUser?._id)
             }
             Utilities.toast(this@AddExaminationActivity, getString(R.string.added_successfully))
             super.finish()
