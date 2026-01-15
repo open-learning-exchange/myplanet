@@ -89,8 +89,8 @@ class AddHealthActivity : AppCompatActivity() {
         lifecycleScope.launch {
             userId?.let {
                 healthRepository.saveHealthData(it, health, userUpdates)
+                finish()
             }
-            finish()
         }
     }
 

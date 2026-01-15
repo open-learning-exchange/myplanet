@@ -102,32 +102,30 @@ class HealthRepositoryImpl @Inject constructor(private val databaseService: Data
     }
 
     override suspend fun getHealthDataForUser(userId: String): HealthData? {
-        return withContext(Dispatchers.IO) {
-            databaseService.let {
-                val userModel = it.realmInstance.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                val healthPojo = getHealthExaminationByUserId(userId)
-                var decodedHealth: RealmMyHealth? = null
-                if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
-                    try {
-                        decodedHealth = JsonUtils.gson.fromJson(
-                            AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv),
-                            RealmMyHealth::class.java
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+        return databaseService.withRealmAsync { realm ->
+            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            val healthPojo = getHealthExaminationByUserId(userId, realm)
+            var decodedHealth: RealmMyHealth? = null
+            if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
+                try {
+                    decodedHealth = JsonUtils.gson.fromJson(
+                        AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv),
+                        RealmMyHealth::class.java
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                HealthData(
-                    decodedHealth,
-                    userModel?.firstName,
-                    userModel?.middleName,
-                    userModel?.lastName,
-                    userModel?.email,
-                    userModel?.phoneNumber,
-                    userModel?.dob,
-                    userModel?.birthPlace
-                )
             }
+            HealthData(
+                decodedHealth,
+                userModel?.firstName,
+                userModel?.middleName,
+                userModel?.lastName,
+                userModel?.email,
+                userModel?.phoneNumber,
+                userModel?.dob,
+                userModel?.birthPlace
+            )
         }
     }
 
