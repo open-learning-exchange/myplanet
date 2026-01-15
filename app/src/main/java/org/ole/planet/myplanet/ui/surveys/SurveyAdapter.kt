@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.survey
+package org.ole.planet.myplanet.ui.surveys
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
+import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 
 class SurveyAdapter(
     private val context: Context,

@@ -78,8 +78,8 @@ import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SendSurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
