@@ -307,16 +307,6 @@ open class RealmMyTeam : RealmObject() {
         }
     }
 
-    fun requested(userId: String?, mRealm: Realm): Boolean {
-        val m = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("docType", "request")
-            .equalTo("teamId", _id)
-            .equalTo("userId", userId)
-            .findAll()
-
-        return m.isNotEmpty()
-    }
-
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {
         return mRealm.where(RealmMyTeam::class.java)
             .equalTo("userId", userID)
