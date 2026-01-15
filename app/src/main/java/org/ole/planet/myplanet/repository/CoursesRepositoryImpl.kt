@@ -315,11 +315,15 @@ class CoursesRepositoryImpl @Inject constructor(
         if (deleteProgress) {
             deleteCourseProgress(courseId)
         }
-        val course = getCourseByCourseId(courseId)
-        course?.let {
-            if (it.userId?.contains(userId) == true) {
-                it.removeUserId(userId)
-                save(it)
+        executeTransaction { realm ->
+            val course = realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+            course?.let {
+                if (it.userId?.contains(userId) == true) {
+                    it.removeUserId(userId)
+                    RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+                }
             }
         }
     }

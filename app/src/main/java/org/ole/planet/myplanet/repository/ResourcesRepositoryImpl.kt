@@ -244,12 +244,19 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun removeFromUserShelf(resourceId: String, userId: String) {
-        val resource = getLibraryItemByResourceId(resourceId)
-        resource?.let {
-            if (it.userId?.contains(userId) == true) {
-                it.removeUserId(userId)
-                saveLibraryItem(it)
+        executeTransaction { realm ->
+            val resource = realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceId", resourceId)
+                .or()
+                .equalTo("_id", resourceId)
+                .findFirst()
+
+            resource?.let {
+                if (it.userId?.contains(userId) == true) {
+                    it.removeUserId(userId)
+                }
             }
         }
+        activityRepository.markResourceRemoved(userId, resourceId)
     }
 }
