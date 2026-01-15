@@ -27,8 +27,14 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
+import javax.inject.Inject
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.TeamsRepository
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+
+    @Inject lateinit var teamsRepository: TeamsRepository
 
     private val imageResourceMap by lazy {
         mapOf(
@@ -47,18 +53,17 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (f is TeamDetailFragment) {
-                    if (!isRealmInitialized()) {
-                        return@setOnClickListener
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val teamType = id?.let { teamsRepository.getTeamType(it) }
+                        val optimizedFragment = TeamDetailFragment.newInstance(
+                            teamId = id ?: "",
+                            teamName = title ?: "",
+                            teamType = teamType ?: "",
+                            isMyTeam = true
+                        )
+                        prefData.setTeamName(title)
+                        homeItemClickListener?.openCallFragment(optimizedFragment)
                     }
-                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
-                    val optimizedFragment = TeamDetailFragment.newInstance(
-                        teamId = id ?: "",
-                        teamName = title ?: "",
-                        teamType = teamObject?.type ?: "",
-                        isMyTeam = true
-                    )
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(optimizedFragment)
                 } else {
                     val b = Bundle()
                     b.putString("id", id)

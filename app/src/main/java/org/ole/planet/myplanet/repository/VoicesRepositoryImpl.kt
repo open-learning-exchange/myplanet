@@ -64,6 +64,18 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?): Boolean {
+        return try {
+            databaseService.executeTransactionAsync { realm ->
+                RealmNews.createNews(newsData, realm, user, imageList)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
         return withRealm { realm ->
             val allNews = realm.where(RealmNews::class.java)
