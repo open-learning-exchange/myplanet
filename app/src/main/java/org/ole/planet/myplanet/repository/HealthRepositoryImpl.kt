@@ -5,12 +5,15 @@ import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.TimeUtils.getAge
+import java.util.Date
 import javax.inject.Inject
 
 class HealthRepositoryImpl @Inject constructor(private val databaseService: DatabaseService) : HealthRepository {
@@ -93,6 +96,7 @@ class HealthRepositoryImpl @Inject constructor(private val databaseService: Data
         }
         if (myHealth == null) {
             myHealth = RealmMyHealth()
+            myHealth.userKey = AndroidDecrypter.generateKey()
         }
         return myHealth
     }
@@ -123,6 +127,87 @@ class HealthRepositoryImpl @Inject constructor(private val databaseService: Data
                     userModel?.dob,
                     userModel?.birthPlace
                 )
+            }
+        }
+    }
+
+    override suspend fun saveExamination(userId: String, examinationId: String?, data: ExaminationData, currentUser: RealmUserModel?, user: RealmUserModel?) {
+        withContext(Dispatchers.IO) {
+            databaseService.realmInstance.executeTransaction { realm ->
+                var pojo = getHealthExaminationByUserId(userId, realm)
+                if (pojo == null) {
+                    pojo = realm.createObject(RealmHealthExamination::class.java, userId)
+                    pojo.userId = user?._id
+                }
+                val myHealth = getMyHealth(realm, userId)
+                myHealth?.lastExamination = Date().time
+                if (user?.key != null && user.iv != null) {
+                    pojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), user.key, user.iv)
+                }
+
+                var examination = if (examinationId != null) {
+                    realm.where(RealmHealthExamination::class.java).equalTo("_id", examinationId).findFirst()
+                } else {
+                    null
+                }
+
+                if (examination == null) {
+                    val newId = AndroidDecrypter.generateIv()
+                    examination = realm.createObject(RealmHealthExamination::class.java, newId)
+                    examination.userId = newId
+                }
+
+                examination.profileId = myHealth?.userKey
+                examination.creatorId = myHealth?.userKey
+                examination.gender = user?.gender
+                examination.age = user?.dob?.let { getAge(it) } ?: 0
+                examination.isSelfExamination = currentUser?._id == pojo?._id
+                examination.date = Date().time
+                examination.planetCode = user?.planetCode
+
+                val sign = RealmExamination()
+                sign.allergies = data.allergies
+                sign.createdBy = currentUser?._id
+                examination.bp = data.bp
+                examination.setTemperature(data.temperature)
+                examination.pulse = data.pulse
+                examination.setWeight(data.weight)
+                examination.height = data.height
+                examination.conditions = data.conditions
+                examination.hearing = data.hearing
+                sign.immunizations = data.immunizations
+                sign.tests = data.tests
+                sign.xrays = data.xrays
+                examination.vision = data.vision
+                sign.treatments = data.treatments
+                sign.referrals = data.referrals
+                sign.notes = data.observation
+                sign.diagnosis = data.diagnosis
+                sign.medications = data.medications
+                examination.date = Date().time
+                examination.isUpdated = true
+                examination.isHasInfo = data.hasInfo
+                pojo?.isUpdated = true
+
+                try {
+                    val key = user?.key ?: AndroidDecrypter.generateKey().also { user?.key = it }
+                    val iv = user?.iv ?: AndroidDecrypter.generateIv().also { user?.iv = it }
+                    examination.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(sign), key, iv)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    override suspend fun checkUserKeys(userId: String) {
+        withContext(Dispatchers.IO) {
+            databaseService.realmInstance.executeTransaction { realm ->
+                val user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                if (user != null && (user.key == null || user.iv == null)) {
+                    user.key = AndroidDecrypter.generateKey()
+                    user.iv = AndroidDecrypter.generateIv()
+                }
             }
         }
     }
