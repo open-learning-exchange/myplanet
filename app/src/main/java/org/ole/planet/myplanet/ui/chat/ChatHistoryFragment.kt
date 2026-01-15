@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
@@ -81,7 +81,7 @@ class ChatHistoryFragment : Fragment() {
     @Inject
     lateinit var chatApiService: ChatApiService
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -373,7 +373,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "chats" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
