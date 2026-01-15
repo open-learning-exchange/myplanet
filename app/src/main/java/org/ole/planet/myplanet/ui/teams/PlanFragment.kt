@@ -14,7 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.TeamUpdateListener
+import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -26,9 +26,9 @@ class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
-    private var teamUpdateListener: TeamUpdateListener? = null
+    private var teamUpdateListener: OnTeamUpdateListener? = null
 
-    fun setTeamUpdateListener(listener: TeamUpdateListener) {
+    fun setTeamUpdateListener(listener: OnTeamUpdateListener) {
         teamUpdateListener = listener
     }
 

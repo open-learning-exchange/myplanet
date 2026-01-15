@@ -209,6 +209,7 @@ open class RealmMyTeam : RealmObject() {
             return getUsers(teamId, realm, "membership")
         }
 
+        @Deprecated("Use TeamsRepository.getJoinedMemberCount instead")
         @JvmStatic
         fun getJoinedMemberCount(teamId: String, realm: Realm): Int {
             return getUsers(teamId, realm, "membership").size
@@ -304,16 +305,6 @@ open class RealmMyTeam : RealmObject() {
                 .notEqualTo("status", "archived")
                 .findAll()
         }
-    }
-
-    fun requested(userId: String?, mRealm: Realm): Boolean {
-        val m = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("docType", "request")
-            .equalTo("teamId", _id)
-            .equalTo("userId", userId)
-            .findAll()
-
-        return m.isNotEmpty()
     }
 
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {

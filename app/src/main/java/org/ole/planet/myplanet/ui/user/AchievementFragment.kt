@@ -19,25 +19,24 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.UrlUtils
 
 private data class AchievementData(
     val goals: String = "",
@@ -62,7 +61,7 @@ class AchievementFragment : BaseContainerFragment() {
     @Inject
     lateinit var syncManager: SyncManager
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -87,8 +86,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
+        if (::onRealtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(onRealtimeSyncListener)
         }
         _binding = null
         super.onDestroyView()
@@ -113,7 +112,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -236,7 +235,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "achievements" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
@@ -245,7 +244,7 @@ class AchievementFragment : BaseContainerFragment() {
                 }
             }
         }
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncCoordinator.addListener(onRealtimeSyncListener)
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
@@ -317,7 +316,11 @@ class AchievementFragment : BaseContainerFragment() {
             if (lib.isResourceOffline()) {
                 openResource(lib)
             } else {
-                startDownload(arrayListOf(UrlUtils.getUrl(lib)))
+                lifecycleScope.launch {
+                    if (resourcesRepository.downloadResources(listOf(lib))) {
+                        showProgressDialog()
+                    }
+                }
             }
         }
         return btnBinding.root

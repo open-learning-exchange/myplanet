@@ -10,14 +10,14 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.teams.member.MemberDetailFragment
+import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
 
 internal class CommunityLeadersAdapter(
     var context: Context,
-    private val userProfileDbHandler: UserProfileDbHandler
+    private val userSessionManager: UserSessionManager
 ) : ListAdapter<RealmUserModel, CommunityLeadersAdapter.ViewHolderLeader>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
@@ -51,7 +51,7 @@ internal class CommunityLeadersAdapter(
     private fun showLeaderDetails(leader: RealmUserModel) {
         val activity = context as? FragmentActivity
         if (activity?.findViewById<View>(R.id.fragment_container) != null) {
-            val fragment = MemberDetailFragment.newInstance(
+            val fragment = MembersDetailFragment.newInstance(
                 name = leader.name ?: "",
                 email = leader.email ?: "",
                 dob = leader.dob ?: "",

@@ -18,6 +18,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -55,7 +56,7 @@ class CoursesAdapter(
     private var isTitleAscending = false
     private var areAllSelected = false
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
+    private val activeJobs: MutableMap<String, Job> = mutableMapOf()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -150,6 +151,20 @@ class CoursesAdapter(
         }
     }
 
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is CoursesViewHolder) {
+            val position = holder.bindingAdapterPosition
+            if (position != RecyclerView.NO_POSITION) {
+                val course = courseList.getOrNull(position)
+                course?.id?.let { courseId ->
+                    activeJobs[courseId]?.cancel()
+                    activeJobs.remove(courseId)
+                }
+            }
+        }
+    }
+
     private fun sortCourseList(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
         return list.sortedWith { course1, course2 ->
             if (isAscending) {
@@ -184,11 +199,11 @@ class CoursesAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderCourse(binding)
+        return CoursesViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder !is ViewHolderCourse) return
+        if (holder !is CoursesViewHolder) return
 
         holder.bind(position)
         val course = courseList[position] ?: return
@@ -227,7 +242,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun updateVisibilityForMyCourse(holder: ViewHolderCourse, course: RealmMyCourse) {
+    private fun updateVisibilityForMyCourse(holder: CoursesViewHolder, course: RealmMyCourse) {
         if (course.isMyCourse) {
             holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
             holder.rowCourseBinding.checkbox.visibility = View.GONE
@@ -237,7 +252,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun configureDescription(holder: ViewHolderCourse, course: RealmMyCourse, position: Int) {
+    private fun configureDescription(holder: CoursesViewHolder, course: RealmMyCourse, position: Int) {
         holder.rowCourseBinding.description.apply {
             text = course.description
             val markdownContentWithLocalPaths = prependBaseUrlToImages(
@@ -259,7 +274,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun configureDateViews(holder: ViewHolderCourse, course: RealmMyCourse) {
+    private fun configureDateViews(holder: CoursesViewHolder, course: RealmMyCourse) {
         if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
             holder.rowCourseBinding.holder.visibility = View.VISIBLE
             holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
@@ -281,7 +296,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun setupRatingBar(holder: ViewHolderCourse, course: RealmMyCourse) {
+    private fun setupRatingBar(holder: CoursesViewHolder, course: RealmMyCourse) {
         holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
             if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
                 "course",
@@ -293,7 +308,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun setupCheckbox(holder: ViewHolderCourse, course: RealmMyCourse, position: Int, isGuest: Boolean) {
+    private fun setupCheckbox(holder: CoursesViewHolder, course: RealmMyCourse, position: Int, isGuest: Boolean) {
         if (!isGuest) {
             if (course.isMyCourse) {
                 holder.rowCourseBinding.checkbox.visibility = View.GONE
@@ -319,6 +334,11 @@ class CoursesAdapter(
             layout?.visibility = View.VISIBLE
             textView?.text = context.getString(R.string.prefix_content, prefix, content)
         }
+    }
+
+    fun cancelAllJobs() {
+        activeJobs.values.forEach { it.cancel() }
+        activeJobs.clear()
     }
 
     fun areAllSelected(): Boolean {
@@ -354,7 +374,7 @@ class CoursesAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (holder !is ViewHolderCourse) {
+        if (holder !is CoursesViewHolder) {
             super.onBindViewHolder(holder, position, payloads)
             return
         }
@@ -381,7 +401,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun displayTagCloud(holder: ViewHolderCourse, position: Int) {
+    private fun displayTagCloud(holder: CoursesViewHolder, position: Int) {
         val flexboxDrawable = holder.rowCourseBinding.flexboxDrawable
         val courseId = courseList.getOrNull(position)?.id
         if (courseId == null) {
@@ -397,11 +417,9 @@ class CoursesAdapter(
 
         flexboxDrawable.removeAllViews()
 
-        if (!tagRequestsInProgress.add(courseId)) {
-            return
-        }
+        activeJobs[courseId]?.cancel()
 
-        holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+        val job = holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
             try {
                 val tags = tagsRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags
@@ -412,8 +430,11 @@ class CoursesAdapter(
                     }
                 }
             } finally {
-                tagRequestsInProgress.remove(courseId)
+                activeJobs.remove(courseId)
             }
+        }
+        if (job != null) {
+            activeJobs[courseId] = job
         }
     }
 
@@ -435,7 +456,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun updateRatingViews(holder: ViewHolderCourse, position: Int) {
+    private fun updateRatingViews(holder: CoursesViewHolder, position: Int) {
         val course = courseList.getOrNull(position) ?: return
         if (map.containsKey(course.courseId)) {
             val ratingObject = map[course.courseId]
@@ -453,7 +474,7 @@ class CoursesAdapter(
         }
     }
 
-    private fun updateProgressViews(holder: ViewHolderCourse, position: Int) {
+    private fun updateProgressViews(holder: CoursesViewHolder, position: Int) {
         val course = courseList.getOrNull(position) ?: return
         val progress = progressMap?.get(course.courseId)
         if (progress != null) {
@@ -480,11 +501,16 @@ class CoursesAdapter(
         }
     }
 
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        cancelAllJobs()
+    }
+
     override fun getItemCount(): Int {
         return courseList.size
     }
 
-    internal inner class ViewHolderCourse(val rowCourseBinding: RowCourseBinding) :
+    internal inner class CoursesViewHolder(val rowCourseBinding: RowCourseBinding) :
         RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
 

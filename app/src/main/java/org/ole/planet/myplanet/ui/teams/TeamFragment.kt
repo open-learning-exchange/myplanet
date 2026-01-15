@@ -18,6 +18,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.di.AppPreferences
@@ -25,14 +27,12 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.callback.OnTeamActionsListener
-import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateCompleteListener,
+class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteListener,
     OnTeamActionsListener {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
@@ -40,7 +40,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -51,7 +51,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
     private var teamList: List<RealmMyTeam> = emptyList()
-    private lateinit var teamListAdapter: TeamListAdapter
+    private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
 
@@ -68,7 +68,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
-        user = userProfileDbHandler.getUserModelCopy()
+        user = userSessionManager.getUserModelCopy()
 
         if (user?.isGuest() == true) {
             binding.addTeam.visibility = View.GONE
@@ -150,19 +150,24 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
                             }
 
                             if (team == null) {
-                                teamsRepository.createTeam(
-                                    category = type,
-                                    name = name,
-                                    description = description,
-                                    services = services,
-                                    rules = rules,
-                                    teamType = selectedTeamType,
-                                    isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                    user = userModel,
-                                ).onSuccess {
+                                val teamObject = com.google.gson.JsonObject().apply {
+                                    addProperty("name", name)
+                                    addProperty("description", description)
+                                    addProperty("services", services)
+                                    addProperty("rules", rules)
+                                    addProperty("teamType", selectedTeamType)
+                                    addProperty("isPublic", alertCreateTeamBinding.switchPublic.isChecked)
+                                    addProperty("category", type)
+                                }
+                                teamsRepository.createTeamAndAddMember(teamObject, userModel).onSuccess {
                                     binding.etSearch.visibility = View.VISIBLE
                                     binding.tableTitle.visibility = View.VISIBLE
-                                    Utilities.toast(activity, getString(R.string.team_created))
+                                    val successMessage = if (type == "enterprise") {
+                                        getString(R.string.enterprise_created)
+                                    } else {
+                                        getString(R.string.team_created)
+                                    }
+                                    Utilities.toast(activity, successMessage)
                                     refreshTeamList()
                                     dialog.dismiss()
                                 }.onFailure {
@@ -213,7 +218,7 @@ class TeamFragment : Fragment(), TeamListAdapter.OnClickTeamItem, OnUpdateComple
 
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
-        teamListAdapter = TeamListAdapter(
+        teamListAdapter = TeamsAdapter(
             requireActivity(),
             childFragmentManager,
             user,

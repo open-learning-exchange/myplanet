@@ -11,7 +11,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
 class CommunityTabFragment : Fragment() {
@@ -21,7 +21,7 @@ class CommunityTabFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -32,7 +32,7 @@ class CommunityTabFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val parentCode = settings.getString("parentCode", "").orEmpty()
         val communityName = settings.getString("communityName", "").orEmpty()
-        val user = userProfileDbHandler.userModel
+        val user = userSessionManager.userModel
         val planetCode = user?.planetCode.orEmpty()
         binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$planetCode@$parentCode", false, settings)
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->

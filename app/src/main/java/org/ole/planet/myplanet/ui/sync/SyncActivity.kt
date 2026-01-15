@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
@@ -62,8 +63,8 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
-import org.ole.planet.myplanet.repository.ConfigurationRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -90,7 +91,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback,
     ConfigurationIdListener {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
@@ -114,7 +115,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var prefData: SharedPrefManager
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var profileDbHandler: UserSessionManager
     lateinit var spnCloud: Spinner
     lateinit var protocolCheckIn: RadioGroup
     lateinit var serverUrl: EditText
@@ -129,6 +130,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
+    @Inject
     lateinit var service: DataService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
@@ -138,7 +140,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     @Inject
-    lateinit var configurationRepository: ConfigurationRepository
+    lateinit var configurationsRepository: ConfigurationsRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -193,7 +195,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                 }
                 isSync = false
                 forceSync = true
-                configurationRepository.checkVersion(this, settings)
+                configurationsRepository.checkVersion(this, settings)
             }
             else -> {
                 if (serverConfigAction == "sync") {
@@ -292,10 +294,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
+
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         try {
-            val url = if (settings.getBoolean("isAlternativeUrl", false)) {
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+            val url = if (isAlternativeUrl) {
                 if (processedUrl?.contains("/db") == true) {
                     processedUrl.replace("/db", "") + "/db/_all_dbs"
                 } else {
@@ -304,13 +308,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             } else {
                 "$processedUrl/_all_dbs"
             }
+
             val response = apiInterface.isPlanetAvailableSuspend(url)
+            val code = response.code()
 
             if (response.isSuccessful) {
                 val ss = response.body()?.string()
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
 
-                return if ((myList?.size ?: 0) < 8) {
+                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                val dbCount = myList?.size ?: 0
+
+                return if (dbCount < 8) {
                     withContext(Dispatchers.Main) {
                         customProgressDialog.dismiss()
                         alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
@@ -322,6 +330,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                     true
                 }
+            } else if (code == 401) {
+                withContext(Dispatchers.Main) {
+                    startSync(type)
+                }
+                return true
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -495,7 +508,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                while (true) {
+                val maxAttempts = 3 // Maximum 3 seconds wait
+                while (attempt < maxAttempts) {
                     val hasUser = databaseService.withRealm { realm ->
                         realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                     }
@@ -504,6 +518,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     }
                     attempt++
                     delay(1000)
+                }
+
+                if (attempt >= maxAttempts) {
+                    Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
                 }
 
                 withContext(Dispatchers.Main) {
@@ -778,7 +796,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
+        if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {
@@ -823,7 +841,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        if (customProgressDialog.isShowing() == true) {
+        if (customProgressDialog.isShowing()) {
             customProgressDialog.dismiss()
         }
         if (!blockSync) {

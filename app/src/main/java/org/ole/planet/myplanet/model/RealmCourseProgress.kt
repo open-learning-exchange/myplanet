@@ -41,6 +41,7 @@ open class RealmCourseProgress : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use ProgressRepository.getCourseProgress instead")
         fun getCourseProgress(mRealm: Realm, userId: String?): HashMap<String?, JsonObject> {
             val r = getMyCourseByUserId(userId, mRealm.where(RealmMyCourse::class.java).findAll())
             val map = HashMap<String?, JsonObject>()
@@ -55,6 +56,7 @@ open class RealmCourseProgress : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use ProgressRepository.getCurrentProgress instead")
         fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
             val progresses = mRealm.where(RealmCourseProgress::class.java)
                 .equalTo("userId", userId)

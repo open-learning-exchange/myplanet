@@ -30,13 +30,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.NavigationHelper
@@ -52,7 +52,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
     @Inject
@@ -77,7 +77,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        userModel = userProfileDbHandler.userModel
+        userModel = userSessionManager.userModel
         shouldHideElements = arguments?.getBoolean("shouldHideElements") == true
         initViews()
         return fragmentUserInformationBinding.root
@@ -388,7 +388,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private suspend fun uploadExamResultWrapper() {
         try {
-            val successListener = object : SuccessListener {
+            val successListener = object : OnSuccessListener {
                 override fun onSuccess(success: String?) {}
             }
             uploadManager.uploadExamResult(successListener)

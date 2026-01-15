@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -64,7 +64,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     @Inject
     lateinit var personalsRepository: PersonalsRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -262,7 +262,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
-            val userModel = userProfileDbHandler.userModel ?: return
+            val userModel = userSessionManager.userModel ?: return
             showAlert(requireContext(), path, personalsRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
                 dismiss()
             }

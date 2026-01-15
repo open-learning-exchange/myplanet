@@ -23,8 +23,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.DownloadWorker
 import org.ole.planet.myplanet.service.DownloadService
+import org.ole.planet.myplanet.service.DownloadWorker
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
@@ -243,14 +243,9 @@ object DownloadUtils {
 
     @JvmStatic
     fun updateResourceOfflineStatus(url: String) {
-        val currentFileName = FileUtils.getFileNameFromUrl(url)
-        if (currentFileName.isBlank()) {
-            return
-        }
-
         MainApplication.applicationScope.launch {
             try {
-                resourcesRepository.markResourceOfflineByLocalAddress(currentFileName)
+                resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

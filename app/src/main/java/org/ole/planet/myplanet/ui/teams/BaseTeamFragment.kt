@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.teams
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,14 +10,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.base.BaseNewsFragment
+import org.ole.planet.myplanet.ui.voices.BaseVoicesFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 
 @AndroidEntryPoint
-abstract class BaseTeamFragment : BaseNewsFragment() {
+abstract class BaseTeamFragment : BaseVoicesFragment() {
     var user: RealmUserModel? = null
     var teamId: String = ""
         set(value) {

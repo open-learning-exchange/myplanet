@@ -1,17 +1,26 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
+import java.util.Calendar
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import java.util.Calendar
-import java.util.UUID
 import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utilities.DownloadUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    private val activityRepository: ActivityRepository
+    private val activitiesRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -86,7 +95,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        activityRepository.markResourceAdded(userId, resourceId)
+        activitiesRepository.markResourceAdded(userId, resourceId)
     }
 
     override suspend fun updateUserLibrary(
@@ -106,9 +115,9 @@ class ResourcesRepositoryImpl @Inject constructor(
                 }
         }
         if (isAdd) {
-            activityRepository.markResourceAdded(userId, resourceId)
+            activitiesRepository.markResourceAdded(userId, resourceId)
         } else {
-            activityRepository.markResourceRemoved(userId, resourceId)
+            activitiesRepository.markResourceRemoved(userId, resourceId)
         }
         return getLibraryItemByResourceId(resourceId)
             ?: getLibraryItemById(resourceId)
@@ -116,6 +125,13 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
         update(RealmMyLibrary::class.java, "id", id, updater)
+    }
+
+    override suspend fun markResourceOfflineByUrl(url: String) {
+        val localAddress = FileUtils.getFileNameFromUrl(url)
+        if (localAddress.isNotBlank()) {
+            markResourceOfflineByLocalAddress(localAddress)
+        }
     }
 
     override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
@@ -181,8 +197,21 @@ class ResourcesRepositoryImpl @Inject constructor(
         searchText: String,
         planetCode: String,
         parentCode: String,
-        filterPayload: String
+        tags: List<RealmTag>,
+        subjects: Set<String>,
+        languages: Set<String>,
+        levels: Set<String>,
+        mediums: Set<String>
     ) {
+        val filter = JsonObject().apply {
+            add("tags", RealmTag.getTagsArray(tags))
+            add("subjects", getJsonArrayFromList(subjects))
+            add("language", getJsonArrayFromList(languages))
+            add("level", getJsonArrayFromList(levels))
+            add("mediaType", getJsonArrayFromList(mediums))
+        }
+        val filterPayload = Gson().toJson(filter)
+
         executeTransaction { realm ->
             val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
             activity.user = userName
@@ -193,5 +222,30 @@ class ResourcesRepositoryImpl @Inject constructor(
             activity.type = "resources"
             activity.filter = filterPayload
         }
+    }
+
+    private fun getJsonArrayFromList(list: Set<String>): JsonArray {
+        val array = JsonArray()
+        list.forEach { array.add(it) }
+        return array
+    }
+
+    override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
+        return try {
+            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            if (urls.isNotEmpty()) {
+                DownloadUtils.openDownloadService(context, ArrayList(urls), false)
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+    override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
+        return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
+            .equalTo("resourceId", resourceId)
+            .equalTo("type", "resource_opened")
+            .findFirst() != null
     }
 }

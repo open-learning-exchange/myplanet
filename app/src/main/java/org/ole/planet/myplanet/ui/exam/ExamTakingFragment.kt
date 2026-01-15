@@ -21,7 +21,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
-import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
@@ -38,7 +37,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -58,7 +57,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val answerCache = mutableMapOf<String, AnswerData>()
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
 
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
@@ -75,7 +74,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentExamTakingBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        user = userProfileDbHandler.userModel
+        user = userSessionManager.userModel
         return binding.root
     }
 
@@ -85,17 +84,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch {
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-            var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                    id + "@" + exam?.courseId
-                } else {
-                    id
-                }).sort("startTime", Sort.DESCENDING)
-            if (type == "exam") {
-                q = q.equalTo("status", "pending")
+            val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
+                "$id@${exam?.courseId}"
+            } else {
+                id
             }
-            sub = q.findFirst() as RealmSubmission?
+            val submissions = submissionsRepository.getSubmissionsByParentId(
+                parentId,
+                user?.id,
+                if (type == "exam") "pending" else null
+            )
+            sub = submissions.firstOrNull()
             val courseId = exam?.courseId
             isCertified = isCourseCertified(mRealm, courseId)
 
@@ -319,7 +318,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = userProfileDbHandler.userModel
+        val userModel = userSessionManager.userModel
 
         try {
             val userJson = JSONObject()

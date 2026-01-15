@@ -49,9 +49,13 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
     val protocol = "${settings.getString("serverProtocol", "")}"
     var url = "${serverUrl.text}"
     val pin = "${serverPassword.text}"
+
+
     editor.putString("serverURL", url).apply()
     editor.putString("serverPin", pin).apply()
+
     url = protocol + url
+
     if (isUrlValid(url)) {
         currentDialog = dialog
         service.getMinApk(this, url, pin, this, "SyncActivity")

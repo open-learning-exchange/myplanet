@@ -8,7 +8,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -17,8 +16,8 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.SecurityDataListener
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
@@ -28,6 +27,7 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.ConfigurationManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -44,7 +44,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class DataService @Inject constructor(
+class DataService constructor(
     private val context: Context,
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,
@@ -81,8 +81,8 @@ class DataService @Inject constructor(
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
-    @Deprecated("Use ConfigurationRepository.checkHealth instead")
-    fun healthAccess(listener: SuccessListener) {
+    @Deprecated("Use ConfigurationsRepository.checkHealth instead")
+    fun healthAccess(listener: OnSuccessListener) {
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
             if (healthUrl.isBlank()) {
@@ -152,7 +152,7 @@ class DataService @Inject constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkVersion instead")
+    @Deprecated("Use ConfigurationsRepository.checkVersion instead")
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (shouldPromptForSettings(settings)) return
 
@@ -205,7 +205,7 @@ class DataService @Inject constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkServerAvailability instead")
+    @Deprecated("Use ConfigurationsRepository.checkServerAvailability instead")
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
@@ -270,7 +270,7 @@ class DataService @Inject constructor(
         }
     }
 
-    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataListener? = null) {
+    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: OnSecurityDataListener? = null) {
         serviceScope.launch {
             val result = userRepository.becomeMember(obj)
             withContext(Dispatchers.Main) {
@@ -296,7 +296,7 @@ class DataService @Inject constructor(
         }
     }
 
-    suspend fun syncPlanetServers(callback: SuccessListener) {
+    suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
             val response = withContext(Dispatchers.IO) {
                 retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()

@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -40,7 +40,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     private lateinit var library: RealmMyLibrary
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -118,7 +118,7 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        val userModel = userProfileDbHandler.userModel
+        val userModel = userSessionManager.userModel
         if (userModel != null) {
             AddResourceFragment.showAlert(
                 this,

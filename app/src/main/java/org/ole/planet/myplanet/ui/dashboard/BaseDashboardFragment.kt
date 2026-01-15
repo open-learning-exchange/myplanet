@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.DashboardActionListener
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnDashboardActionListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.health.UserListAdapter
+import org.ole.planet.myplanet.ui.health.UserSelectionAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
@@ -51,8 +51,8 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActionListener,
-    SyncListener {
+open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardActionListener,
+    OnSyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private val realm get() = requireRealmInstance()
@@ -164,9 +164,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
             }
             launch {
                 viewModel.uiState
-                    .map { it.offlineLogins }
+                    .map { it.fullName to it.offlineLogins }
                     .distinctUntilChanged()
-                    .collect { offlineLogins ->
+                    .collect { (fullName, offlineLogins) ->
                         view?.findViewById<TextView>(R.id.txtFullName)?.text =
                             getString(R.string.user_name, fullName, offlineLogins)
                     }
@@ -407,7 +407,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), DashboardActio
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = UserListAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
+                        val adapter = UserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
                         alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
                             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel

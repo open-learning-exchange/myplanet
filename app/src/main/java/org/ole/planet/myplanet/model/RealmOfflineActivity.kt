@@ -7,7 +7,7 @@ import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -58,7 +58,7 @@ open class RealmOfflineActivity : RealmObject() {
         @JvmStatic
         fun getRecentLogin(mRealm: Realm): RealmOfflineActivity? {
             return mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING)
+                .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", Sort.DESCENDING)
                 .findFirst()
         }
 

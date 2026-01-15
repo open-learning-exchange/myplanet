@@ -77,7 +77,7 @@
             android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.health.AddMyHealthActivity"
+            android:name=".ui.health.AddHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.health.AddExaminationActivity"
@@ -118,7 +118,7 @@
             android:name=".ui.dictionary.DictionaryActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.SettingActivity"
+            android:name=".ui.settings.SettingsActivity"
             android:theme="@style/AppTheme" />
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -36,12 +36,13 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
-import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.di.TeamsRepositoryEntryPoint
-import dagger.hilt.android.EntryPointAccessors
+import androidx.core.content.edit
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
@@ -60,7 +61,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val view = binding.root
         declareElements()
         onLoaded(view)
-        user = profileDbHandler?.userModel
+        user = profileDbHandler.userModel
         return binding.root
     }
 
@@ -219,16 +220,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
         val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-        preferences.edit()
-            .putLong("reminder_time_$surveyIds", reminderTime)
-            .putString("reminder_surveys_$surveyIds", surveyIds)
-            .apply()
-
-        val unitString = when (timeUnit) {
-            TimeUnit.MINUTES -> resources.getQuantityString(R.plurals.minutes, value, value)
-            TimeUnit.HOURS -> resources.getQuantityString(R.plurals.hours, value, value)
-            TimeUnit.DAYS -> resources.getQuantityString(R.plurals.days, value, value)
-            else -> "$value ${timeUnit.name.lowercase()}"
+        preferences.edit {
+            putLong("reminder_time_$surveyIds", reminderTime)
+                .putString("reminder_surveys_$surveyIds", surveyIds)
         }
 
         startReminderCheck()
@@ -277,12 +271,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
 
-        val editor = preferences.edit()
-        for (surveyIds in remindersToRemove) {
-            editor.remove("reminder_time_$surveyIds")
-            editor.remove("reminder_surveys_$surveyIds")
+        preferences.edit {
+            for (surveyIds in remindersToRemove) {
+                remove("reminder_time_$surveyIds")
+                remove("reminder_surveys_$surveyIds")
+            }
         }
-        editor.apply()
 
         return remindersToShow.isNotEmpty()
 
@@ -341,7 +335,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
-        viewModel.loadCompletedCourses(user?.id)
+        user?.id?.let {
+            viewModel.loadCompletedCourses(it)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -389,7 +385,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun setColor(courseId: String?, star: ImageView) {
-        if (isRealmInitialized() && RealmCertification.isCourseCertified(mRealm, courseId)) {
+        val isRealmReady = isRealmInitialized()
+
+        if (isRealmReady && RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
@@ -440,22 +438,17 @@ class BellDashboardFragment : BaseDashboardFragment() {
         surveyListDialog?.dismiss()
         surveyListDialog = null
         networkStatusJob?.cancel()
-       surveyReminderJob?.cancel()
+        surveyReminderJob?.cancel()
         super.onDestroyView()
         _binding = null
     }
 
     override fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         if (f is TeamDetailFragment) {
-            val hiltEntryPoint = EntryPointAccessors.fromApplication(
-                requireContext(),
-                TeamsRepositoryEntryPoint::class.java
-            )
-            val teamsRepository = hiltEntryPoint.teamsRepository()
             v.text = title
             v.setOnClickListener {
                 lifecycleScope.launch {
-                    val teamObject = id?.let { teamsRepository.getTeamById(it) }
+                    val teamObject = id?.let { viewModel.getTeamById(it) }
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
                         teamName = title ?: "",

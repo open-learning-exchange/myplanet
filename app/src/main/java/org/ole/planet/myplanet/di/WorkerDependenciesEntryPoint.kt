@@ -7,13 +7,13 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface WorkerDependenciesEntryPoint {
     fun databaseService(): DatabaseService
-    fun userProfileDbHandler(): UserProfileDbHandler
+    fun userSessionManager(): UserSessionManager
     fun uploadManager(): UploadManager
     fun teamsRepository(): TeamsRepository
     fun submissionsRepository(): SubmissionsRepository

@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
@@ -30,7 +30,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var eventsRepository: EventsRepository
     private var meetUpId: String? = null
@@ -53,7 +53,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         binding.btnLeave.setOnClickListener(this)
-        user = userProfileDbHandler.getUserModelCopy()
+        user = userSessionManager.getUserModelCopy()
         return binding.root
     }
 

@@ -39,6 +39,47 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTags("courses", courseId)
     }
 
+    override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>> {
+        return getLinkedTagsBulk("resources", resourceIds)
+    }
+
+    private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
+        if (linkIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val links = queryList(RealmTag::class.java) {
+            equalTo("db", db)
+            `in`("linkId", linkIds.toTypedArray())
+        }
+        if (links.isEmpty()) {
+            return emptyMap()
+        }
+
+        val allTagIds = links.mapNotNull { it.tagId }.distinct()
+        if (allTagIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val allParentTags = queryList(RealmTag::class.java) {
+            `in`("id", allTagIds.toTypedArray())
+        }
+        val parentTagsById = allParentTags.associateBy { it.id }
+
+        val tagsByLinkId = mutableMapOf<String, MutableList<RealmTag>>()
+        links.forEach { link ->
+            link.linkId?.let { linkId ->
+                link.tagId?.let { tagId ->
+                    parentTagsById[tagId]?.let { parentTag ->
+                        tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
+                    }
+                }
+            }
+        }
+
+        return tagsByLinkId
+    }
+
     private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
         val links = queryList(RealmTag::class.java) {
             equalTo("db", db)

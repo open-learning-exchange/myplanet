@@ -13,12 +13,15 @@ interface VoicesRepository {
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
     suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
     suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?): RealmNews
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<RealmNews>
     suspend fun getReplies(newsId: String?): List<RealmNews>
     suspend fun deleteNews(newsId: String)
+    suspend fun deletePost(newsId: String, teamName: String)
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
+    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
 }

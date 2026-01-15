@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @AppPreferences private val preferences: SharedPreferences,
@@ -48,6 +48,47 @@ class TeamsRepositoryImpl @Inject constructor(
             notEqualTo("status", "archived")
                 .equalTo("completed", false)
                 .equalTo("assignee", userId)
+        }
+    }
+
+    override suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUserModel): Result<String> {
+        return runCatching {
+            val teamId = AndroidDecrypter.generateIv()
+            executeTransaction { realm ->
+                val team = realm.createObject(RealmMyTeam::class.java, teamId)
+                team.status = "active"
+                team.createdDate = Date().time
+                val category = JsonUtils.getString("category", teamObject)
+                if (category == "enterprise") {
+                    team.type = "enterprise"
+                    team.services = JsonUtils.getString("services", teamObject)
+                    team.rules = JsonUtils.getString("rules", teamObject)
+                } else {
+                    team.type = "team"
+                    team.teamType = JsonUtils.getString("teamType", teamObject)
+                }
+                team.name = JsonUtils.getString("name", teamObject)
+                team.description = JsonUtils.getString("description", teamObject)
+                team.createdBy = user._id
+                team.teamId = ""
+                team.isPublic = teamObject.get("isPublic")?.asBoolean ?: false
+                team.userId = user._id
+                team.parentCode = user.parentCode
+                team.teamPlanetCode = user.planetCode
+                team.updated = true
+
+                val membershipId = AndroidDecrypter.generateIv()
+                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
+                membership.userId = user._id
+                membership.teamId = teamId
+                membership.teamPlanetCode = user.planetCode
+                membership.userPlanetCode = user.planetCode
+                membership.docType = "membership"
+                membership.isLeader = true
+                membership.teamType = JsonUtils.getString("teamType", teamObject)
+                membership.updated = true
+            }
+            teamId
         }
     }
 
@@ -104,6 +145,12 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
+        if (id.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", id)
+            ?: findByField(RealmMyTeam::class.java, "teamId", id)
+    }
+
+    override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", id)
             ?: findByField(RealmMyTeam::class.java, "teamId", id)
@@ -607,7 +654,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (task.sync.isNullOrBlank()) {
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
-                addProperty("planetCode", userProfileDbHandler.userModel?.planetCode)
+                addProperty("planetCode", userSessionManager.userModel?.planetCode)
             }
             task.sync = gson.toJson(syncObj)
         }
@@ -684,52 +731,45 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createTeam(
-        category: String?,
+    override suspend fun createEnterprise(
         name: String,
         description: String,
         services: String,
         rules: String,
-        teamType: String?,
         isPublic: Boolean,
         user: RealmUserModel,
     ): Result<String> {
         return runCatching {
-            val teamId = AndroidDecrypter.generateIv()
+            val enterpriseId = AndroidDecrypter.generateIv()
             executeTransaction { realm ->
-                val team = realm.createObject(RealmMyTeam::class.java, teamId)
-                team.status = "active"
-                team.createdDate = Date().time
-                if (category == "enterprise") {
-                    team.type = "enterprise"
-                    team.services = services
-                    team.rules = rules
-                } else {
-                    team.type = "team"
-                    team.teamType = teamType
-                }
-                team.name = name
-                team.description = description
-                team.createdBy = user._id
-                team.teamId = ""
-                team.isPublic = isPublic
-                team.userId = user.id
-                team.parentCode = user.parentCode
-                team.teamPlanetCode = user.planetCode
-                team.updated = true
+                val enterprise = realm.createObject(RealmMyTeam::class.java, enterpriseId)
+                enterprise.status = "active"
+                enterprise.createdDate = Date().time
+                enterprise.type = "enterprise"
+                enterprise.services = services
+                enterprise.rules = rules
+                enterprise.name = name
+                enterprise.description = description
+                enterprise.createdBy = user._id
+                enterprise.teamId = ""
+                enterprise.isPublic = isPublic
+                enterprise.userId = user.id
+                enterprise.parentCode = user.parentCode
+                enterprise.teamPlanetCode = user.planetCode
+                enterprise.updated = true
 
                 val membershipId = AndroidDecrypter.generateIv()
                 val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
                 membership.userId = user._id
-                membership.teamId = teamId
+                membership.teamId = enterpriseId
                 membership.teamPlanetCode = user.planetCode
                 membership.userPlanetCode = user.planetCode
                 membership.docType = "membership"
                 membership.isLeader = true
-                membership.teamType = teamType
+                membership.teamType = "enterprise"
                 membership.updated = true
             }
-            teamId
+            enterpriseId
         }
     }
 
@@ -844,6 +884,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }.mapNotNull { it.resourceId }
     }
 
+    override suspend fun getTeamType(teamId: String): String? {
+        if (teamId.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
+    }
+
     override suspend fun getJoinedMembers(teamId: String): List<RealmUserModel> {
         val teamMembers = queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
@@ -870,14 +915,21 @@ class TeamsRepositoryImpl @Inject constructor(
             members.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = "${userProfileDbHandler.getOfflineVisits(member)}"
-                val profileLastVisit = userProfileDbHandler.getLastVisit(member)
+                val offlineVisits = "${userSessionManager.getOfflineVisits(member)}"
+                val profileLastVisit = userSessionManager.getLastVisit(member)
                 JoinedMemberData(
                     member, visitCount, lastVisitTimestamp, offlineVisits,
                     profileLastVisit, member.id == leaderId
                 )
             }
         }
+    }
+
+    override suspend fun getJoinedMemberCount(teamId: String): Int {
+        return count(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+        }.toInt()
     }
 
     override suspend fun getAssignee(userId: String): RealmUserModel? {
@@ -910,6 +962,72 @@ class TeamsRepositoryImpl @Inject constructor(
             }
 
             query.count() > 0
+        }
+    }
+
+    override suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean {
+        var success = false
+        executeTransaction { realm ->
+            val currentLeaders = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .equalTo("isLeader", true)
+                .findAll()
+            currentLeaders.forEach { it.isLeader = false }
+
+            val newLeader = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .equalTo("userId", newLeaderId)
+                .findFirst()
+
+            if (newLeader != null) {
+                newLeader.isLeader = true
+                success = true
+            }
+        }
+        return success
+    }
+
+    override suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUserModel? {
+        return withRealm { realm ->
+            val query = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .equalTo("isLeader", false)
+                .notEqualTo("status", "archived")
+
+            excludeUserId?.let {
+                query.notEqualTo("userId", it)
+            }
+
+            val members = query.findAll()
+
+            if (members.isEmpty()) {
+                return@withRealm null
+            }
+
+            val userIds = members.mapNotNull { it.userId }.toTypedArray()
+            if (userIds.isEmpty()) {
+                return@withRealm null
+            }
+
+            val users = realm.where(RealmUserModel::class.java)
+                .`in`("id", userIds)
+                .findAll()
+
+            val userMap = users.associateBy { it.id }
+            val successorMember = members.maxByOrNull { member ->
+                userMap[member.userId]?.let { user ->
+                    RealmTeamLog.getVisitCount(realm, user.name, teamId)
+                } ?: 0L
+            }
+
+            successorMember?.userId?.let { id ->
+                userMap[id]?.let {
+                    realm.copyFromRealm(it)
+                }
+            }
         }
     }
 }
