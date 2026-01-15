@@ -18,4 +18,5 @@ interface ProgressRepository {
         stepNum: Int,
         passed: Boolean?
     )
+    suspend fun hasUserCompletedSync(userId: String): Boolean
 }

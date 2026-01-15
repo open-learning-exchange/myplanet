@@ -61,6 +61,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.JoinRequestNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -78,8 +79,8 @@ import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SendSurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
@@ -114,6 +115,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
 
     @Inject
     lateinit var voicesRepository: VoicesRepository
@@ -124,7 +127,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
     private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, databaseService, voicesRepository, submissionsRepository)
+        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false

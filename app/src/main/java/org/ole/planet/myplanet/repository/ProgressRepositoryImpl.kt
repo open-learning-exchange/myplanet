@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
@@ -165,5 +166,12 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             courseProgress?.parentCode = parentCode
             courseProgress?.userId = userId
         }
+    }
+
+    override suspend fun hasUserCompletedSync(userId: String): Boolean {
+        return count(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        } > 0
     }
 }
