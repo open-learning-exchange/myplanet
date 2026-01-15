@@ -171,10 +171,14 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
             resolvedTeam?.let { team = it }
 
+            val hasPendingRequest = team?._id?.let {
+                teamsRepository.hasPendingRequest(it, user?.id)
+            } ?: false
+
             withContext(kotlinx.coroutines.Dispatchers.Main) {
                 binding.loadingIndicator?.visibility = View.GONE
                 binding.contentLayout?.visibility = View.VISIBLE
-                setupTeamDetails(isMyTeam, user)
+                setupTeamDetails(isMyTeam, user, hasPendingRequest)
                 val targetPageId = arguments?.getString("navigateToPage") ?: team?._id?.let { teamLastPage[it] }
                 setupViewPager(isMyTeam, targetPageId)
             }
@@ -254,12 +258,12 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
+    private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?, hasPendingRequest: Boolean) {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
 
         if (!isMyTeam) {
-            setupNonMyTeamButtons(user)
+            setupNonMyTeamButtons(user, hasPendingRequest)
         } else {
             setupMyTeamButtons(user)
         }
@@ -325,25 +329,24 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         )
     }
 
-    private fun setupNonMyTeamButtons(user: RealmUserModel?) {
+    private fun setupNonMyTeamButtons(user: RealmUserModel?, hasPendingRequest: Boolean) {
         binding.btnAddDoc.isEnabled = false
         binding.btnAddDoc.visibility = View.GONE
         binding.btnLeave.isEnabled = true
         binding.btnLeave.visibility = View.VISIBLE
 
-        if (user?.id?.startsWith("guest") == true){
+        if (user?.id?.startsWith("guest") == true) {
             binding.btnLeave.isEnabled = false
             binding.btnLeave.visibility = View.GONE
         }
 
-        val currentTeam = team
-        val teamId = currentTeam?._id
+        val teamId = team?._id
         if (teamId.isNullOrEmpty()) {
             Utilities.toast(activity, getString(R.string.no_team_available))
             return
         }
-        val isUserRequested = currentTeam.requested(user?.id, mRealm)
-        if (isUserRequested) {
+
+        if (hasPendingRequest) {
             binding.btnLeave.text = getString(R.string.requested)
             binding.btnLeave.isEnabled = false
         } else {
@@ -371,11 +374,18 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.btnLeave.setOnClickListener {
             AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    team?.leave(user, mRealm)
-                    Utilities.toast(activity, getString(R.string.left_team))
-                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                    setupViewPager(false, lastPageId)
-                    binding.llActionButtons.visibility = View.GONE
+                    team?.let { currentTeam ->
+                        user?.let { currentUser ->
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                teamsRepository.leaveTeam(currentTeam._id!!, currentUser.id)
+                                Utilities.toast(activity, getString(R.string.left_team))
+                                val lastPageId =
+                                    currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                                setupViewPager(false, lastPageId)
+                                binding.llActionButtons.visibility = View.GONE
+                            }
+                        }
+                    }
                 }.setNegativeButton(R.string.no, null).show()
         }
 
