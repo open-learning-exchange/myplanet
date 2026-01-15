@@ -76,7 +76,7 @@ import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.settings.SettingActivity
+import org.ole.planet.myplanet.ui.settings.SettingsActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
@@ -250,7 +250,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
@@ -377,11 +377,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     guestDialog(this, userSessionManager)
                 }
             }
-            R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
+            R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingsActivity::class.java))
             R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
-            R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
+            R.id.change_language -> SettingsActivity.SettingFragment.languageChanger(this)
             R.id.action_theme -> ThemeManager.showThemeDialog(this)
             else -> {}
         }
@@ -453,7 +453,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
                 }
                 NotificationUtils.TYPE_STORAGE -> {
-                    startActivity(Intent(this, SettingActivity::class.java))
+                    startActivity(Intent(this, SettingsActivity::class.java))
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
                     val teamName = intent.getStringExtra("teamName")
