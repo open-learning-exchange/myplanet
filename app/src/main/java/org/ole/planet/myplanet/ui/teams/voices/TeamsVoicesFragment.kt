@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -83,10 +82,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
             user?.let { userModel ->
                 viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        databaseService.executeTransactionAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
-                        }
+                    val success = voicesRepository.createTeamNews(map, userModel, imageList)
+                    if (success) {
                         binding.rvDiscussion.post {
                             binding.rvDiscussion.smoothScrollToPosition(0)
                         }
@@ -96,8 +93,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         binding.llAddNews.visibility = View.GONE
                         binding.tlMessage.error = null
                         binding.addMessage.text = getString(R.string.add_message)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
                 }
             }

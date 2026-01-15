@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.service.ConfigurationManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -80,7 +81,7 @@ class DataService constructor(
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
-    @Deprecated("Use ConfigurationRepository.checkHealth instead")
+    @Deprecated("Use ConfigurationsRepository.checkHealth instead")
     fun healthAccess(listener: OnSuccessListener) {
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
@@ -151,7 +152,7 @@ class DataService constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkVersion instead")
+    @Deprecated("Use ConfigurationsRepository.checkVersion instead")
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (shouldPromptForSettings(settings)) return
 
@@ -204,7 +205,7 @@ class DataService constructor(
         }
     }
 
-    @Deprecated("Use ConfigurationRepository.checkServerAvailability instead")
+    @Deprecated("Use ConfigurationsRepository.checkServerAvailability instead")
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
