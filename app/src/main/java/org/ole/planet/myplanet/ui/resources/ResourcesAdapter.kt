@@ -14,6 +14,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
+import io.realm.Realm
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -43,7 +44,8 @@ class ResourcesAdapter(
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
     private val userModel: RealmUserModel?,
-    private var tagsMap: Map<String, List<RealmTag>>
+    private var tagsMap: Map<String, List<RealmTag>>,
+    private val mRealm: Realm
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableCallback {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -126,7 +128,8 @@ class ResourcesAdapter(
             holder.itemView.setOnClickListener {
                 openLibrary(library)
             }
-            if (library.isResourceOffline() == true) {
+            val isResourceOpened = library.id?.let { resourcesRepository.isResourceOpened(it, mRealm) }
+            if (library.isResourceOffline() == true || isResourceOpened == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
