@@ -16,6 +16,74 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
 ) : RealmRepository(databaseService), NotificationsRepository {
+    override suspend fun checkAndCreateNotifications(
+        userId: String?,
+        taskData: List<Triple<String, String, String>>,
+        joinRequestData: List<JoinRequestNotification>,
+        joinRequestMessageTemplate: String,
+        storageRatio: Int,
+        surveyTitles: List<String>
+    ): List<RealmNotification> {
+        val actualUserId = userId ?: ""
+
+        return databaseService.withRealm { realm ->
+            realm.executeTransaction { r ->
+                surveyTitles.forEach { title ->
+                    createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
+                }
+
+                taskData.forEach { (title, deadline, id) ->
+                    createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
+                }
+
+                if (storageRatio > 85) {
+                    createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
+                }
+                createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+
+                joinRequestData.forEach { (requesterName, teamName, requestId) ->
+                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                    createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
+                }
+            }
+
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", actualUserId)
+                .equalTo("isRead", false)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
+
+    private fun createNotificationIfMissingInternal(
+        realm: io.realm.Realm,
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String
+    ) {
+        val query = realm.where(RealmNotification::class.java)
+            .equalTo("userId", userId)
+            .equalTo("type", type)
+
+        val existingNotification =
+            if (relatedId != null) {
+                query.equalTo("relatedId", relatedId).findFirst()
+            } else {
+                query.isNull("relatedId").findFirst()
+            }
+
+        if (existingNotification == null) {
+            realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                this.userId = userId
+                this.type = type
+                this.message = message
+                this.relatedId = relatedId
+                this.createdAt = Date()
+            }
+        }
+    }
+
     override suspend fun refresh() {
         databaseService.realmInstance.refresh()
     }
