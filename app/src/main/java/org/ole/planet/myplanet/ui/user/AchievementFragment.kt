@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
@@ -61,7 +61,7 @@ class AchievementFragment : BaseContainerFragment() {
     @Inject
     lateinit var syncManager: SyncManager
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var onRealtimeSyncListener: BaseRealtimeSyncListener
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -235,7 +235,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "achievements" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {

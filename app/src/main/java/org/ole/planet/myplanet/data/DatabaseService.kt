@@ -60,7 +60,9 @@ class DatabaseService(context: Context) {
             try {
                 realm.beginTransaction()
                 transaction(realm)
-                realm.commitTransaction()
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
+                }
             } catch (e: Exception) {
                 if (realm.isInTransaction) {
                     realm.cancelTransaction()
