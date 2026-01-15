@@ -60,7 +60,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class SettingActivity : AppCompatActivity() {
+class SettingsActivity : AppCompatActivity() {
 
     @Inject
     lateinit var databaseService: DatabaseService
