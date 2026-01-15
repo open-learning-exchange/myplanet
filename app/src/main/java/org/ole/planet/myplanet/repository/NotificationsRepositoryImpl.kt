@@ -206,8 +206,8 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
-        return databaseService.withRealm { realm ->
+    override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+        return withRealm { realm ->
             val joinRequest = realm.where(RealmMyTeam::class.java)
                 .equalTo("_id", relatedId)
                 .equalTo("docType", "request")
@@ -226,8 +226,8 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getTaskTeamName(taskTitle: String): String? {
-        return databaseService.withRealm { realm ->
+    override suspend fun getTaskTeamName(taskTitle: String): String? {
+        return withRealm { realm ->
             val taskObj = realm.where(RealmTeamTask::class.java)
                 .equalTo("title", taskTitle)
                 .findFirst()
