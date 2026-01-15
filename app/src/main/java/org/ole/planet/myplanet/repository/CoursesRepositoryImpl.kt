@@ -26,7 +26,8 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
@@ -241,11 +242,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData? {
+        val stepsList = getCourseSteps(courseId)
+        val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         return withRealm { realm ->
-            val stepsList = org.ole.planet.myplanet.model.RealmMyCourse.getCourseSteps(realm, courseId)
             val max = stepsList.size
-            val current = org.ole.planet.myplanet.model.RealmCourseProgress.getCurrentProgress(stepsList, realm, userId, courseId)
-
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val title = course?.courseTitle
 

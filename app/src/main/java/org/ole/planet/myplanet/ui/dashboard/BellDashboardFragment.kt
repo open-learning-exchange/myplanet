@@ -18,7 +18,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import dagger.hilt.android.EntryPointAccessors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -27,7 +26,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import org.ole.planet.myplanet.di.TeamsRepositoryEntryPoint
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -42,7 +40,9 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import androidx.core.content.edit
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
@@ -445,15 +445,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         if (f is TeamDetailFragment) {
-            val hiltEntryPoint = EntryPointAccessors.fromApplication(
-                requireContext(),
-                TeamsRepositoryEntryPoint::class.java
-            )
-            val teamsRepository = hiltEntryPoint.teamsRepository()
             v.text = title
             v.setOnClickListener {
                 lifecycleScope.launch {
-                    val teamObject = id?.let { teamsRepository.getTeamById(it) }
+                    val teamObject = id?.let { viewModel.getTeamById(it) }
                     val optimizedFragment = TeamDetailFragment.newInstance(
                         teamId = id ?: "",
                         teamName = title ?: "",

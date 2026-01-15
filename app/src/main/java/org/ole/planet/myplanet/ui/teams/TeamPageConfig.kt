@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.discussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
