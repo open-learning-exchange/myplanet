@@ -8,9 +8,9 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.service.UserSessionManager
 
-class ActivityRepositoryImpl @Inject constructor(
+class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), ActivityRepository {
+) : RealmRepository(databaseService), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
             equalTo("userName", userName)
