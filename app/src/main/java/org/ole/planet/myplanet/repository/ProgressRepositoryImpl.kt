@@ -129,6 +129,13 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             obj.addProperty("mistakes", totalMistakes)
         }
     }
+
+    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
+        return queryList(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+        }
+    }
+
     override suspend fun saveCourseProgress(
         userId: String?,
         planetCode: String?,
