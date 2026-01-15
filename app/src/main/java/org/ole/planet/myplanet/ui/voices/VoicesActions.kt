@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utilities.JsonUtils
 
-object NewsActions {
+object VoicesActions {
     private val imagesToRemove = mutableSetOf<String>()
 
     data class EditDialogComponents(

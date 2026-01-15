@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface SecurityDataListener {
+interface OnSecurityDataListener {
     fun onSecurityDataUpdated()
 }

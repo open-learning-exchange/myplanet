@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.data
+package org.ole.planet.myplanet.service
 
 import android.app.AlertDialog
 import android.content.Context
@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.DataService
 
 class ConfigurationManager(
     private val context: Context,
