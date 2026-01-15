@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.callback
 
-interface  ResourcesUpdateListener {
+interface OnResourcesUpdateListener {
     fun onResourceListUpdated()
     fun onResourceUpdateFailed(messageResId: Int)
 }

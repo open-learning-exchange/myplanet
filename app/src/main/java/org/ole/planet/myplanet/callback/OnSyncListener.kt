@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.callback
 
-interface SyncListener {
+interface OnSyncListener {
     @JvmSuppressWildcards
     fun onSyncStarted()
     @JvmSuppressWildcards

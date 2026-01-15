@@ -1181,5 +1181,6 @@
     <string name="no_images_to_download">Aucune image à télécharger</string>
     <string name="app_theme">Thème de l\'application</string>
     <string name="team_surveys">Enquêtes d\'équipe</string>
+    <string name="enterprise_created">Entreprise créée</string>
 
 </resources>

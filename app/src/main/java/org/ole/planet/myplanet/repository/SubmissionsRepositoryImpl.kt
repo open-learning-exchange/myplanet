@@ -341,11 +341,16 @@ class SubmissionsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?): List<RealmSubmission> {
+    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("parentId", parentId)
                 .equalTo("userId", userId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
+                .apply {
+                    if (status != null) {
+                        equalTo("status", status)
+                    }
+                }
+                .sort("startTime", Sort.DESCENDING)
         }
     }
 
@@ -366,6 +371,25 @@ class SubmissionsRepositoryImpl @Inject constructor(
                 submission.answers?.deleteAllFromRealm()
                 submission.deleteFromRealm()
             }
+        }
+    }
+
+    override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
+        if (stepId == null) return true
+        val exam = findByField<RealmStepExam, String>(RealmStepExam::class.java, "stepId", stepId) ?: return true
+        return exam.id?.let {
+            count(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+                    .contains("parentId", it)
+                    .notEqualTo("status", "pending")
+            } > 0
+        } ?: false
+    }
+
+    override suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("courseId", courseId)
+            equalTo("type", "survey")
         }
     }
 }

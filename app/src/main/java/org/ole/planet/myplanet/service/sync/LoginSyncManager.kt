@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
@@ -32,7 +32,7 @@ class LoginSyncManager private constructor(
 ) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun login(userName: String?, password: String?, listener: SyncListener) {
+    fun login(userName: String?, password: String?, listener: OnSyncListener) {
         try {
             if (userName.isNullOrBlank() || password.isNullOrBlank()) {
                 listener.onSyncFailed("Username and password are required.")
@@ -197,7 +197,7 @@ class LoginSyncManager private constructor(
         }
     }
 
-    private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: SyncListener) {
+    private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
         if (!isManager(jsonDoc)) {
             withContext(Dispatchers.Main) {
                 listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))

@@ -56,6 +56,7 @@ open class RealmCourseProgress : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use ProgressRepository.getCurrentProgress instead")
         fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
             val progresses = mRealm.where(RealmCourseProgress::class.java)
                 .equalTo("userId", userId)

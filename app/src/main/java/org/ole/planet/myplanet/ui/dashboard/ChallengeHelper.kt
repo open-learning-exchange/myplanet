@@ -4,23 +4,19 @@ import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class ChallengeHelper(
     private val activity: DashboardActivity,
@@ -29,8 +25,9 @@ class ChallengeHelper(
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,
     private val progressRepository: ProgressRepository,
-    private val databaseService: DatabaseService,
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val submissionsRepository: SubmissionsRepository,
+    private val coursesRepository: CoursesRepository
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -48,14 +45,8 @@ class ChallengeHelper(
 
                 val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, user?.id)
                 val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
-                val realmData = databaseService.withRealmAsync { realm ->
-                    object {
-                        val courseName = realm.where(RealmMyCourse::class.java)
-                            .equalTo("courseId", courseId)
-                            .findFirst()?.courseTitle
-                        val hasUnfinishedSurvey = hasPendingSurvey(realm, courseId)
-                    }
-                }
+                val courseName = coursesRepository.getCourseTitleById(courseId)
+                val hasUnfinishedSurvey = hasPendingSurvey(courseId)
 
                 val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
                 val validUrls = listOf(
@@ -69,8 +60,14 @@ class ChallengeHelper(
 
                 val today = LocalDate.now()
                 if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
-                    val courseStatus = getCourseStatus(progress, realmData.courseName)
-                    challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, realmData.hasUnfinishedSurvey)
+                    val courseStatus = getCourseStatus(progress, courseName)
+                    val voiceCount = uniqueDates.size
+                    val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+                    var hasValidSync = false
+                    if (prereqsMet) {
+                        hasValidSync = progressRepository.hasUserCompletedSync(user?.id ?: "")
+                    }
+                    challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey, hasValidSync)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -78,12 +75,14 @@ class ChallengeHelper(
         }
     }
 
-    private fun hasPendingSurvey(realm: Realm, courseId: String): Boolean {
-        return realm.where(RealmStepExam::class.java)
-            .equalTo("courseId", courseId)
-            .equalTo("type", "survey")
-            .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(realm, survey.id, "survey") }
+    private suspend fun hasPendingSurvey(courseId: String): Boolean {
+        val surveys = submissionsRepository.getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, user?.id, "survey")) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
@@ -107,53 +106,45 @@ class ChallengeHelper(
                 settings.getString("serverURL", "") in validUrls
     }
 
-    private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
-        databaseService.withRealm { realm ->
-            val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
-            val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-            var hasValidSync = false
-            val syncTaskDone = if (prereqsMet) {
-                hasValidSync = realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("actionType", "sync")
-                    .count() > 0
+    private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean, hasValidSync: Boolean) {
+        val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+        val syncTaskDone = if (prereqsMet) {
+            if (hasValidSync) "✅" else "[ ]"
+        } else "[ ]"
+        val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-                if (hasValidSync) "✅" else "[ ]"
-            } else "[ ]"
-            val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
+        val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
 
-            val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
+        val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
-            val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
+        if (isCompleted && hasShownCongrats) return
 
-            if (isCompleted && hasShownCongrats) return@withRealm
-
-            if (isCompleted && !hasShownCongrats) {
-                editor.putBoolean("has_shown_congrats", true).apply()
-                val markdownContent = """
+        if (isCompleted && !hasShownCongrats) {
+            editor.putBoolean("has_shown_congrats", true).apply()
+            val markdownContent = """
             ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
             ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.congratulations)} <br/>
         """.trimIndent()
-                MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
-                    .show(fragmentManager, "markdown_dialog")
+            MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
+                .show(fragmentManager, "markdown_dialog")
+        } else {
+            val cappedVoiceCount = minOf(voiceCount, 5)
+            val voicesText = if (cappedVoiceCount > 0) {
+                "$cappedVoiceCount ${activity.getString(R.string.daily_voices)}"
             } else {
-                val cappedVoiceCount = minOf(voiceCount, 5)
-                val voicesText = if (cappedVoiceCount > 0) {
-                    "$cappedVoiceCount ${activity.getString(R.string.daily_voices)}"
-                } else {
-                    ""
-                }
-                val markdownContent = """
+                ""
+            }
+            val markdownContent = """
             ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
             ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.per_survey, courseTaskDone)} <br/>
             ### ${activity.getString(R.string.share_opinion)} $voicesText <br/>
             ### ${activity.getString(R.string.remember_sync)} <br/>
         """.trimIndent()
-                MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
-                    .show(fragmentManager, "markdown_dialog")
-            }
+            MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
+                .show(fragmentManager, "markdown_dialog")
         }
     }
 }

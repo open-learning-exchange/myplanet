@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.survey
+package org.ole.planet.myplanet.ui.surveys
 
 import org.ole.planet.myplanet.model.RealmSubmission
 

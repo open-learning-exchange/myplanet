@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.survey
+package org.ole.planet.myplanet.ui.surveys
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -9,19 +9,19 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.SurveyAdoptListener
+import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
+import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 
 class SurveyAdapter(
     private val context: Context,
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val onAdoptSurveyListener: SurveyAdoptListener,
+    private val onAdoptSurveyListener: OnSurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
 ) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(SurveyDiffCallback()) {

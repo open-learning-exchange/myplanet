@@ -7,9 +7,12 @@ import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -160,5 +163,14 @@ class DashboardViewModel @Inject constructor(
             val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             _uiState.update { it.copy(users = users) }
         }
+    }
+
+    suspend fun dashboardDataFlow(userId: String?): Flow<Unit> {
+        return merge(
+            resourcesRepository.getRecentResources(userId ?: "").map {},
+            resourcesRepository.getPendingDownloads(userId ?: "").map {},
+            submissionsRepository.getPendingSurveysFlow(userId).map {},
+            teamsRepository.getTasksFlow(userId).map {}
+        )
     }
 }

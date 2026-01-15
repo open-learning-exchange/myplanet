@@ -19,7 +19,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
@@ -97,7 +97,7 @@ class UploadManager @Inject constructor(
             }
         }
 
-    fun uploadActivities(listener: SuccessListener?) {
+    fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
         val model = databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)
@@ -164,7 +164,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadExamResult(listener: SuccessListener) {
+    suspend fun uploadExamResult(listener: OnSuccessListener) {
         withContext(Dispatchers.IO) {
             val apiInterface = client.create(ApiInterface::class.java)
             try {
@@ -375,7 +375,7 @@ class UploadManager @Inject constructor(
         return success
     }
 
-    suspend fun uploadSubmitPhotos(listener: SuccessListener?) {
+    suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
         data class PhotoData(
@@ -442,7 +442,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadResource(listener: SuccessListener?) {
+    suspend fun uploadResource(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
@@ -757,7 +757,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadUserActivities(listener: SuccessListener) {
+    suspend fun uploadUserActivities(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
         val model = databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)

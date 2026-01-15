@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.teams.discussion
+package org.ole.planet.myplanet.ui.teams.voices
 
 import android.content.res.Configuration
 import android.os.Bundle
@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -29,7 +28,7 @@ import org.ole.planet.myplanet.utilities.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
-class DiscussionListFragment : BaseTeamFragment() {
+class TeamsVoicesFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
     private val binding get() = _binding!!
 
@@ -83,10 +82,8 @@ class DiscussionListFragment : BaseTeamFragment() {
 
             user?.let { userModel ->
                 viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        databaseService.executeTransactionAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
-                        }
+                    val success = voicesRepository.createTeamNews(map, userModel, imageList)
+                    if (success) {
                         binding.rvDiscussion.post {
                             binding.rvDiscussion.smoothScrollToPosition(0)
                         }
@@ -96,31 +93,29 @@ class DiscussionListFragment : BaseTeamFragment() {
                         binding.llAddNews.visibility = View.GONE
                         binding.tlMessage.error = null
                         binding.addMessage.text = getString(R.string.add_message)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
                 }
             }
         }
 
         if (shouldQueryTeamFromRealm()) {
-            team = try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
+            viewLifecycleOwner.lifecycleScope.launch {
+                team = teamsRepository.getTeamByIdOrTeamId(teamId)
+                updateCanPostMessage(team, isMemberFlow.value)
             }
-
-            if (team == null) {
-                try {
-                    team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+        } else {
+            updateCanPostMessage(team, isMemberFlow.value)
         }
         binding.addMessage.isVisible = false
         return binding.root
+    }
+
+    private fun updateCanPostMessage(team: RealmMyTeam?, isMember: Boolean) {
+        val isGuest = user?.id?.startsWith("guest") == true
+        val isPublicTeam = team?.isPublic == true
+        val canPost = !isGuest && (isMember || isPublicTeam)
+        binding.addMessage.isVisible = canPost
+        (binding.rvDiscussion.adapter as? VoicesAdapter)?.setNonTeamMember(!isMember)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -132,9 +127,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             val count = realmNewsList.size
             voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
             showRecyclerView(realmNewsList)
-        }
 
-        viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     voicesRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
@@ -142,13 +135,9 @@ class DiscussionListFragment : BaseTeamFragment() {
                     }
                 }
                 combine(isMemberFlow, teamFlow) { isMember, teamData ->
-                    Pair(isMember, teamData?.isPublic == true)
-                }.collectLatest { (isMember, isPublicTeamFromFlow) ->
-                    val isGuest = user?.id?.startsWith("guest") == true
-                    val isPublicTeam = isPublicTeamFromFlow || team?.isPublic == true
-                    val canPost = !isGuest && (isMember || isPublicTeam)
-                    binding.addMessage.isVisible = canPost
-                    (binding.rvDiscussion.adapter as? VoicesAdapter)?.setNonTeamMember(!isMember)
+                    Pair(isMember, teamData)
+                }.collectLatest { (isMember, teamData) ->
+                    updateCanPostMessage(teamData, isMember)
                 }
             }
         }
