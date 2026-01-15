@@ -18,6 +18,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -55,7 +56,7 @@ class CoursesAdapter(
     private var isTitleAscending = false
     private var areAllSelected = false
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
-    private val tagRequestsInProgress: MutableSet<String> = mutableSetOf()
+    private val activeJobs: MutableMap<String, Job> = mutableMapOf()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -146,6 +147,20 @@ class CoursesAdapter(
                 course1?.courseTitle?.compareTo(course2?.courseTitle ?: "", ignoreCase = true) ?: 0
             } else {
                 course2?.courseTitle?.compareTo(course1?.courseTitle ?: "", ignoreCase = true) ?: 0
+            }
+        }
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is CoursesViewHolder) {
+            val position = holder.bindingAdapterPosition
+            if (position != RecyclerView.NO_POSITION) {
+                val course = courseList.getOrNull(position)
+                course?.id?.let { courseId ->
+                    activeJobs[courseId]?.cancel()
+                    activeJobs.remove(courseId)
+                }
             }
         }
     }
@@ -321,6 +336,11 @@ class CoursesAdapter(
         }
     }
 
+    fun cancelAllJobs() {
+        activeJobs.values.forEach { it.cancel() }
+        activeJobs.clear()
+    }
+
     fun areAllSelected(): Boolean {
         val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
@@ -397,11 +417,9 @@ class CoursesAdapter(
 
         flexboxDrawable.removeAllViews()
 
-        if (!tagRequestsInProgress.add(courseId)) {
-            return
-        }
+        activeJobs[courseId]?.cancel()
 
-        holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+        val job = holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
             try {
                 val tags = tagsRepository.getTagsForCourse(courseId)
                 tagCache[courseId] = tags
@@ -412,8 +430,11 @@ class CoursesAdapter(
                     }
                 }
             } finally {
-                tagRequestsInProgress.remove(courseId)
+                activeJobs.remove(courseId)
             }
+        }
+        if (job != null) {
+            activeJobs[courseId] = job
         }
     }
 
@@ -478,6 +499,11 @@ class CoursesAdapter(
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
         }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        cancelAllJobs()
     }
 
     override fun getItemCount(): Int {

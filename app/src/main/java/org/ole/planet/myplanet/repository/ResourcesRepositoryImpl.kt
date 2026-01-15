@@ -242,4 +242,10 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
+    override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
+        return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
+            .equalTo("resourceId", resourceId)
+            .equalTo("type", "resource_opened")
+            .findFirst() != null
+    }
 }

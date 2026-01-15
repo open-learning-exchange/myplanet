@@ -118,6 +118,7 @@ interface TeamsRepository {
         planetCode: String?,
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
+    suspend fun getTeamType(teamId: String): String?
     suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
@@ -132,4 +133,7 @@ interface TeamsRepository {
         isPublic: Boolean,
         user: RealmUserModel,
     ): Result<String>
+
+    suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
+    suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUserModel?
 }
