@@ -235,6 +235,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use createMember instead")
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val isAvailable = withContext(Dispatchers.IO) {
             try {
@@ -296,6 +297,10 @@ class UserRepositoryImpl @Inject constructor(
             saveUser(obj, settings, keyString, iv)
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
+    }
+
+    override suspend fun createMember(obj: JsonObject): Pair<Boolean, String> {
+        return becomeMember(obj)
     }
 
     private suspend fun uploadToShelf(obj: JsonObject) {

@@ -25,6 +25,8 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.repository.UserRepository
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -32,6 +34,8 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
+    @Inject
+    lateinit var userRepository: UserRepository
     var dob: String = ""
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
@@ -140,18 +144,16 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
-            }
-        }, object : OnSecurityDataListener {
-            override fun onSecurityDataUpdated() {
-                runOnUiThread {
-                    customProgressDialog.dismiss()
+        lifecycleScope.launch {
+            val result = userRepository.createMember(obj)
+            withContext(Dispatchers.Main) {
+                customProgressDialog.dismiss()
+                Utilities.toast(this@BecomeMemberActivity, result.second)
+                if (result.first) {
                     autoLoginNewMember(info.username, info.password)
                 }
             }
-        })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
