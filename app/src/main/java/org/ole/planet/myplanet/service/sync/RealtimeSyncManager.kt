@@ -6,15 +6,15 @@ import kotlinx.coroutines.flow.asSharedFlow
 import org.ole.planet.myplanet.callback.OnRealtimeSyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 
-class RealtimeSyncCoordinator {
+class RealtimeSyncManager {
     
     companion object {
         @Volatile
-        private var INSTANCE: RealtimeSyncCoordinator? = null
+        private var INSTANCE: RealtimeSyncManager? = null
         
-        fun getInstance(): RealtimeSyncCoordinator {
+        fun getInstance(): RealtimeSyncManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: RealtimeSyncCoordinator().also { INSTANCE = it }
+                INSTANCE ?: RealtimeSyncManager().also { INSTANCE = it }
             }
         }
     }

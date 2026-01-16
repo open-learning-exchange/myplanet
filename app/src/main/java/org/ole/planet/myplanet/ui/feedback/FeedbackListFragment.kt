@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
@@ -51,7 +51,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private lateinit var feedbackAdapter: FeedbackAdapter
 
@@ -92,7 +92,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             override fun onSyncComplete() {}
             override fun onSyncFailed(msg: String?) {}
         }
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun refreshFeedbackListData() {
@@ -180,7 +180,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onDestroyView() {
         if (::onRealtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(onRealtimeSyncListener)
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         _binding = null
         super.onDestroyView()

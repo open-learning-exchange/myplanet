@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
@@ -59,7 +59,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     @Inject
     lateinit var syncManager: SyncManager
 
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
 
     private var _binding: FragmentTeamDetailBinding? = null
@@ -510,7 +510,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                 }
             }
         }
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun shouldQueryRealm(teamId: String): Boolean {
@@ -521,7 +521,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         loadTeamJob?.cancel()
         loadTeamJob = null
         if (::onRealtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(onRealtimeSyncListener)
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         super.onDestroyView()
         _binding = null
