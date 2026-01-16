@@ -4,7 +4,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.ItemTouchHelperListener
-import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.callback.OnItemDragStateListener
 
 class ItemReorderHelper(private val mAdapter: ItemTouchHelperListener) :
     ItemTouchHelper.Callback() {
@@ -43,9 +43,9 @@ class ItemReorderHelper(private val mAdapter: ItemTouchHelperListener) :
     override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
         // We only want the active item to change
         if (actionState != ItemTouchHelper.ACTION_STATE_IDLE) {
-            if (viewHolder is ItemTouchHelperViewHolder) {
+            if (viewHolder is OnItemDragStateListener) {
                 // Let the view holder know that this item is being moved or dragged
-                val itemViewHolder = viewHolder as ItemTouchHelperViewHolder
+                val itemViewHolder = viewHolder as OnItemDragStateListener
                 itemViewHolder.onItemSelected()
             }
         }
@@ -55,9 +55,9 @@ class ItemReorderHelper(private val mAdapter: ItemTouchHelperListener) :
     override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
         super.clearView(recyclerView, viewHolder)
         viewHolder.itemView.alpha = ALPHA_FULL
-        if (viewHolder is ItemTouchHelperViewHolder) {
+        if (viewHolder is OnItemDragStateListener) {
             // Tell the view holder it's time to restore the idle state
-            val itemViewHolder = viewHolder as ItemTouchHelperViewHolder
+            val itemViewHolder = viewHolder as OnItemDragStateListener
             itemViewHolder.onItemClear(viewHolder)
         }
     }
