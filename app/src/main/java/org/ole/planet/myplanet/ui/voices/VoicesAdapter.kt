@@ -61,7 +61,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class VoicesAdapter(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userSessionManager: UserSessionManager, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class VoicesAdapter(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userSessionManager: UserSessionManager, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository, private val voicesActions: VoicesActions) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -337,13 +337,14 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                VoicesActions.showEditAlert(
+                voicesActions.showEditAlert(
                     context,
                     news.id,
                     true,
                     currentUser,
                     listener,
                     holder,
+                    scope
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -524,13 +525,14 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                VoicesActions.showEditAlert(
+                voicesActions.showEditAlert(
                     context,
                     finalNews?.id,
                     false,
                     currentUser,
                     listener,
                     viewHolder,
+                    scope
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
