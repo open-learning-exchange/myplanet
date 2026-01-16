@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskAdapter.ViewHolderTask
+import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskAdapter.TeamTaskViewHolder
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
@@ -27,19 +27,19 @@ class TeamTaskAdapter(
     var nonTeamMember: Boolean,
     private val coroutineScope: CoroutineScope,
     private val userRepository: UserRepository
-) : ListAdapter<RealmTeamTask, ViewHolderTask>(DIFF_CALLBACK) {
+) : ListAdapter<RealmTeamTask, TeamTaskViewHolder>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null
     fun setListener(listener: OnTaskCompletedListener?) {
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTask {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamTaskViewHolder {
         val binding = RowTaskBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderTask(binding)
+        return TeamTaskViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderTask, position: Int) {
+    override fun onBindViewHolder(holder: TeamTaskViewHolder, position: Int) {
         holder.assigneeJob?.cancel()
         val it = getItem(position)
         val binding = holder.binding
@@ -115,7 +115,7 @@ class TeamTaskAdapter(
         }
     }
 
-    class ViewHolderTask(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
+    class TeamTaskViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
         var assigneeJob: Job? = null
     }
 
