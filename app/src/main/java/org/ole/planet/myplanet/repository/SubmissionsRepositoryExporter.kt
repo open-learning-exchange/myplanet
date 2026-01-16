@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-internal class SubmissionPdfDomain @Inject constructor(private val databaseService: DatabaseService) {
+internal class SubmissionsRepositoryExporter @Inject constructor(private val databaseService: DatabaseService) {
 
     companion object {
         private const val PAGE_WIDTH = 595

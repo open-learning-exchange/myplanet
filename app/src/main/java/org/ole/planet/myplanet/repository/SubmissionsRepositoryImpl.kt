@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
-    private val submissionPdfDomain: SubmissionPdfDomain
+    private val submissionsRepositoryExporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
@@ -395,7 +395,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File? {
-        return submissionPdfDomain.generateSubmissionPdf(context, submissionId)
+        return submissionsRepositoryExporter.generateSubmissionPdf(context, submissionId)
     }
 
     override suspend fun generateMultipleSubmissionsPdf(
@@ -403,6 +403,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         submissionIds: List<String>,
         examTitle: String
     ): java.io.File? {
-        return submissionPdfDomain.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+        return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 }
