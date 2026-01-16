@@ -24,7 +24,15 @@ class SurveyAdapter(
     private val onAdoptSurveyListener: OnSurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(SurveyDiffCallback()) {
+) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(object : DiffUtil.ItemCallback<RealmStepExam>() {
+    override fun areItemsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
+        return oldItem == newItem
+    }
+}) {
     private var listener: OnHomeItemClickListener? = null
     private var isTitleAscending = true
     private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
@@ -136,15 +144,5 @@ class SurveyAdapter(
                 tvDate.text = surveyInfo?.creationDate ?: ""
             }
         }
-    }
-}
-
-class SurveyDiffCallback : DiffUtil.ItemCallback<RealmStepExam>() {
-    override fun areItemsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
-        return oldItem.id == newItem.id
-    }
-
-    override fun areContentsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
-        return oldItem == newItem
     }
 }
