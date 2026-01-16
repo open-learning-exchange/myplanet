@@ -54,9 +54,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
 
-    @Inject
-    override lateinit var coursesRepository: CoursesRepository
-
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
     }
