@@ -12,44 +12,39 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import io.realm.Realm
-import java.util.Date
-import java.util.Locale
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.TimeUtils.getAge
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.util.Date
+import java.util.Locale
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var healthRepository: HealthRepository
     private lateinit var binding: ActivityAddExaminationBinding
-    lateinit var mRealm: Realm
     var userId: String? = null
     var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null
@@ -81,26 +76,22 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initViews()
         currentUser = userSessionManager.userModel
         mapConditions = HashMap()
-        mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-        if (pojo == null) {
-            pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+        lifecycleScope.launch {
+            pojo = healthRepository.getExaminationById(userId!!)
+            if (pojo == null) {
+                pojo = healthRepository.getExaminationByUserId(userId!!)
+            }
+            user = healthRepository.getUserById(userId!!)
+
+            if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
+                health = JsonUtils.gson.fromJson(AndroidDecrypter.decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+            }
+            if (health == null) {
+                initHealth()
+            }
+            initExamination()
         }
-        user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        if (user != null && (user?.key == null || user?.iv == null)) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            user?.key = generateKey()
-            user?.iv = generateIv()
-            mRealm.commitTransaction()
-        }
-        if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
-        }
-        if (health == null) {
-            initHealth()
-        }
-        initExamination()
         validateFields()
         findViewById<View>(R.id.btn_save).setOnClickListener {
             if(!allowSubmission){
@@ -115,24 +106,26 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun initExamination() {
         if (intent.hasExtra("id")) {
-            examination = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
-            binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
-            binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
-            binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
-            binding.etHeight.setText(getString(R.string.float_placeholder, examination?.height))
-            binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
-            binding.etVision.setText(examination?.vision)
-            binding.etHearing.setText(examination?.hearing)
-            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
-            binding.etObservation.setText(getString(getString(R.string.note_), encrypted))
-            binding.etDiag.setText(getString(getString(R.string.diagnosis), encrypted))
-            binding.etTreatments.setText(getString(getString(R.string.treatments), encrypted))
-            binding.etMedications.setText(getString(getString(R.string.medications), encrypted))
-            binding.etImmunization.setText(getString(getString(R.string.immunizations), encrypted))
-            binding.etAllergies.setText(getString(getString(R.string.allergies), encrypted))
-            binding.etXray.setText(getString(getString(R.string.xrays), encrypted))
-            binding.etLabtest.setText(getString(getString(R.string.tests), encrypted))
-            binding.etReferrals.setText(getString(getString(R.string.referrals), encrypted))
+            lifecycleScope.launch {
+                examination = healthRepository.getExaminationById(intent.getStringExtra("id")!!)
+                binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
+                binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
+                binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
+                binding.etHeight.setText(getString(R.string.float_placeholder, examination?.height))
+                binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
+                binding.etVision.setText(examination?.vision)
+                binding.etHearing.setText(examination?.hearing)
+                val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
+                binding.etObservation.setText(JsonUtils.getString(getString(R.string.note_), encrypted))
+                binding.etDiag.setText(JsonUtils.getString(getString(R.string.diagnosis), encrypted))
+                binding.etTreatments.setText(JsonUtils.getString(getString(R.string.treatments), encrypted))
+                binding.etMedications.setText(JsonUtils.getString(getString(R.string.medications), encrypted))
+                binding.etImmunization.setText(JsonUtils.getString(getString(R.string.immunizations), encrypted))
+                binding.etAllergies.setText(JsonUtils.getString(getString(R.string.allergies), encrypted))
+                binding.etXray.setText(JsonUtils.getString(getString(R.string.xrays), encrypted))
+                binding.etLabtest.setText(JsonUtils.getString(getString(R.string.tests), encrypted))
+                binding.etReferrals.setText(JsonUtils.getString(getString(R.string.referrals), encrypted))
+            }
         }
         showCheckbox(examination)
         showOtherDiagnosis()
@@ -180,9 +173,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val chipCloud = ChipCloud(this, binding.containerOtherDiagnosis, config)
         for (s in customDiag?: emptySet()) {
             if (s.isNullOrBlank()) {
-                    continue
+                continue
             } else {
-                    chipCloud.addChip(s)
+                chipCloud.addChip(s)
             }
         }
         chipCloud.setDeleteListener { _: Int, s1: String? -> customDiag?.remove(s1) }
@@ -195,7 +188,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (customDiag?.isEmpty() == true && examination != null) {
             val conditions = JsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
             for (s in conditions.keySet()) {
-                if (!mainList.contains(s) && getBoolean(s, conditions)) {
+                if (!mainList.contains(s) && JsonUtils.getBoolean(s, conditions)) {
                     chipCloud.addChip(s)
                     chipCloud.setDeleteListener { _: Int, s1: String? ->
                         customDiag?.remove(Constants.LABELS[s1])
@@ -216,7 +209,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
             if (examination != null) {
                 val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
-                c.isChecked = getBoolean(s, conditions)
+                c.isChecked = JsonUtils.getBoolean(s, conditions)
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
             c.text = s
@@ -234,27 +227,25 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
     private fun initHealth() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
         health = RealmMyHealth()
         val profile = RealmMyHealthProfile()
         health?.lastExamination = Date().time
-        health?.userKey = generateKey()
+        health?.userKey = AndroidDecrypter.generateKey()
         health?.profile = profile
-        mRealm.commitTransaction()
     }
 
     private fun saveData() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
         createPojo()
         if (examination == null) {
-            val userId = generateIv()
-            examination = mRealm.createObject(RealmHealthExamination::class.java, userId)
+            val userId = AndroidDecrypter.generateIv()
+            examination = RealmHealthExamination()
             examination?.userId = userId
+            examination!!._id = userId
         }
         examination?.profileId = health?.userKey
         examination?.creatorId = health?.userKey
         examination?.gender = user?.gender
-        examination?.age = user?.dob?.let { getAge(it) }!!
+        examination?.age = user?.dob?.let { TimeUtils.getAge(it) }!!
         examination?.isSelfExamination = currentUser?._id == pojo?._id
         examination?.date = Date().time
         examination?.planetCode = user?.planetCode
@@ -283,13 +274,15 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            val key = user?.key ?: generateKey().also { user?.key = it }
-            val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
+            val key = user?.key ?: AndroidDecrypter.generateKey().also { user?.key = it }
+            val iv = user?.iv ?: AndroidDecrypter.generateIv().also { user?.iv = it }
+            examination?.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(sign), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        mRealm.commitTransaction()
+        lifecycleScope.launch {
+            healthRepository.saveExamination(examination!!, pojo!!)
+        }
         Utilities.toast(this, getString(R.string.added_successfully))
         super.finish()
     }
@@ -316,7 +309,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             val scrollView = binding.rootScrollView
 
             val isValidTemp = (getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
-                        getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
+                    getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etTemperature.text}".trim { it <= ' ' }.isNotEmpty()
             val isValidPulse = (getInt("${binding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
                     getFloat("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
@@ -371,14 +364,15 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun createPojo() {
         try {
             if (pojo == null) {
-                pojo = mRealm.createObject(RealmHealthExamination::class.java, userId)
+                pojo = RealmHealthExamination()
+                pojo!!._id = userId!!
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
+                pojo?.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -407,9 +401,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         binding.etBloodpressure.removeTextChangedListener(textWatcher)
         textWatcher = null
         super.onDestroy()
