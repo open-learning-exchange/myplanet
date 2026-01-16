@@ -61,7 +61,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var databaseServiceProvider: Provider<DatabaseService>
-    val databaseService: Database by lazy { databaseServiceProvider.get() }
+    val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
 
     @Inject
     @AppPreferences

@@ -63,6 +63,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
@@ -139,7 +140,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     @Inject
-    lateinit var resourcesRepository: ResourcesRepository
+    open lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
