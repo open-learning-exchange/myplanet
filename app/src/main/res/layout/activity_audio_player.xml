@@ -75,7 +75,7 @@
             android:layout_gravity="bottom"
             android:background="@android:color/transparent"
             android:elevation="6dp"
-            app:controller_layout_id="@layout/custom_exo_player"
+            app:controller_layout_id="@layout/exo_player_controls"
             app:show_timeout="0"
             app:use_artwork="false" />
     </FrameLayout>
