@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.submissions.QuestionAnswer
+import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
 
 class SubmissionsRepositoryImpl @Inject constructor(
@@ -301,7 +301,7 @@ class SubmissionsRepositoryImpl @Inject constructor(
                     }
                 }
 
-                org.ole.planet.myplanet.ui.submissions.QuestionAnswer(
+                QuestionAnswer(
                     questionId = question.id,
                     questionHeader = question.header,
                     questionBody = question.body,
