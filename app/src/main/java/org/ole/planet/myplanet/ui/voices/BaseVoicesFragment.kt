@@ -35,9 +35,12 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NavigationHelper
+import javax.inject.Inject
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
+    @Inject
+    lateinit var voicesActions: VoicesActions
     lateinit var imageList: RealmList<String>
     @JvmField
     protected var llImage: ViewGroup? = null
@@ -95,7 +98,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     override fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
         val handler = profileDbHandler
-        val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return
+        val fragment = voicesActions.showMemberDetails(userModel, handler) ?: return
         NavigationHelper.replaceFragment(
             requireActivity().supportFragmentManager,
             R.id.fragment_container,

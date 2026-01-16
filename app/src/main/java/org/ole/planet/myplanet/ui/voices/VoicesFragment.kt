@@ -198,7 +198,7 @@ class VoicesFragment : BaseVoicesFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = VoicesAdapter(requireActivity(), user, null, "", null, userSessionManager, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            adapterNews = VoicesAdapter(requireActivity(), user, null, "", null, userSessionManager, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository, voicesActions)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)

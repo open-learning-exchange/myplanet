@@ -64,6 +64,64 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getNewsById(id: String): RealmNews? {
+        return withRealm { realm ->
+            realm.findCopyByField(RealmNews::class.java, "id", id)
+        }
+    }
+
+    override suspend fun createReply(
+        s: String?,
+        news: RealmNews?,
+        currentUser: RealmUserModel?,
+        imageList: io.realm.RealmList<String>?
+    ) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val map = HashMap<String?, String>()
+                map["message"] = s ?: ""
+                map["viewableBy"] = news?.viewableBy ?: ""
+                map["viewableId"] = news?.viewableId ?: ""
+                map["replyTo"] = news?.id ?: ""
+                map["messageType"] = news?.messageType ?: ""
+                map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
+                map["viewIn"] = news?.viewIn ?: ""
+                currentUser?.let { createNews(map, realm, it, imageList, true) }
+            }
+        }
+    }
+
+    override suspend fun updateNewsMessage(
+        s: String,
+        newsId: String?,
+        imageList: io.realm.RealmList<String>?,
+        imagesToRemove: Set<String>
+    ) {
+        if (s.isEmpty()) return
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                if (imagesToRemove.isNotEmpty()) {
+                    news?.imageUrls?.let { imageUrls ->
+                        val updatedUrls = imageUrls.filter { imageUrlJson ->
+                            try {
+                                val imgObject = com.google.gson.Gson().fromJson(imageUrlJson, com.google.gson.JsonObject::class.java)
+                                val path = org.ole.planet.myplanet.utilities.JsonUtils.getString("imageUrl", imgObject)
+                                !imagesToRemove.contains(path)
+                            } catch (_: Exception) {
+                                true
+                            }
+                        }
+                        news.imageUrls?.clear()
+                        news.imageUrls?.addAll(updatedUrls)
+                    }
+                }
+                imageList?.forEach { news?.imageUrls?.add(it) }
+                news?.updateMessage(s)
+            }
+        }
+    }
+
     override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?): Boolean {
         return try {
             databaseService.executeTransactionAsync { realm ->

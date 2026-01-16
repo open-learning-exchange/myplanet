@@ -64,6 +64,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var teamsRepository: TeamsRepository
+    @Inject
+    lateinit var voicesActions: VoicesActions
 
     private lateinit var imageList: RealmList<String>
     private var llImage: ViewGroup? = null
@@ -98,7 +100,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = VoicesAdapter(this@ReplyActivity, user, news, "", null, userSessionManager, lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                newsAdapter = VoicesAdapter(this@ReplyActivity, user, news, "", null, userSessionManager, lifecycleScope, userRepository, voicesRepository, teamsRepository, voicesActions)
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
@@ -137,7 +139,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return
+        val fragment = voicesActions.showMemberDetails(userModel, userSessionManager) ?: return
         NavigationHelper.replaceFragment(
             supportFragmentManager,
             R.id.fragment_container,
