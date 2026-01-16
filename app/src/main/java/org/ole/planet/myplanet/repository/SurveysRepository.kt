@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
@@ -24,4 +25,6 @@ interface SurveysRepository {
     ): Map<String, SurveyFormState>
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
+    suspend fun getSurveysForStep(stepId: String): List<RealmStepExam>
+    suspend fun hasUncompletedSurveys(steps: List<RealmCourseStep?>, courseId: String?, userId: String?): Boolean
 }
