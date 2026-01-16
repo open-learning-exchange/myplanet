@@ -5,6 +5,7 @@ import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
 import java.util.Date
+import android.util.Log
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
@@ -390,6 +391,84 @@ class SubmissionsRepositoryImpl @Inject constructor(
         return queryList(RealmStepExam::class.java) {
             equalTo("courseId", courseId)
             equalTo("type", "survey")
+        }
+    }
+
+    override suspend fun createExamSubmission(
+        exam: RealmStepExam?,
+        user: RealmUserModel?,
+        type: String?,
+        teamId: String?
+    ): RealmSubmission? {
+        return withRealm { realm ->
+            val sub = createSubmission(null, realm)
+            sub.parentId = when {
+                !exam?.id.isNullOrEmpty() -> if (!exam?.courseId.isNullOrEmpty()) {
+                    "${exam?.id}@${exam?.courseId}"
+                } else {
+                    exam?.id
+                }
+                else -> sub.parentId
+            }
+            sub.userId = user?.id
+            sub.status = "pending"
+            sub.type = type
+            sub.startTime = Date().time
+            sub.lastUpdateTime = Date().time
+            if (sub.answers == null) {
+                sub.answers = io.realm.RealmList()
+            }
+            try {
+                val parentJsonString = org.json.JSONObject().apply {
+                    put("_id", exam?.id ?: "")
+                    put("name", exam?.name ?: "")
+                    put("courseId", exam?.courseId ?: "")
+                    put("sourcePlanet", exam?.sourcePlanet ?: "")
+                    put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
+                    put("noOfQuestions", exam?.noOfQuestions ?: 0)
+                    put("isFromNation", exam?.isFromNation ?: false)
+                }.toString()
+                sub.parent = parentJsonString
+            } catch (e: Exception) {
+                Log.e("SubmissionsRepository", "Error creating parent JSON in createExamSubmission", e)
+            }
+
+            if (!teamId.isNullOrEmpty()) {
+                addTeamInformation(realm, sub, teamId, user)
+            }
+
+            realm.copyFromRealm(sub)
+        }
+    }
+
+    private fun addTeamInformation(realm: io.realm.Realm, sub: RealmSubmission, teamId: String, user: RealmUserModel?) {
+        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+            .equalTo("_id", teamId)
+            .findFirst()
+
+        if (team != null) {
+            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+            teamRef._id = team._id
+            teamRef.name = team.name
+            teamRef.type = team.type ?: "team"
+            sub.teamObject = teamRef
+        }
+
+        val membershipDoc = realm.createObject(org.ole.planet.myplanet.model.RealmMembershipDoc::class.java)
+        membershipDoc.teamId = teamId
+        sub.membershipDoc = membershipDoc
+
+        try {
+            val userJson = org.json.JSONObject()
+            userJson.put("age", user?.dob ?: "")
+            userJson.put("gender", user?.gender ?: "")
+            val membershipJson = org.json.JSONObject()
+            membershipJson.put("teamId", teamId)
+            userJson.put("membershipDoc", membershipJson)
+
+            sub.user = userJson.toString()
+        } catch (e: Exception) {
+            Log.e("SubmissionsRepository", "Error creating user JSON in addTeamInformation", e)
         }
     }
 }

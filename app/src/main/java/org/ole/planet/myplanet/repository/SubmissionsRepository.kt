@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 
 interface SubmissionsRepository {
     suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>>
@@ -33,4 +34,10 @@ interface SubmissionsRepository {
     suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
+    suspend fun createExamSubmission(
+        exam: RealmStepExam?,
+        user: RealmUserModel?,
+        type: String?,
+        teamId: String?
+    ): RealmSubmission?
 }

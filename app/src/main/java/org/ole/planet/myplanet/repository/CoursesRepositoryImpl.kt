@@ -18,6 +18,25 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmResults
+import java.util.Calendar
+import java.util.Date
+import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -317,5 +336,14 @@ class CoursesRepositoryImpl @Inject constructor(
                 .equalTo("courseId", courseId)
                 .findFirst()?.courseTitle
         }
+    }
+
+    override suspend fun isCourseCertified(courseId: String?): Boolean {
+        if (courseId == null) {
+            return false
+        }
+        return count(RealmCertification::class.java) {
+            contains("courseIds", courseId)
+        } > 0
     }
 }

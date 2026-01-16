@@ -36,11 +36,13 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import androidx.core.content.edit
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
@@ -51,6 +53,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
+
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
 
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
@@ -364,7 +369,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
-            setColor(course.courseId, star)
+            lifecycleScope.launch {
+                setColor(course.courseId, star)
+            }
             binding.cardProfileBell.llBadges.addView(star)
             star.contentDescription = "${getString(R.string.completed_course)} ${course.courseTitle}"
             star.setOnClickListener {
@@ -384,10 +391,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun setColor(courseId: String?, star: ImageView) {
+    private suspend fun setColor(courseId: String?, star: ImageView) {
         val isRealmReady = isRealmInitialized()
 
-        if (isRealmReady && RealmCertification.isCourseCertified(mRealm, courseId)) {
+        if (isRealmReady && coursesRepository.isCourseCertified(courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
