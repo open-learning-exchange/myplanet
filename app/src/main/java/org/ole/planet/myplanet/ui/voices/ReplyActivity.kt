@@ -23,10 +23,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -46,8 +46,6 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
     var user: RealmUserModel? = null
@@ -95,17 +93,30 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     private fun showData(id: String?) {
         id ?: return
+        viewModel.getNewsWithReplies(id)
         lifecycleScope.launch {
-            val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
-                newsAdapter = VoicesAdapter(this@ReplyActivity, user, news, "", null, userSessionManager, lifecycleScope, userRepository, voicesRepository, teamsRepository)
-                newsAdapter.sharedPrefManager = sharedPrefManager
-                newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
-                activityReplyBinding.rvReply.adapter = newsAdapter
+            viewModel.newsState.collectLatest { pair ->
+                pair?.let { (news, list) ->
+                    newsAdapter = VoicesAdapter(
+                        this@ReplyActivity,
+                        user,
+                        news,
+                        "",
+                        null,
+                        userSessionManager,
+                        lifecycleScope,
+                        userRepository,
+                        voicesRepository,
+                        teamsRepository
+                    )
+                    newsAdapter.sharedPrefManager = sharedPrefManager
+                    newsAdapter.setListener(this@ReplyActivity)
+                    newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+                    newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+                    newsAdapter.setImageList(imageList)
+                    newsAdapter.updateList(list)
+                    activityReplyBinding.rvReply.adapter = newsAdapter
+                }
             }
         }
     }
