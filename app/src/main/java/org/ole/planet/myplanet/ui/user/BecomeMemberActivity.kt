@@ -34,8 +34,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
-    @Inject
-    lateinit var userRepository: UserRepository
     var dob: String = ""
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
