@@ -30,6 +30,39 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getNews(newsId: String): RealmNews? {
+        return withRealm { realm ->
+            realm.findCopyByField(RealmNews::class.java, "id", newsId)
+        }
+    }
+
+    override suspend fun editNews(newsId: String, message: String, imagesToRemove: Set<String>, imagesToAdd: List<String>?) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.let {
+                    if (imagesToRemove.isNotEmpty()) {
+                        val updatedUrls = news.imageUrls?.filter { imageUrlJson ->
+                            try {
+                                val imgObject = gson.fromJson(imageUrlJson, com.google.gson.JsonObject::class.java)
+                                val path = org.ole.planet.myplanet.utilities.JsonUtils.getString("imageUrl", imgObject)
+                                !imagesToRemove.contains(path)
+                            } catch (_: Exception) {
+                                true
+                            }
+                        }
+                        news.imageUrls?.clear()
+                        if (updatedUrls != null) {
+                            news.imageUrls?.addAll(updatedUrls)
+                        }
+                    }
+                    imagesToAdd?.forEach { imageUrl -> news.imageUrls?.add(imageUrl) }
+                    news.updateMessage(message)
+                }
+            }
+        }
+    }
+
     override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
         return withRealm(ensureLatest = true) { realm ->
             val news = realm.findCopyByField(RealmNews::class.java, "id", newsId)
@@ -61,6 +94,24 @@ class VoicesRepositoryImpl @Inject constructor(
         return withRealmAsync { realm ->
             val managedNews = createNews(map, realm, user, null)
             realm.copyFromRealm(managedNews)
+        }
+    }
+
+    override suspend fun postReply(message: String, news: RealmNews?, currentUser: RealmUserModel?, imageList: io.realm.RealmList<String>?) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val map = HashMap<String?, String>()
+                map["message"] = message
+                map["viewableBy"] = news?.viewableBy ?: ""
+                map["viewableId"] = news?.viewableId ?: ""
+                map["replyTo"] = news?.id ?: ""
+                map["messageType"] = news?.messageType ?: ""
+                map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
+                map["viewIn"] = news?.viewIn ?: ""
+                currentUser?.let { user ->
+                    createNews(map, it, user, imageList, true)
+                }
+            }
         }
     }
 

@@ -306,15 +306,37 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
     }
 
     private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: RealmNews) {
-        if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
-            holder.binding.imgDelete.visibility = View.VISIBLE
+        val canEdit = canEdit(news)
+        val canDelete = canDelete(news)
+
+        holder.binding.imgEdit.visibility = if (canEdit) View.VISIBLE else View.GONE
+        holder.binding.imgDelete.visibility = if (canDelete) View.VISIBLE else View.GONE
+
+        if (canEdit) {
+            holder.binding.imgEdit.setOnClickListener {
+                VoicesActions.showEditAlert(
+                    context = context,
+                    id = news.id,
+                    isEdit = true,
+                    currentUser = currentUser,
+                    listener = listener,
+                    viewHolder = holder,
+                    voicesRepository = voicesRepository,
+                    coroutineScope = scope
+                ) { _, updatedNews, position ->
+                    showReplyButton(holder, updatedNews, position)
+                    notifyItemChanged(position)
+                }
+            }
+        } else {
+            holder.binding.imgEdit.setOnClickListener(null)
         }
 
-        if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
+        if (canDelete) {
             holder.binding.imgDelete.setOnClickListener {
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                    .setPositiveButton(R.string.ok) { _, _ ->
                         val currentList = currentList.toMutableList()
                         val pos = holder.adapterPosition
                         val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
@@ -333,24 +355,8 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                     .setNegativeButton(R.string.cancel, null)
                     .show()
             }
-        }
-
-        if (news.userId == currentUser?._id) {
-            holder.binding.imgEdit.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
-                    news.id,
-                    true,
-                    currentUser,
-                    listener,
-                    holder,
-                ) { holder, updatedNews, position ->
-                    showReplyButton(holder, updatedNews, position)
-                    notifyItemChanged(position)
-                }
-            }
         } else {
-            holder.binding.imgEdit.visibility = View.GONE
+            holder.binding.imgDelete.setOnClickListener(null)
         }
     }
 
@@ -525,13 +531,15 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
                 VoicesActions.showEditAlert(
-                    context,
-                    finalNews?.id,
-                    false,
-                    currentUser,
-                    listener,
-                    viewHolder,
-                ) { holder, news, i -> showReplyButton(holder, news, i) }
+                    context = context,
+                    id = finalNews?.id,
+                    isEdit = false,
+                    currentUser = currentUser,
+                    listener = listener,
+                    viewHolder = viewHolder,
+                    voicesRepository = voicesRepository,
+                    coroutineScope = scope
+                ) { h, news, i -> showReplyButton(h, news, i) }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
