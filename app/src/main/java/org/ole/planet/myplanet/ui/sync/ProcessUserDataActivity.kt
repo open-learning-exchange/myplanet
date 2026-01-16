@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -55,9 +54,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
-    
-    @Inject
-    lateinit var databaseService: DatabaseService
     
     @Inject
     lateinit var uploadManager: UploadManager
