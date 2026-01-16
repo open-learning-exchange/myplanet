@@ -14,12 +14,16 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
+    private val dataService: DataService,
     private val activitiesRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
@@ -240,6 +244,22 @@ class ResourcesRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+    override suspend fun backgroundDownload(urls: ArrayList<String>) {
+        return suspendCoroutine { continuation ->
+            dataService.isPlanetAvailable(object : DataService.PlanetAvailableListener {
+                override fun isAvailable() {
+                    if (urls.isNotEmpty()) {
+                        DownloadUtils.openDownloadService(context, urls, false)
+                    }
+                    continuation.resume(Unit)
+                }
+
+                override fun notAvailable() {
+                    continuation.resume(Unit)
+                }
+            })
         }
     }
     override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
