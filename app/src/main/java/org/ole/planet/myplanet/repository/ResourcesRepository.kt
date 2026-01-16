@@ -39,4 +39,5 @@ interface ResourcesRepository {
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
     fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean
+    suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
 }

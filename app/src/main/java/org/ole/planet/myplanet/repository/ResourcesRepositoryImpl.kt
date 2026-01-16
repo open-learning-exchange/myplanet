@@ -248,4 +248,10 @@ class ResourcesRepositoryImpl @Inject constructor(
             .equalTo("type", "resource_opened")
             .findFirst() != null
     }
+
+    override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", false)
+        }.filter { it.needToUpdate() }
+    }
 }
