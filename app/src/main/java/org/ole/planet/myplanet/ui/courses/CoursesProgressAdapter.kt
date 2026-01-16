@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 
 class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, RecyclerView.ViewHolder>(DiffUtils.itemCallback({ old, new -> old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString }, { old, new -> getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new) })) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesProgressViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return CoursesProgressViewHolder(binding)
     }
