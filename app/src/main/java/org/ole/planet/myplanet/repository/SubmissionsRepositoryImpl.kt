@@ -392,4 +392,14 @@ class SubmissionsRepositoryImpl @Inject constructor(
             equalTo("type", "survey")
         }
     }
+
+    override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
+        val surveys = getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!hasSubmission(survey.id, courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
 }
