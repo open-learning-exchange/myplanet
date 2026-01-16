@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager2.widget.ViewPager2
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.isNotEmpty
@@ -24,7 +23,6 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -46,8 +44,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var _binding: FragmentTakeCourseBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
@@ -55,7 +51,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
-    lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
@@ -77,7 +72,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         userModel = userSessionManager.userModel
         return binding.root
     }
@@ -390,24 +384,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
-        var hasUnfinishedSurvey = false
-        run loop@{
-            steps.forEach { step ->
-                val stepSurvey = mRealm.copyFromRealm(
-                    mRealm.where(RealmStepExam::class.java)
-                        .equalTo("stepId", step?.id)
-                        .equalTo("type", "survey")
-                        .findAll()
-                )
-
-                stepSurvey.forEach { survey ->
-                    if (!submissionsRepository.hasSubmission(survey.id, courseId, userModel?.id, "survey")) {
-                        hasUnfinishedSurvey = true
-                        return@loop
-                    }
-                }
-            }
-        }
+        val hasUnfinishedSurvey = courseId?.let {
+            submissionsRepository.hasUnfinishedSurveys(it, userModel?.id)
+        } ?: false
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             binding.finishStep.setOnClickListener {
@@ -436,9 +415,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onDestroyView() {
         binding.courseProgress.setOnSeekBarChangeListener(null)
         lifecycleScope.coroutineContext.cancelChildren()
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         joinDialog?.dismiss()
         joinDialog = null
         _binding = null

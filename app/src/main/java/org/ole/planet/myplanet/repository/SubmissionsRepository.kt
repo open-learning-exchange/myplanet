@@ -33,4 +33,5 @@ interface SubmissionsRepository {
     suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
+    suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
 }
