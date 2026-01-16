@@ -30,17 +30,5 @@ open class RealmCertification : RealmObject() {
             certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
         }
 
-        @JvmStatic
-        fun isCourseCertified(realm: Realm, courseId: String?): Boolean {
-            if (courseId == null) {
-                return false
-            }
-            if (realm.isClosed) {
-                return false
-            }
-            val c =
-                realm.where(RealmCertification::class.java).contains("courseIds", courseId).count()
-            return c > 0
-        }
     }
 }

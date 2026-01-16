@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -317,5 +318,14 @@ class CoursesRepositoryImpl @Inject constructor(
                 .equalTo("courseId", courseId)
                 .findFirst()?.courseTitle
         }
+    }
+
+    override suspend fun isCourseCertified(courseId: String?): Boolean {
+        if (courseId == null) {
+            return false
+        }
+        return count(RealmCertification::class.java) {
+            contains("courseIds", courseId)
+        } > 0
     }
 }
