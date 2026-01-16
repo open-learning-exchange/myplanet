@@ -191,7 +191,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         for ((itemCnt, items) in filteredCourses.withIndex()) {
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
-            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
+            flexboxLayout.addView(myCoursesTextViewArray[itemCnt])
         }
     }
 
@@ -209,7 +209,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
             name.text = ob.name
             v.tag = ob._id
-            flexboxLayout.addView(v, params)
+            flexboxLayout.addView(v)
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
 
@@ -251,7 +251,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         }
 
         for ((itemCnt, items) in dbMylife.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
+            flexboxLayout.addView(getLayout(itemCnt, items, 0))
         }
 
         val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
