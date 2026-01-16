@@ -10,7 +10,7 @@
 
     <include
         android:id="@+id/contentWebView"
-        layout="@layout/content_web_view" />
+        layout="@layout/web_view_content" />
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
