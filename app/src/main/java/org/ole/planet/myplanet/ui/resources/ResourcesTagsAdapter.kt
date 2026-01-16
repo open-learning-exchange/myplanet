@@ -10,8 +10,8 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTagClickListener
-import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
-import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
+import org.ole.planet.myplanet.databinding.RowNavigationChildAdapterBinding
+import org.ole.planet.myplanet.databinding.RowNavigationParentAdapterBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -38,20 +38,20 @@ class ResourcesTagsAdapter(
 ) {
     override fun getItemViewType(position: Int): Int {
         return when (getItem(position)) {
-            is TagData.Parent -> R.layout.row_adapter_navigation_parent
-            is TagData.Child -> R.layout.row_adapter_navigation_child
+            is TagData.Parent -> R.layout.row_navigation_parent_adapter
+            is TagData.Child -> R.layout.row_navigation_child_adapter
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
-            R.layout.row_adapter_navigation_parent -> {
-                val binding = RowAdapterNavigationParentBinding.inflate(inflater, parent, false)
+            R.layout.row_navigation_parent_adapter -> {
+                val binding = RowNavigationParentAdapterBinding.inflate(inflater, parent, false)
                 ParentViewHolder(binding)
             }
-            R.layout.row_adapter_navigation_child -> {
-                val binding = RowAdapterNavigationChildBinding.inflate(inflater, parent, false)
+            R.layout.row_navigation_child_adapter -> {
+                val binding = RowNavigationChildAdapterBinding.inflate(inflater, parent, false)
                 ChildViewHolder(binding)
             }
             else -> throw IllegalArgumentException("Invalid view type")
@@ -65,7 +65,7 @@ class ResourcesTagsAdapter(
         }
     }
 
-    inner class ParentViewHolder(private val binding: RowAdapterNavigationParentBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ParentViewHolder(private val binding: RowNavigationParentAdapterBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(parent: TagData.Parent) {
             binding.tvDrawerTitle1.text = parent.tag.name
             binding.tvDrawerTitle.text = parent.tag.name
@@ -88,7 +88,7 @@ class ResourcesTagsAdapter(
         }
     }
 
-    inner class ChildViewHolder(private val binding: RowAdapterNavigationChildBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ChildViewHolder(private val binding: RowNavigationChildAdapterBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(child: TagData.Child) {
             binding.tvDrawerTitle.text = child.tag.name
             binding.root.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
