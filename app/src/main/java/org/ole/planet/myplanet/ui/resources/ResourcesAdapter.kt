@@ -22,7 +22,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.DiffRefreshableCallback
+import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -46,7 +46,7 @@ class ResourcesAdapter(
     private val userModel: RealmUserModel?,
     private var tagsMap: Map<String, List<RealmTag>>,
     private val mRealm: Realm
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), DiffRefreshableCallback {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), OnDiffRefreshListener {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
