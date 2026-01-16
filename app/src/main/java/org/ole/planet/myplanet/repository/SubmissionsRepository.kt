@@ -1,10 +1,18 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import java.io.File
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
 interface SubmissionsRepository {
+    suspend fun generateSubmissionPdf(context: Context, submissionId: String): File?
+    suspend fun generateMultipleSubmissionsPdf(
+        context: Context,
+        submissionIds: List<String>,
+        examTitle: String
+    ): File?
     suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>>
     suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>>
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission>

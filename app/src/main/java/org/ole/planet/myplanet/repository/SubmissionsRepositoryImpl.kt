@@ -15,10 +15,25 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.submissions.QuestionAnswer
 import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
+import android.content.Context
+import java.io.File
 
 class SubmissionsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val submissionPdfUtils: SubmissionPdfUtils
 ) : RealmRepository(databaseService), SubmissionsRepository {
+
+    override suspend fun generateSubmissionPdf(context: Context, submissionId: String): File? {
+        return submissionPdfUtils.generateSubmissionPdf(context, submissionId)
+    }
+
+    override suspend fun generateMultipleSubmissionsPdf(
+        context: Context,
+        submissionIds: List<String>,
+        examTitle: String
+    ): File? {
+        return submissionPdfUtils.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
