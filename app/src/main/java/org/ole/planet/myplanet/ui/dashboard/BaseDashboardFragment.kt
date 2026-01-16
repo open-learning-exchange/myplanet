@@ -19,6 +19,9 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
+import com.google.android.flexbox.FlexWrap
+import com.google.android.flexbox.FlexboxLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.UUID
@@ -59,6 +62,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
+    private lateinit var myCoursesAdapter: MyCoursesAdapter
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -209,16 +213,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
     }
 
     private fun renderMyCourses(courses: List<RealmMyCourse>) {
-        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
-        flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
+        myCoursesAdapter.submitList(filteredCourses)
         setCountText(filteredCourses.size, RealmMyCourse::class.java, requireView())
-        val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
-        for ((itemCnt, items) in filteredCourses.withIndex()) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
-            myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
-            flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
-        }
     }
 
     private fun renderMyTeams(teams: List<RealmMyTeam>) {
@@ -359,7 +356,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         viewModel.loadUserContent(userId)
         observeUiState()
 
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
+        myCoursesAdapter = MyCoursesAdapter(homeItemClickListener)
+        val coursesRecyclerView = view.findViewById<RecyclerView>(R.id.coursesRecyclerView)
+        coursesRecyclerView.adapter = myCoursesAdapter
+        val layoutManager = FlexboxLayoutManager(context)
+        layoutManager.flexWrap = FlexWrap.WRAP
+        coursesRecyclerView.layoutManager = layoutManager
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
         val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
         myLifeFlex.flexDirection = FlexDirection.ROW
