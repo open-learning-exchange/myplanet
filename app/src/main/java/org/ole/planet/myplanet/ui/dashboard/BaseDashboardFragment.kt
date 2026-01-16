@@ -12,9 +12,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnDashboardActionListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
-import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
@@ -52,14 +51,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardActionListener,
-    OnSyncListener {
+    OnSyncListener, LibraryListAdapter.OnLibraryItemClickListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
-    private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
-
+    private lateinit var libraryListAdapter: LibraryListAdapter
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
 
@@ -175,36 +173,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
     }
 
     private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
-        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
-        flexboxLayout?.removeAllViews()
-        flexboxLayout?.flexDirection = FlexDirection.ROW
+        libraryListAdapter.submitList(dbMylibrary)
         if (dbMylibrary.isEmpty()) {
             view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
         } else {
             view?.findViewById<TextView>(R.id.count_library)?.text =
                 getString(R.string.number_placeholder, dbMylibrary.size)
-        }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
-            val itemLibraryHomeBinding =
-                ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
-            val v = itemLibraryHomeBinding.root
-            setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId =
-                if (itemCnt % 2 == 0) R.color.card_bg else R.color.dashboard_item_alternative
-            val color = context?.let { ContextCompat.getColor(it, colorResId) }
-            if (color != null) {
-                v.setBackgroundColor(color)
-            }
-
-            itemLibraryHomeBinding.title.text = items.title
-            itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
-                }
-            }
-
-            myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            flexboxLayout?.addView(v, params)
         }
     }
 
@@ -308,14 +282,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         }
     }
 
-    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
-        textView.setOnClickListener {
-            items?.let {
-                openResource(it)
-            }
-        }
-    }
-
     override fun onDestroy() {
         if (isRealmInitialized()) {
             mRealm.removeAllChangeListeners()
@@ -358,7 +324,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         val userId = settings?.getString("userId", "--")
         viewModel.loadUserContent(userId)
         observeUiState()
-
+        libraryListAdapter = LibraryListAdapter(this, ::setTextColor)
+        val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView.adapter = libraryListAdapter
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
         val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
@@ -452,4 +420,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         di?.dismiss()
     }
 
+    override fun onLibraryItemClicked(library: RealmMyLibrary) {
+        openResource(library)
+    }
+
+    override fun onDetailClicked(library: RealmMyLibrary) {
+        homeItemClickListener?.openLibraryDetailFragment(library)
+    }
 }
