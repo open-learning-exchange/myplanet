@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.graphics.Canvas
@@ -10,22 +10,25 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utilities.TimeUtils
 
-object SubmissionPdfUtils {
+internal class SubmissionPdfDomain @Inject constructor(private val databaseService: DatabaseService) {
 
-    private const val PAGE_WIDTH = 595
-    private const val PAGE_HEIGHT = 842
-    private const val MARGIN = 50f
-    private const val LINE_HEIGHT = 20f
+    companion object {
+        private const val PAGE_WIDTH = 595
+        private const val PAGE_HEIGHT = 842
+        private const val MARGIN = 50f
+        private const val LINE_HEIGHT = 20f
+    }
 
     suspend fun generateSubmissionPdf(
         context: Context,
-        submissionId: String,
-        databaseService: DatabaseService
+        submissionId: String
     ): File? = databaseService.withRealmAsync { realm ->
         try {
             val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
@@ -111,8 +114,7 @@ object SubmissionPdfUtils {
     suspend fun generateMultipleSubmissionsPdf(
         context: Context,
         submissionIds: List<String>,
-        examTitle: String,
-        databaseService: DatabaseService
+        examTitle: String
     ): File? = databaseService.withRealmAsync { realm ->
         try {
             val submissions = submissionIds.mapNotNull { id ->
