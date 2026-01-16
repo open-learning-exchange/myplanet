@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
@@ -64,6 +63,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
@@ -139,6 +139,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
+    @Inject
+    open lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -574,11 +576,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                backgroundDownload(
-                                    downloadAllFiles(getAllLibraryList(realm)),
-                                    activityContext
-                                )
+                            databaseService.withRealm<Unit> { realm ->
+                                val libraryList = getAllLibraryList(realm)
+                                val urls = downloadAllFiles(libraryList)
+                                resourcesRepository.backgroundDownload(urls)
                             }
                         }
                     }
