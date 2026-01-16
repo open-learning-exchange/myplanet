@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface DiffRefreshableCallback {
+interface OnDiffRefreshListener {
     fun refreshWithDiff()
 }
