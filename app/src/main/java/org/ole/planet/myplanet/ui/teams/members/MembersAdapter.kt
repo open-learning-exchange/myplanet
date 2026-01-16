@@ -136,12 +136,12 @@ class MembersAdapter(
     }
 
     private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
-        if (isLoggedInUserTeamLeader && itemCount > 1) {
+        val currentMember = getItem(position)
+        val isOwnCard = currentMember.user.id == currentUserId
+
+        if ((isLoggedInUserTeamLeader || isOwnCard) && itemCount > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
-                val currentMember = getItem(position)
-                val isOwnCard = currentMember.user.id == currentUserId
-
                 val overflowMenuOptions = if (isOwnCard) {
                     arrayOf(context.getString(R.string.leave))
                 } else {
