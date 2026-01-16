@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
-class MyCoursesAdapter(private val homeItemClickListener: OnHomeItemClickListener) : ListAdapter<RealmMyCourse, MyCoursesAdapter.CourseViewHolder>(COURSE_COMPARATOR) {
+class MyCoursesAdapter(private val homeItemClickListener: OnHomeItemClickListener?) : ListAdapter<RealmMyCourse, MyCoursesAdapter.CourseViewHolder>(COURSE_COMPARATOR) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CourseViewHolder {
         val inflater = LayoutInflater.from(parent.context)
@@ -35,11 +35,13 @@ class MyCoursesAdapter(private val homeItemClickListener: OnHomeItemClickListene
                 textView.setBackgroundResource(R.color.dashboard_item_alternative)
             }
             textView.setOnClickListener {
-                val f = TakeCourseFragment()
-                val b = android.os.Bundle()
-                b.putString("id", course.courseId)
-                f.arguments = b
-                homeItemClickListener.openCallFragment(f)
+                homeItemClickListener?.let {
+                    val f = TakeCourseFragment()
+                    val b = android.os.Bundle()
+                    b.putString("id", course.courseId)
+                    f.arguments = b
+                    it.openCallFragment(f)
+                }
             }
         }
     }
@@ -47,7 +49,7 @@ class MyCoursesAdapter(private val homeItemClickListener: OnHomeItemClickListene
     companion object {
         private val COURSE_COMPARATOR = object : DiffUtil.ItemCallback<RealmMyCourse>() {
             override fun areItemsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
-                return oldItem._id == newItem._id
+                return oldItem.id == newItem.id
             }
 
             override fun areContentsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
