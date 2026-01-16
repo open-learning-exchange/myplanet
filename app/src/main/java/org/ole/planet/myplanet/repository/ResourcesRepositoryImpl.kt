@@ -246,21 +246,16 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
-    override suspend fun backgroundDownload(urls: ArrayList<String>) {
-        return suspendCoroutine { continuation ->
-            dataService.isPlanetAvailable(object : DataService.PlanetAvailableListener {
-                override fun isAvailable() {
-                    if (urls.isNotEmpty()) {
-                        DownloadUtils.openDownloadService(context, urls, false)
-                    }
-                    continuation.resume(Unit)
+    override fun backgroundDownload(urls: ArrayList<String>) {
+        dataService.isPlanetAvailable(object : DataService.PlanetAvailableListener {
+            override fun isAvailable() {
+                if (urls.isNotEmpty()) {
+                    DownloadUtils.openDownloadService(context, urls, false)
                 }
+            }
 
-                override fun notAvailable() {
-                    continuation.resume(Unit)
-                }
-            })
-        }
+            override fun notAvailable() {}
+        })
     }
     override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
         return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)

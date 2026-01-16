@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
@@ -52,14 +51,17 @@ import org.ole.planet.myplanet.utilities.LocaleUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @Inject
+    lateinit var resourcesRepository: ResourcesRepository
+    @Inject
     lateinit var databaseServiceProvider: Provider<DatabaseService>
-    val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
+    val databaseService: Database by lazy { databaseServiceProvider.get() }
 
     @Inject
     @AppPreferences
@@ -309,9 +311,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             }
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
                                 databaseService.withRealm { realm ->
-                                    backgroundDownload(
-                                        downloadAllFiles(getAllLibraryList(realm)),
-                                        applicationContext
+                                    resourcesRepository.backgroundDownload(
+                                        downloadAllFiles(getAllLibraryList(realm))
                                     )
                                 }
                             }
