@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -11,6 +12,7 @@ import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
@@ -35,8 +37,9 @@ class AutoSyncWorker(
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
-    private val workerScope = CoroutineScope(Dispatchers.IO)
+    private val workerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     override fun doWork(): Result {
+        if (isStopped) return Result.success()
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
         preferences = entryPoint.sharedPreferences()
         syncManager = entryPoint.syncManager()
@@ -82,23 +85,30 @@ class AutoSyncWorker(
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
                 workerScope.launch {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback()
-                    uploadManager.uploadAchievement()
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                    uploadManager.uploadCourseActivities()
-                    uploadManager.uploadSearchActivity()
-                    uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                    uploadManager.uploadAdoptedSurveys()
-                    uploadManager.uploadCrashLog()
-                    uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                    try {
+                        uploadManager.uploadExamResult(this@AutoSyncWorker)
+                        uploadManager.uploadFeedback()
+                        uploadManager.uploadAchievement()
+                        uploadManager.uploadResourceActivities("")
+                        uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                        uploadManager.uploadCourseActivities()
+                        uploadManager.uploadSearchActivity()
+                        uploadManager.uploadRating()
+                        uploadManager.uploadResource(this@AutoSyncWorker)
+                        uploadManager.uploadNews()
+                        uploadManager.uploadTeams()
+                        uploadManager.uploadTeamTask()
+                        uploadManager.uploadMeetups()
+                        uploadManager.uploadAdoptedSurveys()
+                        uploadManager.uploadCrashLog()
+                        uploadManager.uploadSubmissions()
+                        uploadManager.uploadActivities(null)
+                    } catch (e: Exception) {
+                        Log.e("AutoSyncWorker", "error: ${e.message}")
+                        onSyncFailed(e.message)
+                    } finally {
+                        MainApplication.isSyncRunning = false
+                    }
                 }
             }
         }
@@ -112,6 +122,7 @@ class AutoSyncWorker(
     override fun onStopped() {
         super.onStopped()
         workerScope.cancel()
+        MainApplication.isSyncRunning = false
     }
 
     private fun isAppInForeground(context: Context): Boolean {
