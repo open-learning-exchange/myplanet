@@ -18,13 +18,13 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 
 class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, RecyclerView.ViewHolder>(DiffUtils.itemCallback({ old, new -> old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString }, { old, new -> getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new) })) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesProgressViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderMyProgress(binding)
+        return CoursesProgressViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHolderMyProgress) {
+        if (holder is CoursesProgressViewHolder) {
             val item = getItem(position)
             holder.binding.tvTitle.text = item.asJsonObject["courseName"].asString
             if (item.asJsonObject.has("progress")) {
@@ -86,7 +86,7 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
         }
     }
 
-    internal inner class ViewHolderMyProgress(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
+    internal inner class CoursesProgressViewHolder(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
         val tvTitle = binding.tvTitle
         val tvTotal = binding.tvTotal
         val tvDescription = binding.tvDescription
