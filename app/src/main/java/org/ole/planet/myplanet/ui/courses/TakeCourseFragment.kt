@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
 import org.ole.planet.myplanet.utilities.NavigationHelper
@@ -53,6 +54,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
     lateinit var mRealm: Realm
@@ -390,24 +393,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
-        var hasUnfinishedSurvey = false
-        run loop@{
-            steps.forEach { step ->
-                val stepSurvey = mRealm.copyFromRealm(
-                    mRealm.where(RealmStepExam::class.java)
-                        .equalTo("stepId", step?.id)
-                        .equalTo("type", "survey")
-                        .findAll()
-                )
-
-                stepSurvey.forEach { survey ->
-                    if (!submissionsRepository.hasSubmission(survey.id, courseId, userModel?.id, "survey")) {
-                        hasUnfinishedSurvey = true
-                        return@loop
-                    }
-                }
-            }
-        }
+        val hasUnfinishedSurvey = surveysRepository.hasUncompletedSurveys(steps, courseId, userModel?.id)
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             binding.finishStep.setOnClickListener {

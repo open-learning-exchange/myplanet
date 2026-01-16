@@ -10,6 +10,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -26,6 +27,7 @@ class SurveysRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val userSessionManager: UserSessionManager,
     @DefaultPreferences private val settings: SharedPreferences,
+    private val submissionsRepository: SubmissionsRepository
 ) : RealmRepository(databaseService), SurveysRepository {
 
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
@@ -354,5 +356,24 @@ class SurveysRepositoryImpl @Inject constructor(
                 .equalTo("status", "pending", io.realm.Case.INSENSITIVE)
                 .count().toInt()
         }
+    }
+
+    override suspend fun getSurveysForStep(stepId: String): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("stepId", stepId)
+            equalTo("type", "survey")
+        }
+    }
+
+    override suspend fun hasUncompletedSurveys(steps: List<RealmCourseStep?>, courseId: String?, userId: String?): Boolean {
+        steps.forEach { step ->
+            val stepSurveys = getSurveysForStep(step?.id ?: "")
+            stepSurveys.forEach { survey ->
+                if (!submissionsRepository.hasSubmission(survey.id, courseId, userId, "survey")) {
+                    return true
+                }
+            }
+        }
+        return false
     }
 }
