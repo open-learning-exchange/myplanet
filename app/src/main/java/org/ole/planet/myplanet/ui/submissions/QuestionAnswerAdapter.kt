@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
+import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.utilities.DiffUtils
 
 class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.ViewHolder>(DIFF_CALLBACK) {

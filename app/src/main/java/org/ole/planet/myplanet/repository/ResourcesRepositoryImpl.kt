@@ -248,4 +248,35 @@ class ResourcesRepositoryImpl @Inject constructor(
             .equalTo("type", "resource_opened")
             .findFirst() != null
     }
+
+    override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String) {
+        if (resourceIds.isEmpty() || userId.isBlank()) return
+
+        executeTransaction { realm ->
+            resourceIds.forEach { resourceId ->
+                val libraryItem = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("resourceId", resourceId)
+                    .findFirst()
+
+                libraryItem?.let {
+                    if (it.userId?.contains(userId) == false) {
+                        it.setUserId(userId)
+                    }
+                }
+
+                val removedLog = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                    .equalTo("type", "resources")
+                    .equalTo("userId", userId)
+                    .equalTo("docId", resourceId)
+                    .findFirst()
+
+                removedLog?.deleteFromRealm()
+            }
+        }
+    }
+
+    override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String) {
+        val resourceIds = resources.mapNotNull { it.resourceId }
+        addResourcesToUserLibrary(resourceIds, userId)
+    }
 }
