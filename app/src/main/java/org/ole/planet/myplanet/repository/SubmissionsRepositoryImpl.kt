@@ -5,7 +5,6 @@ import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
 import java.util.Date
-import android.util.Log
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
