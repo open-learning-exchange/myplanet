@@ -57,6 +57,8 @@ class CoursesAdapter(
     private var areAllSelected = false
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val activeJobs: MutableMap<String, Job> = mutableMapOf()
+    // Cache processed markdown to avoid repeated expensive operations
+    private val markdownCache: MutableMap<String, CharSequence> = mutableMapOf()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -130,6 +132,9 @@ class CoursesAdapter(
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         if (this.courseList === courseList) return
+        // Clear markdown cache for courses that are no longer in the list
+        val newCourseIds = courseList.mapNotNull { it?.courseId }.toSet()
+        markdownCache.keys.retainAll(newCourseIds)
         dispatchDiff(courseList, null, null)
     }
 
@@ -138,6 +143,9 @@ class CoursesAdapter(
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
+        // Clear markdown cache for courses that are no longer in the list
+        val newCourseIds = newCourseList.mapNotNull { it?.courseId }.toSet()
+        markdownCache.keys.retainAll(newCourseIds)
         dispatchDiff(newCourseList, newMap, newProgressMap)
     }
 
@@ -254,14 +262,27 @@ class CoursesAdapter(
 
     private fun configureDescription(holder: CoursesViewHolder, course: RealmMyCourse, position: Int) {
         holder.rowCourseBinding.description.apply {
-            text = course.description
-            val markdownContentWithLocalPaths = prependBaseUrlToImages(
-                course.description,
-                "file://${context.getExternalFilesDir(null)}/ole/",
-                150,
-                100
-            )
-            setMarkdownText(this, markdownContentWithLocalPaths)
+            val courseId = course.courseId ?: ""
+            val description = course.description ?: ""
+            
+            // Use cached markdown if available, otherwise process and cache it
+            val cachedMarkdown = markdownCache[courseId]
+            if (cachedMarkdown != null) {
+                text = cachedMarkdown
+            } else {
+                text = description
+                if (description.isNotEmpty()) {
+                    val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                        description,
+                        "file://${context.getExternalFilesDir(null)}/ole/",
+                        150,
+                        100
+                    )
+                    setMarkdownText(this, markdownContentWithLocalPaths)
+                    // Cache the processed result
+                    markdownCache[courseId] = text
+                }
+            }
 
             setOnClickListener {
                 homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {

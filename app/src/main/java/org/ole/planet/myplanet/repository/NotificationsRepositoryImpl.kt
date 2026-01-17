@@ -28,22 +28,49 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         return databaseService.withRealm { realm ->
             realm.executeTransaction { r ->
+                // Batch query existing notifications to avoid repeated queries
+                val existingNotifications = r.where(RealmNotification::class.java)
+                    .equalTo("userId", actualUserId)
+                    .findAll()
+                val existingKeys = existingNotifications.map { 
+                    "${it.type}:${it.relatedId ?: ""}" 
+                }.toSet()
+                
+                // Process survey notifications
                 surveyTitles.forEach { title ->
-                    createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
+                    val key = "survey:$title"
+                    if (!existingKeys.contains(key)) {
+                        createNotificationInternal(r, "survey", title, title, actualUserId)
+                    }
                 }
 
+                // Process task notifications
                 taskData.forEach { (title, deadline, id) ->
-                    createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
+                    val key = "task:$id"
+                    if (!existingKeys.contains(key)) {
+                        createNotificationInternal(r, "task", "$title $deadline", id, actualUserId)
+                    }
                 }
 
+                // Process storage notifications
                 if (storageRatio > 85) {
-                    createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
+                    val key = "storage:storage"
+                    if (!existingKeys.contains(key)) {
+                        createNotificationInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
+                    }
                 }
-                createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+                val testKey = "storage:storage_test"
+                if (!existingKeys.contains(testKey)) {
+                    createNotificationInternal(r, "storage", "90%", "storage_test", actualUserId)
+                }
 
+                // Pre-format join request messages
                 joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                    createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
+                    val key = "join_request:$requestId"
+                    if (!existingKeys.contains(key)) {
+                        val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                        createNotificationInternal(r, "join_request", message, requestId, actualUserId)
+                    }
                 }
             }
 
@@ -55,32 +82,20 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun createNotificationIfMissingInternal(
+    private fun createNotificationInternal(
         realm: io.realm.Realm,
         type: String,
         message: String,
         relatedId: String?,
         userId: String
     ) {
-        val query = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-
-        val existingNotification =
-            if (relatedId != null) {
-                query.equalTo("relatedId", relatedId).findFirst()
-            } else {
-                query.isNull("relatedId").findFirst()
-            }
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
-                this.userId = userId
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
+        realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+            this.userId = userId
+            this.type = type
+            this.message = message
+            this.relatedId = relatedId
+            this.time = Date().time
+            this.isRead = false
         }
     }
 
