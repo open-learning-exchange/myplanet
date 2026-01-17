@@ -99,7 +99,7 @@ class CoursesAdapter(
                 val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
                 val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
 
-                old?.courseTitle == new?.courseTitle &&
+                val contentsMatch = old?.courseTitle == new?.courseTitle &&
                         old?.description == new?.description &&
                         old?.gradeLevel == new?.gradeLevel &&
                         old?.subjectLevel == new?.subjectLevel &&
@@ -108,6 +108,13 @@ class CoursesAdapter(
                         old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
                         ratingSame &&
                         progressSame
+                
+                // If description changed, invalidate markdown cache for this course
+                if (old?.description != new?.description) {
+                    new?.courseId?.let { markdownCache.remove(it) }
+                }
+                
+                contentsMatch
             },
             getChangePayload = { old, new ->
                 val bundle = Bundle()

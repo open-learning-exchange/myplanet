@@ -303,7 +303,15 @@ class ResourcesAdapter(
                     newListMapped,
                     areItemsTheSame = { old, new -> old._id == new._id },
                     areContentsTheSame = { old, new ->
-                        old._rev == new._rev && old.uploadDate == new.uploadDate
+                        val revSame = old._rev == new._rev
+                        val uploadDateSame = old.uploadDate == new.uploadDate
+                        
+                        // If revision changed, content has changed - invalidate cache
+                        if (!revSame) {
+                            markdownCache.remove(new._id)
+                        }
+                        
+                        revSame && uploadDateSame
                     }
                 )
             }

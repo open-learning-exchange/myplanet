@@ -94,7 +94,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             this.type = type
             this.message = message
             this.relatedId = relatedId
-            this.time = Date().time
+            this.createdAt = Date()
             this.isRead = false
         }
     }
