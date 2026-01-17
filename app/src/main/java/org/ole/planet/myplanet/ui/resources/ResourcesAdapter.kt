@@ -55,8 +55,8 @@ class ResourcesAdapter(
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
-    // Cache processed markdown to avoid repeated expensive operations
-    private val markdownCache: MutableMap<String, CharSequence> = mutableMapOf()
+    // Thread-safe cache for processed markdown to avoid repeated expensive operations
+    private val markdownCache: MutableMap<String, CharSequence> = java.util.concurrent.ConcurrentHashMap()
 
     private data class DiffData(
         val _id: String?,

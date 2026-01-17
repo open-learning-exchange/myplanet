@@ -57,8 +57,8 @@ class CoursesAdapter(
     private var areAllSelected = false
     private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
     private val activeJobs: MutableMap<String, Job> = mutableMapOf()
-    // Cache processed markdown to avoid repeated expensive operations
-    private val markdownCache: MutableMap<String, CharSequence> = mutableMapOf()
+    // Thread-safe cache for processed markdown to avoid repeated expensive operations
+    private val markdownCache: MutableMap<String, CharSequence> = java.util.concurrent.ConcurrentHashMap()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
