@@ -22,12 +22,24 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             equalTo("userId", userId)
         }
         val map = HashMap<String?, JsonObject>()
+        
+        // Batch query all course steps for all courses at once
+        val courseIds = mycourses.mapNotNull { it.courseId }
+        if (courseIds.isEmpty()) {
+            return map
+        }
+        
+        val allSteps = queryList(RealmCourseStep::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+        }
+        
+        // Group steps by courseId for O(1) lookup
+        val stepsByCourseId = allSteps.groupBy { it.courseId }
+        
         for (course in mycourses) {
             course.courseId?.let { courseId ->
                 val progressObject = JsonObject()
-                val steps = queryList(RealmCourseStep::class.java) {
-                    equalTo("courseId", courseId)
-                }
+                val steps = stepsByCourseId[courseId] ?: emptyList()
                 progressObject.addProperty("max", steps.size)
                 progressObject.addProperty("current", getCurrentProgress(steps, userId, courseId))
                 map[courseId] = progressObject

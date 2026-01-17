@@ -55,6 +55,8 @@ class ResourcesAdapter(
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
+    // Cache processed markdown to avoid repeated expensive operations
+    private val markdownCache: MutableMap<String, CharSequence> = mutableMapOf()
 
     private data class DiffData(
         val _id: String?,
@@ -107,7 +109,21 @@ class ResourcesAdapter(
             val library = libraryList.getOrNull(position) ?: return
             holder.bind()
             holder.rowLibraryBinding.title.text = library.title ?: ""
-            setMarkdownText(holder.rowLibraryBinding.description, library.description ?: "")
+            
+            // Use cached markdown if available, otherwise process and cache it
+            val resourceId = library._id ?: ""
+            val description = library.description ?: ""
+            val cachedMarkdown = markdownCache[resourceId]
+            if (cachedMarkdown != null) {
+                holder.rowLibraryBinding.description.text = cachedMarkdown
+            } else if (description.isNotEmpty()) {
+                setMarkdownText(holder.rowLibraryBinding.description, description)
+                // Cache the processed result
+                markdownCache[resourceId] = holder.rowLibraryBinding.description.text
+            } else {
+                holder.rowLibraryBinding.description.text = ""
+            }
+            
             holder.rowLibraryBinding.description.setOnClickListener {
                 openLibrary(library)
             }
@@ -294,6 +310,9 @@ class ResourcesAdapter(
 
             if (isActive) {
                 libraryList = newList
+                // Clear markdown cache for resources that are no longer in the list
+                val newResourceIds = newList.mapNotNull { it?._id }.toSet()
+                markdownCache.keys.retainAll(newResourceIds)
                 diffResult.dispatchUpdatesTo(this@ResourcesAdapter)
                 onComplete?.invoke()
             }
