@@ -55,9 +55,9 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
+            contains("userId", userId)
         }
         return filterLibrariesNeedingUpdate(results)
-            .filter { it.userId?.contains(userId) == true }
     }
 
     override suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
@@ -136,13 +136,15 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
         executeTransaction { realm ->
-            realm.where(RealmMyLibrary::class.java)
+            val libraries = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", localAddress)
                 .findAll()
-                ?.forEach { library ->
-                    library.resourceOffline = true
-                    library.downloadedRev = library._rev
-                }
+            
+            // Batch update in a single operation
+            libraries?.forEach { library ->
+                library.resourceOffline = true
+                library.downloadedRev = library._rev
+            }
         }
     }
 

@@ -1,12 +1,22 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
 
+@Singleton
 class TagsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), TagsRepository {
+
+    // Cache for buildChildMap to avoid expensive O(n²) operation on every call
+    @Volatile
+    private var cachedChildMap: HashMap<String, List<RealmTag>>? = null
+    @Volatile
+    private var lastChildMapBuildTime: Long = 0
+    private val cacheValidityMs = 60_000L // 1 minute cache validity
+    private val cacheLock = Any()
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
         return queryList(RealmTag::class.java) {
@@ -17,6 +27,18 @@ class TagsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun buildChildMap(): HashMap<String, List<RealmTag>> {
+        val currentTime = System.currentTimeMillis()
+        
+        // Check cache with synchronized block for thread safety
+        synchronized(cacheLock) {
+            cachedChildMap?.let { cached ->
+                if (currentTime - lastChildMapBuildTime < cacheValidityMs) {
+                    return HashMap(cached)
+                }
+            }
+        }
+        
+        // Build new map outside synchronized block (expensive operation)
         val allTags = queryList(RealmTag::class.java)
         val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t ->
@@ -28,7 +50,21 @@ class TagsRepositoryImpl @Inject constructor(
                 childMap[parent] = list
             }
         }
+        
+        // Update cache with synchronized block
+        synchronized(cacheLock) {
+            cachedChildMap = childMap
+            lastChildMapBuildTime = currentTime
+        }
+        
         return childMap
+    }
+
+    fun invalidateChildMapCache() {
+        synchronized(cacheLock) {
+            cachedChildMap = null
+            lastChildMapBuildTime = 0
+        }
     }
 
     override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {

@@ -22,12 +22,24 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             equalTo("userId", userId)
         }
         val map = HashMap<String?, JsonObject>()
+        
+        // Batch query all course steps for all courses at once
+        val courseIds = mycourses.mapNotNull { it.courseId }
+        if (courseIds.isEmpty()) {
+            return map
+        }
+        
+        val allSteps = queryList(RealmCourseStep::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+        }
+        
+        // Group steps by courseId for O(1) lookup
+        val stepsByCourseId = allSteps.groupBy { it.courseId }
+        
         for (course in mycourses) {
             course.courseId?.let { courseId ->
                 val progressObject = JsonObject()
-                val steps = queryList(RealmCourseStep::class.java) {
-                    equalTo("courseId", courseId)
-                }
+                val steps = stepsByCourseId[courseId] ?: emptyList()
                 progressObject.addProperty("max", steps.size)
                 progressObject.addProperty("current", getCurrentProgress(steps, userId, courseId))
                 map[courseId] = progressObject
@@ -111,24 +123,51 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         submissions: List<RealmSubmission>, examIds: List<String>, obj: JsonObject
     ) {
         var totalMistakes = 0
-        submissions.forEach {
-            val answers = queryList(RealmAnswer::class.java) {
-                equalTo("submissionId", it.id)
-            }
-            val mistakesMap = HashMap<String, Int>()
-            answers.forEach { r ->
-                r.questionId?.let { questionId ->
-                    val question = findByField(RealmExamQuestion::class.java, "id", questionId)
-                    if (question != null && examIds.contains(question.examId)) {
-                        totalMistakes += r.mistakes
-                        val examIndexKey = examIds.indexOf(question.examId).toString()
-                        mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + r.mistakes
-                    }
-                }
-            }
+        val mistakesMap = HashMap<String, Int>()
+        
+        // Collect all submission IDs to batch query answers
+        val submissionIds = submissions.mapNotNull { it.id }
+        if (submissionIds.isEmpty()) {
             obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
+            return
         }
+        
+        // Batch query all answers for all submissions at once
+        val allAnswers = queryList(RealmAnswer::class.java) {
+            `in`("submissionId", submissionIds.toTypedArray())
+        }
+        
+        // Collect all question IDs to batch query questions
+        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
+        if (questionIds.isEmpty()) {
+            obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
+            obj.addProperty("mistakes", totalMistakes)
+            return
+        }
+        
+        // Batch query all questions at once
+        val allQuestions = queryList(RealmExamQuestion::class.java) {
+            `in`("id", questionIds.toTypedArray())
+        }
+        
+        // Create lookup map for O(1) access
+        val questionMap = allQuestions.associateBy { it.id }
+        
+        // Process answers with cached question data
+        allAnswers.forEach { answer ->
+            answer.questionId?.let { questionId ->
+                val question = questionMap[questionId]
+                if (question != null && examIds.contains(question.examId)) {
+                    totalMistakes += answer.mistakes
+                    val examIndexKey = examIds.indexOf(question.examId).toString()
+                    mistakesMap[examIndexKey] = (mistakesMap[examIndexKey] ?: 0) + answer.mistakes
+                }
+            }
+        }
+        
+        obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
+        obj.addProperty("mistakes", totalMistakes)
     }
 
     override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
