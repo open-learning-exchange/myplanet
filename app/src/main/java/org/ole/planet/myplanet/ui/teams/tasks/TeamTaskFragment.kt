@@ -49,7 +49,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
     var list: List<RealmTeamTask> = emptyList()
     private var currentTab = R.id.btn_all
 
-    private lateinit var adapterTask: TeamTaskAdapter
+    private lateinit var adapterTask: TeamsTasksAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             deadline = Calendar.getInstance()
             deadline?.set(Calendar.YEAR, year)
@@ -213,7 +213,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        adapterTask = TeamTaskAdapter(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
+        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
