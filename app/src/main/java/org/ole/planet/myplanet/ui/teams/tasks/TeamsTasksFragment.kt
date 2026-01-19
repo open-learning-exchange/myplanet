@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
-import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
+import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
-    private var _binding: FragmentTeamTaskBinding? = null
+    private var _binding: FragmentTeamsTasksBinding? = null
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
@@ -79,7 +79,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentTeamTaskBinding.inflate(inflater, container, false)
+        _binding = FragmentTeamsTasksBinding.inflate(inflater, container, false)
         binding.fab.isVisible = false
         binding.fab.setOnClickListener { showTaskAlert(null) }
         return binding.root
