@@ -84,6 +84,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var settings: SharedPreferences
     @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
+    @Inject
+    lateinit var dataService: DataService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
@@ -207,7 +209,7 @@ abstract class BaseResourceFragment : Fragment() {
                 .setTitle(R.string.download_suggestion)
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+                        dataService.isPlanetAvailable(object : PlanetAvailableListener {
                             override fun isAvailable() {
                                 lifecycleScope.launch {
                                     lv?.selectedItemsList?.let {
@@ -226,7 +228,7 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
+                        dataService.isPlanetAvailable(object : PlanetAvailableListener {
                             override fun isAvailable() {
                                 lifecycleScope.launch {
                                     addAllToLibrary(librariesForDialog)
@@ -485,18 +487,6 @@ abstract class BaseResourceFragment : Fragment() {
             val libraries = getLibraries(l)
             libList.addAll(libraries)
             return libList
-        }
-
-        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
-                    if (urls.isNotEmpty()) {
-                        DownloadUtils.openDownloadService(context, urls, false)
-                    }
-                }
-
-                override fun notAvailable() {}
-            })
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {

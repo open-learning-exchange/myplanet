@@ -38,6 +38,7 @@ interface ResourcesRepository {
         mediums: Set<String>
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
+    suspend fun checkAndDownloadResources(urls: List<String>)
     fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String)
     suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String)

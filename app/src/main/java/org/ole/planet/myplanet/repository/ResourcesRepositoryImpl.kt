@@ -9,7 +9,10 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSearchActivity
@@ -20,7 +23,8 @@ import org.ole.planet.myplanet.utilities.FileUtils
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val dataService: DataService
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -242,6 +246,24 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun checkAndDownloadResources(urls: List<String>) {
+        suspendCoroutine<Unit> { continuation ->
+            dataService.isPlanetAvailable(object : DataService.PlanetAvailableListener {
+                override fun isAvailable() {
+                    if (urls.isNotEmpty()) {
+                        DownloadUtils.openDownloadService(context, ArrayList(urls), false)
+                    }
+                    continuation.resume(Unit)
+                }
+
+                override fun notAvailable() {
+                    continuation.resume(Unit)
+                }
+            })
+        }
+    }
+
     override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
         return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
             .equalTo("resourceId", resourceId)

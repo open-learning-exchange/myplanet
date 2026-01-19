@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
@@ -40,6 +39,7 @@ import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
@@ -70,6 +70,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @DefaultPreferences
     lateinit var defaultPreferencesProvider: Provider<SharedPreferences>
     val defaultPref: SharedPreferences by lazy { defaultPreferencesProvider.get() }
+
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
@@ -309,9 +312,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             }
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
                                 databaseService.withRealm { realm ->
-                                    backgroundDownload(
-                                        downloadAllFiles(getAllLibraryList(realm)),
-                                        applicationContext
+                                    resourcesRepository.checkAndDownloadResources(
+                                        downloadAllFiles(getAllLibraryList(realm))
                                     )
                                 }
                             }
