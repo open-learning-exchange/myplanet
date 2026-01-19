@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -28,11 +27,6 @@ class SurveysRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
-
-    companion object {
-        private const val TAG = "SurveySubmission"
-    }
-
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
             equalTo("examId", examId)
@@ -42,10 +36,8 @@ class SurveysRepositoryImpl @Inject constructor(
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->
-                val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
-                if (exam == null) {
-                    return@executeTransaction
-                }
+                val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
+                    .findFirst() ?: return@executeTransaction
 
                 val userModel = userSessionManager.userModel
                 val sParentCode = settings.getString("parentCode", "")
@@ -273,18 +265,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSurveyInfos(
-        isTeam: Boolean,
-        teamId: String?,
-        userId: String?,
-        surveys: List<RealmStepExam>
-    ): Map<String, SurveyInfo> {
-        Log.d(TAG, "====== Counting Survey Submissions ======")
-        Log.d(TAG, "Is Team Survey: $isTeam")
-        Log.d(TAG, "Team ID: $teamId")
-        Log.d(TAG, "User ID: $userId")
-        Log.d(TAG, "Number of Surveys: ${surveys.size}")
-
+    override suspend fun getSurveyInfos(isTeam: Boolean, teamId: String?, userId: String?, surveys: List<RealmStepExam>): Map<String, SurveyInfo> {
         val surveyIds = surveys.map { it.id }
         val submissionsQuery = queryList(RealmSubmission::class.java, ensureLatest = true) {
             if (isTeam) {
@@ -295,49 +276,26 @@ class SurveysRepositoryImpl @Inject constructor(
             }
         }
 
-        Log.d(TAG, "Total Submissions Found: ${submissionsQuery.size}")
-
-        val submissionsByParentId = submissionsQuery
-            .filter { submission ->
-                // Only count submissions that are actually complete or require grading
-                // Do NOT count pending submissions (incomplete/abandoned)
-                val isComplete = submission.status == "complete" || submission.status == "requires grading"
-                val matchesParentId = surveyIds.any { surveyId ->
-                    submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
-                }
-
-                Log.d(TAG, "Submission ${submission.id}:")
-                Log.d(TAG, "  Parent ID: ${submission.parentId}")
-                Log.d(TAG, "  Status: '${submission.status}'")
-                Log.d(TAG, "  Is Complete: $isComplete")
-                Log.d(TAG, "  Matches Parent ID: $matchesParentId")
-                Log.d(TAG, "  Will be counted: ${isComplete && matchesParentId}")
-                Log.d(TAG, "  Answers: ${submission.answers?.size ?: 0}")
-
-                isComplete && matchesParentId
+        val submissionsByParentId = submissionsQuery.filter { submission ->
+            val isComplete = submission.status == "complete" || submission.status == "requires grading"
+            val matchesParentId = surveyIds.any { surveyId ->
+                submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
             }
-            .groupBy { submission ->
-                val parentId = submission.parentId ?: return@groupBy null
-                surveyIds.find { surveyId ->
-                    parentId == surveyId || parentId.startsWith("$surveyId@")
-                }
+            isComplete && matchesParentId
+        }.groupBy { submission ->
+            val parentId = submission.parentId ?: return@groupBy null
+            surveyIds.find { surveyId ->
+                parentId == surveyId || parentId.startsWith("$surveyId@")
             }
-            .filterKeys { it != null }
-            .mapKeys { it.key!! }
+        }.filterKeys { it != null }.mapKeys { it.key!! }
 
         return surveys.filter { it.id != null }.associate { survey ->
             val surveyId = survey.id!!
             val surveySubmissions = submissionsByParentId[surveyId] ?: emptyList()
             val submissionCount = surveySubmissions.size
-
-            Log.d(TAG, "--- Survey: ${survey.name} (ID: $surveyId) ---")
-            Log.d(TAG, "  Submission Count: $submissionCount")
-            surveySubmissions.forEach { sub ->
-                Log.d(TAG, "    - Submission ${sub.id}: status='${sub.status}', answers=${sub.answers?.size}")
-            }
-
-            val lastSubmissionDate = surveySubmissions
-                .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
+            val lastSubmissionDate = surveySubmissions.maxByOrNull {
+                it.startTime
+            }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             val creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
 
             surveyId to SurveyInfo(
@@ -351,7 +309,6 @@ class SurveysRepositoryImpl @Inject constructor(
                 creationDate = creationDate
             )
         }
-        Log.d(TAG, "=========================================")
     }
 
     override suspend fun getSurveyFormState(
