@@ -16,8 +16,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
 
-class SubmissionsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+class SubmissionsRepositoryImpl @Inject internal constructor(
+    databaseService: DatabaseService,
+    private val submissionsRepositoryExporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
@@ -391,5 +392,17 @@ class SubmissionsRepositoryImpl @Inject constructor(
             equalTo("courseId", courseId)
             equalTo("type", "survey")
         }
+    }
+
+    override suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File? {
+        return submissionsRepositoryExporter.generateSubmissionPdf(context, submissionId)
+    }
+
+    override suspend fun generateMultipleSubmissionsPdf(
+        context: android.content.Context,
+        submissionIds: List<String>,
+        examTitle: String
+    ): java.io.File? {
+        return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 }
