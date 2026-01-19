@@ -60,7 +60,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
     private val newsViewModel: NewsViewModel by viewModels()
     private val realm get() = requireRealmInstance()
     private var fullName: String? = null
-    private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var myCoursesAdapter: MyCoursesAdapter
 
@@ -356,9 +355,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         viewModel.loadUserContent(userId)
 
         myCoursesAdapter = MyCoursesAdapter(homeItemClickListener)
-        observeUiState()
         val coursesRecyclerView = view.findViewById<RecyclerView>(R.id.coursesRecyclerView)
         coursesRecyclerView.adapter = myCoursesAdapter
+        observeUiState()
         val layoutManager = FlexboxLayoutManager(context)
         layoutManager.flexWrap = FlexWrap.WRAP
         coursesRecyclerView.layoutManager = layoutManager
