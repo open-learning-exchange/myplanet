@@ -18,7 +18,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.ItemTouchHelperListener
-import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
@@ -96,7 +96,7 @@ class LifeAdapter(
     }
 
     internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
-        ItemTouchHelperViewHolder {
+        OnItemDragStateListener {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
         var dragImageButton: ImageButton = itemView.findViewById(R.id.drag_image_button)
