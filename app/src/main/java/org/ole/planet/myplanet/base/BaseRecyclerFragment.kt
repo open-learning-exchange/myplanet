@@ -122,47 +122,47 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
 
-        val resourceIds = mutableSetOf<String>()
-        val courseIds = mutableSetOf<String>()
+        val resourceIds = mutableListOf<String>()
+        val courseIds = mutableListOf<String>()
 
         itemsToAdd.forEach { item ->
-            val realmObject = item as? RealmObject ?: return@forEach
-            when (realmObject) {
+            when (val realmObject = item as? RealmObject) {
                 is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
                 is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+                else -> {}
             }
         }
 
-        if (resourceIds.isEmpty() && courseIds.isEmpty()) {
-            return
-        }
+        if (resourceIds.isEmpty() && courseIds.isEmpty()) return
 
         isAddInProgress = true
         setJoinInProgress(true)
 
-        val userId = profileDbHandler.userModel?.id
+        val userId = profileDbHandler.userModel?.id ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
             var libraryAdded = false
             var courseAdded = false
+
             val result = runCatching {
-                resourceIds.forEach { resourceId ->
-                    if (!userId.isNullOrBlank()) {
-                        resourcesRepository.updateUserLibrary(resourceId, userId, isAdd = true)
-                        libraryAdded = true
-                    }
+                if (resourceIds.isNotEmpty()) {
+                    resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                    libraryAdded = true
                 }
 
-                courseIds.forEach { courseId ->
-                    if (courseId.isNotBlank()) {
-                        val added = coursesRepository.markCourseAdded(courseId, userId)
-                        courseAdded = courseAdded || added
+                if (courseIds.isNotEmpty()) {
+                    courseIds.forEach { courseId ->
+                        if (coursesRepository.markCourseAdded(courseId, userId)) {
+                            courseAdded = true
+                        }
                     }
                 }
             }
 
             isAddInProgress = false
             setJoinInProgress(false)
+
+            if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
             if (!mRealm.isClosed) {
                 mRealm.refresh()
@@ -172,14 +172,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
 
-            result.exceptionOrNull()?.let { throw it }
+            result.exceptionOrNull()?.let {
+                it.printStackTrace()
+                toast(activity, "An error occurred: ${it.message}")
+                return@launch
+            }
 
-            if (libraryAdded) {
-                toast(activity, getString(R.string.added_to_my_library))
-            }
-            if (courseAdded) {
-                toast(activity, getString(R.string.added_to_my_courses))
-            }
+            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
+            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 

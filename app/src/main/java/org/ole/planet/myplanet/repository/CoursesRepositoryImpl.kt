@@ -212,12 +212,26 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun joinCourse(courseId: String, userId: String) {
+        if (courseId.isBlank() || userId.isBlank()) return
+
         executeTransaction { realm ->
             val course = realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
-            course?.setUserId(userId)
-            RealmRemovedLog.onAdd(realm, "courses", userId, courseId)
+
+            course?.let {
+                if (it.userId?.contains(userId) == false) {
+                    it.setUserId(userId)
+                }
+
+                val removedLog = realm.where(RealmRemovedLog::class.java)
+                    .equalTo("type", "courses")
+                    .equalTo("userId", userId)
+                    .equalTo("docId", courseId)
+                    .findFirst()
+
+                removedLog?.deleteFromRealm()
+            }
         }
     }
 
