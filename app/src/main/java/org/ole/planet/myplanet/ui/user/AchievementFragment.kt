@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.service.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
@@ -60,7 +60,7 @@ class AchievementFragment : BaseContainerFragment() {
     
     @Inject
     lateinit var syncManager: SyncManager
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -87,7 +87,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onDestroyView() {
         if (::onRealtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(onRealtimeSyncListener)
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         _binding = null
         super.onDestroyView()
@@ -244,7 +244,7 @@ class AchievementFragment : BaseContainerFragment() {
                 }
             }
         }
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
