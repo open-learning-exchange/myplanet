@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.util.Log
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Date
@@ -10,11 +11,21 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.ExamAnswerUtils
 
 object ExamSubmissionUtils {
+    private const val TAG = "SurveySubmission"
     fun saveAnswer(
         realm: Realm, submission: RealmSubmission?, question: RealmExamQuestion,
         ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean,
-        type: String, index: Int, total: Int
+        type: String, index: Int, total: Int, isExplicitSubmission: Boolean = false
     ): Boolean {
+        Log.d(TAG, "====== Saving Answer to Database ======")
+        Log.d(TAG, "Question ${index + 1} of $total")
+        Log.d(TAG, "Question ID: ${question.id}")
+        Log.d(TAG, "Question Type: ${question.type}")
+        Log.d(TAG, "Submission ID: ${submission?.id}")
+        Log.d(TAG, "Submission Status (before): ${submission?.status}")
+        Log.d(TAG, "Type: $type")
+        Log.d(TAG, "Explicit Submission: $isExplicitSubmission")
+
         val submissionId = try {
             submission?.id
         } catch (e: IllegalStateException) {
@@ -46,7 +57,7 @@ object ExamSubmissionUtils {
                     }
                 }
 
-                updateSubmissionStatus(r, realmSubmission, index, total, type)
+                updateSubmissionStatus(r, realmSubmission, index, total, type, isExplicitSubmission)
             }
         }, {
             // Success
@@ -90,24 +101,35 @@ object ExamSubmissionUtils {
         index: Int,
         total: Int,
         type: String,
+        isExplicitSubmission: Boolean = false
     ) {
+        val oldStatus = submission?.status
         submission?.lastUpdateTime = Date().time
         val isFinal = index == total - 1
+
+        // Only mark as complete if user explicitly submitted (clicked Submit/Finish button)
         submission?.status = when {
-            isFinal && type == "survey" -> "complete"
-            isFinal -> "requires grading"
+            isFinal && isExplicitSubmission && type == "survey" -> "complete"
+            isFinal && isExplicitSubmission -> "requires grading"
             else -> "pending"
         }
 
-        if (isFinal && type == "survey" && submission != null) {
-            realm.where(RealmSubmission::class.java)
-                .equalTo("userId", submission.userId)
-                .equalTo("parentId", submission.parentId)
-                .equalTo("status", "pending")
-                .notEqualTo("id", submission.id)
-                .findAll()
-                .forEach { it.status = "complete" }
+        Log.d(TAG, "====== Updating Submission Status ======")
+        Log.d(TAG, "Submission ID: ${submission?.id}")
+        Log.d(TAG, "Question: ${index + 1} of $total")
+        Log.d(TAG, "Is Final Question: $isFinal")
+        Log.d(TAG, "Type: $type")
+        Log.d(TAG, "Explicit Submission: $isExplicitSubmission")
+        Log.d(TAG, "Status Change: $oldStatus -> ${submission?.status}")
+        Log.d(TAG, "Answers Count: ${submission?.answers?.size}")
+
+        // Note: We do NOT mark other pending submissions as complete anymore
+        // Pending submissions are now considered abandoned/incomplete attempts
+        // Only explicitly completed submissions should have status="complete"
+        if (isFinal && isExplicitSubmission && type == "survey" && submission != null) {
+            Log.d(TAG, "Survey completed - other pending submissions will remain as 'pending' (abandoned)")
         }
+        Log.d(TAG, "========================================")
     }
 
     private fun populateAnswer(

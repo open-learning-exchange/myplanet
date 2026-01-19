@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.exam
 import org.ole.planet.myplanet.base.BaseExamFragment
 
 import android.os.Bundle
+import android.util.Log
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -53,8 +54,13 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var _binding: FragmentExamTakingBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
+    private var isExplicitSubmission = false  // Track if user explicitly clicked Submit/Finish
 
     private val answerCache = mutableMapOf<String, AnswerData>()
+
+    companion object {
+        private const val TAG = "SurveySubmission"
+    }
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -160,12 +166,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         val questionId = currentQuestion.id ?: return
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
 
+        Log.d(TAG, "Saving answer for question ${currentIndex + 1}/${questionsSize}")
+        Log.d(TAG, "  Question ID: $questionId")
+        Log.d(TAG, "  Question Type: ${currentQuestion.type}")
+
         when (currentQuestion.type) {
             "select", "ratingScale" -> {
                 answerData.singleAnswer = ans
                 if (binding.etAnswer.isVisible) {
                     answerData.otherText = binding.etAnswer.text.toString()
                 }
+                Log.d(TAG, "  Answer: $ans")
             }
             "selectMultiple" -> {
                 answerData.multipleAnswers.clear()
@@ -173,9 +184,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 if (binding.etAnswer.isVisible) {
                     answerData.otherText = binding.etAnswer.text.toString()
                 }
+                Log.d(TAG, "  Multiple Answers: ${listAns?.keys}")
             }
             "input", "textarea" -> {
                 answerData.singleAnswer = binding.etAnswer.text.toString()
+                Log.d(TAG, "  Text Answer: ${answerData.singleAnswer}")
             }
         }
         updateAnsDb()
@@ -243,6 +256,14 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private fun createSubmission() {
+        Log.d(TAG, "====== Creating Submission ======")
+        Log.d(TAG, "Survey/Exam ID: ${exam?.id ?: id}")
+        Log.d(TAG, "Survey/Exam Name: ${exam?.name}")
+        Log.d(TAG, "Type: $type")
+        Log.d(TAG, "Is Team Survey: $isTeam")
+        Log.d(TAG, "Team ID: $teamId")
+        Log.d(TAG, "User ID: ${user?.id}")
+
         mRealm.beginTransaction()
         try {
             sub = createSubmission(null, mRealm)
@@ -262,8 +283,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 addTeamInformation(mRealm)
             }
             mRealm.commitTransaction()
+
+            Log.d(TAG, "Submission Created Successfully")
+            Log.d(TAG, "Submission ID: ${sub?.id}")
+            Log.d(TAG, "Parent ID: ${sub?.parentId}")
+            Log.d(TAG, "Status: ${sub?.status}")
+            Log.d(TAG, "Start Time: ${Date(sub?.startTime ?: 0)}")
+            Log.d(TAG, "================================")
         } catch (e: Exception) {
             mRealm.cancelTransaction()
+            Log.e(TAG, "Failed to create submission", e)
             throw e
         }
     }
@@ -578,6 +607,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
+                // Only mark as explicit submission if this is the LAST question (Finish button)
+                // Not when clicking Submit/Next on intermediate questions
+                val isLastQuestion = currentIndex == (questions?.size?.minus(1) ?: 0)
+                if (isLastQuestion) {
+                    isExplicitSubmission = true
+                    Log.d(TAG, "User clicked Finish on last question - marking as explicit submission")
+                } else {
+                    Log.d(TAG, "User clicked Submit/Next on question ${currentIndex + 1} - NOT the final submission")
+                }
+
                 saveCurrentAnswer()
 
                 if (!isQuestionAnswered()) {
@@ -637,7 +676,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             binding.etAnswer.isVisible,
             type ?: "exam",
             currentIndex,
-            questions?.size ?: 0
+            questions?.size ?: 0,
+            isExplicitSubmission
         )
         return result
     }
@@ -748,7 +788,40 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.d(TAG, "====== Fragment Closing ======")
+        Log.d(TAG, "Survey/Exam ID: ${exam?.id ?: id}")
+        Log.d(TAG, "Survey/Exam Name: ${exam?.name}")
+        Log.d(TAG, "Current Question Index: $currentIndex out of ${questions?.size ?: 0}")
+        Log.d(TAG, "Explicit Submission: $isExplicitSubmission")
+
         saveCurrentAnswer()
+
+        // Log final submission state
+        if (sub != null) {
+            Log.d(TAG, "Final Submission State:")
+            Log.d(TAG, "  Submission ID: ${sub?.id}")
+            Log.d(TAG, "  Parent ID: ${sub?.parentId}")
+            Log.d(TAG, "  Status: ${sub?.status}")
+            Log.d(TAG, "  Type: ${sub?.type}")
+            Log.d(TAG, "  User ID: ${sub?.userId}")
+            Log.d(TAG, "  Answers Count: ${sub?.answers?.size ?: 0}")
+            Log.d(TAG, "  Total Questions: ${questions?.size ?: 0}")
+            Log.d(TAG, "  Is Complete: ${(sub?.answers?.size ?: 0) == (questions?.size ?: 0)}")
+            Log.d(TAG, "  Start Time: ${sub?.startTime?.let { Date(it) }}")
+            Log.d(TAG, "  Last Update: ${sub?.lastUpdateTime?.let { Date(it) }}")
+
+            if (sub?.status == "pending" && !isExplicitSubmission) {
+                Log.w(TAG, "Survey closed without explicit submission - status remains 'pending'")
+                Log.w(TAG, "  This will NOT be counted in 'times taken'")
+            } else if (sub?.status == "complete" && isExplicitSubmission) {
+                Log.d(TAG, "Survey completed via explicit submission - status is 'complete'")
+            }
+        } else {
+            Log.d(TAG, "No submission object found (submission may not have been created)")
+        }
+
+        Log.d(TAG, "================================")
+
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
