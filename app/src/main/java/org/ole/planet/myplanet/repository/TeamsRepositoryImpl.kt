@@ -846,7 +846,7 @@ class TeamsRepositoryImpl @Inject constructor(
             mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
 
         if (!primaryAvailable && alternativeAvailable) {
-            mapping.alternativeUrl?.let { alternativeUrl ->
+            mapping.alternativeUrl.let { alternativeUrl ->
                 val uri = updateUrl.toUri()
                 val editor = preferences.edit()
                 serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
@@ -858,7 +858,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     private suspend fun uploadTeamActivities() {
         try {
-            val apiInterface = client?.create(ApiInterface::class.java)
+            val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
                 uploadManager.uploadTeams()
                 executeTransaction { realm ->
@@ -903,23 +903,60 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
         return withRealm { realm ->
             val members = RealmMyTeam.getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
-            val leaderId = realm.where(RealmMyTeam::class.java)
+            val communityLeadersJson = preferences.getString("communityLeaders", "") ?: ""
+
+            if (communityLeadersJson.isNotEmpty()) {
+                val adminUsers = RealmUserModel.parseLeadersJson(communityLeadersJson)
+
+                val teamUserIds = realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .findAll()
+                    .mapNotNull { it.userId }
+                    .toSet()
+
+                for (admin in adminUsers) {
+                    val adminFullId = "org.couchdb.user:${admin.name}"
+
+                    if (adminFullId in teamUserIds && !members.any { it.name == admin.name }) {
+                        val adminFromRealm = realm.where(RealmUserModel::class.java)
+                            .equalTo("name", admin.name)
+                            .findFirst()
+                        if (adminFromRealm != null) {
+                            members.add(realm.copyFromRealm(adminFromRealm))
+                        } else {
+                            members.add(admin)
+                        }
+                    }
+                }
+            }
+
+            val leaderRecords = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("isLeader", true)
-                .findFirst()?.userId
-            val leader = members.find { it.id == leaderId }
-            if (leader != null) {
-                members.remove(leader)
-                members.add(0, leader)
+                .findAll()
+
+
+            val leaderIds = leaderRecords.mapNotNull { it.userId }.toSet()
+            val leaders = mutableListOf<RealmUserModel>()
+            val nonLeaders = mutableListOf<RealmUserModel>()
+
+            members.forEach { member ->
+                if (member.id in leaderIds) {
+                    leaders.add(member)
+                } else {
+                    nonLeaders.add(member)
+                }
             }
-            members.map { member ->
+
+            val orderedMembers = leaders + nonLeaders
+            orderedMembers.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
                 val offlineVisits = "${userSessionManager.getOfflineVisits(member)}"
                 val profileLastVisit = userSessionManager.getLastVisit(member)
-                JoinedMemberData(
-                    member, visitCount, lastVisitTimestamp, offlineVisits,
-                    profileLastVisit, member.id == leaderId
+                val isLeader = member.id in leaderIds
+                JoinedMemberData(member, visitCount, lastVisitTimestamp,
+                    offlineVisits, profileLastVisit, isLeader
                 )
             }
         }
