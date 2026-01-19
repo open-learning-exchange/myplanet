@@ -7,13 +7,12 @@ import java.util.UUID
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.utilities.ExamAnswerUtils
 
 object ExamSubmissionUtils {
     fun saveAnswer(
         realm: Realm, submission: RealmSubmission?, question: RealmExamQuestion,
         ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean,
-        type: String, index: Int, total: Int
+        type: String, index: Int, total: Int, isExplicitSubmission: Boolean = false
     ): Boolean {
         val submissionId = try {
             submission?.id
@@ -42,11 +41,11 @@ object ExamSubmissionUtils {
                     answer.isPassed = isCorrect
                     answer.grade = 1
                     if (!isCorrect) {
-                        answer.mistakes = answer.mistakes + 1
+                        answer.mistakes += 1
                     }
                 }
 
-                updateSubmissionStatus(r, realmSubmission, index, total, type)
+                updateSubmissionStatus(realmSubmission, index, total, type, isExplicitSubmission)
             }
         }, {
             // Success
@@ -63,9 +62,7 @@ object ExamSubmissionUtils {
     }
 
     private fun createOrRetrieveAnswer(
-        realm: Realm,
-        submission: RealmSubmission?,
-        question: RealmExamQuestion,
+        realm: Realm, submission: RealmSubmission?, question: RealmExamQuestion,
     ): RealmAnswer {
         val existing = submission?.answers?.find { it.questionId == question.id }
 
@@ -85,28 +82,17 @@ object ExamSubmissionUtils {
     }
 
     private fun updateSubmissionStatus(
-        realm: Realm,
-        submission: RealmSubmission?,
-        index: Int,
-        total: Int,
-        type: String,
+        submission: RealmSubmission?, index: Int, total: Int, type: String,
+        isExplicitSubmission: Boolean = false
     ) {
+        val oldStatus = submission?.status
         submission?.lastUpdateTime = Date().time
         val isFinal = index == total - 1
-        submission?.status = when {
-            isFinal && type == "survey" -> "complete"
-            isFinal -> "requires grading"
-            else -> "pending"
-        }
 
-        if (isFinal && type == "survey" && submission != null) {
-            realm.where(RealmSubmission::class.java)
-                .equalTo("userId", submission.userId)
-                .equalTo("parentId", submission.parentId)
-                .equalTo("status", "pending")
-                .notEqualTo("id", submission.id)
-                .findAll()
-                .forEach { it.status = "complete" }
+        submission?.status = when {
+            isFinal && isExplicitSubmission && type == "survey" -> "complete"
+            isFinal && isExplicitSubmission -> "requires grading"
+            else -> "pending"
         }
     }
 
