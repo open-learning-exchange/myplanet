@@ -45,7 +45,7 @@ class ResourcesAdapter(
     private val resourcesRepository: ResourcesRepository,
     private val userModel: RealmUserModel?,
     private var tagsMap: Map<String, List<RealmTag>>,
-    private val mRealm: Realm
+    private val openedResourceIds: Set<String>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), OnDiffRefreshListener {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -128,8 +128,8 @@ class ResourcesAdapter(
             holder.itemView.setOnClickListener {
                 openLibrary(library)
             }
-            val isResourceOpened = library.id?.let { resourcesRepository.isResourceOpened(it, mRealm) }
-            if (library.isResourceOffline() == true || isResourceOpened == true) {
+            val isResourceOpened = openedResourceIds.contains(library.id)
+            if (library.isResourceOffline() == true || isResourceOpened) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
