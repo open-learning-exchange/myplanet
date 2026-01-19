@@ -149,7 +149,11 @@ open class RealmUserModel : RealmObject() {
     }
 
     fun getRoleAsString(): String {
-        return StringUtils.join(rolesList, ",")
+        return if (rolesList != null) {
+            StringUtils.join(rolesList, ",")
+        } else {
+            ""
+        }
     }
 
     fun getFullName(): String {
@@ -453,6 +457,12 @@ open class RealmUserModel : RealmObject() {
                     val docObject = docsArray.getJSONObject(i)
                     val user = RealmUserModel()
                     user.name = docObject.getString("name")
+                    user.id = if (!docObject.isNull("_id")) {
+                        docObject.getString("_id")
+                    } else {
+                        "org.couchdb.user:${user.name}"
+                    }
+                    user.rolesList = RealmList()
                     if (!docObject.isNull("firstName")) {
                         user.firstName = docObject.getString("firstName")
                     }
