@@ -242,11 +242,18 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
+
     override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
         return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
             .equalTo("resourceId", resourceId)
             .equalTo("type", "resource_opened")
             .findFirst() != null
+    }
+
+    override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", false)
+        }.filter { it.needToUpdate() }
     }
 
     override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String) {
