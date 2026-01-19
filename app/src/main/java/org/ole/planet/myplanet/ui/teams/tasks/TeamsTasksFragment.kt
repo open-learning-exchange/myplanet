@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
-import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
+import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -41,15 +41,15 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
-    private var _binding: FragmentTeamTaskBinding? = null
+class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
+    private var _binding: FragmentTeamsTasksBinding? = null
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     var list: List<RealmTeamTask> = emptyList()
     private var currentTab = R.id.btn_all
 
-    private lateinit var adapterTask: TeamTaskAdapter
+    private lateinit var adapterTask: TeamsTasksAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             deadline = Calendar.getInstance()
             deadline?.set(Calendar.YEAR, year)
@@ -79,7 +79,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentTeamTaskBinding.inflate(inflater, container, false)
+        _binding = FragmentTeamsTasksBinding.inflate(inflater, container, false)
         binding.fab.isVisible = false
         binding.fab.setOnClickListener { showTaskAlert(null) }
         return binding.root
@@ -213,7 +213,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        adapterTask = TeamTaskAdapter(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
+        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->

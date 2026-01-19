@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/secondary_bg"
-    tools:context=".ui.team.teamTask.TeamTaskFragment">
+    tools:context=".ui.teams.tasks.TeamsTasksFragment">
 
     <com.nex3z.togglebuttongroup.SingleSelectToggleGroup
         android:id="@+id/task_toggle"

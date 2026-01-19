@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.ui.teams.voices.TeamsVoicesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
-import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskFragment
+import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment
@@ -37,7 +37,7 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object TasksPage : TeamPageConfig("TASKS", R.string.tasks) {
-        override fun createFragment() = TeamTaskFragment()
+        override fun createFragment() = TeamsTasksFragment()
     }
 
     object CalendarPage : TeamPageConfig("CALENDAR", R.string.calendar) {
