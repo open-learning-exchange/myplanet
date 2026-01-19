@@ -311,11 +311,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                                 isServerReachable(serverUrl)
                             }
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                databaseService.withRealm { realm ->
-                                    resourcesRepository.checkAndDownloadResources(
+                                val urls = withContext(Dispatchers.IO) {
+                                    databaseService.withRealm { realm ->
                                         downloadAllFiles(getAllLibraryList(realm))
-                                    )
+                                    }
                                 }
+                                resourcesRepository.checkAndDownloadResources(urls)
                             }
                         }
                     }

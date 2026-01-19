@@ -575,13 +575,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
-                        withContext(Dispatchers.IO) {
+                        val urls = withContext(Dispatchers.IO) {
                             databaseService.withRealm { realm ->
-                                resourcesRepository.checkAndDownloadResources(
-                                    downloadAllFiles(getAllLibraryList(realm))
-                                )
+                                downloadAllFiles(getAllLibraryList(realm))
                             }
                         }
+                        resourcesRepository.checkAndDownloadResources(urls)
                     }
 
                     cancelAll(activityContext)

@@ -121,8 +121,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-    @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
