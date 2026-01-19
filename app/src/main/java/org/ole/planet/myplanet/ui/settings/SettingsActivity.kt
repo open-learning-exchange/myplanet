@@ -36,8 +36,6 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -61,9 +59,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
-
-    @Inject
-    lateinit var databaseService: DatabaseService
 
     @Inject
     @AppPreferences
@@ -107,8 +102,6 @@ class SettingsActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         @Inject
         lateinit var profileDbHandler: UserSessionManager
-        @Inject
-        lateinit var databaseService: DatabaseService
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
         @Inject
@@ -162,11 +155,7 @@ class SettingsActivity : AppCompatActivity() {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
                     lifecycleScope.launch {
                         try {
-                            val files = libraryList ?: withContext(Dispatchers.IO) {
-                                databaseService.withRealm { realm ->
-                                    realm.copyFromRealm(getAllLibraryList(realm)).also { libraryList = it }
-                                }
-                            }
+                            val files = libraryList ?: resourcesRepository.getAllLibrariesToSync().also { libraryList = it }
                             backgroundDownload(downloadAllFiles(files), requireContext())
                         } finally {
                             preference.isEnabled = true
