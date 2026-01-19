@@ -77,6 +77,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         currentUser = userSessionManager.userModel
         mapConditions = HashMap()
         userId = intent.getStringExtra("userId")
+        if (userId == null) {
+            Utilities.toast(this, "Unable to find user")
+            finish()
+            return
+        }
         lifecycleScope.launch {
             pojo = healthRepository.getExaminationById(userId!!)
             if (pojo == null) {

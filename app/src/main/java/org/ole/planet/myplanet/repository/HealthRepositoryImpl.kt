@@ -13,13 +13,17 @@ class HealthRepositoryImpl @Inject constructor(
 
     override suspend fun getExaminationById(id: String): RealmHealthExamination? {
         return withRealm { realm ->
-            realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()
+            realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()?.let {
+                realm.copyFromRealm(it)
+            }
         }
     }
 
     override suspend fun getExaminationByUserId(userId: String): RealmHealthExamination? {
         return withRealm { realm ->
-            realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+            realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()?.let {
+                realm.copyFromRealm(it)
+            }
         }
     }
 
@@ -27,12 +31,12 @@ class HealthRepositoryImpl @Inject constructor(
         return withRealm { realm ->
             var user = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
             if (user != null && (user.key == null || user.iv == null)) {
-                if (!realm.isInTransaction) realm.beginTransaction()
-                user.key = AndroidDecrypter.generateKey()
-                user.iv = AndroidDecrypter.generateIv()
-                realm.commitTransaction()
+                realm.executeTransaction {
+                    user.key = AndroidDecrypter.generateKey()
+                    user.iv = AndroidDecrypter.generateIv()
+                }
             }
-            user
+            user?.let { realm.copyFromRealm(it) }
         }
     }
 
