@@ -322,11 +322,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         }
 
         val userId = settings?.getString("userId", "--")
-        viewModel.loadUserContent(userId)
-        observeUiState()
         libraryListAdapter = LibraryListAdapter(this, ::setTextColor)
         val recyclerView = view.findViewById<RecyclerView>(R.id.recyclerView)
         recyclerView.adapter = libraryListAdapter
+        viewModel.loadUserContent(userId)
+        observeUiState()
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
         view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
         val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
