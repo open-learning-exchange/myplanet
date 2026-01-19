@@ -8,6 +8,11 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
+import java.io.File
+import java.io.IOException
+import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -40,11 +45,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.File
-import java.io.IOException
-import java.util.Date
-import javax.inject.Inject
-import javax.inject.Singleton
 
 private const val BATCH_SIZE = 50
 
