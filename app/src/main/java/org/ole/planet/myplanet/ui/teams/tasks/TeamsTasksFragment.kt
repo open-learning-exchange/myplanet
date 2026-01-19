@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class TeamTaskFragment : BaseTeamFragment(), OnTaskCompletedListener {
+class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var _binding: FragmentTeamTaskBinding? = null
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
