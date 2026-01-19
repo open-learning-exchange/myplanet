@@ -53,17 +53,18 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiClient.client
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
@@ -132,6 +133,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var defaultPref: SharedPreferences
     @Inject
     lateinit var service: DataService
+    @Inject
+    lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -141,6 +144,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
+
+    @Inject
+    open lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -574,12 +580,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                backgroundDownload(
-                                    downloadAllFiles(getAllLibraryList(realm)),
-                                    activityContext
-                                )
-                            }
+                            backgroundDownload(
+                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
+                                activityContext
+                            )
                         }
                     }
 
