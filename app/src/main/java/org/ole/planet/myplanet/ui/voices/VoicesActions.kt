@@ -147,7 +147,7 @@ object VoicesActions {
         coroutineScope.launch {
             if (isEdit) {
                 news?.id?.let {
-                    voicesRepository.editNews(it, s, imagesToRemove, imageList)
+                    voicesRepository.editNews(it, s, imagesToRemove, imageList?.toList())
                 }
             } else {
                 voicesRepository.postReply(s, news, currentUser, imageList)

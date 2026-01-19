@@ -100,16 +100,20 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun postReply(message: String, news: RealmNews?, currentUser: RealmUserModel?, imageList: io.realm.RealmList<String>?) {
         withRealm { realm ->
             realm.executeTransaction {
-                val map = HashMap<String?, String>()
-                map["message"] = message
-                map["viewableBy"] = news?.viewableBy ?: ""
-                map["viewableId"] = news?.viewableId ?: ""
-                map["replyTo"] = news?.id ?: ""
-                map["messageType"] = news?.messageType ?: ""
-                map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-                map["viewIn"] = news?.viewIn ?: ""
-                currentUser?.let { user ->
-                    createNews(map, it, user, imageList, true)
+                val managedUser = currentUser?.let { user ->
+                    it.where(RealmUserModel::class.java).equalTo("_id", user._id).findFirst()
+                }
+
+                if (managedUser != null) {
+                    val map = HashMap<String?, String>()
+                    map["message"] = message
+                    map["viewableBy"] = news?.viewableBy ?: ""
+                    map["viewableId"] = news?.viewableId ?: ""
+                    map["replyTo"] = news?.id ?: ""
+                    map["messageType"] = news?.messageType ?: ""
+                    map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
+                    map["viewIn"] = news?.viewIn ?: ""
+                    createNews(map, it, managedUser, imageList, true)
                 }
             }
         }
