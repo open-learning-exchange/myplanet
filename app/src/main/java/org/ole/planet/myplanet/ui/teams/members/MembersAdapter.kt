@@ -27,7 +27,7 @@ class MembersAdapter(
     private val context: Context,
     private val currentUserId: String?,
     private val actionListener: MemberActionListener
-) : ListAdapter<JoinedMemberData, MembersAdapter.ViewHolderUser>(DIFF_CALLBACK) {
+) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
     interface MemberActionListener {
         fun onRemoveMember(member: JoinedMemberData, position: Int)
@@ -53,13 +53,13 @@ class MembersAdapter(
             }
         }
     }
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MembersViewHolder {
         val binding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderUser(binding)
+        return MembersViewHolder(binding)
     }
 
     override fun onBindViewHolder(
-        holder: ViewHolderUser,
+        holder: MembersViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
@@ -77,7 +77,7 @@ class MembersAdapter(
         }
     }
 
-    override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
+    override fun onBindViewHolder(holder: MembersViewHolder, position: Int) {
         val memberData = getItem(position)
         val member = memberData.user
         val binding = holder.binding
@@ -193,6 +193,6 @@ class MembersAdapter(
         submitList(newList)
     }
 
-    class ViewHolderUser(val binding: RowJoinedUserBinding) :
+    class MembersViewHolder(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
 }
