@@ -394,6 +394,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
+        val surveys = getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!hasSubmission(survey.id, courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
+
     override suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File? {
         return submissionsRepositoryExporter.generateSubmissionPdf(context, submissionId)
     }
