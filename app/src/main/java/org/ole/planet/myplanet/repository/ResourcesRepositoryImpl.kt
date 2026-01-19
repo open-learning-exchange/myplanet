@@ -242,6 +242,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
+
     override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
         return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
             .equalTo("resourceId", resourceId)
@@ -253,5 +254,36 @@ class ResourcesRepositoryImpl @Inject constructor(
         return queryList(RealmMyLibrary::class.java) {
             equalTo("resourceOffline", false)
         }.filter { it.needToUpdate() }
+    }
+
+    override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String) {
+        if (resourceIds.isEmpty() || userId.isBlank()) return
+
+        executeTransaction { realm ->
+            resourceIds.forEach { resourceId ->
+                val libraryItem = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("resourceId", resourceId)
+                    .findFirst()
+
+                libraryItem?.let {
+                    if (it.userId?.contains(userId) == false) {
+                        it.setUserId(userId)
+                    }
+                }
+
+                val removedLog = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                    .equalTo("type", "resources")
+                    .equalTo("userId", userId)
+                    .equalTo("docId", resourceId)
+                    .findFirst()
+
+                removedLog?.deleteFromRealm()
+            }
+        }
+    }
+
+    override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String) {
+        val resourceIds = resources.mapNotNull { it.resourceId }
+        addResourcesToUserLibrary(resourceIds, userId)
     }
 }
