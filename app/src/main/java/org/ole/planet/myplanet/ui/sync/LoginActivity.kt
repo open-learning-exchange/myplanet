@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.ui.user.UserProfileAdapter
 import org.ole.planet.myplanet.utilities.AuthUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -54,7 +55,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
-class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
+class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
