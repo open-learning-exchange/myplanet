@@ -147,9 +147,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var configurationsRepository: ConfigurationsRepository
 
     @Inject
-    lateinit var userRepository: UserRepository
-
-    @Inject
     open lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
