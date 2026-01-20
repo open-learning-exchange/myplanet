@@ -12,6 +12,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.DownloadUtils
@@ -243,11 +244,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
-        return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
-            .equalTo("resourceId", resourceId)
-            .equalTo("type", "resource_opened")
-            .findFirst() != null
+    override suspend fun isResourceOpened(resourceId: String): Boolean {
+        return count(RealmResourceActivity::class.java) {
+            equalTo("resourceId", resourceId)
+            equalTo("type", "resource_opened")
+        } > 0
     }
 
     override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
