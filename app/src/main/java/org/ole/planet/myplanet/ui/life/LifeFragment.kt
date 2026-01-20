@@ -84,8 +84,9 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     private fun refreshList() {
-        lifecycleScope.launch {
-            val myLifeList = lifeRepository.getMyLifeByUserId(model?.id)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = model?.id ?: profileDbHandler.userModel?.id
+            val myLifeList = lifeRepository.getMyLifeByUserId(userId)
             lifeAdapter.submitList(myLifeList)
         }
     }
