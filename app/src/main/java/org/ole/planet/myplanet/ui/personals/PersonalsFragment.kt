@@ -21,8 +21,8 @@ import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class PersonalsFragment : Fragment(), OnSelectedMyPersonal {

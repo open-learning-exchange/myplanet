@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmApkLog : RealmObject() {
     @PrimaryKey

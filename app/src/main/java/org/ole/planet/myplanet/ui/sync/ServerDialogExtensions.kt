@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.utilities.ServerConfigUtils
+import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 fun SyncActivity.showConfigurationUIElements(
     binding: DialogServerUrlBinding,
@@ -235,7 +235,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(org.ole.planet.myplanet.utilities.NetworkUtils.getDeviceName())
+    binding.deviceName.setText(org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {

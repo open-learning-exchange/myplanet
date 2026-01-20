@@ -35,10 +35,10 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.health.UserSelectionAdapter
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {

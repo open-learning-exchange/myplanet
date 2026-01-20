@@ -20,14 +20,14 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsEx
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.SecurePrefs
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 import retrofit2.Response
 
 @Singleton
@@ -155,7 +155,7 @@ class TransactionSyncManager @Inject constructor(
                     break // No more documents
                 }
 
-                org.ole.planet.myplanet.utilities.SyncTimeLogger.logApiCall(
+                org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
                     "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
@@ -173,7 +173,7 @@ class TransactionSyncManager @Inject constructor(
                         insertDocs(arr, mRealm, table)
 
                         val insertDuration = System.currentTimeMillis() - insertStartTime
-                        org.ole.planet.myplanet.utilities.SyncTimeLogger.logRealmOperation(
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
                             table,
                             insertDuration,
@@ -190,7 +190,7 @@ class TransactionSyncManager @Inject constructor(
 
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
-                    org.ole.planet.myplanet.utilities.SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
 
                 // If we got less than pageSize, we're done

@@ -20,12 +20,12 @@ import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
-import org.ole.planet.myplanet.utilities.IntentUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.IntentUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class ConfigurationManager(
     private val context: Context,

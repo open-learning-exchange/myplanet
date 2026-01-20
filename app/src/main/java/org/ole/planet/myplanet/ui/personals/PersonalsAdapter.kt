@@ -16,9 +16,9 @@ import org.ole.planet.myplanet.ui.personals.PersonalsAdapter.PersonalsViewHolder
 import org.ole.planet.myplanet.ui.reader.ImageViewerActivity
 import org.ole.planet.myplanet.ui.reader.PDFReaderActivity
 import org.ole.planet.myplanet.ui.reader.VideoViewerActivity
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.IntentUtils.openAudioFile
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPersonal, PersonalsViewHolder>(DiffCallback) {
     private var listener: OnSelectedMyPersonal? = null

@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 
 @HiltViewModel
 class SubmissionDetailViewModel @Inject constructor(

@@ -22,9 +22,9 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -349,12 +349,12 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mh == null) return@withRealm null
 
-        val json = org.ole.planet.myplanet.utilities.AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val json = org.ole.planet.myplanet.utils.AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
         val mm = if (android.text.TextUtils.isEmpty(json)) {
             null
         } else {
             try {
-                org.ole.planet.myplanet.utilities.JsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
+                org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
