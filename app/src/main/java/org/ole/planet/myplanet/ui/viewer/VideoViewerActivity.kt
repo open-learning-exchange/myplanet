@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.reader
+package org.ole.planet.myplanet.ui.viewer
 
 import android.content.BroadcastReceiver
 import android.content.Context
