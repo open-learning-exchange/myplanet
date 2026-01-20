@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnLibraryItemSelected
+import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -49,7 +49,7 @@ class ResourcesAdapter(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), OnDiffRefreshListener {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
-    private var listener: OnLibraryItemSelected? = null
+    private var listener: OnLibraryItemSelectedListener? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -92,7 +92,7 @@ class ResourcesAdapter(
         updateList(libraryList, onComplete)
     }
 
-    fun setListener(listener: OnLibraryItemSelected?) {
+    fun setListener(listener: OnLibraryItemSelectedListener?) {
         this.listener = listener
     }
 
