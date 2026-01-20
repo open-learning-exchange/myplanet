@@ -33,6 +33,10 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getSurveyByName(name: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "name", name)
+    }
+
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->

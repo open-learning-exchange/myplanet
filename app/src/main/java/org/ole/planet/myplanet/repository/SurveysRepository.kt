@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 
 interface SurveysRepository {
     suspend fun getExamQuestions(examId: String): List<RealmExamQuestion>
+    suspend fun getSurveyByName(name: String): RealmStepExam?
     suspend fun getSurveySubmissionCount(userId: String?): Int
     suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam>

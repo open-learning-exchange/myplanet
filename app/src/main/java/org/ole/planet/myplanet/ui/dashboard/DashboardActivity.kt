@@ -67,6 +67,7 @@ import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
@@ -122,6 +123,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var voicesRepository: VoicesRepository
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
@@ -509,12 +512,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = databaseService.withRealmAsync { realm ->
-                realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                    .findFirst()?.let {
-                        realm.copyFromRealm(it)
-                    }
-            }
+            val currentStepExam = surveysRepository.getSurveyByName(surveyId)
             SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
