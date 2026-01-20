@@ -167,10 +167,6 @@ object UploadConfigs {
         modelClass = RealmSubmission::class,
         endpoint = "submissions",
         queryBuilder = { query ->
-            // Only upload COMPLETE submissions that are:
-            // 1. Explicitly marked for update (isUpdated = true), OR
-            // 2. New (empty _id)
-            // ALWAYS require status = "complete" to prevent uploading pending submissions
             query.equalTo("status", "complete")
                 .beginGroup()
                     .equalTo("isUpdated", true)

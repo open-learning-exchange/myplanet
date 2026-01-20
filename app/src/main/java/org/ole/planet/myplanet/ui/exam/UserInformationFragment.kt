@@ -180,7 +180,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
 
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-            if (yobInt < 1900 || yobInt > currentYear) {
+            if (yobInt !in 1900..currentYear) {
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
                 return
@@ -377,10 +377,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private suspend fun uploadSubmissionsWithTiming(capturedSyncStartTime: Long) {
         try {
             Log.d("UserInformationFragment", "About to call uploadSubmissions with capturedSyncStartTime: $capturedSyncStartTime")
-            // Upload adopted surveys first (the team survey definition)
             uploadManager.uploadAdoptedSurveys()
-            // Then upload the submission (user's answers)
-            // Do NOT call uploadExamResult here as it uses a different serializer and creates duplicates
             uploadManager.uploadSubmissions(capturedSyncStartTime)
         } catch (e: Exception) {
             Log.e("UserInformationFragment", "Error during upload", e)

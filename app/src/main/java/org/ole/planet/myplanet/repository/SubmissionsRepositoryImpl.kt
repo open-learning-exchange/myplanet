@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
@@ -233,37 +232,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
-        Log.d("SubmissionsRepository", "markSubmissionComplete called for ID: $id")
-        Log.d("SyncData", "========== SUBMISSION MARKED COMPLETE ==========")
-        Log.d("SyncData", "Submission ID: $id")
-        Log.d("SyncData", "User Payload: $payload")
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
-            sub.isUpdated = true  // Mark for upload
-            Log.d("SubmissionsRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
-            Log.d("SyncData", "--- Submission Details After Update ---")
-            Log.d("SyncData", "  id: ${sub.id}")
-            Log.d("SyncData", "  _id: ${sub._id}")
-            Log.d("SyncData", "  _rev: ${sub._rev}")
-            Log.d("SyncData", "  parentId: ${sub.parentId}")
-            Log.d("SyncData", "  type: ${sub.type}")
-            Log.d("SyncData", "  userId: ${sub.userId}")
-            Log.d("SyncData", "  status: ${sub.status}")
-            Log.d("SyncData", "  isUpdated: ${sub.isUpdated}")
-            Log.d("SyncData", "  startTime: ${sub.startTime}")
-            Log.d("SyncData", "  lastUpdateTime: ${sub.lastUpdateTime}")
-            Log.d("SyncData", "  source: ${sub.source}")
-            Log.d("SyncData", "  parentCode: ${sub.parentCode}")
-            Log.d("SyncData", "  teamObject: ${sub.teamObject?.let { "id=${it._id}, name=${it.name}, type=${it.type}" } ?: "null"}")
-            Log.d("SyncData", "  membershipDoc: ${sub.membershipDoc?.let { "teamId=${it.teamId}" } ?: "null"}")
-            Log.d("SyncData", "  answers count: ${sub.answers?.size ?: 0}")
-            sub.answers?.forEachIndexed { index, answer ->
-                Log.d("SyncData", "  answer[$index]: questionId=${answer.questionId}, value=${answer.value}, passed=${answer.isPassed}")
-            }
-            Log.d("SyncData", "  user: ${sub.user}")
-            Log.d("SyncData", "  parent: ${sub.parent}")
-            Log.d("SyncData", "========== END SUBMISSION DETAILS ==========")
+            sub.isUpdated = true
         }
     }
 

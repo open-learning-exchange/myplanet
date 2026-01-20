@@ -250,7 +250,6 @@ open class RealmSubmission : RealmObject() {
             val jsonObject = JsonObject()
 
             try {
-                // Get the exam/survey to include full parent details
                 var examId = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
                     examId = submission.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
@@ -270,30 +269,20 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("startTime", submission.startTime)
                 jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
                 jsonObject.addProperty("status", submission.status ?: "pending")
-
-                // Add device identification fields
                 jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
                 jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
                 jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-
                 jsonObject.addProperty("sender", submission.sender)
-
-                // Get source and parentCode from SharedPreferences
                 val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
                 jsonObject.addProperty("source", prefs.getString("planetCode", ""))
                 jsonObject.addProperty("parentCode", prefs.getString("parentCode", ""))
-
-                // Add answers
                 jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
-
-                // Add parent with full exam/survey details (includes questions)
                 if (exam != null) {
                     jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
                 } else if (!submission.parent.isNullOrEmpty()) {
                     jsonObject.add("parent", JsonParser.parseString(submission.parent))
                 }
 
-                // Add user info
                 if (!submission.user.isNullOrEmpty()) {
                     val userJson = JsonParser.parseString(submission.user).asJsonObject
                     if (submission.membershipDoc != null) {
