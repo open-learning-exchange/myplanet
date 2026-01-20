@@ -7,7 +7,10 @@ import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import io.realm.RealmObject
+import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
@@ -16,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.events.EventsDetailFragment
@@ -27,10 +31,6 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
-import javax.inject.Inject
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.repository.TeamsRepository
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 

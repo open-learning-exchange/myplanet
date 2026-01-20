@@ -7,11 +7,11 @@ import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
-import org.ole.planet.myplanet.ui.teams.voices.TeamsVoicesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksFragment
+import org.ole.planet.myplanet.ui.teams.voices.TeamsVoicesFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment

@@ -52,8 +52,8 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -73,6 +73,7 @@ import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -81,7 +82,6 @@ import org.ole.planet.myplanet.ui.settings.SettingsActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.surveys.SendSurveyFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
-import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage

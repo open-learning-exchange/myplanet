@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.ApiClient
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.NetworkResult
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
@@ -28,8 +29,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-
-import org.ole.planet.myplanet.di.AppPreferences
 
 class ConfigurationsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,

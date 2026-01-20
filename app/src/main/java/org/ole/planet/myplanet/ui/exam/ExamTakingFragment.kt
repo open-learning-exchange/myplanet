@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import org.ole.planet.myplanet.base.BaseExamFragment
-
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -28,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -39,11 +38,11 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
-import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
 

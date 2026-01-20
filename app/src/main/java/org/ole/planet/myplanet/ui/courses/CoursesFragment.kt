@@ -32,8 +32,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel

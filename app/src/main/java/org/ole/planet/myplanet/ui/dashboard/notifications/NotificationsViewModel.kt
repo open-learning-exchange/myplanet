@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.regex.Pattern
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,8 +14,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.repository.NotificationsRepository
-import java.util.regex.Pattern
-import javax.inject.Inject
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
