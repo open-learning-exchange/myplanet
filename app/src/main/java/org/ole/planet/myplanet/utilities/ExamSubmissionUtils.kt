@@ -1,64 +1,68 @@
 package org.ole.planet.myplanet.utilities
 
+import android.util.Log
 import io.realm.Realm
 import io.realm.RealmList
-import java.util.Date
-import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmSubmission
+import java.util.Date
+import java.util.UUID
 
 object ExamSubmissionUtils {
-    fun saveAnswer(
-        realm: Realm, submission: RealmSubmission?, question: RealmExamQuestion,
+    suspend fun saveAnswer(
+        submissionId: String?, questionId: String,
         ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean,
         type: String, index: Int, total: Int, isExplicitSubmission: Boolean = false
-    ): Boolean {
-        val submissionId = try {
-            submission?.id
-        } catch (e: IllegalStateException) {
-            null
-        }
+    ): Result<Boolean> {
+        return withContext(Dispatchers.IO) {
+            val realm = Realm.getDefaultInstance()
+            try {
+                var isCorrect = true
+                realm.beginTransaction()
 
-        val questionId = question.id
-        realm.executeTransactionAsync({ r ->
-            val realmSubmission = if (submissionId != null) {
-                r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
-            } else {
-                r.where(RealmSubmission::class.java)
-                    .equalTo("status", "pending")
-                    .findAll().lastOrNull()
-            }
-
-            val realmQuestion = r.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
-
-            if (realmSubmission != null && realmQuestion != null) {
-                val answer = createOrRetrieveAnswer(r, realmSubmission, realmQuestion)
-                populateAnswer(answer, realmQuestion, ans, listAns, otherText, otherVisible)
-
-                if (type == "exam") {
-                    val isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, realmQuestion)
-                    answer.isPassed = isCorrect
-                    answer.grade = 1
-                    if (!isCorrect) {
-                        answer.mistakes += 1
-                    }
+                val realmSubmission = if (submissionId != null) {
+                    realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+                } else {
+                    realm.where(RealmSubmission::class.java)
+                        .equalTo("status", "pending")
+                        .findAll().lastOrNull()
                 }
 
-                updateSubmissionStatus(realmSubmission, index, total, type, isExplicitSubmission)
-            }
-        }, {
-            // Success
-        }, { _ ->
-            // Error
-        })
+                val realmQuestion = realm.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
 
-        val result = if (type == "exam") {
-            ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
-        } else {
-            true
+                if (realmSubmission != null && realmQuestion != null) {
+                    val answer = createOrRetrieveAnswer(realm, realmSubmission, realmQuestion)
+                    populateAnswer(answer, realmQuestion, ans, listAns, otherText, otherVisible)
+
+                    if (type == "exam") {
+                        isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, realmQuestion)
+                        answer.isPassed = isCorrect
+                        answer.grade = 1
+                        if (!isCorrect) {
+                            answer.mistakes += 1
+                        }
+                    }
+
+                    updateSubmissionStatus(realmSubmission, index, total, type, isExplicitSubmission)
+                }
+                realm.commitTransaction()
+                Result.success(isCorrect)
+            } catch (e: Exception) {
+                if (realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
+                if (e is kotlinx.coroutines.CancellationException) {
+                    throw e
+                }
+                Log.e("ExamSubmission", "Error saving answer: ${e.message}", e)
+                Result.failure(e)
+            } finally {
+                realm.close()
+            }
         }
-        return result
     }
 
     private fun createOrRetrieveAnswer(
@@ -85,7 +89,6 @@ object ExamSubmissionUtils {
         submission: RealmSubmission?, index: Int, total: Int, type: String,
         isExplicitSubmission: Boolean = false
     ) {
-        val oldStatus = submission?.status
         submission?.lastUpdateTime = Date().time
         val isFinal = index == total - 1
 
