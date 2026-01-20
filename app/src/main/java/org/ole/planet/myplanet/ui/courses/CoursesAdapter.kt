@@ -10,12 +10,12 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
-import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import kotlinx.coroutines.Job
@@ -31,25 +31,20 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
-import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 class CoursesAdapter(
     private val context: Context,
-    private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>,
     private var userModel: RealmUserModel?,
     private val tagsRepository: TagsRepository
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : ListAdapter<CourseListItem, RecyclerView.ViewHolder>(CourseDiffCallback) {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
-    private var progressMap: HashMap<String?, JsonObject>? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
     private val config: ChipCloudConfig
     private var isAscending = true
@@ -59,9 +54,44 @@ class CoursesAdapter(
     private val activeJobs: MutableMap<String, Job> = mutableMapOf()
 
     companion object {
-        private const val TAG_PAYLOAD = "payload_tags"
-        private const val RATING_PAYLOAD = "payload_rating"
-        private const val PROGRESS_PAYLOAD = "payload_progress"
+        const val TAG_PAYLOAD = "payload_tags"
+        const val RATING_PAYLOAD = "payload_rating"
+        const val PROGRESS_PAYLOAD = "payload_progress"
+    }
+
+    object CourseDiffCallback : DiffUtil.ItemCallback<CourseListItem>() {
+        override fun areItemsTheSame(oldItem: CourseListItem, newItem: CourseListItem): Boolean {
+            return oldItem.course.id == newItem.course.id
+        }
+
+        override fun areContentsTheSame(oldItem: CourseListItem, newItem: CourseListItem): Boolean {
+            val oldCourse = oldItem.course
+            val newCourse = newItem.course
+
+            val courseSame = oldCourse.courseTitle == newCourse.courseTitle &&
+                    oldCourse.description == newCourse.description &&
+                    oldCourse.gradeLevel == newCourse.gradeLevel &&
+                    oldCourse.subjectLevel == newCourse.subjectLevel &&
+                    oldCourse.createdDate == newCourse.createdDate &&
+                    oldCourse.isMyCourse == newCourse.isMyCourse &&
+                    oldCourse.getNumberOfSteps() == newCourse.getNumberOfSteps()
+
+            val ratingSame = oldItem.rating == newItem.rating
+            val progressSame = oldItem.progress == newItem.progress
+
+            return courseSame && ratingSame && progressSame
+        }
+
+        override fun getChangePayload(oldItem: CourseListItem, newItem: CourseListItem): Any? {
+            val bundle = Bundle()
+            if (oldItem.rating != newItem.rating) {
+                bundle.putBoolean(RATING_PAYLOAD, true)
+            }
+            if (oldItem.progress != newItem.progress) {
+                bundle.putBoolean(PROGRESS_PAYLOAD, true)
+            }
+            return if (bundle.isEmpty) null else bundle
+        }
     }
 
     init {
@@ -76,77 +106,29 @@ class CoursesAdapter(
     }
 
     fun getCourseList(): List<RealmMyCourse?> {
-        return courseList
+        return currentList.map { it.course }
     }
 
-    private fun dispatchDiff(
-        newList: List<RealmMyCourse?>,
-        newMap: HashMap<String?, JsonObject>? = null,
-        newProgressMap: HashMap<String?, JsonObject>? = null
-    ) {
-        val oldMap = HashMap(map)
-        val oldProgressMap = progressMap?.let { HashMap(it) }
-        val currentMap = newMap ?: map
-        val currentProgressMap = newProgressMap ?: progressMap
-
-        val diffResult = DiffUtils.calculateDiff(
-            courseList,
-            newList,
-            areItemsTheSame = { old, new -> old?.id == new?.id },
-            areContentsTheSame = { old, new ->
-                val ratingSame = oldMap[old?.courseId] == currentMap[new?.courseId]
-                val progressSame = oldProgressMap?.get(old?.courseId) == currentProgressMap?.get(new?.courseId)
-
-                old?.courseTitle == new?.courseTitle &&
-                        old?.description == new?.description &&
-                        old?.gradeLevel == new?.gradeLevel &&
-                        old?.subjectLevel == new?.subjectLevel &&
-                        old?.createdDate == new?.createdDate &&
-                        old?.isMyCourse == new?.isMyCourse &&
-                        old?.getNumberOfSteps() == new?.getNumberOfSteps() &&
-                        ratingSame &&
-                        progressSame
-            },
-            getChangePayload = { old, new ->
-                val bundle = Bundle()
-                if (oldMap[old?.courseId] != currentMap[new?.courseId]) {
-                    bundle.putBoolean(RATING_PAYLOAD, true)
-                }
-                if (oldProgressMap?.get(old?.courseId) != currentProgressMap?.get(new?.courseId)) {
-                    bundle.putBoolean(PROGRESS_PAYLOAD, true)
-                }
-                if (bundle.isEmpty) null else bundle
-            }
-        )
-
-        courseList = newList
-        newMap?.let {
-            map.clear()
-            map.putAll(it)
-        }
-        this.progressMap = newProgressMap ?: this.progressMap
-        diffResult.dispatchUpdatesTo(this)
-    }
-
-    fun setCourseList(courseList: List<RealmMyCourse?>) {
-        if (this.courseList === courseList) return
-        dispatchDiff(courseList, null, null)
-    }
-
-    fun updateData(
-        newCourseList: List<RealmMyCourse?>,
-        newMap: HashMap<String?, JsonObject>,
-        newProgressMap: HashMap<String?, JsonObject>?
-    ) {
-        dispatchDiff(newCourseList, newMap, newProgressMap)
-    }
-
-    private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
-        return list.sortedWith { course1: RealmMyCourse?, course2: RealmMyCourse? ->
+    private fun sortCourseListByTitle(list: List<CourseListItem>): List<CourseListItem> {
+        return list.sortedWith { item1, item2 ->
+            val course1 = item1.course
+            val course2 = item2.course
             if (isTitleAscending) {
-                course1?.courseTitle?.compareTo(course2?.courseTitle ?: "", ignoreCase = true) ?: 0
+                course1.courseTitle?.compareTo(course2.courseTitle ?: "", ignoreCase = true) ?: 0
             } else {
-                course2?.courseTitle?.compareTo(course1?.courseTitle ?: "", ignoreCase = true) ?: 0
+                course2.courseTitle?.compareTo(course1.courseTitle ?: "", ignoreCase = true) ?: 0
+            }
+        }
+    }
+
+    private fun sortCourseList(list: List<CourseListItem>): List<CourseListItem> {
+        return list.sortedWith { item1, item2 ->
+            val course1 = item1.course
+            val course2 = item2.course
+            if (isAscending) {
+                course1.createdDate.compareTo(course2.createdDate)
+            } else {
+                course2.createdDate.compareTo(course1.createdDate)
             }
         }
     }
@@ -155,9 +137,9 @@ class CoursesAdapter(
         super.onViewRecycled(holder)
         if (holder is CoursesViewHolder) {
             val position = holder.bindingAdapterPosition
-            if (position != RecyclerView.NO_POSITION) {
-                val course = courseList.getOrNull(position)
-                course?.id?.let { courseId ->
+            if (position != RecyclerView.NO_POSITION && position < itemCount) {
+                val item = getItem(position)
+                item?.course?.id?.let { courseId ->
                     activeJobs[courseId]?.cancel()
                     activeJobs.remove(courseId)
                 }
@@ -165,32 +147,33 @@ class CoursesAdapter(
         }
     }
 
-    private fun sortCourseList(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
-        return list.sortedWith { course1, course2 ->
-            if (isAscending) {
-                course1?.createdDate?.compareTo(course2?.createdDate ?: 0) ?: 0
-            } else {
-                course2?.createdDate?.compareTo(course1?.createdDate ?: 0) ?: 0
-            }
+    override fun onCurrentListChanged(previousList: MutableList<CourseListItem>, currentList: MutableList<CourseListItem>) {
+        super.onCurrentListChanged(previousList, currentList)
+        val currentIds = currentList.mapNotNull { it.course.id }.toSet()
+        val previousIds = previousList.mapNotNull { it.course.id }.toSet()
+
+        val removedIds = previousIds - currentIds
+        removedIds.forEach { id ->
+            activeJobs[id]?.cancel()
+            activeJobs.remove(id)
+            tagCache.remove(id)
         }
     }
 
     fun toggleTitleSortOrder(onComplete: (() -> Unit)? = null) {
         isTitleAscending = !isTitleAscending
-        val sortedList = sortCourseListByTitle(courseList)
-        setCourseList(sortedList)
-        onComplete?.invoke()
+        val sortedList = sortCourseListByTitle(currentList)
+        submitList(sortedList) {
+             onComplete?.invoke()
+        }
     }
 
     fun toggleSortOrder(onComplete: (() -> Unit)? = null) {
         isAscending = !isAscending
-        val sortedList = sortCourseList(courseList)
-        setCourseList(sortedList)
-        onComplete?.invoke()
-    }
-
-    fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
-        this.progressMap = progressMap
+        val sortedList = sortCourseList(currentList)
+        submitList(sortedList) {
+             onComplete?.invoke()
+        }
     }
 
     fun setListener(listener: OnCourseItemSelected?) {
@@ -206,7 +189,8 @@ class CoursesAdapter(
         if (holder !is CoursesViewHolder) return
 
         holder.bind(position)
-        val course = courseList[position] ?: return
+        val item = getItem(position) ?: return
+        val course = item.course
 
         updateVisibilityForMyCourse(holder, course)
         holder.rowCourseBinding.title.text = course.courseTitle
@@ -237,7 +221,7 @@ class CoursesAdapter(
         holder.rowCourseBinding.root.setOnClickListener {
             val newPosition = holder.bindingAdapterPosition
             if (newPosition != RecyclerView.NO_POSITION) {
-                openCourse(courseList[newPosition], 0)
+                openCourse(getItem(newPosition).course, 0)
             }
         }
     }
@@ -282,7 +266,8 @@ class CoursesAdapter(
             try {
                 holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
             } catch (e: Exception) {
-                throw RuntimeException(e)
+                // Should handle exception properly or ignore as in original code
+                 throw RuntimeException(e)
             }
         } else {
             holder.rowCourseBinding.tvDate.visibility = View.VISIBLE
@@ -291,7 +276,7 @@ class CoursesAdapter(
             try {
                 holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
             } catch (e: Exception) {
-                throw RuntimeException(e)
+                 throw RuntimeException(e)
             }
         }
     }
@@ -318,7 +303,13 @@ class CoursesAdapter(
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
-                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+
+                    if ((view as CheckBox).isChecked) {
+                        selectedItems.add(course)
+                    } else {
+                        selectedItems.remove(course)
+                    }
+
                     listener?.onSelectedListChange(selectedItems)
                 }
             }
@@ -342,7 +333,7 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
+        val selectableCourses = currentList.map { it.course }.filter { !it.isMyCourse }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
@@ -351,19 +342,14 @@ class CoursesAdapter(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
+            val selectableCourses = currentList.map { it.course }.filter { !it.isMyCourse }
             selectedItems.addAll(selectableCourses)
         }
 
-        val updatedPositions = mutableListOf<Int>()
-        courseList.forEachIndexed { index, course ->
-            if (course != null && !course.isMyCourse) {
-                updatedPositions.add(index)
+        currentList.forEachIndexed { index, item ->
+            if (!item.course.isMyCourse) {
+                notifyItemChanged(index)
             }
-        }
-
-        updatedPositions.forEach { position ->
-            notifyItemChanged(position)
         }
 
         listener?.onSelectedListChange(selectedItems)
@@ -386,7 +372,7 @@ class CoursesAdapter(
 
         if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
             if (hasTagPayload) {
-                val courseId = courseList.getOrNull(position)?.id ?: return
+                val courseId = getItem(position).course.id
                 val tags = tagCache[courseId].orEmpty()
                 renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
             }
@@ -403,10 +389,9 @@ class CoursesAdapter(
 
     private fun displayTagCloud(holder: CoursesViewHolder, position: Int) {
         val flexboxDrawable = holder.rowCourseBinding.flexboxDrawable
-        val courseId = courseList.getOrNull(position)?.id
-        if (courseId == null) {
-            flexboxDrawable.removeAllViews()
-            return
+        val courseId = getItem(position).course.id ?: run {
+             flexboxDrawable.removeAllViews()
+             return
         }
 
         val cachedTags = tagCache[courseId]
@@ -457,12 +442,11 @@ class CoursesAdapter(
     }
 
     private fun updateRatingViews(holder: CoursesViewHolder, position: Int) {
-        val course = courseList.getOrNull(position) ?: return
-        if (map.containsKey(course.courseId)) {
-            val ratingObject = map[course.courseId]
+        val item = getItem(position) ?: return
+        if (item.rating != null) {
             CourseRatingUtils.showRating(
                 context,
-                ratingObject,
+                item.rating,
                 holder.rowCourseBinding.rating,
                 holder.rowCourseBinding.timesRated,
                 holder.rowCourseBinding.ratingBar
@@ -475,8 +459,8 @@ class CoursesAdapter(
     }
 
     private fun updateProgressViews(holder: CoursesViewHolder, position: Int) {
-        val course = courseList.getOrNull(position) ?: return
-        val progress = progressMap?.get(course.courseId)
+        val item = getItem(position) ?: return
+        val progress = item.progress
         if (progress != null) {
             holder.rowCourseBinding.courseProgress.max = getInt("max", progress)
             val currentProgress = getInt("current", progress)
@@ -492,7 +476,7 @@ class CoursesAdapter(
 
     private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
         if (homeItemClickListener != null) {
-            val f: Fragment = TakeCourseFragment()
+            val f = TakeCourseFragment()
             val b = Bundle()
             b.putString("id", realmMyCourses?.courseId)
             b.putInt("position", step)
@@ -506,10 +490,6 @@ class CoursesAdapter(
         cancelAllJobs()
     }
 
-    override fun getItemCount(): Int {
-        return courseList.size
-    }
-
     internal inner class CoursesViewHolder(val rowCourseBinding: RowCourseBinding) :
         RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
@@ -517,19 +497,19 @@ class CoursesAdapter(
         init {
             itemView.setOnClickListener {
                 if (adapterPosition != RecyclerView.NO_POSITION) {
-                    openCourse(courseList[adapterPosition], 0)
+                    openCourse(getItem(adapterPosition).course, 0)
                 }
             }
             rowCourseBinding.courseProgress.scaleY = 0.3f
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                     val position = bindingAdapterPosition
-                    if (position != RecyclerView.NO_POSITION && position < courseList.size) {
-                        if (progressMap?.containsKey(courseList[bindingAdapterPosition]?.courseId) == true) {
-                            val ob = progressMap!![courseList[bindingAdapterPosition]?.courseId]
-                            val current = getInt("current", ob)
+                    if (position != RecyclerView.NO_POSITION && position < itemCount) {
+                        val item = getItem(position)
+                        if (item?.progress != null) {
+                            val current = getInt("current", item.progress)
                             if (b && i <= current + 1) {
-                                openCourse(courseList[bindingAdapterPosition], seekBar.progress)
+                                openCourse(item.course, seekBar.progress)
                             }
                         }
                     }
