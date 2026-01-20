@@ -18,6 +18,13 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getOfflineVisitCount(userId: String): Int {
+        return queryList(RealmOfflineActivity::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", UserSessionManager.KEY_LOGIN)
+        }.size
+    }
+
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
         return queryListFlow(RealmOfflineActivity::class.java) {
             equalTo("userName", userName)

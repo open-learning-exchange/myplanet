@@ -95,13 +95,15 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     override fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
         val handler = profileDbHandler
-        val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return
-        NavigationHelper.replaceFragment(
-            requireActivity().supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        androidx.lifecycle.lifecycleScope.launchWhenCreated {
+            val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return@launchWhenCreated
+            NavigationHelper.replaceFragment(
+                requireActivity().supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     abstract fun setData(list: List<RealmNews?>?)
