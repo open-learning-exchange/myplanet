@@ -25,6 +25,7 @@ class UploadCoordinator @Inject constructor(
 
     companion object {
         private const val TAG = "UploadCoordinator"
+        private const val SYNC_DATA_TAG = "SyncData"
     }
 
     suspend fun <T : RealmObject> upload(
@@ -104,10 +105,32 @@ class UploadCoordinator @Inject constructor(
                 return@mapNotNull null
             }
 
+            val localId = config.idExtractor(copiedItem) ?: ""
+            val dbId = config.dbIdExtractor?.invoke(copiedItem)
+
+            // Log the full serialized data for sync visibility
+            Log.d(SYNC_DATA_TAG, "========== SYNC DATA START ==========")
+            Log.d(SYNC_DATA_TAG, "Model: ${config.modelClass.simpleName}")
+            Log.d(SYNC_DATA_TAG, "Endpoint: ${config.endpoint}")
+            Log.d(SYNC_DATA_TAG, "Local ID: $localId")
+            Log.d(SYNC_DATA_TAG, "DB ID (_id): $dbId")
+            Log.d(SYNC_DATA_TAG, "Operation: ${if (dbId.isNullOrEmpty()) "POST (new)" else "PUT (update)"}")
+            Log.d(SYNC_DATA_TAG, "--- Full Serialized JSON Data ---")
+            // Log JSON in chunks to avoid logcat truncation
+            val jsonString = serialized.toString()
+            val chunkSize = 3000
+            var offset = 0
+            while (offset < jsonString.length) {
+                val end = minOf(offset + chunkSize, jsonString.length)
+                Log.d(SYNC_DATA_TAG, "JSON[$offset-$end]: ${jsonString.substring(offset, end)}")
+                offset = end
+            }
+            Log.d(SYNC_DATA_TAG, "========== SYNC DATA END ==========")
+
             PreparedUpload(
                 item = copiedItem,
-                localId = config.idExtractor(copiedItem) ?: "",
-                dbId = config.dbIdExtractor?.invoke(copiedItem),
+                localId = localId,
+                dbId = dbId,
                 serialized = serialized
             )
         }
@@ -124,14 +147,30 @@ class UploadCoordinator @Inject constructor(
             try {
                 config.beforeUpload?.invoke(preparedItem.item)
 
-                val response = if (preparedItem.dbId.isNullOrEmpty()) {
-                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${config.endpoint}", preparedItem.serialized)
+                val requestUrl = if (preparedItem.dbId.isNullOrEmpty()) {
+                    "${UrlUtils.getUrl()}/${config.endpoint}"
                 } else {
-                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}", preparedItem.serialized)
+                    "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
                 }
+
+                Log.d(SYNC_DATA_TAG, "========== API REQUEST ==========")
+                Log.d(SYNC_DATA_TAG, "URL: $requestUrl")
+                Log.d(SYNC_DATA_TAG, "Method: ${if (preparedItem.dbId.isNullOrEmpty()) "POST" else "PUT"}")
+                Log.d(SYNC_DATA_TAG, "Item Local ID: ${preparedItem.localId}")
+
+                val response = if (preparedItem.dbId.isNullOrEmpty()) {
+                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                } else {
+                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                }
+
+                Log.d(SYNC_DATA_TAG, "Response Code: ${response.code()}")
 
                 if (response.isSuccessful && response.body() != null) {
                     val responseBody = response.body()!!
+
+                    Log.d(SYNC_DATA_TAG, "Response Body: $responseBody")
+                    Log.d(SYNC_DATA_TAG, "========== API REQUEST SUCCESS ==========")
 
                     val (idField, revField) = when (config.responseHandler) {
                         is ResponseHandler.Standard -> "id" to "rev"
@@ -145,11 +184,16 @@ class UploadCoordinator @Inject constructor(
                         response = responseBody
                     )
 
+                    Log.d(SYNC_DATA_TAG, "Uploaded Item - Remote ID: ${uploadedItem.remoteId}, Rev: ${uploadedItem.remoteRev}")
+
                     config.afterUpload?.invoke(preparedItem.item, uploadedItem)
                     succeeded.add(uploadedItem)
                 } else {
                     val errorMsg = "Upload failed: HTTP ${response.code()}"
                     Log.w(TAG, "$errorMsg for item ${preparedItem.localId}")
+                    Log.w(SYNC_DATA_TAG, "========== API REQUEST FAILED ==========")
+                    Log.w(SYNC_DATA_TAG, "Error: $errorMsg")
+                    Log.w(SYNC_DATA_TAG, "Response Error Body: ${response.errorBody()?.string()}")
                     failed.add(UploadError(
                         preparedItem.localId,
                         Exception(errorMsg),
@@ -159,9 +203,13 @@ class UploadCoordinator @Inject constructor(
                 }
             } catch (e: IOException) {
                 Log.w(TAG, "Network error uploading item ${preparedItem.localId}", e)
+                Log.w(SYNC_DATA_TAG, "========== API REQUEST NETWORK ERROR ==========")
+                Log.w(SYNC_DATA_TAG, "Error: ${e.message}")
                 failed.add(UploadError(preparedItem.localId, e, retryable = true))
             } catch (e: Exception) {
                 Log.e(TAG, "Unexpected error uploading item ${preparedItem.localId}", e)
+                Log.e(SYNC_DATA_TAG, "========== API REQUEST UNEXPECTED ERROR ==========")
+                Log.e(SYNC_DATA_TAG, "Error: ${e.message}", e)
                 failed.add(UploadError(preparedItem.localId, e, retryable = false))
             }
         }

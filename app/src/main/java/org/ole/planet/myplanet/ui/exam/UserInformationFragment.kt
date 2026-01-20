@@ -30,7 +30,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
-import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -378,21 +377,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private suspend fun uploadSubmissionsWithTiming(capturedSyncStartTime: Long) {
         try {
             Log.d("UserInformationFragment", "About to call uploadSubmissions with capturedSyncStartTime: $capturedSyncStartTime")
+            // Upload adopted surveys first (the team survey definition)
+            uploadManager.uploadAdoptedSurveys()
+            // Then upload the submission (user's answers)
+            // Do NOT call uploadExamResult here as it uses a different serializer and creates duplicates
             uploadManager.uploadSubmissions(capturedSyncStartTime)
-            uploadExamResultWrapper()
         } catch (e: Exception) {
             Log.e("UserInformationFragment", "Error during upload", e)
-            e.printStackTrace()
-        }
-    }
-
-    private suspend fun uploadExamResultWrapper() {
-        try {
-            val successListener = object : OnSuccessListener {
-                override fun onSuccess(success: String?) {}
-            }
-            uploadManager.uploadExamResult(successListener)
-        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
