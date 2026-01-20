@@ -22,7 +22,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnCourseItemSelected
+import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
@@ -47,7 +47,7 @@ class CoursesAdapter(
     private val tagsRepository: TagsRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
-    private var listener: OnCourseItemSelected? = null
+    private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -193,7 +193,7 @@ class CoursesAdapter(
         this.progressMap = progressMap
     }
 
-    fun setListener(listener: OnCourseItemSelected?) {
+    fun setListener(listener: OnCourseItemSelectedListener?) {
         this.listener = listener
     }
 
