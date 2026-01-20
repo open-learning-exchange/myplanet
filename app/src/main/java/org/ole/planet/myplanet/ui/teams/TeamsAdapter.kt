@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.callback.OnTeamEditListener
 import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -32,17 +33,12 @@ class TeamsAdapter(
     private val sharedPrefManager: SharedPrefManager
 ) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
     private var type: String? = ""
-    private var teamListener: OnClickTeamItem? = null
+    private var teamListener: OnTeamEditListener? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var teamActionsListener: OnTeamActionsListener? = null
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
 
-    interface OnClickTeamItem {
-        fun onEditTeam(team: TeamDetails?)
-    }
-
-
-    fun setTeamListener(teamListener: OnClickTeamItem?) {
+    fun setTeamListener(teamListener: OnTeamEditListener?) {
         this.teamListener = teamListener
     }
 
