@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard
+package org.ole.planet.myplanet.ui.base
 
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -29,6 +29,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnDashboardActionListener
 import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.ui.dashboard.BaseDashboardFragmentPlugin
+import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse

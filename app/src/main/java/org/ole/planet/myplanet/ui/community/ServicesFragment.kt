@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText

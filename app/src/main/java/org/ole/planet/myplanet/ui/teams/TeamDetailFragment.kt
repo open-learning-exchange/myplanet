@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
