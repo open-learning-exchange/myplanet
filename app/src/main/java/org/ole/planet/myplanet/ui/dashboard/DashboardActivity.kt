@@ -327,7 +327,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             delay(50)
-            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            val visits = profileDbHandler.getOfflineVisits(profileDbHandler.userModel)
+            if (!(user?.id?.startsWith("guest") == true && visits >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
@@ -857,30 +858,33 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             logout()
             return
         }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
-            builder.setMessage(getString(R.string.trial_period_ended))
-            builder.setCancelable(false)
-            builder.setPositiveButton(getString(R.string.become_a_member), null)
-            builder.setNegativeButton(getString(R.string.menu_logout), null)
-            val dialog = builder.create()
-            dialog.show()
-            val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            becomeMember.contentDescription = getString(R.string.confirm_membership)
-            logout.contentDescription = getString(R.string.menu_logout)
-            becomeMember.setOnClickListener {
-                val guest = true
-                val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
-                intent.putExtra("guest", guest)
-                setResult(RESULT_OK, intent)
-                startActivity(intent)
-            }
-            logout.setOnClickListener {
-                dialog.dismiss()
-                logout()
+        lifecycleScope.launch {
+            val visits = profileDbHandler.getOfflineVisits(profileDbHandler.userModel)
+            if (user?.id?.startsWith("guest") == true && visits >= 3) {
+                val builder = AlertDialog.Builder(this@DashboardActivity, R.style.AlertDialogTheme)
+                builder.setTitle(getString(R.string.become_a_member))
+                builder.setMessage(getString(R.string.trial_period_ended))
+                builder.setCancelable(false)
+                builder.setPositiveButton(getString(R.string.become_a_member), null)
+                builder.setNegativeButton(getString(R.string.menu_logout), null)
+                val dialog = builder.create()
+                dialog.show()
+                val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                becomeMember.contentDescription = getString(R.string.confirm_membership)
+                logout.contentDescription = getString(R.string.menu_logout)
+                becomeMember.setOnClickListener {
+                    val guest = true
+                    val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                    intent.putExtra("username", profileDbHandler.userModel?.name)
+                    intent.putExtra("guest", guest)
+                    setResult(RESULT_OK, intent)
+                    startActivity(intent)
+                }
+                logout.setOnClickListener {
+                    dialog.dismiss()
+                    logout()
+                }
             }
         }
     }
