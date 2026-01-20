@@ -38,53 +38,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
-    override fun checkHealth(listener: OnSuccessListener) {
+    override suspend fun checkHealth(): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
             val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
             if (healthUrl.isBlank()) {
-                listener.onSuccess("")
-                return
+                return@withContext Result.success(true)
             }
-
-            apiInterface.healthAccess(healthUrl).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    try {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("")
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable"
-                            is java.net.SocketTimeoutException -> "Connection timeout"
-                            is java.net.ConnectException -> "Unable to connect to server"
-                            is java.io.IOException -> "Network connection error"
-                            else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                        }
-                        listener.onSuccess(errorMsg)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("Health check failed")
-                    }
-                }
-            })
+            val result = ApiClient.executeWithResult {
+                apiInterface.healthAccess(healthUrl).execute()
+            }
+            when (result) {
+                is NetworkResult.Success -> Result.success(true)
+                is NetworkResult.Error -> Result.failure(Exception("Health check failed: ${result.code}"))
+                is NetworkResult.Exception -> Result.failure(result.e)
+            }
         } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
+            Result.failure(e)
         }
     }
 

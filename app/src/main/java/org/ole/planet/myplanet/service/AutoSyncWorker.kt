@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
@@ -78,8 +79,13 @@ class AutoSyncWorker(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                DataService(MainApplication.context).healthAccess {
-                    uploadToShelfService.uploadHealth()
+                val repositoryEntryPoint = EntryPointAccessors.fromApplication(context, RepositoryEntryPoint::class.java)
+                val configurationsRepository = repositoryEntryPoint.configurationsRepository()
+                workerScope.launch {
+                    val result = configurationsRepository.checkHealth()
+                    if (result.isSuccess) {
+                        uploadToShelfService.uploadHealth()
+                    }
                 }
             }
             if (!MainApplication.isSyncRunning) {

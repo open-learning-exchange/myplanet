@@ -81,56 +81,6 @@ class DataService constructor(
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
 
-    @Deprecated("Use ConfigurationsRepository.checkHealth instead")
-    fun healthAccess(listener: OnSuccessListener) {
-        try {
-            val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
-            if (healthUrl.isBlank()) {
-                listener.onSuccess("")
-                return
-            }
-
-            retrofitInterface.healthAccess(healthUrl).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    try {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("")
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable"
-                            is java.net.SocketTimeoutException -> "Connection timeout"
-                            is java.net.ConnectException -> "Unable to connect to server"
-                            is java.io.IOException -> "Network connection error"
-                            else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                        }
-                        listener.onSuccess(errorMsg)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("Health check failed")
-                    }
-                }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
-        }
-    }
 
     suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
         try {
