@@ -634,7 +634,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         result.onFailure { e ->
             withContext(Dispatchers.Main) {
-                Utilities.toast(activity, "Error saving answer: ${e.message}")
+                toast(activity, "Error saving answer: ${e.message}")
             }
         }
 
@@ -745,25 +745,41 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Use NonCancellable to ensure the save operation completes even if the view is destroyed
-        // We need to capture the necessary state before launching the coroutine if possible,
-        // but saveCurrentAnswer depends on view state (binding.etAnswer), which is risky here.
-        // However, we can't easily capture everything.
-        // But since we are in onDestroyView, binding is still valid until _binding = null.
-        // We'll launch in lifecycleScope (Fragment's scope, not View's) which survives onDestroyView.
-        // But we should use NonCancellable if we want to be sure.
-        // Given the constraints and previous feedback, let's try to be as safe as possible.
-        // Note: accessing binding inside launch might crash if suspension happens and then resumption happens after _binding = null.
-        // We should capture the data synchronously.
+        val questionsSize = questions?.size ?: 0
 
-        // Synchronously capture data
-        // We can't easily refactor saveCurrentAnswer to be pure-function quickly without changing logic.
-        // For now, we launch.
-        lifecycleScope.launch {
-            withContext(kotlinx.coroutines.NonCancellable) {
-                saveCurrentAnswer()
+        // Capture data synchronously
+        if (currentIndex in 0..<questionsSize && _binding != null) {
+            val currentQuestion = questions?.get(currentIndex)
+            if (currentQuestion != null) {
+                // We capture the data we need for saving
+                val questionId = currentQuestion.id ?: ""
+                val capturedAns = ans
+                val capturedListAns = listAns?.toMap()
+                val capturedOtherText = if (binding.etAnswer.isVisible) {
+                    binding.etAnswer.text.toString()
+                } else {
+                    null
+                }
+                val capturedIsVisible = binding.etAnswer.isVisible
+                val capturedType = type ?: "exam"
+                val capturedIndex = currentIndex
+                val capturedSize = questions?.size ?: 0
+                val capturedIsExplicit = isExplicitSubmission
+                val capturedSubId = sub?.id
+
+                // Launch save operation in NonCancellable scope
+                lifecycleScope.launch {
+                    withContext(kotlinx.coroutines.NonCancellable) {
+                         ExamSubmissionUtils.saveAnswer(
+                            capturedSubId, questionId, capturedAns, capturedListAns, capturedOtherText,
+                            capturedIsVisible, capturedType, capturedIndex,
+                            capturedSize, capturedIsExplicit
+                        )
+                    }
+                }
             }
         }
+
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
