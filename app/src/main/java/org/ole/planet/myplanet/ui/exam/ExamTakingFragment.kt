@@ -94,14 +94,24 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             if ((questions?.size ?: 0) > 0) {
                 if (type == "exam") {
                     clearAllExistingAnswers {
-                        createSubmission()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val detachedSub = submissionsRepository.createSubmission(user?.id, stepId, id, teamId, isTeam, type)
+                            mRealm.refresh()
+                            sub = mRealm.where(RealmSubmission::class.java).equalTo("id", detachedSub.id).findFirst()
+                            currentIndex = 0
+                            startExam(questions?.get(currentIndex))
+                            updateNavButtons()
+                        }
+                    }
+                } else {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val detachedSub = submissionsRepository.createSubmission(user?.id, stepId, id, teamId, isTeam, type)
+                        mRealm.refresh()
+                        sub = mRealm.where(RealmSubmission::class.java).equalTo("id", detachedSub.id).findFirst()
+                        currentIndex = 0
                         startExam(questions?.get(currentIndex))
                         updateNavButtons()
                     }
-                } else {
-                    createSubmission()
-                    startExam(questions?.get(currentIndex))
-                    updateNavButtons()
                 }
             } else {
                 binding.container.visibility = View.GONE
@@ -234,95 +244,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
-
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
-    }
-
-    private fun setParentId() {
-        sub?.parentId = when {
-            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id}@${exam?.courseId}"
-            } else {
-                exam?.id
-            }
-            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
-            else -> sub?.parentId
-        }
-    }
-
-    private fun setParentJson() {
-        try {
-            val parentJsonString = JSONObject().apply {
-                put("_id", exam?.id ?: id)
-                put("name", exam?.name ?: "")
-                put("courseId", exam?.courseId ?: "")
-                put("sourcePlanet", exam?.sourcePlanet ?: "")
-                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                put("noOfQuestions", exam?.noOfQuestions ?: 0)
-                put("isFromNation", exam?.isFromNation ?: false)
-            }.toString()
-            sub?.parent = parentJsonString
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun addTeamInformation(realm: Realm) {
-        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
-            .equalTo("_id", teamId)
-            .findFirst()
-
-        if (team != null) {
-            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-            teamRef._id = team._id
-            teamRef.name = team.name
-            teamRef.type = team.type ?: "team"
-            sub?.teamObject = teamRef
-        }
-
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
-
-        val userModel = userSessionManager.userModel
-        try {
-            val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
-            val membershipJson = JSONObject()
-            membershipJson.put("teamId", teamId)
-            userJson.put("membershipDoc", membershipJson)
-            sub?.user = userJson.toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     override fun startExam(question: RealmExamQuestion?) {
         binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)

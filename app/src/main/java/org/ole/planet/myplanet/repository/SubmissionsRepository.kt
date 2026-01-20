@@ -36,4 +36,5 @@ interface SubmissionsRepository {
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File?
     suspend fun generateMultipleSubmissionsPdf(context: android.content.Context, submissionIds: List<String>, examTitle: String): java.io.File?
+    suspend fun createSubmission(userId: String?, stepId: String?, fragmentId: String?, teamId: String?, isTeam: Boolean, type: String?): RealmSubmission
 }

@@ -14,6 +14,9 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamReference
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
@@ -414,5 +417,101 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         examTitle: String
     ): java.io.File? {
         return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
+
+    override suspend fun createSubmission(
+        userId: String?,
+        stepId: String?,
+        fragmentId: String?,
+        teamId: String?,
+        isTeam: Boolean,
+        type: String?
+    ): RealmSubmission {
+        return databaseService.withRealmAsync { realm ->
+            var sub: RealmSubmission? = null
+            realm.executeTransaction { r ->
+                val exam = if (!android.text.TextUtils.isEmpty(stepId)) {
+                    r.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
+                } else {
+                    r.where(RealmStepExam::class.java).equalTo("id", fragmentId).findFirst()
+                }
+
+                sub = RealmSubmission.createSubmission(null, r)
+
+                // setParentId logic
+                val parentId = when {
+                    !android.text.TextUtils.isEmpty(exam?.id) -> if (!android.text.TextUtils.isEmpty(exam?.courseId)) {
+                        "${exam?.id}@${exam?.courseId}"
+                    } else {
+                        exam?.id
+                    }
+                    !android.text.TextUtils.isEmpty(fragmentId) -> if (!android.text.TextUtils.isEmpty(exam?.courseId)) {
+                        "$fragmentId@${exam?.courseId}"
+                    } else {
+                        fragmentId
+                    }
+                    else -> sub?.parentId
+                }
+                sub?.parentId = parentId
+
+                // setParentJson logic
+                try {
+                    val parentJsonString = org.json.JSONObject().apply {
+                        put("_id", exam?.id ?: fragmentId)
+                        put("name", exam?.name ?: "")
+                        put("courseId", exam?.courseId ?: "")
+                        put("sourcePlanet", exam?.sourcePlanet ?: "")
+                        put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
+                        put("noOfQuestions", exam?.noOfQuestions ?: 0)
+                        put("isFromNation", exam?.isFromNation ?: false)
+                    }.toString()
+                    sub?.parent = parentJsonString
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                sub?.userId = userId
+                sub?.status = "pending"
+                sub?.type = type
+                sub?.startTime = Date().time
+                sub?.lastUpdateTime = Date().time
+                if (sub?.answers == null) {
+                    sub?.answers = io.realm.RealmList()
+                }
+
+                // addTeamInformation logic
+                if (isTeam && teamId != null) {
+                    val team = r.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+
+                    if (team != null) {
+                        val teamRef = r.createObject(RealmTeamReference::class.java)
+                        teamRef._id = team._id
+                        teamRef.name = team.name
+                        teamRef.type = team.type ?: "team"
+                        sub?.teamObject = teamRef
+                    }
+
+                    val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
+                    membershipDoc.teamId = teamId
+                    sub?.membershipDoc = membershipDoc
+
+                    val userModel = r.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                    try {
+                        val userJson = org.json.JSONObject()
+                        userJson.put("age", userModel?.dob ?: "")
+                        userJson.put("gender", userModel?.gender ?: "")
+                        val membershipJson = org.json.JSONObject()
+                        membershipJson.put("teamId", teamId)
+                        userJson.put("membershipDoc", membershipJson)
+                        sub?.user = userJson.toString()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+            realm.copyFromRealm(sub!!)
+        }
     }
 }
