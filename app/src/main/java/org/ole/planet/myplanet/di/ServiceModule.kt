@@ -17,11 +17,11 @@ import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.service.sync.ImprovedSyncManager
-import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.service.sync.TransactionSyncManager
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.sync.ImprovedSyncManager
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -60,7 +60,7 @@ object ServiceModule {
         submissionsRepository: SubmissionsRepository,
         @AppPreferences preferences: SharedPreferences,
         gson: Gson,
-        uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator
+        uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator
     ): UploadManager {
         return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator)
     }

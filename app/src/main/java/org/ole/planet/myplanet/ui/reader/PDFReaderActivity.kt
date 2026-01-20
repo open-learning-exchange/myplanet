@@ -19,9 +19,9 @@ import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.AudioRecorderService
-import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.AudioRecorderService
+import org.ole.planet.myplanet.services.AudioRecorderService.AudioRecordListener
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils

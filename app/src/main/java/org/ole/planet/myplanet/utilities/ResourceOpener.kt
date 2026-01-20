@@ -8,7 +8,7 @@ import android.widget.Toast
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.reader.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.reader.CSVViewerActivity
 import org.ole.planet.myplanet.ui.reader.ImageViewerActivity
