@@ -16,11 +16,13 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import io.realm.RealmList
+import kotlinx.coroutines.launch
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -95,13 +97,17 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     override fun onMemberSelected(userModel: RealmUserModel?) {
         if (!isAdded) return
         val handler = profileDbHandler
-        val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return
-        NavigationHelper.replaceFragment(
-            requireActivity().supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        lifecycleScope.launch {
+            val offlineVisits = handler.getOfflineVisits(userModel).toString()
+            val lastVisit = handler.getLastVisit(userModel!!)
+            val fragment = VoicesActions.showMemberDetails(userModel, offlineVisits, lastVisit) ?: return@launch
+            NavigationHelper.replaceFragment(
+                requireActivity().supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     abstract fun setData(list: List<RealmNews?>?)

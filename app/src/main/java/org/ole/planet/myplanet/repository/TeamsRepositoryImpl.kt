@@ -901,7 +901,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
-        return withRealm { realm ->
+        val intermediateData = withRealm { realm ->
             val members = RealmMyTeam.getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
             val communityLeadersJson = preferences.getString("communityLeaders", "") ?: ""
 
@@ -952,15 +952,31 @@ class TeamsRepositoryImpl @Inject constructor(
             orderedMembers.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = "${userSessionManager.getOfflineVisits(member)}"
-                val profileLastVisit = userSessionManager.getLastVisit(member)
                 val isLeader = member.id in leaderIds
-                JoinedMemberData(member, visitCount, lastVisitTimestamp,
-                    offlineVisits, profileLastVisit, isLeader
-                )
+                IntermediateMemberData(member, visitCount, lastVisitTimestamp, isLeader)
             }
         }
+
+        return intermediateData.map { data ->
+            val offlineVisits = "${userSessionManager.getOfflineVisits(data.member)}"
+            val profileLastVisit = userSessionManager.getLastVisit(data.member)
+            JoinedMemberData(
+                data.member,
+                data.visitCount,
+                data.lastVisitTimestamp,
+                offlineVisits,
+                profileLastVisit,
+                data.isLeader
+            )
+        }
     }
+
+    private data class IntermediateMemberData(
+        val member: RealmUserModel,
+        val visitCount: Long,
+        val lastVisitTimestamp: Long?,
+        val isLeader: Boolean
+    )
 
     override suspend fun getJoinedMemberCount(teamId: String): Int {
         return count(RealmMyTeam::class.java) {

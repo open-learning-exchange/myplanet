@@ -233,7 +233,8 @@ object VoicesActions {
 
     fun showMemberDetails(
         userModel: RealmUserModel?,
-        profileDbHandler: UserSessionManager
+        offlineVisits: String,
+        lastVisit: String
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
@@ -243,8 +244,8 @@ object VoicesActions {
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            profileDbHandler.getOfflineVisits(userModel).toString(),
-            profileDbHandler.getLastVisit(userModel),
+            offlineVisits,
+            lastVisit,
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

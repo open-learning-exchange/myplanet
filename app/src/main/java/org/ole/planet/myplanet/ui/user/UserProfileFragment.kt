@@ -141,9 +141,24 @@ class UserProfileFragment : Fragment() {
         
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.maxOpenedResource.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
+                launch {
+                    viewModel.maxOpenedResource.collect {
+                        if (isAdded) setupStatsRecycler()
+                    }
+                }
+                launch {
+                    viewModel.lastVisit.collect {
+                        if (isAdded) setupStatsRecycler()
+                    }
+                }
+                launch {
+                    viewModel.offlineVisits.collect {
+                        if (isAdded) setupStatsRecycler()
+                    }
+                }
+                launch {
+                    viewModel.numberOfResourceOpen.collect {
+                        if (isAdded) setupStatsRecycler()
                     }
                 }
             }
@@ -456,10 +471,10 @@ class UserProfileFragment : Fragment() {
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)
         )
     }
 
