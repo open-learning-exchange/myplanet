@@ -11,7 +11,7 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
