@@ -146,7 +146,7 @@ class BecomeMemberActivity : BaseActivity() {
                 val securityListener = object : OnSecurityDataListener {
                     override fun onSecurityDataUpdated() {
                         runOnUiThread {
-                            if (customProgressDialog.isShowing) {
+                            if (customProgressDialog.isShowing()) {
                                 customProgressDialog.dismiss()
                                 autoLoginNewMember(info.username, info.password)
                             }
