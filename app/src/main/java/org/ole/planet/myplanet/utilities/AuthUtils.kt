@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.utilities
 
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.repository.UserRepository
@@ -21,40 +23,48 @@ object AuthUtils {
         val settings = activity.settings
         SecurePrefs.saveCredentials(activity, settings, name, password)
 
-        val isLoggedIn = activity.authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            activity.onLogin()
-            activity.saveUsers(name, password, "member")
-            return
-        }
-
-        LoginSyncManager.instance.login(name, password, object : OnSyncListener {
-            override fun onSyncStarted() {
-                activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
-                activity.customProgressDialog.show()
+        activity.lifecycleScope.launch {
+            val isLoggedIn = activity.authenticateUser(settings, name, password, false)
+            if (isLoggedIn) {
+                Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                activity.onLogin()
+                activity.saveUsers(name, password, "member")
+                return@launch
             }
 
-            override fun onSyncComplete() {
-                activity.customProgressDialog.dismiss()
-                val log = activity.authenticateUser(activity.settings, name, password, true)
-                if (log) {
-                    Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                    activity.onLogin()
-                    activity.saveUsers(name, password, "member")
-                } else {
-                    activity.alertDialogOkay(activity.getString(R.string.err_msg_login))
+            LoginSyncManager.instance.login(name, password, object : OnSyncListener {
+                override fun onSyncStarted() {
+                    activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
+                    activity.customProgressDialog.show()
                 }
-                activity.syncIconDrawable.stop()
-                activity.syncIconDrawable.selectDrawable(0)
-            }
 
-            override fun onSyncFailed(msg: String?) {
-                Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
-                activity.customProgressDialog.dismiss()
-                activity.syncIconDrawable.stop()
-                activity.syncIconDrawable.selectDrawable(0)
-            }
-        })
+                override fun onSyncComplete() {
+                    activity.customProgressDialog.dismiss()
+                    activity.lifecycleScope.launch {
+                        val log = activity.authenticateUser(activity.settings, name, password, true)
+                        if (log) {
+                            Toast.makeText(
+                                activity.applicationContext,
+                                activity.getString(R.string.thank_you),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            activity.onLogin()
+                            activity.saveUsers(name, password, "member")
+                        } else {
+                            activity.alertDialogOkay(activity.getString(R.string.err_msg_login))
+                        }
+                        activity.syncIconDrawable.stop()
+                        activity.syncIconDrawable.selectDrawable(0)
+                    }
+                }
+
+                override fun onSyncFailed(msg: String?) {
+                    Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
+                    activity.customProgressDialog.dismiss()
+                    activity.syncIconDrawable.stop()
+                    activity.syncIconDrawable.selectDrawable(0)
+                }
+            })
+        }
     }
 }

@@ -100,6 +100,13 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllActiveTeams(): List<RealmMyTeam> {
+        return queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            equalTo("status", "active")
+        }
+    }
+
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
         return queryListFlow(RealmMyTeam::class.java) {
             equalTo("userId", userId)

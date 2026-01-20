@@ -39,7 +39,9 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
@@ -55,6 +57,8 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
@@ -192,11 +196,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                     customProgressDialog.show()
                     lifecycleScope.launch {
                         val user = withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                realm.where(RealmUserModel::class.java)
-                                    .equalTo("name", enterUserName).findFirst()
-                                    ?.let { realm.copyFromRealm(it) }
-                            }
+                            userRepository.getUserByName(enterUserName)
                         }
                         if (user == null || !user.isArchived) {
                             submitForm(enterUserName, binding.inputPassword.text.toString())
@@ -328,13 +328,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
         }
         lifecycleScope.launch {
             val teams = withContext(Dispatchers.IO) {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmMyTeam::class.java)
-                        .isEmpty("teamId")
-                        .equalTo("status", "active")
-                        .findAll()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+                teamsRepository.getAllActiveTeams()
             }
             cachedTeams = teams
             setupTeamDropdown(teams)
@@ -465,31 +459,32 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
 
     fun getTeamMembers() {
         selectedTeamId = prefData.getSelectedTeamId().toString()
-        if (selectedTeamId?.isNotEmpty() == true) {
-            users = databaseService.withRealm { realm ->
-                RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+        lifecycleScope.launch {
+            if (selectedTeamId?.isNotEmpty() == true) {
+                users = withContext(Dispatchers.IO) {
+                    teamsRepository.getJoinedMembers(selectedTeamId!!)
+                }
+                val userList = users?.map {
+                    User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+                } ?: emptyList()
+
+                val existingUsers = prefData.getSavedUsers().toMutableList()
+                val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+                val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+                prefData.setSavedUsers(updatedUserList)
             }
-            val userList = (users as? MutableList<RealmUserModel>)?.map {
-                User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-            } ?: emptyList()
 
-            val existingUsers = prefData.getSavedUsers().toMutableList()
-            val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-            val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-            prefData.setSavedUsers(updatedUserList)
+            if (mAdapter == null) {
+                mAdapter = UserProfileAdapter(this@LoginActivity)
+                binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+                binding.recyclerView.adapter = mAdapter
+            }
+            mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
+
+            binding.recyclerView.isNestedScrollingEnabled = true
+            binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+            binding.recyclerView.isVerticalScrollBarEnabled = true
         }
-
-        if (mAdapter == null) {
-        mAdapter = UserProfileAdapter(this)
-            binding.recyclerView.layoutManager = LinearLayoutManager(this)
-            binding.recyclerView.adapter = mAdapter
-        }
-        mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
-
-        binding.recyclerView.isNestedScrollingEnabled = true
-        binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        binding.recyclerView.isVerticalScrollBarEnabled = true
-
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
@@ -501,15 +496,17 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
 
             binding.inputName.setText(user.name)
         } else {
-            if (user.source == "guest"){
-                val model = databaseService.withRealm { realm ->
-                    RealmUserModel.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
-                }
-                if (model == null) {
-                    toast(this, getString(R.string.unable_to_login))
-                } else {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
+            if (user.source == "guest") {
+                lifecycleScope.launch {
+                    val model = withContext(Dispatchers.IO) {
+                        user.name?.let { userRepository.createGuestUser(it, settings) }
+                    }
+                    if (model == null) {
+                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                    } else {
+                        saveUserInfoPref(settings, "", model)
+                        onLogin()
+                    }
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -535,9 +532,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
                     val model = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
-                        }
+                        userRepository.createGuestUser(username, settings)
                     }
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))

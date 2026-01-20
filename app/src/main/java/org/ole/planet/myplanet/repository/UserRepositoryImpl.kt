@@ -435,4 +435,10 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUserModel? {
+        return withRealm { realm ->
+            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+        }
+    }
 }

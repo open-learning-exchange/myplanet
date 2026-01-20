@@ -393,7 +393,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         editor.apply()
     }
 
-    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    suspend fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
             if (settings != null) {
                 this.settings = settings
@@ -411,11 +411,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    private suspend fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
-            }
+            val user = username?.let { userRepository.getUserByName(it) }
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {

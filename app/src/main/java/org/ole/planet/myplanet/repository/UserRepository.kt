@@ -64,4 +64,5 @@ interface UserRepository {
     fun getActiveUserId(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
+    suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUserModel?
 }
