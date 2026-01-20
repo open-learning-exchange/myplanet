@@ -325,7 +325,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                      // Update examination
                      examination?.let { e ->
                          if (e._id == null) e._id = generateIv()
-                         healthRepository.addExamination(e, signJson, uid, u)
+                         healthRepository.addExamination(e, signJson, u)
                      }
                  }
             }

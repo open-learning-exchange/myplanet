@@ -25,23 +25,18 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addExamination(examination: RealmHealthExamination, healthData: JsonObject?, userId: String, user: RealmUserModel) {
-        executeTransaction { r ->
-            val exam = r.copyToRealmOrUpdate(examination)
-            if (healthData != null) {
-                try {
-                    exam.data = AndroidDecrypter.encrypt(Gson().toJson(healthData), user.key, user.iv)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
+    override suspend fun addExamination(examination: RealmHealthExamination, healthData: JsonObject?, user: RealmUserModel) {
+        saveExamination(examination, healthData, user)
     }
 
     override suspend fun updateExamination(examination: RealmHealthExamination, healthData: JsonObject?, user: RealmUserModel) {
+        saveExamination(examination, healthData, user)
+    }
+
+    private suspend fun saveExamination(examination: RealmHealthExamination, healthData: JsonObject?, user: RealmUserModel) {
         executeTransaction { r ->
             val exam = r.copyToRealmOrUpdate(examination)
-             if (healthData != null) {
+            if (healthData != null) {
                 try {
                     exam.data = AndroidDecrypter.encrypt(Gson().toJson(healthData), user.key, user.iv)
                 } catch (e: Exception) {
