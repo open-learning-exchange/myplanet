@@ -7,6 +7,8 @@ import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
+    suspend fun isEmpty(): Boolean
+    suspend fun hasAnyUser(): Boolean
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
     suspend fun getUserByName(name: String): RealmUserModel?

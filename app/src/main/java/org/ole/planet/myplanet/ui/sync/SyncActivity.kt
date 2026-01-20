@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
@@ -144,6 +145,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
+
+    @Inject
+    lateinit var userRepository: UserRepository
 
     @Inject
     open lateinit var resourcesRepository: ResourcesRepository
@@ -398,12 +402,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (settings != null) {
                 this.settings = settings
             }
-            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
+            var isEmpty = false
+            kotlinx.coroutines.runBlocking {
+                isEmpty = userRepository.isEmpty()
+            }
+
             if (isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
-                checkName(username, password, isManagerMode)
+                var result = false
+                kotlinx.coroutines.runBlocking {
+                    result = checkName(username, password, isManagerMode)
+                }
+                result
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -411,11 +423,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    private suspend fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
-            }
+            val user = if (username != null) userRepository.getUserByName(username) else null
+
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
@@ -516,9 +527,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 var attempt = 0
                 val maxAttempts = 3 // Maximum 3 seconds wait
                 while (attempt < maxAttempts) {
-                    val hasUser = databaseService.withRealm { realm ->
-                        realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
-                    }
+                    val hasUser = userRepository.hasAnyUser()
                     if (hasUser) {
                         break
                     }

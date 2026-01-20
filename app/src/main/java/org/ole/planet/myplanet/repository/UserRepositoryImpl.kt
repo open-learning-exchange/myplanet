@@ -33,6 +33,16 @@ class UserRepositoryImpl @Inject constructor(
     private val uploadToShelfService: UploadToShelfService,
     @ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), UserRepository {
+    override suspend fun isEmpty(): Boolean {
+        return withRealm { realm -> realm.isEmpty }
+    }
+
+    override suspend fun hasAnyUser(): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmUserModel::class.java).count() > 0
+        }
+    }
+
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return withRealm { realm ->
             realm.where(RealmUserModel::class.java)
