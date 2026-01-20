@@ -1067,4 +1067,10 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getTeamCreator(teamId: String): String? {
+        if (teamId.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
+            ?: findByField(RealmMyTeam::class.java, "teamId", teamId)?.userId
+    }
 }
