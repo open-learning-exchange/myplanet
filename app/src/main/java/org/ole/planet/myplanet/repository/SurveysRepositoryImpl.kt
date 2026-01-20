@@ -344,4 +344,8 @@ class SurveysRepositoryImpl @Inject constructor(
                 .count().toInt()
         }
     }
+
+    override suspend fun getSurveyByName(name: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "name", name)
+    }
 }
