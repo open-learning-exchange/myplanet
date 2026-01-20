@@ -173,13 +173,9 @@ class UploadCoordinator @Inject constructor(
                 }
             } catch (e: IOException) {
                 Log.w(TAG, "Network error uploading item ${preparedItem.localId}", e)
-                Log.w(SYNC_DATA_TAG, "========== API REQUEST NETWORK ERROR ==========")
-                Log.w(SYNC_DATA_TAG, "Error: ${e.message}")
                 failed.add(UploadError(preparedItem.localId, e, retryable = true))
             } catch (e: Exception) {
                 Log.e(TAG, "Unexpected error uploading item ${preparedItem.localId}", e)
-                Log.e(SYNC_DATA_TAG, "========== API REQUEST UNEXPECTED ERROR ==========")
-                Log.e(SYNC_DATA_TAG, "Error: ${e.message}", e)
                 failed.add(UploadError(preparedItem.localId, e, retryable = false))
             }
         }
