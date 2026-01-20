@@ -16,21 +16,15 @@ class EnterprisesViewModel @Inject constructor(
 ) : ViewModel() {
 
     suspend fun addReport(doc: JsonObject) {
-        withContext(Dispatchers.IO) {
-            teamsRepository.addReport(doc)
-        }
+        teamsRepository.addReport(doc)
     }
 
     suspend fun updateReport(reportId: String, doc: JsonObject) {
-        withContext(Dispatchers.IO) {
-            teamsRepository.updateReport(reportId, doc)
-        }
+        teamsRepository.updateReport(reportId, doc)
     }
 
     suspend fun archiveReport(reportId: String) {
-        withContext(Dispatchers.IO) {
-            teamsRepository.archiveReport(reportId)
-        }
+        teamsRepository.archiveReport(reportId)
     }
 
     suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {

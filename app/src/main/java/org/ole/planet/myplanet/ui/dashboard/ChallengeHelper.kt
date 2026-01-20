@@ -39,9 +39,7 @@ class ChallengeHelper(
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         activity.lifecycleScope.launch(Dispatchers.Main) {
             try {
-                val courseData = withContext(Dispatchers.IO) {
-                    progressRepository.fetchCourseData(user?.id)
-                }
+                val courseData = progressRepository.fetchCourseData(user?.id)
 
                 val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, user?.id)
                 val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)

@@ -12,7 +12,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -207,9 +206,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch {
-            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                updateServerIfNecessary(mapping)
-            }
+            updateServerIfNecessary(mapping)
             startSyncManager()
         }
     }
@@ -270,9 +267,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         team?._id?.let { id ->
             viewLifecycleOwner.lifecycleScope.launch {
-                val memberCount = withContext(Dispatchers.IO) {
-                    teamsRepository.getJoinedMemberCount(id)
-                }
+                val memberCount = teamsRepository.getJoinedMemberCount(id)
                 if (memberCount <= 1 && isMyTeam) {
                     binding.btnLeave.visibility = View.GONE
                 }
@@ -429,9 +424,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                 binding.subtitle.text = updatedTeam.type
 
                 team?._id?.let { id ->
-                    val memberCount = withContext(Dispatchers.IO) {
-                        teamsRepository.getJoinedMemberCount(id)
-                    }
+                    val memberCount = teamsRepository.getJoinedMemberCount(id)
                     if (memberCount <= 1 && isMyTeam) {
                         binding.btnLeave.visibility = View.GONE
                     } else {
@@ -449,9 +442,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         _binding?.let { binding ->
             val teamId = team?._id ?: return@let
             viewLifecycleOwner.lifecycleScope.launch {
-                val joinedCount = withContext(Dispatchers.IO) {
-                    teamsRepository.getJoinedMemberCount(teamId)
-                }
+                val joinedCount = teamsRepository.getJoinedMemberCount(teamId)
                 binding.btnLeave.visibility = if (joinedCount <= 1) {
                     View.GONE
                 } else {
@@ -488,15 +479,13 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         val teamType = getEffectiveTeamType()
 
         viewLifecycleOwner.lifecycleScope.launch {
-            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                teamsRepository.logTeamVisit(
-                    teamId = getEffectiveTeamId(),
-                    userName = userName,
-                    userPlanetCode = userPlanetCode,
-                    userParentCode = userParentCode,
-                    teamType = teamType,
-                )
-            }
+            teamsRepository.logTeamVisit(
+                teamId = getEffectiveTeamId(),
+                userName = userName,
+                userPlanetCode = userPlanetCode,
+                userParentCode = userParentCode,
+                teamType = teamType,
+            )
         }
     }
 

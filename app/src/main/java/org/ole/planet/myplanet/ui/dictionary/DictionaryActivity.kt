@@ -50,9 +50,8 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        var isEmpty = true
-        databaseService.withRealm { realm ->
-            isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
+        var isEmpty = databaseService.withRealmAsync { realm ->
+            realm.where(RealmDictionary::class.java).count() == 0L
         }
         if (isEmpty) {
             val context = this@DictionaryActivity
@@ -68,22 +67,20 @@ class DictionaryActivity : BaseActivity() {
                 }
             }
             json?.let { jsonArray ->
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { bgRealm ->
-                        jsonArray.forEach { js ->
-                            val doc = js.asJsonObject
-                            val dict = bgRealm.createObject(
-                                RealmDictionary::class.java, UUID.randomUUID().toString()
-                            )
-                            dict.code = JsonUtils.getString("code", doc)
-                            dict.language = JsonUtils.getString("language", doc)
-                            dict.advanceCode = JsonUtils.getString("advance_code", doc)
-                            dict.word = JsonUtils.getString("word", doc)
-                            dict.meaning = JsonUtils.getString("meaning", doc)
-                            dict.definition = JsonUtils.getString("definition", doc)
-                            dict.synonym = JsonUtils.getString("synonym", doc)
-                            dict.antonym = JsonUtils.getString("antonoym", doc)
-                        }
+                databaseService.executeTransactionAsync { bgRealm ->
+                    jsonArray.forEach { js ->
+                        val doc = js.asJsonObject
+                        val dict = bgRealm.createObject(
+                            RealmDictionary::class.java, UUID.randomUUID().toString()
+                        )
+                        dict.code = JsonUtils.getString("code", doc)
+                        dict.language = JsonUtils.getString("language", doc)
+                        dict.advanceCode = JsonUtils.getString("advance_code", doc)
+                        dict.word = JsonUtils.getString("word", doc)
+                        dict.meaning = JsonUtils.getString("meaning", doc)
+                        dict.definition = JsonUtils.getString("definition", doc)
+                        dict.synonym = JsonUtils.getString("synonym", doc)
+                        dict.antonym = JsonUtils.getString("antonoym", doc)
                     }
                 }
             }
@@ -93,36 +90,34 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryCount(): Long {
-        return withContext(Dispatchers.IO) {
-            var count = 0L
-            databaseService.withRealm { realm ->
-                count = realm.where(RealmDictionary::class.java).count()
-            }
-            count
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmDictionary::class.java).count()
         }
     }
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            databaseService.withRealm { realm ->
-                val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
-                    .findFirst()
-                if (dict != null) {
+            lifecycleScope.launch {
+                val dictData = databaseService.withRealmAsync { realm ->
+                    realm.where(RealmDictionary::class.java)
+                        .equalTo(
+                            "word",
+                            fragmentDictionaryBinding.etSearch.text.toString(),
+                            Case.INSENSITIVE
+                        )
+                        .findFirst()?.let { realm.copyFromRealm(it) }
+                }
+                if (dictData != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
-                        "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
-                            "<b>" + dict.definition + "\n</b><br/><br/><br/>" +
-                            "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" +
-                            "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
+                        "Definition of '<b>" + dictData.word + "</b>'<br/><br/>\n " +
+                                "<b>" + dictData.definition + "\n</b><br/><br/><br/>" +
+                                "<b>Synonym : </b>" + dictData.synonym + "\n<br/><br/>" +
+                                "<b>Antonoym : </b>" + dictData.antonym + "\n<br/>",
                         HtmlCompat.FROM_HTML_MODE_LEGACY
                     )
                 } else {
                     Utilities.toast(
-                        this,
+                        this@DictionaryActivity,
                         getString(R.string.word_not_available_in_our_database)
                     )
                 }

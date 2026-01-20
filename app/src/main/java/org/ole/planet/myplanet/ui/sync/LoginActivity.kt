@@ -29,10 +29,8 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -191,12 +189,10 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                realm.where(RealmUserModel::class.java)
-                                    .equalTo("name", enterUserName).findFirst()
-                                    ?.let { realm.copyFromRealm(it) }
-                            }
+                        val user = databaseService.withRealmAsync { realm ->
+                            realm.where(RealmUserModel::class.java)
+                                .equalTo("name", enterUserName).findFirst()
+                                ?.let { realm.copyFromRealm(it) }
                         }
                         if (user == null || !user.isArchived) {
                             submitForm(enterUserName, binding.inputPassword.text.toString())
@@ -327,14 +323,12 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
             return
         }
         lifecycleScope.launch {
-            val teams = withContext(Dispatchers.IO) {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmMyTeam::class.java)
-                        .isEmpty("teamId")
-                        .equalTo("status", "active")
-                        .findAll()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+            val teams = databaseService.withRealmAsync { realm ->
+                realm.where(RealmMyTeam::class.java)
+                    .isEmpty("teamId")
+                    .equalTo("status", "active")
+                    .findAll()
+                    ?.let { realm.copyFromRealm(it) }
             }
             cachedTeams = teams
             setupTeamDropdown(teams)
@@ -501,15 +495,21 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
 
             binding.inputName.setText(user.name)
         } else {
-            if (user.source == "guest"){
-                val model = databaseService.withRealm { realm ->
-                    RealmUserModel.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
-                }
-                if (model == null) {
-                    toast(this, getString(R.string.unable_to_login))
-                } else {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
+            if (user.source == "guest") {
+                lifecycleScope.launch {
+                    val model = databaseService.withRealmAsync { realm ->
+                        var result: RealmUserModel? = null
+                        realm.executeTransaction { transactionRealm ->
+                            result = RealmUserModel.createGuestUser(user.name, transactionRealm, settings)
+                        }
+                        result?.let { realm.copyFromRealm(it) }
+                    }
+                    if (model == null) {
+                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                    } else {
+                        saveUserInfoPref(settings, "", model)
+                        onLogin()
+                    }
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -534,10 +534,12 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+                    val model = databaseService.withRealmAsync { realm ->
+                        var result: RealmUserModel? = null
+                        realm.executeTransaction { transactionRealm ->
+                            result = RealmUserModel.createGuestUser(username, transactionRealm, settings)
                         }
+                        result?.let { realm.copyFromRealm(it) }
                     }
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))

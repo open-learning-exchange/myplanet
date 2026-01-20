@@ -504,12 +504,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val tagNames = searchTags.mapNotNull { it.name }
 
         lifecycleScope.launch {
-            val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = ratingsRepository.getCourseRatings(model?.id)
-                val progress = progressRepository.getCourseProgress(model?.id)
-                Triple(courses, ratings, progress)
-            }
+            val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+            val map = ratingsRepository.getCourseRatings(model?.id)
+            val progressMap = progressRepository.getCourseProgress(model?.id)
+
             adapterCourses.updateData(filteredCourses, map, progressMap)
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")

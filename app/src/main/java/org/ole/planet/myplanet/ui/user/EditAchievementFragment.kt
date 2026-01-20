@@ -92,20 +92,18 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    databaseService.withRealmAsync { realm ->
-                        realm.executeTransaction { transactionRealm ->
-                            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                                .equalTo("_id", achievementId)
-                                .findFirst()
-                            if (achievement != null) {
-                                achievement.achievementsHeader = header
-                                achievement.goals = goals
-                                achievement.purpose = purpose
-                                achievement.sendToNation = sendToNation
-                                achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
-                                achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
-                            }
+                databaseService.withRealmAsync { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val achievement = transactionRealm.where(RealmAchievement::class.java)
+                            .equalTo("_id", achievementId)
+                            .findFirst()
+                        if (achievement != null) {
+                            achievement.achievementsHeader = header
+                            achievement.goals = goals
+                            achievement.purpose = purpose
+                            achievement.sendToNation = sendToNation
+                            achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
+                            achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
                         }
                     }
                 }

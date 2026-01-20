@@ -286,21 +286,19 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
             binding.loadingSpinner.visibility = View.VISIBLE
             try {
-                val (surveys, infos, data) = withContext(Dispatchers.IO) {
-                    val currentSurveys = when {
-                        isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
-                        else -> surveysRepository.getIndividualSurveys()
-                    }
-                    val surveyInfos = surveysRepository.getSurveyInfos(
-                        isTeam,
-                        teamId,
-                        userProfileModel?.id,
-                        currentSurveys
-                    )
-                    val bindingData = surveysRepository.getSurveyFormState(currentSurveys, teamId)
-                    Triple(currentSurveys, surveyInfos, bindingData)
+                val currentSurveysList = when {
+                    isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                    else -> surveysRepository.getIndividualSurveys()
                 }
+                val surveyInfos = surveysRepository.getSurveyInfos(
+                    isTeam,
+                    teamId,
+                    userProfileModel?.id,
+                    currentSurveysList
+                )
+                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
+                val (surveys, infos, data) = Triple(currentSurveysList, surveyInfos, bindingData)
                 currentSurveys = surveys.sortedByDescending { survey ->
                     if (survey.sourceSurveyId != null) {
                         if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate

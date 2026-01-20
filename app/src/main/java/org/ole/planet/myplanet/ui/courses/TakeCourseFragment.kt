@@ -93,15 +93,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            withContext(Dispatchers.IO) {
-                steps = coursesRepository.getCourseSteps(courseId)
+            steps = coursesRepository.getCourseSteps(courseId)
 
-                if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
-                    try {
-                        cachedCourseProgress = getCourseProgress()
-                    } finally {
-                        isFetchingProgress.set(false)
-                    }
+            if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
+                try {
+                    cachedCourseProgress = getCourseProgress()
+                } finally {
+                    isFetchingProgress.set(false)
                 }
             }
 
@@ -221,18 +219,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val detachedUserModel = userModel
             val detachedCurrentCourse = currentCourse
 
-            withContext(Dispatchers.IO) {
-                try {
-                    coursesRepository.logCourseVisit(
-                        detachedUserModel?.name,
-                        detachedCurrentCourse?.courseId,
-                        detachedCurrentCourse?.courseTitle,
-                        detachedUserModel?.planetCode,
-                        detachedUserModel?.parentCode
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+            try {
+                coursesRepository.logCourseVisit(
+                    detachedUserModel?.name,
+                    detachedCurrentCourse?.courseId,
+                    detachedCurrentCourse?.courseTitle,
+                    detachedUserModel?.planetCode,
+                    detachedUserModel?.parentCode
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
             withContext(Dispatchers.Main) {
@@ -336,10 +332,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val isJoined = withContext(Dispatchers.IO) {
-                    val course = courseId?.let { coursesRepository.getCourseById(it) }
-                    course?.userId?.contains(userModel?.id) == true
-                }
+                val course = courseId?.let { coursesRepository.getCourseById(it) }
+                val isJoined = course?.userId?.contains(userModel?.id) == true
 
                 userModel?.id?.let { userId ->
                     courseId?.let { cId ->
@@ -351,11 +345,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
 
-                withContext(Dispatchers.IO) {
-                    val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
-                    if (updatedCourse != null) {
-                        currentCourse = updatedCourse
-                    }
+                val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
+                if (updatedCourse != null) {
+                    currentCourse = updatedCourse
                 }
 
                 val statusMessage = if (isJoined) {
@@ -376,11 +368,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private suspend fun getCourseProgress(): Int {
-        return withContext(Dispatchers.IO) {
-            val user = userSessionManager.userModel
-            val courseProgressMap = progressRepository.getCourseProgress(user?.id)
-            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-        }
+        val user = userSessionManager.userModel
+        val courseProgressMap = progressRepository.getCourseProgress(user?.id)
+        return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 
     private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {

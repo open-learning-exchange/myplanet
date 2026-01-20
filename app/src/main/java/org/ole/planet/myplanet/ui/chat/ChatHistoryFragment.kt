@@ -258,16 +258,14 @@ class ChatHistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
-            val (currentUser, newsMessages, chatHistory, targets) = withContext(Dispatchers.IO) {
-                val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
-                val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
-                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-                val targets = cachedTargets ?: loadShareTargets(
-                    settings.getString("parentCode", ""),
-                    settings.getString("communityName", "")
-                )
-                Quartet(currentUser, newsMessages, chatHistory, targets)
-            }
+
+            val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
+            val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+            val targets = cachedTargets ?: loadShareTargets(
+                settings.getString("parentCode", ""),
+                settings.getString("communityName", "")
+            )
 
             user = currentUser
             sharedNewsMessages = newsMessages
@@ -356,17 +354,15 @@ class ChatHistoryFragment : Fragment() {
 
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                chatApiService.fetchAiProviders { providers ->
-                    sharedViewModel.setAiProvidersLoading(false)
-                    if (providers == null || providers.values.all { !it }) {
-                        sharedViewModel.setAiProvidersError(true)
-                        sharedViewModel.setAiProviders(null)
-                    } else {
-                        sharedViewModel.setAiProviders(providers)
-                    }
+            chatApiService.fetchAiProviders { providers ->
+                sharedViewModel.setAiProvidersLoading(false)
+                if (providers == null || providers.values.all { !it }) {
+                    sharedViewModel.setAiProvidersError(true)
+                    sharedViewModel.setAiProviders(null)
+                } else {
+                    sharedViewModel.setAiProviders(providers)
                 }
             }
         }

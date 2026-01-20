@@ -894,13 +894,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         private val urlProtocolRegex by lazy { Regex("^https?://") }
 
         suspend fun clearRealmDb() {
-            withContext(Dispatchers.IO) {
-                val databaseService = (context.applicationContext as MainApplication).databaseService
-                databaseService.withRealm { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        transactionRealm.deleteAll()
-                    }
-                }
+            val databaseService = (context.applicationContext as MainApplication).databaseService
+            databaseService.executeTransactionAsync { transactionRealm ->
+                transactionRealm.deleteAll()
             }
         }
 

@@ -11,10 +11,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -98,8 +96,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
 
-    private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
-        val intermediateData = databaseService.withRealm { realm ->
+    private suspend fun loadStepData(): CourseStepData {
+        val intermediateData = databaseService.withRealmAsync { realm ->
             val step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
@@ -121,7 +119,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             IntermediateStepData(step, resources, stepExams, stepSurvey)
         }
         val userHasCourse = coursesRepository.isMyCourse(user?.id, intermediateData.step.courseId)
-        return@withContext CourseStepData(
+        return CourseStepData(
             step = intermediateData.step,
             resources = intermediateData.resources,
             stepExams = intermediateData.stepExams,

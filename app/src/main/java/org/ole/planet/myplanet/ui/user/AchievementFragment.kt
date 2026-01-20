@@ -167,41 +167,39 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    private suspend fun loadAchievementDataAsync(): AchievementData = withContext(Dispatchers.IO) {
-        databaseService.withRealm { realm ->
-            val achievement = realm.where(RealmAchievement::class.java)
-                .equalTo("_id", user?.id + "@" + user?.planetCode)
-                .findFirst()
+    private suspend fun loadAchievementDataAsync(): AchievementData = databaseService.withRealmAsync { realm ->
+        val achievement = realm.where(RealmAchievement::class.java)
+            .equalTo("_id", user?.id + "@" + user?.planetCode)
+            .findFirst()
 
-            if (achievement != null) {
-                val achievementCopy = realm.copyFromRealm(achievement)
-                val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                    JsonUtils.gson.fromJson(json, JsonObject::class.java)
-                        ?.getAsJsonArray("resources")
-                        ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
-                }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
+        if (achievement != null) {
+            val achievementCopy = realm.copyFromRealm(achievement)
+            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
+                JsonUtils.gson.fromJson(json, JsonObject::class.java)
+                    ?.getAsJsonArray("resources")
+                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
+            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
 
-                val resources = if (resourceIds.isNotEmpty()) {
-                    realm.copyFromRealm(
-                        realm.where(RealmMyLibrary::class.java)
-                            .`in`("id", resourceIds)
-                            .findAll()
-                    )
-                } else {
-                    emptyList()
-                }
-
-                AchievementData(
-                    goals = achievementCopy.goals ?: "",
-                    purpose = achievementCopy.purpose ?: "",
-                    achievementsHeader = achievementCopy.achievementsHeader ?: "",
-                    achievements = achievementCopy.achievements ?: emptyList(),
-                    achievementResources = resources,
-                    references = achievementCopy.references ?: emptyList()
+            val resources = if (resourceIds.isNotEmpty()) {
+                realm.copyFromRealm(
+                    realm.where(RealmMyLibrary::class.java)
+                        .`in`("id", resourceIds)
+                        .findAll()
                 )
             } else {
-                AchievementData()
+                emptyList()
             }
+
+            AchievementData(
+                goals = achievementCopy.goals ?: "",
+                purpose = achievementCopy.purpose ?: "",
+                achievementsHeader = achievementCopy.achievementsHeader ?: "",
+                achievements = achievementCopy.achievements ?: emptyList(),
+                achievementResources = resources,
+                references = achievementCopy.references ?: emptyList()
+            )
+        } else {
+            AchievementData()
         }
     }
 
