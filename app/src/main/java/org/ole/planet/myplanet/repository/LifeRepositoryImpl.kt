@@ -22,4 +22,11 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) :
             }
         }
     }
+
+    override suspend fun getMyLifeByUserId(userId: String?): List<RealmMyLife> {
+        return withRealm { realm ->
+            val results = realm.where(RealmMyLife::class.java).equalTo("userId", userId).equalTo("isVisible", true).findAll().sort("weight")
+            realm.copyFromRealm(results)
+        }
+    }
 }
