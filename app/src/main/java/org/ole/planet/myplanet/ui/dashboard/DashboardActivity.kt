@@ -512,8 +512,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = surveysRepository.getSurveyByName(surveyId)
-            SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
+            val surveyIdResult = surveysRepository.getSurveyIdByName(surveyId)
+            SubmissionsAdapter.openSurvey(this, surveyIdResult, false, false, "")
         }
     }
     

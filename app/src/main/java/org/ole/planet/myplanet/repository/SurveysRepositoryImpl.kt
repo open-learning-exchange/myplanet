@@ -348,4 +348,12 @@ class SurveysRepositoryImpl @Inject constructor(
     override suspend fun getSurveyByName(name: String): RealmStepExam? {
         return findByField(RealmStepExam::class.java, "name", name)
     }
+
+    override suspend fun getSurveyIdByName(name: String): String? {
+        return withRealm { realm ->
+            realm.where(RealmStepExam::class.java)
+                .equalTo("name", name)
+                .findFirst()?.id
+        }
+    }
 }

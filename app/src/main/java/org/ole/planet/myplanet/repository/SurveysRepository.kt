@@ -25,4 +25,5 @@ interface SurveysRepository {
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
     suspend fun getSurveyByName(name: String): RealmStepExam?
+    suspend fun getSurveyIdByName(name: String): String?
 }
