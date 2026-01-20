@@ -270,6 +270,7 @@ class DataService constructor(
         }
     }
 
+    @Deprecated("Use UserRepository.becomeMember instead")
     fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: OnSecurityDataListener? = null) {
         serviceScope.launch {
             val result = userRepository.becomeMember(obj)

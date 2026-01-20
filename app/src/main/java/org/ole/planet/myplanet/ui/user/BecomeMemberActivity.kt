@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -140,18 +139,31 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
-            }
-        }, object : OnSecurityDataListener {
-            override fun onSecurityDataUpdated() {
-                runOnUiThread {
-                    customProgressDialog.dismiss()
-                    autoLoginNewMember(info.username, info.password)
+        lifecycleScope.launch {
+            val (success, message) = userRepository.becomeMember(obj)
+            withContext(Dispatchers.Main) {
+                Utilities.toast(this@BecomeMemberActivity, message)
+                val securityListener = object : OnSecurityDataListener {
+                    override fun onSecurityDataUpdated() {
+                        runOnUiThread {
+                            if (customProgressDialog.isShowing) {
+                                customProgressDialog.dismiss()
+                                autoLoginNewMember(info.username, info.password)
+                            }
+                        }
+                    }
+                }
+
+                if (success) {
+                    startUpload("becomeMember", info.username, securityListener)
+                    if (message == getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        securityListener.onSecurityDataUpdated()
+                    }
+                } else {
+                    securityListener.onSecurityDataUpdated()
                 }
             }
-        })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
