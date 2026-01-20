@@ -50,7 +50,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             when (result) {
                 is NetworkResult.Success -> Result.success(true)
                 is NetworkResult.Error -> Result.failure(Exception("Health check failed: ${result.code}"))
-                is NetworkResult.Exception -> Result.failure(result.e)
+                is NetworkResult.Exception -> Result.failure(result.exception)
             }
         } catch (e: Exception) {
             Result.failure(e)
