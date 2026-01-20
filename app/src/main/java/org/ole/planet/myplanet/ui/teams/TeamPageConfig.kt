@@ -21,11 +21,11 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object PlanPage : TeamPageConfig("PLAN", R.string.plan) {
-        override fun createFragment() = PlanFragment()
+        override fun createFragment() = TeamsPlanFragment()
     }
 
     object MissionPage : TeamPageConfig("MISSION", R.string.mission) {
-        override fun createFragment() = PlanFragment()
+        override fun createFragment() = TeamsPlanFragment()
     }
 
     object TeamPage : TeamPageConfig("TEAM", R.string.team) {

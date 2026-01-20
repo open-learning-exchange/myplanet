@@ -16,14 +16,14 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
-import org.ole.planet.myplanet.databinding.FragmentPlanBinding
+import org.ole.planet.myplanet.databinding.FragmentTeamPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class PlanFragment : BaseTeamFragment() {
-    private var _binding: FragmentPlanBinding? = null
+class TeamsPlanFragment : BaseTeamFragment() {
+    private var _binding: FragmentTeamPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
     private var teamUpdateListener: OnTeamUpdateListener? = null
@@ -33,7 +33,7 @@ class PlanFragment : BaseTeamFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentPlanBinding.inflate(inflater, container, false)
+        _binding = FragmentTeamPlanBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -191,7 +191,7 @@ class PlanFragment : BaseTeamFragment() {
 
                 if (wasUpdated) {
                     val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
-                        ?: (this@PlanFragment.team ?: team)
+                        ?: (this@TeamsPlanFragment.team ?: team)
 
                     refreshedTeam.apply {
                         this.name = name
@@ -204,7 +204,7 @@ class PlanFragment : BaseTeamFragment() {
                         this.updated = true
                     }
 
-                    this@PlanFragment.team = refreshedTeam
+                    this@TeamsPlanFragment.team = refreshedTeam
                     updateUIWithTeamDetails(refreshedTeam)
                     teamUpdateListener?.onTeamDetailsUpdated()
                     Utilities.toast(requireContext(), context.getString(R.string.added_successfully))

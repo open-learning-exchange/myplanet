@@ -68,7 +68,7 @@ class TeamPagerAdapter(
             else -> {}
         }
 
-        if (fragment is PlanFragment) {
+        if (fragment is TeamsPlanFragment) {
             fragment.setTeamUpdateListener(teamUpdateListener)
         }
 
