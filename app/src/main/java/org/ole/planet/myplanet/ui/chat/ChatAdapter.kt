@@ -14,6 +14,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.model.ChatMessage
@@ -29,10 +30,6 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
     ) {
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
-
-    interface OnChatItemClickListener {
-        fun onChatItemClick(position: Int, chatItem: ChatMessage)
-    }
 
     private var chatItemClickListener: OnChatItemClickListener? = null
 
