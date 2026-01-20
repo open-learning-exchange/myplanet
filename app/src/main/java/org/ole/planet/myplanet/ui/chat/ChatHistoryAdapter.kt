@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -25,12 +26,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.teams.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-
-data class ChatShareTargets(
-    val community: RealmMyTeam?,
-    val teams: List<RealmMyTeam>,
-    val enterprises: List<RealmMyTeam>,
-)
 
 class ChatHistoryAdapter(
     private val context: Context,
