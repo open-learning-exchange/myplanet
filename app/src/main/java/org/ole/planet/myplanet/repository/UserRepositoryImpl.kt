@@ -383,6 +383,18 @@ class UserRepositoryImpl @Inject constructor(
         HealthRecord(mh, mm, list, userMap)
     }
 
+    override suspend fun initUserEncryptionKeys(userId: String) {
+        withRealm { realm ->
+            val user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            if (user != null && (user.key == null || user.iv == null)) {
+                realm.executeTransaction {
+                    user.key = AndroidDecrypter.generateKey()
+                    user.iv = AndroidDecrypter.generateIv()
+                }
+            }
+        }
+    }
+
     override suspend fun validateUsername(username: String): String? {
         val specialCharPattern = Pattern.compile(
             ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"

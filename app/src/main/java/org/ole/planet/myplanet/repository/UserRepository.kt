@@ -59,6 +59,8 @@ interface UserRepository {
         currentUser: RealmUserModel
     ): HealthRecord?
 
+    suspend fun initUserEncryptionKeys(userId: String)
+
     fun getUserModel(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     fun getActiveUserId(): String
