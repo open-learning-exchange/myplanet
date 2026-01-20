@@ -12,6 +12,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -28,10 +29,6 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     lateinit var userSessionManager: UserSessionManager
     private var model: RealmUserModel ?= null
     var user: String? = ""
-
-    interface OnFeedbackSubmittedListener {
-        fun onFeedbackSubmitted()
-    }
 
     private var mListener: OnFeedbackSubmittedListener? = null
     fun setOnFeedbackSubmittedListener(listener: OnFeedbackSubmittedListener?) {
