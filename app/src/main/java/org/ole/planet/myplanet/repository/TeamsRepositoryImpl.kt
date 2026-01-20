@@ -1067,4 +1067,8 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getTeamForExam(teamId: String): RealmMyTeam? {
+        return findByField(RealmMyTeam::class.java, "_id", teamId)
+    }
 }

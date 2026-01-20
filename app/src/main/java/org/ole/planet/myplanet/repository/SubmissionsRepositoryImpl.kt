@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
@@ -414,5 +416,124 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         examTitle: String
     ): java.io.File? {
         return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
+
+    override suspend fun getSubmissionForExam(examId: String, userId: String): RealmSubmission? {
+        val submissions = queryList(RealmSubmission::class.java) {
+            equalTo("status", "pending")
+            contains("parentId", examId)
+            equalTo("userId", userId)
+        }
+        return submissions.lastOrNull()
+    }
+
+    override suspend fun createExamSubmission(sub: RealmSubmission?, userId: String?, type: String?, exam: RealmStepExam?, teamId: String?): RealmSubmission {
+        return databaseService.withRealmAsync { realm ->
+            var submission = sub
+            if (submission == null || (submission!!.status == "complete" && (submission!!.type == "exam" || submission!!.type == "survey"))) {
+                // If sub is passed, we must check if it's managed. If not, we cannot check managed status easily if it's detached.
+                // But generally createSubmission companion takes nullable.
+                // We should query or create.
+                // Actually, the companion createSubmission does exactly this.
+                // But it needs managed objects.
+
+                // Let's re-query to be safe if sub is passed?
+                // Or if sub is null, we create.
+
+                // We need to implement logic similar to Fragment's createSubmission + addTeamInformation.
+                // Since we are in withRealmAsync, we have a Realm instance.
+
+                if (submission != null && !io.realm.RealmObject.isManaged(submission)) {
+                    // It is unmanaged. We should find if it exists in DB?
+                    // Or create a new managed object.
+                    val id = submission!!.id
+                    if (id != null) {
+                        submission = realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                    } else {
+                        submission = null // Treat as new
+                    }
+                }
+
+                realm.beginTransaction()
+                try {
+                    submission = createSubmission(submission, realm)
+
+                    // Set Parent ID
+                    val id = exam?.id
+                    val courseId = exam?.courseId
+                    submission.parentId = when {
+                        !exam?.id.isNullOrEmpty() -> if (!courseId.isNullOrEmpty()) {
+                            "${exam?.id}@${courseId}"
+                        } else {
+                            exam?.id
+                        }
+                        else -> submission.parentId
+                    }
+
+                    // Set Parent JSON
+                    try {
+                        val parentJsonString = org.json.JSONObject().apply {
+                            put("_id", exam?.id ?: "")
+                            put("name", exam?.name ?: "")
+                            put("courseId", exam?.courseId ?: "")
+                            put("sourcePlanet", exam?.sourcePlanet ?: "")
+                            put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
+                            put("noOfQuestions", exam?.noOfQuestions ?: 0)
+                            put("isFromNation", exam?.isFromNation ?: false)
+                        }.toString()
+                        submission.parent = parentJsonString
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+
+                    submission.userId = userId
+                    submission.status = "pending"
+                    submission.type = type
+                    submission.startTime = Date().time
+                    submission.lastUpdateTime = Date().time
+                    if (submission.answers == null) {
+                        submission.answers = io.realm.RealmList()
+                    }
+
+                    if (teamId != null) {
+                        val team = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                        if (team != null) {
+                            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+                            teamRef._id = team._id
+                            teamRef.name = team.name
+                            teamRef.type = team.type ?: "team"
+                            submission.teamObject = teamRef
+                        }
+
+                        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
+                        membershipDoc.teamId = teamId
+                        submission.membershipDoc = membershipDoc
+
+                        val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                        try {
+                            val userJson = org.json.JSONObject()
+                            userJson.put("age", userModel?.dob ?: "")
+                            userJson.put("gender", userModel?.gender ?: "")
+                            val membershipJson = org.json.JSONObject()
+                            membershipJson.put("teamId", teamId)
+                            userJson.put("membershipDoc", membershipJson)
+                            submission.user = userJson.toString()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
+                    realm.commitTransaction()
+                } catch (e: Exception) {
+                    if (realm.isInTransaction) {
+                        realm.cancelTransaction()
+                    }
+                    throw e
+                }
+            }
+
+            // Return unmanaged copy
+            realm.copyFromRealm(submission!!)
+        }
     }
 }

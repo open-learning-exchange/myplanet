@@ -17,12 +17,13 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.RealmList
+import io.realm.RealmObject
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -31,10 +32,12 @@ import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
@@ -59,6 +62,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var surveysRepository: SurveysRepository
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -94,9 +99,12 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             if ((questions?.size ?: 0) > 0) {
                 if (type == "exam") {
                     clearAllExistingAnswers {
-                        createSubmission()
-                        startExam(questions?.get(currentIndex))
-                        updateNavButtons()
+                        // Launch a new coroutine because createSubmission is suspend now
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            createSubmission()
+                            startExam(questions?.get(currentIndex))
+                            updateNavButtons()
+                        }
                     }
                 } else {
                     createSubmission()
@@ -234,94 +242,22 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
-
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
+    private suspend fun createSubmission() {
+        val teamIdToUse = if (isTeam && teamId != null) teamId else null
+        sub = submissionsRepository.createExamSubmission(sub, user?.id, type, exam, teamIdToUse)
+        currentIndex = 0
     }
 
     private fun setParentId() {
-        sub?.parentId = when {
-            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id}@${exam?.courseId}"
-            } else {
-                exam?.id
-            }
-            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
-            else -> sub?.parentId
-        }
+        // Moved to Repository
     }
 
     private fun setParentJson() {
-        try {
-            val parentJsonString = JSONObject().apply {
-                put("_id", exam?.id ?: id)
-                put("name", exam?.name ?: "")
-                put("courseId", exam?.courseId ?: "")
-                put("sourcePlanet", exam?.sourcePlanet ?: "")
-                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                put("noOfQuestions", exam?.noOfQuestions ?: 0)
-                put("isFromNation", exam?.isFromNation ?: false)
-            }.toString()
-            sub?.parent = parentJsonString
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        // Moved to Repository
     }
 
-    private fun addTeamInformation(realm: Realm) {
-        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
-            .equalTo("_id", teamId)
-            .findFirst()
-
-        if (team != null) {
-            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-            teamRef._id = team._id
-            teamRef.name = team.name
-            teamRef.type = team.type ?: "team"
-            sub?.teamObject = teamRef
-        }
-
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
-
-        val userModel = userSessionManager.userModel
-        try {
-            val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
-            val membershipJson = JSONObject()
-            membershipJson.put("teamId", teamId)
-            userJson.put("membershipDoc", membershipJson)
-            sub?.user = userJson.toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+    private fun addTeamInformation(team: RealmMyTeam) {
+        // Moved to Repository
     }
 
     override fun startExam(question: RealmExamQuestion?) {
@@ -615,9 +551,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
         
         if (sub == null) {
-            sub = mRealm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .findAll().lastOrNull()
+            runBlocking {
+                sub = submissionsRepository.getSubmissionForExam(exam?.id ?: "", user?.id ?: "")
+            }
         }
 
         val result = ExamSubmissionUtils.saveAnswer(
