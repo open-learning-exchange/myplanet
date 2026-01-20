@@ -332,4 +332,11 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findFirst()?.courseTitle
         }
     }
+
+    override suspend fun getByIds(courseIds: List<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", courseIds.toTypedArray())
+        }
+    }
 }
