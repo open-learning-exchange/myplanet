@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -45,7 +45,7 @@ class ResourcesAdapter(
     private val resourcesRepository: ResourcesRepository,
     private val userModel: RealmUserModel?,
     private var tagsMap: Map<String, List<RealmTag>>,
-    private val openedResourceIds: Set<String>
+    private var openedResourceIds: Set<String>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), OnDiffRefreshListener {
     private var diffJob: Job? = null
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -210,6 +210,11 @@ class ResourcesAdapter(
     fun setTagsMap(tagsMap: Map<String, List<RealmTag>>) {
         this.tagsMap = tagsMap
         notifyItemRangeChanged(0, libraryList.size, TAGS_PAYLOAD)
+    }
+
+    fun setOpenedResourceIds(openedResourceIds: Set<String>) {
+        this.openedResourceIds = openedResourceIds
+        notifyDataSetChanged()
     }
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {

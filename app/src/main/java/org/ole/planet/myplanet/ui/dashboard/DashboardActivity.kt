@@ -126,8 +126,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
+    private val challengeManager: ChallengeManager by lazy {
+        ChallengeManager(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -219,7 +219,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.root.post {
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
-            challengeHelper.evaluateChallengeDialog()
+            challengeManager.evaluateChallengeDialog()
             reportFullyDrawn()
         }
     }
@@ -327,7 +327,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             delay(50)
-            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            val offlineVisits = userSessionManager.getOfflineVisits(user)
+            if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
@@ -857,9 +858,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             logout()
             return
         }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
+        lifecycleScope.launch {
+            val offlineVisits = userSessionManager.getOfflineVisits(user)
+            if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
+                showGuestDialog()
+            }
+        }
+    }
+
+    private fun showGuestDialog() {
+        val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        builder.setTitle(getString(R.string.become_a_member))
             builder.setMessage(getString(R.string.trial_period_ended))
             builder.setCancelable(false)
             builder.setPositiveButton(getString(R.string.become_a_member), null)
@@ -882,7 +891,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
-        }
     }
 
     private fun topBarVisible(){
