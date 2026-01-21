@@ -235,6 +235,17 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUserProfile(): RealmUserModel? {
+        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        return queryList(RealmUserModel::class.java) {
+            equalTo("id", userId).or().equalTo("_id", userId)
+        }.firstOrNull()
+    }
+
+    override suspend fun getUserImageUrl(): String? {
+        return getUserProfile()?.userImage
+    }
+
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val isAvailable = withContext(Dispatchers.IO) {
             try {
