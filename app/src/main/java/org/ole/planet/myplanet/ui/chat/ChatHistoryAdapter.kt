@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
+import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
@@ -51,7 +52,7 @@ class ChatHistoryAdapter(
     )
 ) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
-    private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
+    private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
     private var chatTitle: String? = ""
     private lateinit var expandableListAdapter: ChatShareTargetAdapter
     private lateinit var expandableTitleList: List<String>
@@ -78,11 +79,7 @@ class ChatHistoryAdapter(
         }
     }
 
-    interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?)
-    }
-
-    fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
+    fun setChatHistoryItemClickListener(listener: OnChatHistoryItemClickListener) {
         chatHistoryItemClickListener = listener
     }
 
