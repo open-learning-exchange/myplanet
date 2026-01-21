@@ -24,7 +24,7 @@ class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: St
                 TeamCalendarFragment()
             }
             3 -> {
-                ServicesFragment()
+                CommunityServicesFragment()
             }
             4 -> {
                 EnterprisesFinancesFragment()

@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -28,6 +29,7 @@ class UserSessionManager @Inject constructor(
     @AppPreferences private val settings: SharedPreferences,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
+    private val activitiesRepository: ActivitiesRepository
 ) {
     private val fullName: String
 
@@ -98,20 +100,9 @@ class UserSessionManager @Inject constructor(
     val lastVisit: Long? get() = realmService.withRealm { realm ->
         realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     }
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
 
-    fun getOfflineVisits(m: RealmUserModel?): Int {
-        return realmService.withRealm { realm ->
-            val dbUsers = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", m?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAll()
-            if (!dbUsers.isEmpty()) {
-                dbUsers.size
-            } else {
-                0
-            }
-        }
+    suspend fun getOfflineVisits(m: RealmUserModel?): Int {
+        return m?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
     }
 
     fun getLastVisit(m: RealmUserModel): String {

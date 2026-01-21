@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.data
+package org.ole.planet.myplanet.data.api
 
 import com.google.gson.JsonObject
 import okhttp3.RequestBody
