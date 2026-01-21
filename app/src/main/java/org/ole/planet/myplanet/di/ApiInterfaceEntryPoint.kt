@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.di
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiInterface
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
