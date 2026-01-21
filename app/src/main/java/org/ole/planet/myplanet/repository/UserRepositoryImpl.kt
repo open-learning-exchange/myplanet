@@ -47,9 +47,6 @@ class UserRepositoryImpl @Inject constructor(
             ?: findByField(RealmUserModel::class.java, "id", id)
     }
 
-    /**
-     * Fetch a user by name for login checks.
-     */
     override suspend fun getUserByName(name: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "name", name)
     }
