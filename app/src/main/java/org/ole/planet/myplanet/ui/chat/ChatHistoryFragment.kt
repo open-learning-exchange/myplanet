@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.ChatApiService
+import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmChatHistory
@@ -335,7 +335,7 @@ class ChatHistoryFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser)
+            val createdNews = voicesRepository.createNews(map, currentUser, null)
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
             }

@@ -11,7 +11,7 @@ import javax.inject.Singleton
 import kotlin.reflect.KClass
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.UrlUtils
