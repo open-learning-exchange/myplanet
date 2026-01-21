@@ -25,27 +25,18 @@ class UploadCoordinator @Inject constructor(
 
     companion object {
         private const val TAG = "UploadCoordinator"
-        private const val SYNC_DATA_TAG = "SyncData"
     }
 
     suspend fun <T : RealmObject> upload(
         config: UploadConfig<T>
     ): UploadResult<Int> = withContext(Dispatchers.IO) {
         try {
-            Log.d(SYNC_DATA_TAG, "========== UPLOAD CONFIG START ==========")
-            Log.d(SYNC_DATA_TAG, "Config: ${config.modelClass.simpleName}")
-            Log.d(SYNC_DATA_TAG, "Endpoint: ${config.endpoint}")
-            Log.d(SYNC_DATA_TAG, "Querying items to upload...")
-
             val itemsToUpload = queryItemsToUpload(config)
 
             if (itemsToUpload.isEmpty()) {
-                Log.d(SYNC_DATA_TAG, "No items found to upload for ${config.modelClass.simpleName}")
-                Log.d(SYNC_DATA_TAG, "========== UPLOAD CONFIG END (empty) ==========")
                 return@withContext UploadResult.Empty
             }
 
-            Log.d(SYNC_DATA_TAG, "Found ${itemsToUpload.size} ${config.modelClass.simpleName} items to upload")
             Log.d(TAG, "Uploading ${itemsToUpload.size} ${config.modelClass.simpleName} items")
 
             val allSucceeded = mutableListOf<UploadedItem>()
@@ -65,8 +56,6 @@ class UploadCoordinator @Inject constructor(
             }
 
             Log.d(TAG, "Upload complete: ${allSucceeded.size} succeeded, ${allFailed.size} failed")
-            Log.d(SYNC_DATA_TAG, "========== UPLOAD CONFIG END (${allSucceeded.size} succeeded, ${allFailed.size} failed) ==========")
-
             when {
                 allFailed.isEmpty() -> UploadResult.Success(
                     data = allSucceeded.size,
@@ -75,7 +64,6 @@ class UploadCoordinator @Inject constructor(
                 allSucceeded.isEmpty() -> UploadResult.Failure(allFailed)
                 else -> UploadResult.PartialSuccess(allSucceeded, allFailed)
             }
-
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
             UploadResult.Failure(
@@ -221,7 +209,6 @@ class UploadCoordinator @Inject constructor(
 
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
         try {
-            // Search through class hierarchy since Realm proxy classes inherit fields from parent
             var clazz: Class<*>? = obj.javaClass
             var field: java.lang.reflect.Field? = null
 
@@ -236,7 +223,6 @@ class UploadCoordinator @Inject constructor(
             if (field != null) {
                 field.isAccessible = true
                 field.set(obj, value)
-                Log.d(SYNC_DATA_TAG, "Updated field $fieldName = $value on ${obj.javaClass.simpleName}")
             } else {
                 Log.w(TAG, "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
             }
