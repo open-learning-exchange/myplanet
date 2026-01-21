@@ -192,13 +192,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                realm.where(RealmUserModel::class.java)
-                                    .equalTo("name", enterUserName).findFirst()
-                                    ?.let { realm.copyFromRealm(it) }
-                            }
-                        }
+                        val user = userRepository.getUserByName(enterUserName)
                         if (user == null || !user.isArchived) {
                             submitForm(enterUserName, binding.inputPassword.text.toString())
                         } else {

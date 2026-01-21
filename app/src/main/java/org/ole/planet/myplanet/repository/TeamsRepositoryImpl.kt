@@ -18,8 +18,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.data.ApiClient.client
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -901,7 +901,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
-        return withRealm { realm ->
+        val membersData = withRealm { realm ->
             val members = RealmMyTeam.getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
             val communityLeadersJson = preferences.getString("communityLeaders", "") ?: ""
 
@@ -952,13 +952,17 @@ class TeamsRepositoryImpl @Inject constructor(
             orderedMembers.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = "${userSessionManager.getOfflineVisits(member)}"
                 val profileLastVisit = userSessionManager.getLastVisit(member)
                 val isLeader = member.id in leaderIds
                 JoinedMemberData(member, visitCount, lastVisitTimestamp,
-                    offlineVisits, profileLastVisit, isLeader
+                    "", profileLastVisit, isLeader
                 )
             }
+        }
+
+        return membersData.map { data ->
+            val offlineVisits = "${userSessionManager.getOfflineVisits(data.user)}"
+            data.copy(offlineVisits = offlineVisits)
         }
     }
 

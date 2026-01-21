@@ -137,13 +137,15 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return
-        NavigationHelper.replaceFragment(
-            supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        lifecycleScope.launch {
+            val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return@launch
+            NavigationHelper.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     override fun clearImages() {
