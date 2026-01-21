@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 
-class ChallengeHelper(
+class ChallengeManager(
     private val activity: DashboardActivity,
     private val user: RealmUserModel?,
     private val settings: SharedPreferences,

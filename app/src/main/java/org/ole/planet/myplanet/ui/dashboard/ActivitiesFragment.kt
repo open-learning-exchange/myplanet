@@ -18,20 +18,20 @@ import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
+import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 
 @AndroidEntryPoint
-class MyActivityFragment : Fragment() {
-    private var _binding: FragmentMyActivityBinding? = null
+class ActivitiesFragment : Fragment() {
+    private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var userRepository: UserRepository
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMyActivityBinding.inflate(inflater, container, false)
+        _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
         return binding.root
     }
 
