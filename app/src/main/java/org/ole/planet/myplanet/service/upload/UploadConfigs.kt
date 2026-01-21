@@ -151,7 +151,10 @@ object UploadConfigs {
         modelClass = RealmSubmission::class,
         endpoint = "submissions",
         queryBuilder = { query ->
-            query.isNotNull("parentId").isNotNull("userId")
+            // Only handle exam submissions (type = "exam"), not surveys
+            // Surveys are handled by the Submissions config to avoid duplication
+            query.equalTo("type", "exam")
+                .isNotNull("parentId").isNotNull("userId")
                 .beginGroup()
                 .isNull("_id").or().isEmpty("_id")
                 .endGroup()
