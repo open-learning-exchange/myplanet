@@ -6,11 +6,14 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.RealmObject
 import java.io.IOException
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.reflect.KClass
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -66,6 +69,10 @@ class UploadCoordinator @Inject constructor(
                 else -> UploadResult.PartialSuccess(allSucceeded, allFailed)
             }
 
+        } catch (e: CancellationException) {
+            // Propagate cancellation - don't treat it as an error
+            Log.d(TAG, "Upload operation was cancelled")
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
             UploadResult.Failure(
@@ -121,6 +128,9 @@ class UploadCoordinator @Inject constructor(
         val failed = mutableListOf<UploadError>()
 
         batch.forEach { preparedItem ->
+            // Check if the coroutine has been cancelled before processing each item
+            coroutineContext.ensureActive()
+
             try {
                 config.beforeUpload?.invoke(preparedItem.item)
 
@@ -157,6 +167,10 @@ class UploadCoordinator @Inject constructor(
                         httpCode = response.code()
                     ))
                 }
+            } catch (e: CancellationException) {
+                // Propagate cancellation - don't treat it as an error
+                Log.d(TAG, "Upload cancelled for item ${preparedItem.localId}")
+                throw e
             } catch (e: IOException) {
                 Log.w(TAG, "Network error uploading item ${preparedItem.localId}", e)
                 failed.add(UploadError(preparedItem.localId, e, retryable = true))

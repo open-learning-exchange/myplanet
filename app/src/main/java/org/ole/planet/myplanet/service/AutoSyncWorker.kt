@@ -10,6 +10,7 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
+import java.util.concurrent.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -103,6 +104,9 @@ class AutoSyncWorker(
                         uploadManager.uploadCrashLog()
                         uploadManager.uploadSubmissions()
                         uploadManager.uploadActivities(null)
+                    } catch (e: CancellationException) {
+                        // Worker was stopped - this is expected, don't treat as failure
+                        Log.d("AutoSyncWorker", "Upload cancelled - worker stopped")
                     } catch (e: Exception) {
                         Log.e("AutoSyncWorker", "error: ${e.message}")
                         onSyncFailed(e.message)
