@@ -51,4 +51,19 @@ class PersonalsRepositoryImpl @Inject constructor(
         update(RealmMyPersonal::class.java, "_id", id, updater)
         update(RealmMyPersonal::class.java, "id", id, updater)
     }
+
+    override suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal> {
+        return queryList(RealmMyPersonal::class.java) {
+            equalTo("userId", userId)
+            equalTo("isUploaded", false)
+        }
+    }
+
+    override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
+        update(RealmMyPersonal::class.java, "id", id) { personal ->
+            personal.isUploaded = true
+            personal._id = newId
+            personal._rev = rev
+        }
+    }
 }

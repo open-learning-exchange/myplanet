@@ -231,7 +231,7 @@ object VoicesActions {
         realm.commitTransaction()
     }
 
-    fun showMemberDetails(
+    suspend fun showMemberDetails(
         userModel: RealmUserModel?,
         profileDbHandler: UserSessionManager
     ): MembersDetailFragment? {
