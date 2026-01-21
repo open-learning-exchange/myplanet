@@ -51,11 +51,10 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardActionListener,
+open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionListener,
     OnSyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
-    private val realm get() = requireRealmInstance()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
@@ -65,7 +64,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
 
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
-            model = userRepository.getUserModelSuspending()
+            model = userRepository.getUserProfile()
             fullName = model?.getFullName()
             if (fullName?.trim().isNullOrBlank()) {
                 fullName = model?.name
@@ -94,10 +93,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
                     .into(imageView)
             } else {
                 imageView.setImageResource(R.drawable.profile)
-            }
-
-            if (isRealmInitialized() && mRealm.isInTransaction) {
-                mRealm.commitTransaction()
             }
 
             v.findViewById<TextView>(R.id.txtRole).text =
@@ -316,17 +311,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         }
     }
 
-    override fun onDestroy() {
-        if (isRealmInitialized()) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
-
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
         when (c) {
             RealmMyCourse::class.java -> {
@@ -367,11 +351,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
         viewLifecycleOwner.lifecycleScope.launch {
             setUpMyLife(userId)
             myLifeListInit(myLifeFlex)
-        }
-
-
-        if (isRealmInitialized() && mRealm.isInTransaction) {
-            mRealm.commitTransaction()
         }
     }
 
@@ -434,9 +413,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), OnDashboardAct
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { transactionSyncManager.syncAllHealthData(realm, it, this) }
+            settings?.let { transactionSyncManager.syncAllHealthData(it, this) }
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(realm, it, this, profileDbHandler) }
+            settings?.let { transactionSyncManager.syncKeyIv(it, this, profileDbHandler) }
         }
     }
 
