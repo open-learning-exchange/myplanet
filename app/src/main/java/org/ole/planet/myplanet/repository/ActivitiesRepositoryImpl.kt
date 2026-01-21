@@ -5,9 +5,11 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
@@ -18,6 +20,13 @@ class ActivitiesRepositoryImpl @Inject constructor(
             equalTo("userName", userName)
             equalTo("type", type)
         }
+    }
+
+    override suspend fun getOfflineVisitCount(userId: String): Int {
+        return queryList(RealmOfflineActivity::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", UserSessionManager.KEY_LOGIN)
+        }.size
     }
 
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
@@ -120,6 +129,23 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return queryList(RealmResourceActivity::class.java) {
              equalTo("user", userName)
              equalTo("type", type)
+        }
+    }
+
+    override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
+        executeTransaction { realm ->
+            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
+            activity.type = "visit"
+            activity.title = title
+            activity.courseId = courseId
+            activity.time = Date().time
+            activity.user = userId
+
+            val user = realm.where(RealmUserModel::class.java).equalTo("name", userId).findFirst()
+            if (user != null) {
+                activity.parentCode = user.parentCode
+                activity.createdOn = user.planetCode
+            }
         }
     }
 }

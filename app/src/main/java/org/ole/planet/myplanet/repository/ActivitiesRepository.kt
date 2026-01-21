@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 
 interface ActivitiesRepository {
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity>
+    suspend fun getOfflineVisitCount(userId: String): Int
     suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun markResourceRemoved(userId: String, resourceId: String)
@@ -17,4 +18,5 @@ interface ActivitiesRepository {
     suspend fun getGlobalLastVisit(): Long?
     suspend fun getNumberOfResourceOpen(userName: String?, type: String?): Long
     suspend fun getAllResourceActivities(userName: String?, type: String?): List<RealmResourceActivity>
+    suspend fun logCourseVisit(courseId: String, title: String, userId: String)
 }

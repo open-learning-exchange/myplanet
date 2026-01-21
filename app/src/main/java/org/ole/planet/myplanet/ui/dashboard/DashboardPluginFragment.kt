@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
-open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+open class DashboardPluginFragment : BaseContainerFragment() {
 
     @Inject lateinit var teamsRepository: TeamsRepository
 

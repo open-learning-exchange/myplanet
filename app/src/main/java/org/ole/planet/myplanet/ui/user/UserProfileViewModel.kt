@@ -127,4 +127,10 @@ class UserProfileViewModel @Inject constructor(
             _numberOfResourceOpen.value = userSessionManager.getNumberOfResourceOpen()
         }
     }
+
+    fun getOfflineVisits() {
+        viewModelScope.launch {
+            _offlineVisits.value = userSessionManager.getOfflineVisits(userSessionManager.userModel)
+        }
+    }
 }

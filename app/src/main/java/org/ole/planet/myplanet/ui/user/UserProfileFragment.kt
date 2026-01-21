@@ -134,6 +134,16 @@ class UserProfileFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.offlineVisits.collect {
+                    if (isAdded) {
+                        setupStatsRecycler()
+                    }
+                }
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -173,6 +183,7 @@ class UserProfileFragment : Fragment() {
         setupStatsRecycler()
         observeUserProfile()
         viewModel.loadUserProfile(settings.getString("userId", ""))
+        viewModel.getOfflineVisits()
 
         return binding.root
     }

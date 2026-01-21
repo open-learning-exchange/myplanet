@@ -82,7 +82,7 @@ myplanet/
 | Package | Purpose | Key Files |
 |---------|---------|-----------|
 | `base/` | Base classes for common functionality | BaseActivity, BaseRecyclerFragment, PermissionActivity |
-| `callback/` | Event listeners and interfaces | OnLibraryItemSelected, SyncListener, TeamUpdateListener |
+| `callback/` | Event listeners and interfaces | OnLibraryItemSelectedListener, SyncListener, TeamUpdateListener |
 | `data/` | Data access and API services | DataService.kt, DatabaseService.kt, ApiInterface, auth/ |
 | `di/` | Hilt dependency injection | NetworkModule, DatabaseModule, RepositoryModule |
 | `model/` | Realm database models | 53 models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
