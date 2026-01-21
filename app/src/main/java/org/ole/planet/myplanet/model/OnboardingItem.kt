@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.onboarding
+package org.ole.planet.myplanet.model
 
 class OnboardingItem {
     var imageID: Int = 0
