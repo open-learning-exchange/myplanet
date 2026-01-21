@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
@@ -60,9 +61,10 @@ object ServiceModule {
         submissionsRepository: SubmissionsRepository,
         @AppPreferences preferences: SharedPreferences,
         gson: Gson,
-        uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator
+        uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator,
+        personalsRepository: PersonalsRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository)
     }
 
     @Provides
