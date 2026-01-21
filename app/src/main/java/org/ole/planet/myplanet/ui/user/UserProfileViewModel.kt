@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()

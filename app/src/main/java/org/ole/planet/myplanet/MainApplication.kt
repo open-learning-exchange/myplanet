@@ -40,11 +40,11 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkMonitorWorker
-import org.ole.planet.myplanet.service.StayOnlineWorker
-import org.ole.planet.myplanet.service.TaskNotificationWorker
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.AutoSyncWorker
+import org.ole.planet.myplanet.services.NetworkMonitorWorker
+import org.ole.planet.myplanet.services.StayOnlineWorker
+import org.ole.planet.myplanet.services.TaskNotificationWorker
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
