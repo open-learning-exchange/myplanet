@@ -9,4 +9,5 @@ interface ActivitiesRepository {
     suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun markResourceRemoved(userId: String, resourceId: String)
+    suspend fun logCourseVisit(courseId: String, title: String, userId: String)
 }

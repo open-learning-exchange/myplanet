@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -51,6 +52,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
+    @Inject
+    lateinit var activitiesRepository: ActivitiesRepository
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
@@ -223,13 +226,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
             withContext(Dispatchers.IO) {
                 try {
-                    coursesRepository.logCourseVisit(
-                        detachedUserModel?.name,
-                        detachedCurrentCourse?.courseId,
-                        detachedCurrentCourse?.courseTitle,
-                        detachedUserModel?.planetCode,
-                        detachedUserModel?.parentCode
-                    )
+                    detachedCurrentCourse?.courseId?.let { courseId ->
+                        detachedCurrentCourse.courseTitle?.let { courseTitle ->
+                            detachedUserModel?.name?.let { userName ->
+                                activitiesRepository.logCourseVisit(
+                                    courseId,
+                                    courseTitle,
+                                    userName
+                                )
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
