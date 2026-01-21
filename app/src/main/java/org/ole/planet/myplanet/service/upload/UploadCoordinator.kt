@@ -70,8 +70,6 @@ class UploadCoordinator @Inject constructor(
             }
 
         } catch (e: CancellationException) {
-            // Propagate cancellation - don't treat it as an error
-            Log.d(TAG, "Upload operation was cancelled")
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
@@ -128,7 +126,6 @@ class UploadCoordinator @Inject constructor(
         val failed = mutableListOf<UploadError>()
 
         batch.forEach { preparedItem ->
-            // Check if the coroutine has been cancelled before processing each item
             coroutineContext.ensureActive()
 
             try {
@@ -168,8 +165,6 @@ class UploadCoordinator @Inject constructor(
                     ))
                 }
             } catch (e: CancellationException) {
-                // Propagate cancellation - don't treat it as an error
-                Log.d(TAG, "Upload cancelled for item ${preparedItem.localId}")
                 throw e
             } catch (e: IOException) {
                 Log.w(TAG, "Network error uploading item ${preparedItem.localId}", e)

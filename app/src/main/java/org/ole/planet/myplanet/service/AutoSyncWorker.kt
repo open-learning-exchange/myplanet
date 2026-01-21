@@ -105,8 +105,7 @@ class AutoSyncWorker(
                         uploadManager.uploadSubmissions()
                         uploadManager.uploadActivities(null)
                     } catch (e: CancellationException) {
-                        // Worker was stopped - this is expected, don't treat as failure
-                        Log.d("AutoSyncWorker", "Upload cancelled - worker stopped")
+                        throw e
                     } catch (e: Exception) {
                         Log.e("AutoSyncWorker", "error: ${e.message}")
                         onSyncFailed(e.message)

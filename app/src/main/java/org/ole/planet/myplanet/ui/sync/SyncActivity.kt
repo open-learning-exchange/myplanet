@@ -579,7 +579,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     private fun updateUIWithNewLanguage() {
         try {
-            // Check if views are initialized before updating them
             if (::lblLastSyncDate.isInitialized) {
                 lblLastSyncDate.text = getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))
             }
@@ -621,7 +620,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             invalidateOptionsMenu()
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.w("SyncActivity", "Failed to update UI with new language: ${e.message}")
         }
     }
 

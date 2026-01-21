@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
-    
     @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
@@ -211,8 +210,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             })
             return
         } else if (source == "login") {
-            // Use applicationScope so uploads continue even if activity is destroyed
-            // Use Dispatchers.Main because upload methods use Realm executeTransactionAsync
             applicationScope.launch(Dispatchers.Main) {
                 uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
             }
@@ -221,8 +218,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        // Use applicationScope so uploads continue even if user navigates away
-        // Use Dispatchers.Main because upload methods use Realm executeTransactionAsync which requires a looper
         applicationScope.launch(Dispatchers.Main) {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
