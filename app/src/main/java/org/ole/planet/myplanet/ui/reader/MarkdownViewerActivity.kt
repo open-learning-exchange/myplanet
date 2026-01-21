@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityMarkdownViewerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
 
 class MarkdownViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMarkdownViewerBinding

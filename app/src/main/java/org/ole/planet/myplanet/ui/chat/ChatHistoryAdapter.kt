@@ -16,7 +16,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
+import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -25,12 +27,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.teams.TeamSelectionAdapter
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-
-data class ChatShareTargets(
-    val community: RealmMyTeam?,
-    val teams: List<RealmMyTeam>,
-    val enterprises: List<RealmMyTeam>,
-)
 
 class ChatHistoryAdapter(
     private val context: Context,
@@ -56,7 +52,7 @@ class ChatHistoryAdapter(
     )
 ) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
-    private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
+    private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
     private var chatTitle: String? = ""
     private lateinit var expandableListAdapter: ChatShareTargetAdapter
     private lateinit var expandableTitleList: List<String>
@@ -83,11 +79,7 @@ class ChatHistoryAdapter(
         }
     }
 
-    interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?)
-    }
-
-    fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
+    fun setChatHistoryItemClickListener(listener: OnChatHistoryItemClickListener) {
         chatHistoryItemClickListener = listener
     }
 

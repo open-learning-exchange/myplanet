@@ -8,20 +8,20 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.FragmentServicesBinding
+import org.ole.planet.myplanet.databinding.FragmentCommunityServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utilities.NavigationHelper.replaceFragment
 
-class ServicesFragment : BaseTeamFragment() {
-    private var binding: FragmentServicesBinding? = null
+class CommunityServicesFragment : BaseTeamFragment() {
+    private var binding: FragmentCommunityServicesBinding? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentServicesBinding.inflate(inflater, container, false)
+        binding = FragmentCommunityServicesBinding.inflate(inflater, container, false)
         return binding!!.root
     }
 
