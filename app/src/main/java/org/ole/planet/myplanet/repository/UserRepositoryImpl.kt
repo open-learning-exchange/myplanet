@@ -235,6 +235,17 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUserProfile(): RealmUserModel? {
+        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        return queryList(RealmUserModel::class.java) {
+            equalTo("id", userId).or().equalTo("_id", userId)
+        }.firstOrNull()
+    }
+
+    override suspend fun getUserImageUrl(): String? {
+        return getUserProfile()?.userImage
+    }
+
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val isAvailable = withContext(Dispatchers.IO) {
             try {
@@ -434,5 +445,33 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
+
+    override fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUserModel? {
+        try {
+            val user = databaseService.withRealm { realm ->
+                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+            }
+            user?.let {
+                if (it._id?.isEmpty() == true) {
+                    if (username == it.name && password == it.password) {
+                        return it
+                    }
+                } else {
+                    if (AndroidDecrypter.androidDecrypter(username, password, it.derived_key, it.salt)) {
+                        if (isManagerMode && !it.isManager()) return null
+                        return it
+                    }
+                }
+            }
+        } catch (err: Exception) {
+            err.printStackTrace()
+            return null
+        }
+        return null
+    }
+
+    override fun hasAtLeastOneUser(): Boolean {
+        return databaseService.withRealm { realm -> !realm.isEmpty }
     }
 }
