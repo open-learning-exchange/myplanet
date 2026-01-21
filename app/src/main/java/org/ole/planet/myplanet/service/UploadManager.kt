@@ -19,8 +19,8 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.ApiClient.client
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.service.upload.UploadConfigs
 import org.ole.planet.myplanet.service.upload.UploadCoordinator
@@ -63,7 +64,8 @@ class UploadManager @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     @AppPreferences private val pref: SharedPreferences,
     private val gson: Gson,
-    private val uploadCoordinator: UploadCoordinator
+    private val uploadCoordinator: UploadCoordinator,
+    private val personalsRepository: PersonalsRepository
 ) : FileUploadService() {
 
     private suspend fun uploadNewsActivities() {
@@ -368,20 +370,8 @@ class UploadManager @Inject constructor(
                         val rev = getString("rev", `object`)
                         val id = getString("id", `object`)
 
-                        databaseService.executeTransactionAsync { transactionRealm ->
-                            val managedPersonal = personal.id?.takeIf { it.isNotEmpty() }?.let { personalId ->
-                                transactionRealm.where(RealmMyPersonal::class.java)
-                                    .equalTo("id", personalId).findFirst()
-                            } ?: personal._id?.takeIf { it.isNotEmpty() }?.let { existingId ->
-                                transactionRealm.where(RealmMyPersonal::class.java)
-                                    .equalTo("_id", existingId).findFirst()
-                            }
-
-                            managedPersonal?.let { realmPersonal ->
-                                realmPersonal.isUploaded = true
-                                realmPersonal._rev = rev
-                                realmPersonal._id = id
-                            } ?: throw IllegalStateException("Personal resource not found")
+                        personal.id?.let { personalId ->
+                            personalsRepository.updatePersonalAfterSync(personalId, id, rev)
                         }
 
                         uploadAttachment(id, rev, personal) { }

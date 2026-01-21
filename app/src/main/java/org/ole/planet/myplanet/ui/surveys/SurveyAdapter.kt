@@ -4,7 +4,6 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -14,7 +13,7 @@ import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.surveys.SurveyFormState
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class SurveyAdapter(
     private val context: Context,
@@ -24,7 +23,10 @@ class SurveyAdapter(
     private val onAdoptSurveyListener: OnSurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(SurveyDiffCallback()) {
+) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
+    { oldItem, newItem -> oldItem.id == newItem.id },
+    { oldItem, newItem -> oldItem == newItem }
+)) {
     private var listener: OnHomeItemClickListener? = null
     private var isTitleAscending = true
     private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
@@ -136,15 +138,5 @@ class SurveyAdapter(
                 tvDate.text = surveyInfo?.creationDate ?: ""
             }
         }
-    }
-}
-
-class SurveyDiffCallback : DiffUtil.ItemCallback<RealmStepExam>() {
-    override fun areItemsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
-        return oldItem.id == newItem.id
-    }
-
-    override fun areContentsTheSame(oldItem: RealmStepExam, newItem: RealmStepExam): Boolean {
-        return oldItem == newItem
     }
 }
