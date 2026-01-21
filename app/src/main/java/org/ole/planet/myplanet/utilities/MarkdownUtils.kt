@@ -40,7 +40,7 @@ import java.util.regex.Pattern
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
 
-object Markdown {
+object MarkdownUtils {
     private var currentZoomDialog: Dialog? = null
     private val markwonCache = WeakHashMap<Context, Markwon>()
 

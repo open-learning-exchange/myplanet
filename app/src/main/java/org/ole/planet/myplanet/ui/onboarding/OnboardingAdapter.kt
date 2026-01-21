@@ -8,6 +8,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.viewpager.widget.PagerAdapter
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.OnboardingItem
 
 class OnboardingAdapter(private val mContext: Context, private val onBoardItems: ArrayList<OnboardingItem>) : PagerAdapter() {
 
