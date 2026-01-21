@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.utilities
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.callback.ItemTouchHelperListener
+import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 
-class ItemReorderHelper(private val mAdapter: ItemTouchHelperListener) :
+class ItemReorderHelper(private val mAdapter: OnItemMoveListener) :
     ItemTouchHelper.Callback() {
     override fun isLongPressDragEnabled(): Boolean {
         return true

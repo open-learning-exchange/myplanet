@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.data
+package org.ole.planet.myplanet.data.api
 
 import android.content.Context
 import com.google.gson.reflect.TypeToken
@@ -7,7 +7,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
