@@ -31,8 +31,8 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utilities.CameraUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
 
 private data class CourseStepData(
     val step: RealmCourseStep,

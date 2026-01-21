@@ -22,12 +22,13 @@ import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AudioRecorderService {
     private var outputFile: String? = null
     private var myAudioRecorder: MediaRecorder? = null
-    private var audioRecordListener: AudioRecordListener? = null
+    private var audioRecordListener: OnAudioRecordListener? = null
     private var caller: ActivityResultCaller? = null
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
@@ -40,7 +41,7 @@ class AudioRecorderService {
         audioRecordListener?.onError("Recording stopped")
     }
 
-    fun setAudioRecordListener(audioRecordListener: AudioRecordListener): AudioRecorderService {
+    fun setAudioRecordListener(audioRecordListener: OnAudioRecordListener): AudioRecorderService {
         this.audioRecordListener = audioRecordListener
         return this
     }
@@ -151,11 +152,5 @@ class AudioRecorderService {
         } else {
             this.startRecording()
         }
-    }
-
-    interface AudioRecordListener {
-        fun onRecordStarted()
-        fun onRecordStopped(outputFile: String?)
-        fun onError(error: String?)
     }
 }

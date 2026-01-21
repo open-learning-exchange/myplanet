@@ -39,10 +39,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
+import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
-import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -180,7 +180,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun createAudioRecorderService(dialog: AlertDialog) {
-        audioRecorderService?.setAudioRecordListener(object : AudioRecordListener {
+        audioRecorderService?.setAudioRecordListener(object : OnAudioRecordListener {
             override fun onRecordStarted() {
                 tvTime?.setText(R.string.recording_audio)
                 floatingActionButton?.setImageResource(R.drawable.ic_stop)
