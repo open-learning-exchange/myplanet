@@ -208,12 +208,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        val openedResourceIds = mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
-            .equalTo("type", "resource_opened")
-            .findAll()
-            .mapNotNull { it.resourceId }
-            .toSet()
-        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), openedResourceIds)
+        adapterLibrary = ResourcesAdapter(requireActivity(), libraryList, map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -242,6 +237,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
+
+        if (userModel?.id != null) {
+            lifecycleScope.launch {
+                resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                    if (::adapterLibrary.isInitialized) {
+                        adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                    }
+                }
+            }
+        }
         
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()

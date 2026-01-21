@@ -17,7 +17,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.ItemTouchHelperListener
+import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
@@ -36,7 +36,7 @@ class LifeAdapter(
     private val mDragStartListener: OnStartDragListener,
     private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
     private val reorderCallback: (List<RealmMyLife>) -> Unit
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperListener {
+) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
     private val hide = 0.5f
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
