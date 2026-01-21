@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnLibraryItemSelected
+import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
@@ -39,11 +39,11 @@ class ResourcesAdapter(
     private val resourcesRepository: ResourcesRepository,
     private val userModel: RealmUserModel?,
     private var tagsMap: Map<String, List<RealmTag>>,
-    private val openedResourceIds: Set<String>
+    private var openedResourceIds: Set<String>
 ) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(LibraryDiffCallback), OnDiffRefreshListener {
 
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
-    private var listener: OnLibraryItemSelected? = null
+    private var listener: OnLibraryItemSelectedListener? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -89,7 +89,7 @@ class ResourcesAdapter(
         submitList(libraryList, onComplete)
     }
 
-    fun setListener(listener: OnLibraryItemSelected?) {
+    fun setListener(listener: OnLibraryItemSelectedListener?) {
         this.listener = listener
     }
 
@@ -207,6 +207,11 @@ class ResourcesAdapter(
     fun setTagsMap(tagsMap: Map<String, List<RealmTag>>) {
         this.tagsMap = tagsMap
         notifyItemRangeChanged(0, itemCount, TAGS_PAYLOAD)
+    }
+
+    fun setOpenedResourceIds(openedResourceIds: Set<String>) {
+        this.openedResourceIds = openedResourceIds
+        notifyDataSetChanged()
     }
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {

@@ -15,7 +15,7 @@ import okio.Buffer
 import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.service.DownloadService

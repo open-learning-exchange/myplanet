@@ -28,8 +28,8 @@ import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.ApiClient
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.service.DownloadWorker
 import org.ole.planet.myplanet.utilities.DownloadUtils

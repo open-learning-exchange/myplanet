@@ -17,4 +17,8 @@ interface PersonalsRepository {
     suspend fun deletePersonalResource(id: String)
 
     suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit)
+
+    suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal>
+
+    suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
 }

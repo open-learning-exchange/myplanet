@@ -11,7 +11,7 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
@@ -57,18 +57,23 @@ class TransactionSyncManager @Inject constructor(
         return false
     }
 
-    fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: OnSyncListener) {
+    fun syncAllHealthData(settings: SharedPreferences, listener: OnSyncListener) {
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
+        val mRealm = Realm.getDefaultInstance()
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             for (userModel in users) {
                 syncHealthData(userModel, header)
             }
-        }, { listener.onSyncComplete() }) { error: Throwable ->
+        }, {
+            listener.onSyncComplete()
+            mRealm.close()
+        }) { error: Throwable ->
             error.message?.let { listener.onSyncFailed(it) }
+            mRealm.close()
         }
     }
 
@@ -95,7 +100,6 @@ class TransactionSyncManager @Inject constructor(
     }
 
     fun syncKeyIv(
-        mRealm: Realm,
         settings: SharedPreferences,
         listener: OnSyncListener,
         userSessionManager: UserSessionManager
@@ -106,11 +110,16 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
+        val mRealm = Realm.getDefaultInstance()
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
             syncHealthData(userModel, header)
-        }, { listener.onSyncComplete() }) { error: Throwable ->
+        }, {
+            listener.onSyncComplete()
+            mRealm.close()
+        }) { error: Throwable ->
             error.message?.let { listener.onSyncFailed(it) }
+            mRealm.close()
         }
     }
 
