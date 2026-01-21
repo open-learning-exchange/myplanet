@@ -134,6 +134,16 @@ class UserProfileFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.offlineVisits.collect {
+                    if (isAdded) {
+                        setupStatsRecycler()
+                    }
+                }
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -158,6 +168,7 @@ class UserProfileFragment : Fragment() {
         setupStatsRecycler()
         observeUserProfile()
         viewModel.loadUserProfile(settings.getString("userId", ""))
+        viewModel.getOfflineVisits()
 
         return binding.root
     }
@@ -457,7 +468,7 @@ class UserProfileFragment : Fragment() {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
             getString(R.string.last_login) to viewModel.lastVisit?.let { TimeUtils.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to viewModel.offlineVisits.toString(),
+            getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen)
         )
