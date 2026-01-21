@@ -24,7 +24,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -139,14 +138,18 @@ class VoicesFragment : BaseVoicesFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
-            imageList.clear()
-            llImage?.removeAllViews()
-            adapterNews?.addItem(n)
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
-            scrollToTop()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    imageList.clear()
+                    llImage?.removeAllViews()
+                    adapterNews?.addItem(n)
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                }
+            }
         }
 
         binding.addNewsImage.setOnClickListener {
