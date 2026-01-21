@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamFragment : Fragment(), TeamsAdapter.OnClickTeamItem, OnUpdateCompleteListener,

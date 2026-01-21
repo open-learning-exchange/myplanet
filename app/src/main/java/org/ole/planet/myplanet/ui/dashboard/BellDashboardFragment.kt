@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 
 @AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {

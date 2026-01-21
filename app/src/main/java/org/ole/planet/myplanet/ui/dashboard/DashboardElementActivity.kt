@@ -34,13 +34,13 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.NotificationUtils
-import org.ole.planet.myplanet.utilities.SecurePrefs
-import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.SharedPrefManager
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView

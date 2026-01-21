@@ -19,8 +19,8 @@ import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksAdapter.TeamsTasksViewHolder
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsTasksAdapter(
     private val context: Context,

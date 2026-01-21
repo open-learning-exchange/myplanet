@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Utilities
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,

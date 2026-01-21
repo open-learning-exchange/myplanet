@@ -10,8 +10,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.feedback.FeedbackAdapter.FeedbackViewHolder
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class FeedbackAdapter :
     ListAdapter<RealmFeedback, FeedbackViewHolder>(

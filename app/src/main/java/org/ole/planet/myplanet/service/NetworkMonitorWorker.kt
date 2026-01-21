@@ -8,7 +8,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class NetworkMonitorWorker(
     context: Context,

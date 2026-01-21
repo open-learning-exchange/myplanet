@@ -69,26 +69,26 @@ import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
-import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
-import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
-import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
-import org.ole.planet.myplanet.utilities.ServerConfigUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.Constants.autoSynFeature
+import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
+import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.DialogUtils.showSnack
+import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
+import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
+import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
+import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback,

@@ -10,7 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)

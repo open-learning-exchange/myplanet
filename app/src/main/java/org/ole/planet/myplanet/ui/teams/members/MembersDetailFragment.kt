@@ -9,7 +9,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
-import org.ole.planet.myplanet.utilities.NavigationHelper
+import org.ole.planet.myplanet.utils.NavigationHelper
 
 class MembersDetailFragment : Fragment() {
     private var _binding: FragmentMemberDetailBinding? = null

@@ -13,8 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadCoordinator @Inject constructor(

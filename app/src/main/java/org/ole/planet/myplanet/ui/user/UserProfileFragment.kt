@@ -62,9 +62,9 @@ import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {

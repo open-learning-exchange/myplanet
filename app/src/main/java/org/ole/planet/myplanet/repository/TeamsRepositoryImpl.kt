@@ -31,9 +31,9 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,

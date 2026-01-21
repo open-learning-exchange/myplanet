@@ -31,14 +31,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.utilities.CourseRatingUtils
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getInt
-import org.ole.planet.myplanet.utilities.MarkdownUtils.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utilities.SelectionUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getInt
+import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.SelectionUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.Utilities
 
 class CoursesAdapter(
     private val context: Context,
