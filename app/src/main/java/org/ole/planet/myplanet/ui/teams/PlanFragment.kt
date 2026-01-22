@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 
 class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null

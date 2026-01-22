@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard
+package org.ole.planet.myplanet.ui.base
 
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -38,6 +38,8 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
+import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
+import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.UserSelectionAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment

@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.textChanges
+import org.ole.planet.myplanet.ui.base.BaseVoicesFragment
 
 @AndroidEntryPoint
 class VoicesFragment : BaseVoicesFragment() {
