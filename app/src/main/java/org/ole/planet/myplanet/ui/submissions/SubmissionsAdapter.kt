@@ -9,6 +9,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -80,7 +81,7 @@ class SubmissionsAdapter(
                         val count = submissionCountMap[submission.id] ?: 1
                         if (count > 1) {
                             holder.binding.submissionCount.visibility = View.VISIBLE
-                            holder.binding.submissionCount.text = "($count)"
+                            holder.binding.submissionCount.text = context.getString(R.string.submission_count_format, count)
                         } else {
                             holder.binding.submissionCount.visibility = View.GONE
                         }
@@ -114,7 +115,7 @@ class SubmissionsAdapter(
         val count = submissionCountMap[submission.id] ?: 1
         if (count > 1) {
             binding.submissionCount.visibility = View.VISIBLE
-            binding.submissionCount.text = "($count)"
+            binding.submissionCount.text = context.getString(R.string.submission_count_format, count)
         } else {
             binding.submissionCount.visibility = View.GONE
         }

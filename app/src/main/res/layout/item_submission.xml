@@ -38,7 +38,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textSize="18sp"
-            android:text="✅" />
+            android:text="@string/icon_check" />
     </LinearLayout>
 
     <LinearLayout
@@ -52,14 +52,14 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="View Details"
+            android:text="@string/view_details"
             android:layout_marginEnd="4dp" />
         <Button
             android:id="@+id/btn_download_pdf"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Download PDF"
+            android:text="@string/download_pdf"
             android:layout_marginStart="4dp" />
     </LinearLayout>
 </LinearLayout>

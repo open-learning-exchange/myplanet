@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.service.UserSessionManager
 
@@ -117,10 +118,10 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
             binding.llSearch.visibility = View.VISIBLE
             binding.title.visibility = View.VISIBLE
             if (binding.rbSurvey.isChecked || type == "survey") {
-                binding.tvFragmentInfo.text = "mySurveys"
+                binding.tvFragmentInfo.text = getString(R.string.my_survey)
                 showNoData(binding.tvMessage, itemCount, "survey_submission")
             } else {
-                binding.tvFragmentInfo.text = "mySubmissions"
+                binding.tvFragmentInfo.text = getString(R.string.submission)
                 showNoData(binding.tvMessage, itemCount, "exam_submission")
             }
 

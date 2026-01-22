@@ -9,7 +9,7 @@
         android:id="@+id/tvReportTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enterprise Reports"
+        android:text="@string/enterprise_reports"
         android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         android:textStyle="bold"
@@ -76,7 +76,7 @@
                 android:id="@+id/salesValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:text="@string/label_2000"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
         </TableRow>
@@ -97,7 +97,7 @@
                 android:id="@+id/otherValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:text="@string/label_2000"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
         </TableRow>
@@ -144,7 +144,7 @@
                 android:id="@+id/personnelValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:text="@string/label_2000"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
         </TableRow>
@@ -165,7 +165,7 @@
                 android:id="@+id/nonPersonnelValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:text="@string/label_2000"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
         </TableRow>

@@ -11,7 +11,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Event Title"
+        android:text="@string/event_title"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:background="@color/primary"
         android:textStyle="bold"

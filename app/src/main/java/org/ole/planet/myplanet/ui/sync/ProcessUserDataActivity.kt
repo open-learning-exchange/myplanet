@@ -96,7 +96,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         runOnUiThread {
             if (!isFinishing && !isDestroyed) {
                 customProgressDialog.show()
-                customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
+                customProgressDialog.setText(getString(R.string.download_progress_format, getString(R.string.downloading), download?.progress, getString(R.string.complete)))
                 customProgressDialog.setProgress(download?.progress ?: 0)
                 if (download?.completeAll == true) {
                     safelyDismissDialog()

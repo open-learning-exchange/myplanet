@@ -182,7 +182,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun updateStepDisplay(position: Int) {
         if (position == 0) {
-            binding.tvStep.text = "Course Details"
+            binding.tvStep.text = getString(R.string.course_details)
         } else {
             val stepNumber = position
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)

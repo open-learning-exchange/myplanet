@@ -116,7 +116,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                 launchWhenViewIsReady {
                     if (!requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing surveys...")
+                        customProgressDialog?.setText(getString(R.string.syncing_surveys))
                         customProgressDialog?.show()
                     }
                 }

@@ -607,6 +607,12 @@ try {
 ### Resource Management
 
 **String Resources:**
+- Do not use hardcoded strings in XML or code.
+- Extract strings to `app/src/main/res/values/strings.xml`.
+- Use `snake_case` for string keys.
+- For format strings, use descriptive keys ending in `_format` (e.g., `download_progress_format`).
+- Use `getString(R.string.key)` or `getString(R.string.key, arg1, arg2)` in Kotlin.
+
 ```kotlin
 // Use resource strings for all user-facing text
 binding.tvTitle.text = getString(R.string.course_title)

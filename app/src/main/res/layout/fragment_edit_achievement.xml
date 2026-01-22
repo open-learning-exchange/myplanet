@@ -231,7 +231,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_small"
-                        android:text="Add any references below"
+                        android:text="@string/add_any_references_below"
                         android:textColor="@color/daynight_textColor"
                         android:visibility="invisible"/>
                     <LinearLayout

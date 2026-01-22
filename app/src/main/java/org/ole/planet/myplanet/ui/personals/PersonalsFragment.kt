@@ -86,7 +86,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
-        pg.setText("Please wait...")
+        pg.setText(getString(R.string.please_wait_1))
         pg.show()
         if (personal != null) {
             viewLifecycleOwner.lifecycleScope.launch {

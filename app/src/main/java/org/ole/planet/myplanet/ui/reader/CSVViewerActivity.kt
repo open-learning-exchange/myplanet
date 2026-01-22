@@ -85,7 +85,7 @@ class CSVViewerActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    binding.csvFileContent.text = "Error reading file: ${e.message}"
+                    binding.csvFileContent.text = getString(R.string.error_reading_file, e.message)
                 }
             } finally {
                 withContext(Dispatchers.Main) {

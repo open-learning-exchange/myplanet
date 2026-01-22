@@ -86,7 +86,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
-                android:text="Type"
+                android:text="@string/type_1"
                 android:textColor="@color/teams_heading"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toStartOf="@id/no_of_visits"

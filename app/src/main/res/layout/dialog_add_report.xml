@@ -114,7 +114,7 @@
             android:hint="@string/beginning_balance"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
-            android:text="0" />
+            android:text="@string/label_0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -139,7 +139,7 @@
             android:hint="@string/sales"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
-            android:text="0" />
+            android:text="@string/label_0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -164,7 +164,7 @@
             android:hint="@string/other_income"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
-            android:text="0" />
+            android:text="@string/label_0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -189,7 +189,7 @@
             android:hint="@string/personnel"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
-            android:text="0" />
+            android:text="@string/label_0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -214,6 +214,6 @@
             android:hint="@string/non_personnel"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
-            android:text="0" />
+            android:text="@string/label_0" />
     </com.google.android.material.textfield.TextInputLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

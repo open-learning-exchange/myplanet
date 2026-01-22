@@ -24,7 +24,7 @@ class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(D
         binding.tvDescription.text = context.getString(R.string.message_placeholder, meetup.description)
         binding.tvDateFrom.text = formatDate(meetup.startDate)
         binding.tvDateTo.text = formatDate(meetup.endDate)
-        binding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
+        binding.tvTime.text = context.getString(R.string.string_range, meetup.startTime, meetup.endTime)
         binding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
         binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
         binding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)

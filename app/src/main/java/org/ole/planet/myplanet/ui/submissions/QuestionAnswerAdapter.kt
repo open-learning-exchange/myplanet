@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemQuestionAnswerBinding
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -40,7 +41,7 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.
 
             if (qa.questionType != null) {
                 binding.tvQuestionType.visibility = View.VISIBLE
-                binding.tvQuestionType.text = "Type: ${qa.questionType}"
+                binding.tvQuestionType.text = binding.root.context.getString(R.string.type_format, qa.questionType)
             } else {
                 binding.tvQuestionType.visibility = View.GONE
             }
