@@ -237,8 +237,8 @@ class UploadToShelfService @Inject constructor(
         val response = withContext(Dispatchers.IO) {
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
-                delayMs = retryDelayMs,
-                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+                initialDelay = retryDelayMs,
+                shouldRetry = { resp, _ -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
                 apiInterface?.postDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
             }

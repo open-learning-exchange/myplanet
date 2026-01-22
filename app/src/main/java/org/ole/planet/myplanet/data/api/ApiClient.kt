@@ -20,8 +20,10 @@ object ApiClient {
         val startTime = System.currentTimeMillis()
         val result = RetryUtils.retry(
             maxAttempts = 3,
-            delayMs = 2000L,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful },
+            initialDelay = 1000L,
+            maxDelay = 5000L,
+            multiplier = 2.0,
+            shouldRetry = { resp, _ -> resp == null || !resp.isSuccessful },
             block = { operation() },
         )
         val duration = System.currentTimeMillis() - startTime
@@ -69,43 +71,44 @@ object ApiClient {
     }
 
     suspend fun <T> executeWithResult(operation: suspend () -> Response<T>?): NetworkResult<T> {
-        var retryCount = 0
         var lastException: Exception? = null
 
-        while (retryCount < 3) {
-            try {
-                val response = operation()
-                if (response != null) {
-                    if (response.isSuccessful) {
-                        val body = response.body()
-                        if (body != null) {
-                            return NetworkResult.Success(body)
-                        }
-                        return NetworkResult.Error(response.code(), null)
-                    } else if (retryCount < 2) {
-                        retryCount++
-                        delay(2000L * (retryCount + 1))
-                        continue
-                    } else {
-                        val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
-                        return NetworkResult.Error(response.code(), errorBody)
-                    }
+        val response = RetryUtils.retry(
+            maxAttempts = 3,
+            initialDelay = 1000L,
+            maxDelay = 5000L,
+            multiplier = 2.0,
+            shouldRetry = { resp, ex ->
+                if (ex != null) {
+                    lastException = ex
+                    return@retry RetryUtils.isRetriableError(ex)
                 }
-            } catch (e: SocketTimeoutException) {
-                lastException = e
-            } catch (e: IOException) {
-                lastException = e
-            } catch (e: Exception) {
-                lastException = e
+                if (resp != null) {
+                    if (resp.isSuccessful) return@retry false
+                    val code = resp.code()
+                    // Retry on 5xx server errors or 408 Timeout
+                    // 401, 403, 404 are permanent errors usually
+                    return@retry code in 500..599 || code == 408
+                }
+                return@retry true // resp is null, retry
             }
-
-            if (retryCount < 2) {
-                retryCount++
-                delay(2000L * (retryCount + 1))
-            } else {
-                break
-            }
+        ) {
+            operation()
         }
+
+        if (response != null && response.isSuccessful) {
+            val body = response.body()
+            if (body != null) {
+                return NetworkResult.Success(body)
+            }
+            return NetworkResult.Error(response.code(), "Empty body")
+        }
+
+        if (response != null) {
+            val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
+            return NetworkResult.Error(response.code(), errorBody)
+        }
+
         return NetworkResult.Exception(lastException ?: Exception("Unknown error"))
     }
 }
