@@ -149,6 +149,8 @@ class VoicesFragment : BaseVoicesFragment() {
                     searchFilteredList = applySearchFilter(labelFilteredList)
                     setData(searchFilteredList)
                     scrollToTop()
+                    binding.llAddNews.visibility = View.GONE
+                    binding.btnNewVoice.text = getString(R.string.new_voice)
                 }
             }
         }
@@ -213,8 +215,6 @@ class VoicesFragment : BaseVoicesFragment() {
             (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-        binding.llAddNews.visibility = View.GONE
-        binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
