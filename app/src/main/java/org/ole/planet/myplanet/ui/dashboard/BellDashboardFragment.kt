@@ -417,7 +417,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         }
-        binding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
+        binding.fabMyActivity.setOnClickListener { openHelperFragment(ActivitiesFragment()) }
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 

@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
+import org.ole.planet.myplanet.model.SubmissionDetail
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
@@ -313,7 +313,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 )
             }
 
-            org.ole.planet.myplanet.ui.submissions.SubmissionDetail(
+            SubmissionDetail(
                 title = exam?.name ?: "Submission Details",
                 status = "Status: ${submission.status ?: "Unknown"}",
                 date = submission.startTime,

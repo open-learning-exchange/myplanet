@@ -10,10 +10,14 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 
@@ -285,5 +289,25 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String) {
         val resourceIds = resources.mapNotNull { it.resourceId }
         addResourcesToUserLibrary(resourceIds, userId)
+    }
+
+    override suspend fun getOpenedResourceIds(userId: String): Set<String> {
+        val user = queryList(RealmUserModel::class.java) { equalTo("id", userId) }.firstOrNull()
+        val userName = user?.name ?: return emptySet()
+
+        return queryList(RealmResourceActivity::class.java) {
+            equalTo("user", userName)
+            equalTo("type", "resource_opened")
+        }.mapNotNull { it.resourceId }.toSet()
+    }
+
+    override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
+        val user = queryList(RealmUserModel::class.java) { equalTo("id", userId) }.firstOrNull()
+        val userName = user?.name ?: return flowOf(emptySet())
+
+        return queryListFlow(RealmResourceActivity::class.java) {
+            equalTo("user", userName)
+            equalTo("type", "resource_opened")
+        }.map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
     }
 }

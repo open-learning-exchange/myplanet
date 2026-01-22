@@ -306,25 +306,6 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun logCourseVisit(
-        userId: String?,
-        courseId: String?,
-        courseTitle: String?,
-        planetCode: String?,
-        parentCode: String?
-    ) {
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-            activity.type = "visit"
-            activity.title = courseTitle
-            activity.courseId = courseId
-            activity.time = Date().time
-            activity.parentCode = parentCode
-            activity.createdOn = planetCode
-            activity.user = userId
-        }
-    }
-
     override suspend fun getCourseTitleById(courseId: String): String? {
         return withRealm { realm ->
             realm.where(RealmMyCourse::class.java)

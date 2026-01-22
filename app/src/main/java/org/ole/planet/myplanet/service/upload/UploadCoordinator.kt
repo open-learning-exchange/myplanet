@@ -6,12 +6,15 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.RealmObject
 import java.io.IOException
+import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.reflect.KClass
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.ApiInterface
+import kotlin.coroutines.coroutineContext
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -128,6 +131,8 @@ class UploadCoordinator @Inject constructor(
         val failed = mutableListOf<UploadError>()
 
         batch.forEach { preparedItem ->
+            coroutineContext.ensureActive()
+
             try {
                 config.beforeUpload?.invoke(preparedItem.item)
 
@@ -169,6 +174,8 @@ class UploadCoordinator @Inject constructor(
                         httpCode = response.code()
                     ))
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: IOException) {
                 Log.w(TAG, "Network error uploading item ${preparedItem.localId}", e)
                 failed.add(UploadError(preparedItem.localId, e, retryable = true))
