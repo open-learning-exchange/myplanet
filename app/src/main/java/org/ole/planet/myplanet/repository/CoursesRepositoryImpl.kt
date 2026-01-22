@@ -256,15 +256,21 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData? {
-        val stepsList = getCourseSteps(courseId)
-        val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         return withRealm { realm ->
-            val max = stepsList.size
+            // Optimize: Use single Realm instance to avoid multiple openings/closings and unnecessary copies
+            val stepsListAttached = queryListAttached(realm, RealmCourseStep::class.java) {
+                equalTo("courseId", courseId)
+            }
+            // We need to pass stepsListAttached to getCurrentProgress. Since it's RealmResults, it implements List.
+            // And since we call the synchronous variant of getCurrentProgress, we pass the same realm.
+            val current = progressRepository.getCurrentProgress(realm, stepsListAttached, userId, courseId)
+
+            val max = stepsListAttached.size
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val title = course?.courseTitle
 
             val array = com.google.gson.JsonArray()
-            stepsList.forEach { step ->
+            stepsListAttached.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()

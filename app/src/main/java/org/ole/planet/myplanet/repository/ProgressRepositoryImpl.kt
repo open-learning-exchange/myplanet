@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.utils.JsonUtils
+import io.realm.Realm
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
@@ -69,7 +70,16 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
     override suspend fun getCurrentProgress(
         steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
     ): Int {
-        val progresses = queryList(RealmCourseProgress::class.java) {
+        return withRealm { realm ->
+            getCurrentProgress(realm, steps, userId, courseId)
+        }
+    }
+
+    override fun getCurrentProgress(
+        realm: Realm, steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
+    ): Int {
+        // Use attached objects here to avoid copying
+        val progresses = queryListAttached(realm, RealmCourseProgress::class.java) {
             equalTo("userId", userId)
             equalTo("courseId", courseId)
         }

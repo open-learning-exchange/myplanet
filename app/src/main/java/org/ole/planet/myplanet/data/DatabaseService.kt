@@ -5,6 +5,7 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmModel
 import io.realm.RealmQuery
+import io.realm.RealmResults
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
@@ -78,6 +79,9 @@ class DatabaseService(context: Context) {
 
 }
 
+/**
+ * Returns a detached copy of the list. Safe to use across threads.
+ */
 fun <T : RealmModel> Realm.queryList(
     clazz: Class<T>,
     builder: RealmQuery<T>.() -> Unit = {}
@@ -85,6 +89,19 @@ fun <T : RealmModel> Realm.queryList(
     return where(clazz).apply(builder).findAll().let { copyFromRealm(it) }
 }
 
+/**
+ * Returns a managed RealmResults. faster, but MUST NOT be used across threads or after Realm is closed.
+ */
+fun <T : RealmModel> Realm.queryListAttached(
+    clazz: Class<T>,
+    builder: RealmQuery<T>.() -> Unit = {}
+): RealmResults<T> {
+    return where(clazz).apply(builder).findAll()
+}
+
+/**
+ * Returns a detached copy of the object. Safe to use across threads.
+ */
 fun <T : RealmModel, V : Any> Realm.findCopyByField(
     clazz: Class<T>,
     fieldName: String,
@@ -94,6 +111,19 @@ fun <T : RealmModel, V : Any> Realm.findCopyByField(
         .applyEqualTo(fieldName, value)
         .findFirst()
         ?.let { copyFromRealm(it) }
+}
+
+/**
+ * Returns a managed Realm object. faster, but MUST NOT be used across threads or after Realm is closed.
+ */
+fun <T : RealmModel, V : Any> Realm.findAttachedByField(
+    clazz: Class<T>,
+    fieldName: String,
+    value: V,
+): T? {
+    return where(clazz)
+        .applyEqualTo(fieldName, value)
+        .findFirst()
 }
 
 fun <T : RealmModel> RealmQuery<T>.applyEqualTo(field: String, value: Any): RealmQuery<T> {

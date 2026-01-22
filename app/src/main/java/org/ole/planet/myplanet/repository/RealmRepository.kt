@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import io.realm.Realm
 import io.realm.RealmChangeListener
+import io.realm.RealmModel
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -13,10 +14,14 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.applyEqualTo
+import org.ole.planet.myplanet.data.findAttachedByField
 import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
+import org.ole.planet.myplanet.data.queryListAttached
 
 open class RealmRepository(protected val databaseService: DatabaseService) {
+    // --- Suspend functions (open their own Realm) ---
+
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -142,8 +147,43 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         return withRealm(false, operation)
     }
 
-
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)
+    }
+
+    // --- Synchronous helpers (require existing Realm instance) ---
+
+    protected fun <T : RealmModel> queryList(
+        realm: Realm,
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit = {}
+    ): List<T> {
+        return realm.queryList(clazz, builder)
+    }
+
+    protected fun <T : RealmModel> queryListAttached(
+        realm: Realm,
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit = {}
+    ): RealmResults<T> {
+        return realm.queryListAttached(clazz, builder)
+    }
+
+    protected fun <T : RealmModel, V : Any> findByField(
+        realm: Realm,
+        clazz: Class<T>,
+        fieldName: String,
+        value: V,
+    ): T? {
+        return realm.findCopyByField(clazz, fieldName, value)
+    }
+
+    protected fun <T : RealmModel, V : Any> findAttachedByField(
+        realm: Realm,
+        clazz: Class<T>,
+        fieldName: String,
+        value: V,
+    ): T? {
+        return realm.findAttachedByField(clazz, fieldName, value)
     }
 }
