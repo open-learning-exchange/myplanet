@@ -67,6 +67,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.service.sync.SyncStatusTracker
 import org.ole.planet.myplanet.service.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
@@ -163,19 +164,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 syncManager.syncStatus.collect { status ->
                     when (status) {
-                        is SyncManager.SyncStatus.Idle -> {
+                        is SyncStatusTracker.SyncStatus.Idle -> {
                             // Do nothing
                         }
 
-                        is SyncManager.SyncStatus.Syncing -> {
+                        is SyncStatusTracker.SyncStatus.Syncing -> {
                             onSyncStarted()
                         }
 
-                        is SyncManager.SyncStatus.Success -> {
+                        is SyncStatusTracker.SyncStatus.Success -> {
                             onSyncComplete()
                         }
 
-                        is SyncManager.SyncStatus.Error -> {
+                        is SyncStatusTracker.SyncStatus.Error -> {
                             onSyncFailed(status.message)
                         }
                     }

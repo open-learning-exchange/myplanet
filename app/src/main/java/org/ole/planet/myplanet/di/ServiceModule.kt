@@ -41,20 +41,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    fun provideSyncManager(
-        @ApplicationContext context: Context,
-        databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences,
-        apiInterface: ApiInterface,
-        improvedSyncManager: Lazy<ImprovedSyncManager>,
-        transactionSyncManager: TransactionSyncManager,
-        @ApplicationScope scope: CoroutineScope
-    ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
-    }
-
-    @Provides
-    @Singleton
     fun provideUploadManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
