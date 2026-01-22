@@ -82,6 +82,7 @@ import org.ole.planet.myplanet.ui.settings.SettingsActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.surveys.SendSurveyFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
+import org.ole.planet.myplanet.ui.sync.SyncProgressBottomSheet
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
@@ -349,7 +350,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupToolbarActions() {
-        binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
+        binding.appBarBell.ivSync.setOnClickListener {
+             logSyncInSharedPrefs()
+             val syncProgressBottomSheet = SyncProgressBottomSheet()
+             syncProgressBottomSheet.show(supportFragmentManager, SyncProgressBottomSheet.TAG)
+        }
         binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         binding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             handleToolbarMenuItem(item.itemId)
@@ -370,7 +375,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
-            R.id.action_sync -> logSyncInSharedPrefs()
+            R.id.action_sync -> {
+                 logSyncInSharedPrefs()
+                 val syncProgressBottomSheet = SyncProgressBottomSheet()
+                 syncProgressBottomSheet.show(supportFragmentManager, SyncProgressBottomSheet.TAG)
+            }
             R.id.action_feedback -> {
                 if (user?.id?.startsWith("guest") == false) {
                     openCallFragment(

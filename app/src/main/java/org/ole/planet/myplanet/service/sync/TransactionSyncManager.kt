@@ -19,6 +19,8 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.repository.SyncProgressRepository
+import org.ole.planet.myplanet.repository.SyncState
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -34,6 +36,7 @@ import retrofit2.Response
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
+    private val syncProgressRepository: SyncProgressRepository,
     @ApplicationContext private val context: Context
 ) {
     fun authenticate(): Boolean {
@@ -126,8 +129,21 @@ class TransactionSyncManager @Inject constructor(
     suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
+        syncProgressRepository.setTableState(table, SyncState.SYNCING)
 
         try {
+            // Get total count
+            var totalRows = 0
+            try {
+                val countUrl = "${UrlUtils.getUrl()}/$table/_all_docs?limit=0"
+                val countResponse = apiInterface.getJsonObject(UrlUtils.header, countUrl).execute()
+                totalRows = countResponse.body()?.get("total_rows")?.asInt ?: 0
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            syncProgressRepository.updateTableProgress(table, 0, totalRows)
+
+
             // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
                 "ratings" -> 20      // Small batches for slow endpoint
@@ -194,6 +210,8 @@ class TransactionSyncManager @Inject constructor(
                 totalDocs += arr.size()
                 skip += arr.size()
 
+                syncProgressRepository.updateTableProgress(table, totalDocs, totalRows)
+
                 val batchDuration = System.currentTimeMillis() - batchStartTime
                 android.util.Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
 
@@ -210,10 +228,12 @@ class TransactionSyncManager @Inject constructor(
 
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+            syncProgressRepository.setTableState(table, SyncState.SUCCESS, System.currentTimeMillis())
         } catch (e: Exception) {
             e.printStackTrace()
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
+            syncProgressRepository.setTableState(table, SyncState.FAILED)
         }
     }
 

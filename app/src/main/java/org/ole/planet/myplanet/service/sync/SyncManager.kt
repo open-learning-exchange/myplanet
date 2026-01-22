@@ -14,6 +14,7 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
+import java.util.Locale
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -48,6 +49,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
+import org.ole.planet.myplanet.repository.SyncProgressRepository
+import org.ole.planet.myplanet.repository.SyncState
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -55,6 +58,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
+import org.ole.planet.myplanet.utils.NotificationUtils.updateProgress
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -66,6 +70,7 @@ class SyncManager constructor(
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
+    private val syncProgressRepository: SyncProgressRepository,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
     private var isSyncing = false
@@ -81,9 +86,30 @@ class SyncManager constructor(
         }
     }
 
+    init {
+        syncScope.launch {
+            syncProgressRepository.syncProgress.collect { progress ->
+                if (isSyncing) {
+                     val currentTable = progress.currentTable.replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+                     val statusText = if (progress.max > 0) {
+                         "$currentTable: ${progress.progress}/${progress.max}"
+                     } else {
+                         "$currentTable: Syncing..."
+                     }
+
+                     // We use currentTable as title if available, otherwise "Syncing data"
+                     val title = if (progress.currentTable.isNotEmpty()) "Syncing $currentTable" else "Syncing data"
+
+                     updateProgress(context, R.mipmap.ic_launcher, title, statusText, progress.progress, progress.max)
+                }
+            }
+        }
+    }
+
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
+            syncProgressRepository.reset()
             _syncStatus.value = SyncStatus.Idle
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
@@ -544,6 +570,7 @@ class SyncManager constructor(
     private suspend fun resourceTransactionSync() {
         val resourceSyncStartTime = System.currentTimeMillis()
         Log.d("SyncPerf", "  ▶ Starting resource sync")
+        syncProgressRepository.setTableState("resources", SyncState.SYNCING)
 
         val logger = SyncTimeLogger
         logger.startProcess("resource_sync_main")
@@ -575,6 +602,7 @@ class SyncManager constructor(
 
             Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
             logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: $batchSize")
+            syncProgressRepository.updateTableProgress("resources", 0, totalRows)
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
@@ -704,6 +732,7 @@ class SyncManager constructor(
                             putInt("ResourceSyncPosition", skip)
                         }
                     }
+                    syncProgressRepository.updateTableProgress("resources", skip, totalRows)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
@@ -736,11 +765,13 @@ class SyncManager constructor(
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
             Log.d("SyncPerf", "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items")
+            syncProgressRepository.setTableState("resources", SyncState.SUCCESS, System.currentTimeMillis())
         } catch (e: Exception) {
             e.printStackTrace()
             logger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = System.currentTimeMillis()
             Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
+            syncProgressRepository.setTableState("resources", SyncState.FAILED)
         }
     }
 
@@ -873,6 +904,7 @@ class SyncManager constructor(
 
             coroutineScope {
                 val semaphore = Semaphore(3)
+                var completedShelves = 0
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
                     async(Dispatchers.IO) {
                         semaphore.withPermit {

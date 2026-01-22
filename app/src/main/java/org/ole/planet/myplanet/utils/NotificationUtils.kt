@@ -68,6 +68,17 @@ object NotificationUtils {
     }
 
     @JvmStatic
+    fun updateProgress(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?, progress: Int, max: Int) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val a = NotificationCompat.Builder(context, "11")
+        setChannel(manager)
+        val indeterminate = max == 0
+        val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
+            .setProgress(max, progress, indeterminate).setAutoCancel(false).setOngoing(true).build()
+        manager.notify(111, notification)
+    }
+
+    @JvmStatic
     fun cancel(context: Context, id: Int) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
