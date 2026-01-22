@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -22,8 +23,10 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Call
@@ -219,6 +222,26 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     }
                 }
             })
+        }
+    }
+
+    override suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
+            if (response.isSuccessful) {
+                val checksum = response.body()?.string()
+                if (!checksum.isNullOrEmpty()) {
+                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    if (f.exists()) {
+                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
+                        return@withContext checksum.contains(sha256)
+                    }
+                }
+            }
+            false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
         }
     }
 

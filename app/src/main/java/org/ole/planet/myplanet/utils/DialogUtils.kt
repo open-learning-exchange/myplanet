@@ -10,12 +10,13 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.DownloadService
 import org.ole.planet.myplanet.service.UserSessionManager
@@ -177,7 +178,8 @@ object DialogUtils {
         scope: CoroutineScope
     ) {
         scope.launch {
-            val checksumMatch = DataService(context.applicationContext).checkCheckSum(path)
+            val repositoryEntryPoint = EntryPointAccessors.fromApplication(context, RepositoryEntryPoint::class.java)
+            val checksumMatch = repositoryEntryPoint.configurationsRepository().checkCheckSum(path)
             if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)

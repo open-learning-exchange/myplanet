@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -140,18 +139,36 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
-            }
-        }, object : OnSecurityDataListener {
+        val securityCallback = object : OnSecurityDataListener {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
-                    customProgressDialog.dismiss()
-                    autoLoginNewMember(info.username, info.password)
+                    if (customProgressDialog.isShowing()) {
+                        customProgressDialog.dismiss()
+                        autoLoginNewMember(info.username, info.password)
+                    }
                 }
             }
-        })
+        }
+
+        lifecycleScope.launch {
+            val result = userRepository.becomeMember(obj)
+            withContext(Dispatchers.Main) {
+                if (result.first) {
+                    val userName = obj["name"].asString
+                    startUpload("becomeMember", userName, securityCallback)
+
+                    if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        Utilities.toast(this@BecomeMemberActivity, result.second)
+                        securityCallback.onSecurityDataUpdated()
+                    } else {
+                        Utilities.toast(this@BecomeMemberActivity, result.second)
+                    }
+                } else {
+                    Utilities.toast(this@BecomeMemberActivity, result.second)
+                    securityCallback.onSecurityDataUpdated()
+                }
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
