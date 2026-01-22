@@ -10,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -171,6 +172,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
+        if (isImageAlreadyAdded(path)) {
+            Toast.makeText(this, R.string.image_already_added, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
@@ -180,6 +186,17 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             showSelectedImages()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun isImageAlreadyAdded(path: String): Boolean {
+        return imageList.any { imageJson ->
+            try {
+                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                getString("imageUrl", imgObject) == path
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 
