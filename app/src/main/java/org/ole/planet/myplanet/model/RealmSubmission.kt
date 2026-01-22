@@ -246,10 +246,16 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(mRealm: Realm, submission: RealmSubmission): JsonObject {
+        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context): JsonObject {
             val jsonObject = JsonObject()
 
             try {
+                var examId = submission.parentId
+                if (submission.parentId?.contains("@") == true) {
+                    examId = submission.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                }
+                val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+
                 if (!submission._id.isNullOrEmpty()) {
                     jsonObject.addProperty("_id", submission._id)
                 }
@@ -259,26 +265,21 @@ open class RealmSubmission : RealmObject() {
 
                 jsonObject.addProperty("parentId", submission.parentId ?: "")
                 jsonObject.addProperty("type", submission.type ?: "survey")
-                jsonObject.addProperty("userId", submission.userId ?: "")
-                jsonObject.addProperty("status", submission.status ?: "pending")
-
-                if (submission.teamObject != null) {
-                    val teamJson = JsonObject()
-                    teamJson.addProperty("_id", submission.teamObject?._id)
-                    teamJson.addProperty("name", submission.teamObject?.name)
-                    teamJson.addProperty("type", submission.teamObject?.type)
-                    jsonObject.add("team", teamJson)
-                }
-
-                jsonObject.addProperty("uploaded", submission.uploaded)
-                jsonObject.addProperty("sender", submission.sender ?: "")
-                jsonObject.addProperty("source", submission.source ?: "")
-                jsonObject.addProperty("parentCode", submission.parentCode ?: "")
+                jsonObject.addProperty("grade", submission.grade)
                 jsonObject.addProperty("startTime", submission.startTime)
                 jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
-                jsonObject.addProperty("grade", submission.grade)
-
-                if (!submission.parent.isNullOrEmpty()) {
+                jsonObject.addProperty("status", submission.status ?: "pending")
+                jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
+                jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+                jsonObject.addProperty("sender", submission.sender)
+                val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+                jsonObject.addProperty("source", prefs.getString("planetCode", ""))
+                jsonObject.addProperty("parentCode", prefs.getString("parentCode", ""))
+                jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
+                if (exam != null) {
+                    jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+                } else if (!submission.parent.isNullOrEmpty()) {
                     jsonObject.add("parent", JsonParser.parseString(submission.parent))
                 }
 
@@ -287,20 +288,10 @@ open class RealmSubmission : RealmObject() {
                     if (submission.membershipDoc != null) {
                         val membershipJson = JsonObject()
                         membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
-
                         userJson.add("membershipDoc", membershipJson)
                     }
                     jsonObject.add("user", userJson)
                 }
-
-                val questions = mRealm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", submission.parentId)
-                    .findAll()
-                val serializedQuestions = RealmExamQuestion.serializeQuestions(questions)
-                jsonObject.add("questions", serializedQuestions)
-
-                val answersArray = RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList())
-                jsonObject.add("answers", answersArray)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
