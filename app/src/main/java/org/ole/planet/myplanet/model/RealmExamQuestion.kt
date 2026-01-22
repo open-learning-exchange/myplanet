@@ -9,7 +9,7 @@ import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmExamQuestion : RealmObject() {
     @PrimaryKey

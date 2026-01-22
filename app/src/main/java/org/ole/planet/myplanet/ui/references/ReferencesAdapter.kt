@@ -8,9 +8,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter.ReferencesViewHolder
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
 
 class ReferencesAdapter(private val context: Context, list: List<String>) :
     ListAdapter<String, ReferencesViewHolder>(DIFF_CALLBACK) {

@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class UserProfileAdapter(
     private val onItemClickListener: OnUserProfileClickListener

@@ -41,14 +41,14 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
-import org.ole.planet.myplanet.utilities.DialogUtils.showError
-import org.ole.planet.myplanet.utilities.FileUtils.installApk
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {

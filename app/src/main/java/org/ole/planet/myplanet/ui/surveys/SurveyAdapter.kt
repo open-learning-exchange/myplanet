@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class SurveyAdapter(
     private val context: Context,

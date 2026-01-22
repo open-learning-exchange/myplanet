@@ -18,8 +18,8 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -245,13 +245,6 @@ class ResourcesRepositoryImpl @Inject constructor(
             e.printStackTrace()
             false
         }
-    }
-
-    override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
-        return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
-            .equalTo("resourceId", resourceId)
-            .equalTo("type", "resource_opened")
-            .findFirst() != null
     }
 
     override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {

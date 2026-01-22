@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {

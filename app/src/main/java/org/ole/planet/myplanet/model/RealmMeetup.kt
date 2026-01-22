@@ -8,8 +8,8 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 
 open class RealmMeetup : RealmObject() {
     @PrimaryKey

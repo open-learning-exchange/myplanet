@@ -20,9 +20,9 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 
 @AndroidEntryPoint
 class EventsDetailFragment : Fragment(), View.OnClickListener {

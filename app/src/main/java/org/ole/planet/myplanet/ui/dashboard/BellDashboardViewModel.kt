@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(

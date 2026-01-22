@@ -18,8 +18,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
 
 class CSVViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCsvviewerBinding

@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.databinding.RowNavigationChildAdapterBinding
 import org.ole.planet.myplanet.databinding.RowNavigationParentAdapterBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class ResourcesTagsAdapter(
     private val listener: OnTagClickListener

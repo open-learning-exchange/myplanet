@@ -130,7 +130,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <service
-            android:name=".service.DownloadService"
+            android:name=".services.DownloadService"
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:permission="android.permission.FOREGROUND_SERVICE"
@@ -146,7 +146,7 @@
                 android:value="androidx.startup" />
         </provider>
 
-        <receiver android:name=".utilities.NotificationActionReceiver"
+        <receiver android:name=".utils.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="mark_as_read" />

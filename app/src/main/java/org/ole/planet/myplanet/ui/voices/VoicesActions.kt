@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 object VoicesActions {
     private val imagesToRemove = mutableSetOf<String>()

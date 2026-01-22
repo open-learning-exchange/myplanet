@@ -17,8 +17,8 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EnterprisesFinancesAdapter(
     private val context: Context,

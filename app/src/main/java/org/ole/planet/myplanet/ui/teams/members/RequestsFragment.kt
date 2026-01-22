@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
 class RequestsFragment : BaseMemberFragment() {

@@ -40,20 +40,20 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkMonitorWorker
-import org.ole.planet.myplanet.service.StayOnlineWorker
-import org.ole.planet.myplanet.service.TaskNotificationWorker
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.ANRWatchdog
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
-import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
-import org.ole.planet.myplanet.utilities.ThemeMode
-import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
+import org.ole.planet.myplanet.services.AutoSyncWorker
+import org.ole.planet.myplanet.services.NetworkMonitorWorker
+import org.ole.planet.myplanet.services.StayOnlineWorker
+import org.ole.planet.myplanet.services.TaskNotificationWorker
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
+import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.ThemeMode
+import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {

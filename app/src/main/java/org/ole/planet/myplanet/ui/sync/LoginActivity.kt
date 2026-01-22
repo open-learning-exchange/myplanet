@@ -45,14 +45,14 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.ui.user.UserProfileAdapter
-import org.ole.planet.myplanet.utilities.AuthUtils
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utils.AuthUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.ThemeManager
+import org.ole.planet.myplanet.utils.UrlUtils.getUrl
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
