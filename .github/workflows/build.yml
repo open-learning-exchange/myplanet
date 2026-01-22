@@ -42,7 +42,7 @@ jobs:
           cache-read-only: false
           cache-write-only: false
 
-      - name: build debug as test
+      - name: build debug and run tests
         run: |
           FLAVOR=${{ matrix.build }}
-          ./gradlew assemble${FLAVOR^}Debug --warning-mode all --stacktrace
+          ./gradlew assemble${FLAVOR^}Debug test${FLAVOR^}DebugUnitTest --warning-mode all --stacktrace

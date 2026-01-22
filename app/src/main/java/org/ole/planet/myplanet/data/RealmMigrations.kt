@@ -6,6 +6,13 @@ import io.realm.RealmMigration
 class RealmMigrations : RealmMigration {
     override fun migrate(realm: DynamicRealm, oldVersion: Long, newVersion: Long) {
         val schema = realm.schema
+        migrateSchema(schema, oldVersion, newVersion)
+    }
+
+    fun migrateSchema(schema: io.realm.RealmSchema, oldVersion: Long, newVersion: Long) {
+        if (oldVersion > newVersion) {
+            throw IllegalStateException("Downgrading schema version from $oldVersion to $newVersion is not supported.")
+        }
         var version = oldVersion
 
         if (version == 4L) {

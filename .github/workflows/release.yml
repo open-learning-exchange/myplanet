@@ -44,6 +44,11 @@ jobs:
           cache-read-only: false
           cache-write-only: false
 
+      - name: run tests
+        run: |
+          FLAVOR=${{ matrix.build }}
+          ./gradlew test${FLAVOR^}DebugUnitTest --warning-mode all --stacktrace
+
       - name: set release version
         run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
 
