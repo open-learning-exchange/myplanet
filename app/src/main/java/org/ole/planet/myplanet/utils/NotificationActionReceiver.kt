@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.NotificationsRepository
-import org.ole.planet.myplanet.service.getBroadcastService
+import org.ole.planet.myplanet.services.getBroadcastService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 @AndroidEntryPoint
