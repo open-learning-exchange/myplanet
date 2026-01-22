@@ -7,8 +7,8 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventsViewHolder {

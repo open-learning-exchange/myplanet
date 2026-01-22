@@ -42,10 +42,10 @@ import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.service.AudioRecorderService
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.services.AudioRecorderService
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddResourceFragment : BottomSheetDialogFragment() {

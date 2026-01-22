@@ -9,7 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class DashboardSurveysAdapter(
     private val onItemClick: (Int) -> Unit,

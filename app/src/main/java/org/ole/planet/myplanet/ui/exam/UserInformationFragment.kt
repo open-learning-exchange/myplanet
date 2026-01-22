@@ -30,18 +30,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
-import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -181,7 +180,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
 
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-            if (yobInt < 1900 || yobInt > currentYear) {
+            if (yobInt !in 1900..currentYear) {
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
                 return
@@ -378,21 +377,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private suspend fun uploadSubmissionsWithTiming(capturedSyncStartTime: Long) {
         try {
             Log.d("UserInformationFragment", "About to call uploadSubmissions with capturedSyncStartTime: $capturedSyncStartTime")
+            uploadManager.uploadAdoptedSurveys()
             uploadManager.uploadSubmissions(capturedSyncStartTime)
-            uploadExamResultWrapper()
         } catch (e: Exception) {
             Log.e("UserInformationFragment", "Error during upload", e)
-            e.printStackTrace()
-        }
-    }
-
-    private suspend fun uploadExamResultWrapper() {
-        try {
-            val successListener = object : OnSuccessListener {
-                override fun onSuccess(success: String?) {}
-            }
-            uploadManager.uploadExamResult(successListener)
-        } catch (e: Exception) {
             e.printStackTrace()
         }
     }

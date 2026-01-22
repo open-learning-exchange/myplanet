@@ -28,12 +28,12 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -901,7 +901,14 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
-        val membersData = withRealm { realm ->
+        data class MemberStats(
+            val member: RealmUserModel,
+            val visitCount: Long,
+            val lastVisitTimestamp: Long?,
+            val isLeader: Boolean
+        )
+
+        val membersStats = withRealm { realm ->
             val members = RealmMyTeam.getJoinedMember(teamId, realm).map { realm.copyFromRealm(it) }.toMutableList()
             val communityLeadersJson = preferences.getString("communityLeaders", "") ?: ""
 
@@ -952,17 +959,22 @@ class TeamsRepositoryImpl @Inject constructor(
             orderedMembers.map { member ->
                 val lastVisitTimestamp = RealmTeamLog.getLastVisit(realm, member.name, teamId)
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val profileLastVisit = userSessionManager.getLastVisit(member)
                 val isLeader = member.id in leaderIds
-                JoinedMemberData(member, visitCount, lastVisitTimestamp,
-                    "", profileLastVisit, isLeader
-                )
+                MemberStats(member, visitCount, lastVisitTimestamp, isLeader)
             }
         }
 
-        return membersData.map { data ->
-            val offlineVisits = "${userSessionManager.getOfflineVisits(data.user)}"
-            data.copy(offlineVisits = offlineVisits)
+        return membersStats.map { stats ->
+            val profileLastVisit = userSessionManager.getLastVisit(stats.member)
+            val offlineVisits = "${userSessionManager.getOfflineVisits(stats.member)}"
+            JoinedMemberData(
+                stats.member,
+                stats.visitCount,
+                stats.lastVisitTimestamp,
+                offlineVisits,
+                profileLastVisit,
+                stats.isLeader
+            )
         }
     }
 

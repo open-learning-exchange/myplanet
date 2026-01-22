@@ -65,30 +65,30 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.service.sync.TransactionSyncManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
-import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
-import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
-import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
-import org.ole.planet.myplanet.utilities.ServerConfigUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.Constants.autoSynFeature
+import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
+import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.DialogUtils.showSnack
+import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
+import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
+import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
+import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback,
@@ -154,7 +154,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var transactionSyncManager: TransactionSyncManager
 
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
+    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -582,27 +582,44 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (::lblLastSyncDate.isInitialized) {
                 lblLastSyncDate.text = getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))
             }
-
-            lblVersion.text = getString(R.string.app_version)
-            tvAvailableSpace.text = buildString {
-                append(getString(R.string.available_space_colon))
-                append(" ")
-                append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
+            if (::lblVersion.isInitialized) {
+                lblVersion.text = getString(R.string.app_version)
             }
-
-            inputName.hint = getString(R.string.hint_name)
-            inputPassword.hint = getString(R.string.password)
-            btnSignIn.text = getString(R.string.btn_sign_in)
-            btnGuestLogin.text = getString(R.string.btn_guest_login)
-            becomeMember.text = getString(R.string.become_a_member)
-            btnFeedback.text = getString(R.string.feedback)
-            openCommunity.text = getString(R.string.open_community)
-            val currentLanguage = LocaleUtils.getLanguage(this)
-            btnLang.text = getLanguageString(currentLanguage)
+            if (::tvAvailableSpace.isInitialized) {
+                tvAvailableSpace.text = buildString {
+                    append(getString(R.string.available_space_colon))
+                    append(" ")
+                    append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
+                }
+            }
+            if (::inputName.isInitialized) {
+                inputName.hint = getString(R.string.hint_name)
+            }
+            if (::inputPassword.isInitialized) {
+                inputPassword.hint = getString(R.string.password)
+            }
+            if (::btnSignIn.isInitialized) {
+                btnSignIn.text = getString(R.string.btn_sign_in)
+            }
+            if (::btnGuestLogin.isInitialized) {
+                btnGuestLogin.text = getString(R.string.btn_guest_login)
+            }
+            if (::becomeMember.isInitialized) {
+                becomeMember.text = getString(R.string.become_a_member)
+            }
+            if (::btnFeedback.isInitialized) {
+                btnFeedback.text = getString(R.string.feedback)
+            }
+            if (::openCommunity.isInitialized) {
+                openCommunity.text = getString(R.string.open_community)
+            }
+            if (::btnLang.isInitialized) {
+                val currentLanguage = LocaleUtils.getLanguage(this)
+                btnLang.text = getLanguageString(currentLanguage)
+            }
             invalidateOptionsMenu()
         } catch (e: Exception) {
             e.printStackTrace()
-            recreate()
         }
     }
 

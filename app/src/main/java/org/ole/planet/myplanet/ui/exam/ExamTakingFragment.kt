@@ -35,16 +35,16 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
-import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
-import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.ExamSubmissionUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
+import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {

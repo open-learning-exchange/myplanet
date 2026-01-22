@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {

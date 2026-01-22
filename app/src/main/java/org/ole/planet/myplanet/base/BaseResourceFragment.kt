@@ -47,16 +47,16 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.DownloadService
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
-import org.ole.planet.myplanet.utilities.DialogUtils.showError
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
+import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -83,7 +83,7 @@ abstract class BaseResourceFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
+    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
