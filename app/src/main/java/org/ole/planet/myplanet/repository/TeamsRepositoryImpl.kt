@@ -861,9 +861,10 @@ class TeamsRepositoryImpl @Inject constructor(
             val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
                 uploadManager.uploadTeams()
-                executeTransaction { realm ->
-                    uploadManager.uploadTeamActivities(realm, apiInterface)
+                val logs = databaseService.withRealm { realm ->
+                    realm.where(RealmTeamLog::class.java).isNull("_rev").findAll().let { realm.copyFromRealm(it) }
                 }
+                uploadManager.uploadTeamActivities(logs, apiInterface)
             }
         } catch (e: Exception) {
             e.printStackTrace()

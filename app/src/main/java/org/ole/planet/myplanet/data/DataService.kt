@@ -42,9 +42,6 @@ import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class DataService constructor(
     private val context: Context,
@@ -85,15 +82,21 @@ class DataService constructor(
 
     @Deprecated("Use ConfigurationsRepository.checkHealth instead")
     fun healthAccess(listener: OnSuccessListener) {
-        try {
-            val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
-            if (healthUrl.isBlank()) {
-                listener.onSuccess("")
-                return
-            }
+        serviceScope.launch {
+            try {
+                val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
+                if (healthUrl.isBlank()) {
+                    withContext(Dispatchers.Main) {
+                        listener.onSuccess("")
+                    }
+                    return@launch
+                }
 
-            retrofitInterface.healthAccess(healthUrl).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                val response = withContext(Dispatchers.IO) {
+                    retrofitInterface.healthAccess(healthUrl)
+                }
+
+                withContext(Dispatchers.Main) {
                     try {
                         when (response.code()) {
                             200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
@@ -110,33 +113,25 @@ class DataService constructor(
                         listener.onSuccess("")
                     }
                 }
-
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable"
-                            is java.net.SocketTimeoutException -> "Connection timeout"
-                            is java.net.ConnectException -> "Unable to connect to server"
-                            is java.io.IOException -> "Network connection error"
-                            else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                        }
-                        listener.onSuccess(errorMsg)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("Health check failed")
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    val errorMsg = when (t) {
+                        is java.net.UnknownHostException -> "Server not reachable"
+                        is java.net.SocketTimeoutException -> "Connection timeout"
+                        is java.net.ConnectException -> "Unable to connect to server"
+                        is java.io.IOException -> "Network connection error"
+                        else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
+                    listener.onSuccess(errorMsg)
                 }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
+            }
         }
     }
 
     suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
         try {
-            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).execute()
+            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))
             if (response.isSuccessful) {
                 val checksum = response.body()?.string()
                 if (!checksum.isNullOrEmpty()) {
@@ -148,7 +143,7 @@ class DataService constructor(
                 }
             }
             false
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             e.printStackTrace()
             false
         }
@@ -245,30 +240,25 @@ class DataService constructor(
                 }
             }
 
-            retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
+                }
+                val isAvailable = callback != null && response.code() == 200
+                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                withContext(Dispatchers.Main) {
+                    if (isAvailable) {
+                        callback?.isAvailable()
+                    } else {
+                        callback?.notAvailable()
                     }
                 }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
+            } catch (t: Throwable) {
+                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                withContext(Dispatchers.Main) {
+                    callback?.notAvailable()
                 }
-            })
+            }
         }
     }
 
@@ -301,7 +291,7 @@ class DataService constructor(
     suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
             val response = withContext(Dispatchers.IO) {
-                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").execute()
+                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
             }
 
             if (response.isSuccessful && response.body() != null) {
