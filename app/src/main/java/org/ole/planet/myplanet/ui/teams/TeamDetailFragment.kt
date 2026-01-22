@@ -393,7 +393,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             MainApplication.showDownload = true
             selectPage(DocumentsPage.id)
             MainApplication.showDownload = false
-            MainApplication.listener?.onAddDocument()
+            MainApplication.listener?.get()?.onAddDocument()
         }
     }
 

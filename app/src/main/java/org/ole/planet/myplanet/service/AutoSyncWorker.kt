@@ -6,16 +6,20 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
-import androidx.work.Worker
+import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
 import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -33,14 +37,16 @@ import org.ole.planet.myplanet.utils.Utilities
 class AutoSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters
-) : Worker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
+) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
     private lateinit var preferences: SharedPreferences
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
     private val workerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    override fun doWork(): Result {
-        if (isStopped) return Result.success()
+    private var continuation: CancellableContinuation<Result>? = null
+
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        if (isStopped) return@withContext Result.success()
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
         preferences = entryPoint.sharedPreferences()
         syncManager = entryPoint.syncManager()
@@ -51,11 +57,16 @@ class AutoSyncWorker(
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
             if (isAppInForeground(context)) {
-                Utilities.toast(context, "Syncing started...")
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(context, "Syncing started...")
+                }
             }
-            DataService(context).checkVersion(this, preferences)
+            return@withContext suspendCancellableCoroutine { cont ->
+                continuation = cont
+                DataService(context).checkVersion(this@AutoSyncWorker, preferences)
+            }
         }
-        return Result.success()
+        return@withContext Result.success()
     }
 
     override fun onSyncStarted() {}
@@ -72,6 +83,9 @@ class AutoSyncWorker(
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope)
+        if (continuation?.isActive == true) {
+            continuation?.resume(Result.success())
+        }
     }
 
     override fun onCheckingVersion() {}
@@ -79,7 +93,7 @@ class AutoSyncWorker(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                DataService(MainApplication.context).healthAccess {
+                DataService(context).healthAccess {
                     uploadToShelfService.uploadHealth()
                 }
             }
@@ -111,14 +125,25 @@ class AutoSyncWorker(
                         onSyncFailed(e.message)
                     } finally {
                         MainApplication.isSyncRunning = false
+                        if (continuation?.isActive == true) {
+                            continuation?.resume(Result.success())
+                        }
                     }
                 }
+            } else {
+                if (continuation?.isActive == true) {
+                    continuation?.resume(Result.success())
+                }
+            }
+        } else {
+            if (continuation?.isActive == true) {
+                continuation?.resume(Result.failure())
             }
         }
     }
 
     override fun onSuccess(success: String?) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 

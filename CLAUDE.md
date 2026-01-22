@@ -486,6 +486,21 @@ class AutoSyncWorker(
 }
 ```
 
+### Dependency Injection & Scope Guidelines
+
+**Anti-Patterns to Avoid:**
+- **Context Leaks in Singletons:** Never inject `Activity` or `Fragment` context into `@Singleton` classes. Always use `@ApplicationContext` or `Application` class.
+- **Stateful Singletons:** Avoid holding state (like `Realm` instances, `Listeners`, or mutable lists) in `@Singleton` classes unless thread-safety is explicitly managed.
+- **Static Listeners:** Avoid static listener fields (e.g., in companion objects). Use `WeakReference` or proper architectural patterns (ViewModel, Flow) to communicate between components.
+
+**WorkManager & Services:**
+- **CoroutineWorker:** Use `CoroutineWorker` instead of `Worker` for asynchronous tasks to ensure proper lifecycle management and scope cancellation.
+- **EntryPointAccessors:** Use `EntryPointAccessors` to retrieve Hilt dependencies in Workers.
+
+**Best Practices:**
+- **Scoped Coroutines:** Inject `CoroutineScope` (e.g., `@ApplicationScope`) into Singletons instead of creating new scopes or using `GlobalScope`.
+- **Leak Detection:** Use LeakCanary (enabled in debug builds) to identify memory leaks during development.
+
 ### Asynchronous Programming
 
 **Use Kotlin Coroutines:**

@@ -19,9 +19,11 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient.client
+import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
@@ -42,14 +44,14 @@ import org.ole.planet.myplanet.utils.Utilities
 class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dbService: DatabaseService,
-    @AppPreferences private val sharedPreferences: SharedPreferences
+    @AppPreferences private val sharedPreferences: SharedPreferences,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
-    lateinit var mRealm: Realm
 
     fun uploadUserData(listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-        mRealm.executeTransactionAsync({ realm: Realm ->
+        val realmInstance = dbService.realmInstance
+        realmInstance.executeTransactionAsync({ realm: Realm ->
             val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
                 .isEmpty("_id").or().equalTo("isUpdated", true)
                 .findAll()
@@ -73,23 +75,23 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
-            mRealm.close()
+            realmInstance.close()
             uploadToShelf(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     listener.onSuccess(success)
                 }
             })
         }) { error ->
-            mRealm.close()
+            realmInstance.close()
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
     }
 
     fun uploadSingleUserData(userName: String?, listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
+        val realmInstance = dbService.realmInstance
 
-        mRealm.executeTransactionAsync({ realm: Realm ->
+        realmInstance.executeTransactionAsync({ realm: Realm ->
             val userModel = realm.where(RealmUserModel::class.java)
                 .equalTo("name", userName)
                 .findFirst()
@@ -111,10 +113,10 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
-            mRealm.close()
+            realmInstance.close()
             uploadSingleUserToShelf(userName, listener)
         }) { error ->
-            mRealm.close()
+            realmInstance.close()
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
     }
@@ -148,7 +150,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
-        MainApplication.applicationScope.launch {
+        applicationScope.launch {
             try {
                 val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                 val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -256,9 +258,9 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadHealth() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
+        val realmInstance = dbService.realmInstance
 
-        mRealm.executeTransactionAsync({ realm: Realm ->
+        realmInstance.executeTransactionAsync({ realm: Realm ->
             val myHealths: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
             myHealths.forEachIndexed { index, pojo ->
                 try {
@@ -273,17 +275,17 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
-            mRealm.close()
+            realmInstance.close()
         }) { _ ->
-            mRealm.close()
+            realmInstance.close()
         }
     }
 
     fun uploadSingleUserHealth(userId: String?, listener: OnSuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
+        val realmInstance = dbService.realmInstance
 
-        mRealm.executeTransactionAsync({ realm: Realm ->
+        realmInstance.executeTransactionAsync({ realm: Realm ->
             if (userId.isNullOrEmpty()) {
                 return@executeTransactionAsync
             }
@@ -311,17 +313,17 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
-            mRealm.close()
+            realmInstance.close()
             listener?.onSuccess("Health data for user $userId uploaded successfully")
         }) { error ->
-            mRealm.close()
+            realmInstance.close()
             listener?.onSuccess("Error uploading health data for user $userId: ${error.localizedMessage}")
         }
     }
 
     private fun uploadToShelf(listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             val unmanagedUsers = dbService.realmInstance.use { realm ->
                 realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().let {
                     realm.copyFromRealm(it)
@@ -368,7 +370,7 @@ class UploadToShelfService @Inject constructor(
 
     private fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = dbService.realmInstance.use { realm ->
                     realm.where(RealmUserModel::class.java)

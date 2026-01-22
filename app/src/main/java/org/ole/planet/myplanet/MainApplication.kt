@@ -16,6 +16,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -83,7 +84,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var isCollectionSwitchOn = false
         var showDownload = false
         var isSyncRunning = false
-        var listener: OnTeamPageListener? = null
+        var listener: WeakReference<OnTeamPageListener>? = null
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)

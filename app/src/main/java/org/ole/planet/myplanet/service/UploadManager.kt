@@ -90,13 +90,13 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model)).enqueue(object : Callback<JsonObject?> {
+            apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(context, pref, model)).enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
             })
 
-            apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}")
+            apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}")
                 .enqueue(object : Callback<JsonObject?> {
                     override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                         var `object` = response.body()
@@ -176,7 +176,7 @@ class UploadManager @Inject constructor(
         val object1 = JsonObject()
         `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         `object`.add("privateFor", object1)
         `object`.addProperty("mediaType", "image")
         return `object`

@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import java.lang.ref.WeakReference
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
@@ -57,7 +58,7 @@ class TeamPagerAdapter(
                 fragment.setOnMemberChangeListener(onMemberChangeListener)
             }
             DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
-                MainApplication.listener = fragment
+                MainApplication.listener = WeakReference(fragment)
             }
             SurveyPage -> {
                 fragment.arguments = (fragment.arguments ?: Bundle()).apply {
