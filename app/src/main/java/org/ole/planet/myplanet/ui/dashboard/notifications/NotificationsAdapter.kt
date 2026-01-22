@@ -10,8 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils as DiffUtilExtensions
 
 class NotificationsAdapter(
     private val onMarkAsReadClick: (String) -> Unit,

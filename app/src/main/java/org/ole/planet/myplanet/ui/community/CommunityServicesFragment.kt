@@ -13,9 +13,9 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
-import org.ole.planet.myplanet.utilities.MarkdownUtils.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utilities.NavigationHelper.replaceFragment
+import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.NavigationHelper.replaceFragment
 
 class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null

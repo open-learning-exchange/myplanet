@@ -38,11 +38,11 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.service.upload.UploadConfigs
 import org.ole.planet.myplanet.service.upload.UploadCoordinator
 import org.ole.planet.myplanet.service.upload.UploadResult
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response

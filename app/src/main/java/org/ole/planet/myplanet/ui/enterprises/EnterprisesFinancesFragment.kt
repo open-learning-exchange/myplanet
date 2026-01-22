@@ -22,8 +22,8 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
+import org.ole.planet.myplanet.utils.Utilities
 
 class EnterprisesFinancesFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null

@@ -32,12 +32,12 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.service.DownloadWorker
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
-import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
-import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.UrlUtils.header
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
+import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
+import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
+import org.ole.planet.myplanet.utils.UrlUtils.header
 
 class DownloadService : Service() {
     private var data = ByteArray(1024 * 4)

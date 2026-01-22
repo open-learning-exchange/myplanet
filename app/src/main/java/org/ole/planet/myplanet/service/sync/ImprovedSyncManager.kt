@@ -24,8 +24,8 @@ import org.ole.planet.myplanet.service.sync.RealmPoolManager
 import org.ole.planet.myplanet.service.sync.StandardSyncStrategy
 import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.SyncStrategy
-import org.ole.planet.myplanet.utilities.NotificationUtils
-import org.ole.planet.myplanet.utilities.SyncTimeLogger
+import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.SyncTimeLogger
 
 @Singleton
 class ImprovedSyncManager @Inject constructor(

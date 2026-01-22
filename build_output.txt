@@ -1,0 +1,688 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: assembleDebug
+Gradle cache: GRADLE_BUILD_CACHE_URL=http://34.134.219.48:5071/cache/
+Could not load entry de73e10f56cbc449c94c2f3b201b9031 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+The remote build cache was disabled during the build due to errors.
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:mergeDefaultDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDefaultDebugResValues UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:checkDefaultDebugAarMetadata UP-TO-DATE
+> Task :app:mapDefaultDebugSourceSetPaths UP-TO-DATE
+> Task :app:compileDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:createDefaultDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDefaultDebug UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:mergeDefaultDebugShaders
+> Task :app:compileDefaultDebugShaders NO-SOURCE
+> Task :app:generateDefaultDebugAssets UP-TO-DATE
+> Task :app:processDefaultDebugMainManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifestForPackage UP-TO-DATE
+> Task :app:mergeDefaultDebugAssets
+> Task :app:processDefaultDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDefaultDebug
+Could not load entry 6b90595f5978200187f85e378c2c1f6f from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:desugarDefaultDebugFileDependencies
+Could not load entry 075f1d1bb7cf41475ea906ae9df2ff1e from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:compressDefaultDebugAssets
+Could not load entry cbd09d5516fe4137df092e9ee480ee60 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:kspDefaultDebugKotlin
+Could not load entry 293399c175f68d53bf23a7b77a82ca5f from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:mergeDefaultDebugJniLibFolders
+> Task :app:checkDefaultDebugDuplicateClasses
+> Task :app:mergeLibDexDefaultDebug
+> Task :app:mergeDefaultDebugNativeLibs
+> Task :app:validateSigningDefaultDebug
+> Task :app:writeDefaultDebugAppMetadata
+> Task :app:writeDefaultDebugSigningConfigVersions
+> Task :app:preLiteDebugBuild UP-TO-DATE
+> Task :app:mergeLiteDebugNativeDebugMetadata NO-SOURCE
+
+> Task :app:stripDefaultDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libpl_droidsonroids_gif.so, librealm-jni.so. Run with --info option to learn more.
+
+> Task :app:generateLiteDebugResValues FROM-CACHE
+> Task :app:generateLiteDebugResources FROM-CACHE
+> Task :app:mergeExtDexDefaultDebug
+> Task :app:dataBindingMergeDependencyArtifactsLiteDebug
+> Task :app:mergeLiteDebugResources
+> Task :app:dataBindingTriggerLiteDebug
+> Task :app:generateLiteDebugBuildConfig
+> Task :app:dataBindingGenBaseClassesLiteDebug FROM-CACHE
+> Task :app:processLiteDebugNavigationResources FROM-CACHE
+> Task :app:compileLiteDebugNavigationResources FROM-CACHE
+> Task :app:mapLiteDebugSourceSetPaths
+> Task :app:createLiteDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksLiteDebug FROM-CACHE
+> Task :app:processLiteDebugMainManifest
+> Task :app:processLiteDebugManifest
+> Task :app:processLiteDebugManifestForPackage
+> Task :app:javaPreCompileLiteDebug FROM-CACHE
+> Task :app:checkLiteDebugAarMetadata
+> Task :app:processLiteDebugResources
+> Task :app:kaptGenerateStubsDefaultDebugKotlin
+> Task :app:mergeLiteDebugShaders
+> Task :app:compileLiteDebugShaders NO-SOURCE
+> Task :app:generateLiteDebugAssets UP-TO-DATE
+> Task :app:mergeLiteDebugAssets
+> Task :app:compressLiteDebugAssets FROM-CACHE
+> Task :app:checkLiteDebugDuplicateClasses
+> Task :app:desugarLiteDebugFileDependencies FROM-CACHE
+> Task :app:kspLiteDebugKotlin
+> Task :app:mergeExtDexLiteDebug
+> Task :app:mergeLibDexLiteDebug FROM-CACHE
+> Task :app:mergeLiteDebugJniLibFolders
+> Task :app:mergeLiteDebugNativeLibs
+
+> Task :app:stripLiteDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libpl_droidsonroids_gif.so, librealm-jni.so. Run with --info option to learn more.
+
+> Task :app:validateSigningLiteDebug
+> Task :app:writeLiteDebugAppMetadata
+> Task :app:writeLiteDebugSigningConfigVersions
+> Task :app:kaptGenerateStubsLiteDebugKotlin
+
+> Task :app:kaptDefaultDebugKotlin
+Note: Processing class RealmRemovedLog
+Note: Processing class RealmSubmission
+Note: Processing class RealmMembershipDoc
+Note: Processing class RealmTeamReference
+Note: Processing class RealmCourseStep
+Note: Processing class RealmRating
+Note: Processing class RealmDictionary
+Note: Processing class RealmNewsLog
+Note: Processing class RealmOfflineActivity
+Note: Processing class RealmConversation
+Note: Processing class RealmMyCourse
+Note: Processing class RealmSubmitPhotos
+Note: Processing class RealmHealthExamination
+Note: Processing class RealmTeamTask
+Note: Processing class RealmMyPersonal
+Note: Processing class RealmStepExam
+Note: Processing class RealmUserModel
+Note: Processing class RealmMyTeam
+Note: Processing class RealmNews
+Note: Processing class RealmResourceActivity
+Note: Processing class RealmTeamNotification
+Note: Processing class RealmUserChallengeActions
+Note: Processing class RealmFeedback
+Note: Processing class RealmAnswer
+Note: Processing class RealmMyLibrary
+Note: Processing class RealmTag
+Note: Processing class RealmExamQuestion
+Note: Processing class RealmSearchActivity
+Note: Processing class RealmMyLife
+Note: Processing class RealmTeamLog
+Note: Processing class RealmNotification
+Note: Processing class RealmCourseActivity
+Note: Processing class RealmAchievement
+Note: Processing class RealmMeetup
+Note: Processing class RealmCertification
+Note: Processing class RealmAttachment
+Note: Processing class RealmApkLog
+Note: Processing class RealmChatHistory
+Note: Processing class RealmCourseProgress
+Note: Processing class RealmCommunity
+Note: Creating DefaultRealmModule
+
+> Task :app:kaptLiteDebugKotlin
+Note: Processing class RealmRemovedLog
+Note: Processing class RealmSubmission
+Note: Processing class RealmMembershipDoc
+Note: Processing class RealmTeamReference
+Note: Processing class RealmCourseStep
+Note: Processing class RealmRating
+Note: Processing class RealmDictionary
+Note: Processing class RealmNewsLog
+Note: Processing class RealmOfflineActivity
+Note: Processing class RealmConversation
+Note: Processing class RealmMyCourse
+Note: Processing class RealmSubmitPhotos
+Note: Processing class RealmHealthExamination
+Note: Processing class RealmTeamTask
+Note: Processing class RealmMyPersonal
+Note: Processing class RealmStepExam
+Note: Processing class RealmUserModel
+Note: Processing class RealmMyTeam
+Note: Processing class RealmNews
+Note: Processing class RealmResourceActivity
+Note: Processing class RealmTeamNotification
+Note: Processing class RealmUserChallengeActions
+Note: Processing class RealmFeedback
+Note: Processing class RealmAnswer
+Note: Processing class RealmMyLibrary
+Note: Processing class RealmTag
+Note: Processing class RealmExamQuestion
+Note: Processing class RealmSearchActivity
+Note: Processing class RealmMyLife
+Note: Processing class RealmTeamLog
+Note: Processing class RealmNotification
+Note: Processing class RealmCourseActivity
+Note: Processing class RealmAchievement
+Note: Processing class RealmMeetup
+Note: Processing class RealmCertification
+Note: Processing class RealmAttachment
+Note: Processing class RealmApkLog
+Note: Processing class RealmChatHistory
+Note: Processing class RealmCourseProgress
+Note: Processing class RealmCommunity
+Note: Creating DefaultRealmModule
+
+> Task :app:compileDefaultDebugKotlin
+> Task :app:compileLiteDebugKotlin
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseActivity.kt:43:25 'constructor(p0: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseActivity.kt:45:23 'field locale: Locale!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseActivity.kt:49:23 'fun updateConfiguration(p0: Configuration!, p1: DisplayMetrics!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseExamFragment.kt:73:34 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt:66:20 'fun getSerializable(p0: String?): Serializable?' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt:90:38 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:95:38 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:153:34 'fun setWifiEnabled(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:210:55 'fun isPlanetAvailable(callback: DataService.PlanetAvailableListener?): Unit' is deprecated. Use ConfigurationsRepository.checkServerAvailability instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:229:55 'fun isPlanetAvailable(callback: DataService.PlanetAvailableListener?): Unit' is deprecated. Use ConfigurationsRepository.checkServerAvailability instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:378:34 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:483:34 'fun isPlanetAvailable(callback: DataService.PlanetAvailableListener?): Unit' is deprecated. Use ConfigurationsRepository.checkServerAvailability instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/DataService.kt:53:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/api/ChatApiService.kt:20:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdater.kt:24:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdater.kt:25:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmCourseProgress.kt:52:49 'fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int' is deprecated. Use ProgressRepository.getCurrentProgress instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmCourseProgress.kt:53:21 'fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean' is deprecated. Use CoursesRepository.isMyCourse instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:34:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:36:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:37:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/NotificationsRepositoryImpl.kt:88:25 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ResourcesRepositoryImpl.kt:25:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:25:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:28:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:43:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:107:11 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:254:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:31:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:34:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/AutoSyncWorker.kt:56:34 'fun checkVersion(callback: DataService.CheckVersionCallback, settings: SharedPreferences): Unit' is deprecated. Use ConfigurationsRepository.checkVersion instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/AutoSyncWorker.kt:82:54 'fun healthAccess(listener: OnSuccessListener): Unit' is deprecated. Use ConfigurationsRepository.checkHealth instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/DownloadService.kt:355:13 'fun stopForeground(p0: Boolean): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt:62:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt:65:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:43:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:45:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:51:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:90:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:259:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:284:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:325:44 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:343:51 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:373:39 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:385:53 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UserSessionManager.kt:24:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UserSessionManager.kt:26:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UserSessionManager.kt:27:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ImprovedSyncManager.kt:32:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ImprovedSyncManager.kt:34:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/LoginSyncManager.kt:174:33 Condition is always 'true'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/RealmConnectionPool.kt:107:37 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:63:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:65:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:69:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:530:36 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ThreadSafeRealmManager.kt:14:48 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ThreadSafeRealmManager.kt:21:48 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/TransactionSyncManager.kt:37:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/upload/UploadCoordinator.kt:26:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt:835:41 'static fun getActionView(p0: MenuItem!): View!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:175:33 'fun getNetworkInfo(p0: Int): NetworkInfo?' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:175:68 'static field TYPE_WIFI: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:178:20 'val isConnected: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:179:18 'var isWifiEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:187:18 'var isWifiEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:205:33 'val configuredNetworks: (Mutable)List<WifiConfiguration!>!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:206:21 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:206:43 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:207:29 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:208:29 'fun enableNetwork(p0: Int, p1: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/notifications/NotificationsFragment.kt:127:46 Unchecked cast of 'Serializable?' to 'Triple<String, String?, String?>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/notifications/NotificationsViewModel.kt:21:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/exam/UserInformationFragment.kt:323:9 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/health/AddExaminationActivity.kt:84:34 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:76:13 'var allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:77:13 'var allowUniversalAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:95:17 'fun setSavePassword(p0: Boolean): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:102:25 'var forceDark: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:102:49 'static field FORCE_DARK_ON: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:109:25 'var forceDark: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:109:49 'static field FORCE_DARK_OFF: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:189:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:190:23 'fun onReceivedError(p0: WebView!, p1: Int, p2: String!, p3: String!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:277:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:279:27 'fun onConsoleMessage(p0: String!, p1: Int, p2: String!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/CollectionsFragment.kt:131:40 The corresponding parameter in the supertype 'OnTagClickListener' is named 'tag'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt:466:31 The corresponding parameter in the supertype 'OnTagClickListener' is named 'tag'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModel.kt:44:80 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt:436:22 'constructor(p0: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt:440:19 'fun updateConfiguration(p0: Configuration!, p1: DisplayMetrics!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/RealtimeSyncMixin.kt:75:30 Unchecked cast of '(ListAdapter<*, *> & RecyclerView.Adapter<RecyclerView.ViewHolder!>..ListAdapter<*, *>)' to 'ListAdapter<Any, *>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamPageConfig.kt:16:45 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksFragment.kt:276:63 The corresponding parameter in the supertype 'OnTaskCompletedListener' is named 'b'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/user/BecomeMemberActivity.kt:144:36 The corresponding parameter in the supertype 'CreateUserCallback' is named 'message'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesAdapter.kt:320:42 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt:272:14 This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt:302:61 Unchecked cast of 'SpinnerAdapter!' to 'ArrayAdapter<String>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/ANRWatchdog.kt:57:44 'val id: Long' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/EdgeToEdgeUtils.kt:40:9 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/EdgeToEdgeUtils.kt:41:9 'var navigationBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/LocaleUtils.kt:24:22 'constructor(p0: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/NetworkUtils.kt:157:58 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:6:8 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:7:8 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:22:25 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:22:35 'constructor(p0: Context): MasterKey.Builder' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:23:27 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:23:37 'enum class KeyScheme : Enum<MasterKey.KeyScheme!>' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:25:16 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:29:13 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:29:40 'enum class PrefKeyEncryptionScheme : Enum<EncryptedSharedPreferences.PrefKeyEncryptionScheme!>' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:30:13 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:30:40 'enum class PrefValueEncryptionScheme : Enum<EncryptedSharedPreferences.PrefValueEncryptionScheme!>' is deprecated. Deprecated in Java.
+
+> Task :app:compileDefaultDebugKotlin
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseActivity.kt:43:25 'constructor(p0: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseActivity.kt:45:23 'field locale: Locale!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseActivity.kt:49:23 'fun updateConfiguration(p0: Configuration!, p1: DisplayMetrics!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseExamFragment.kt:73:34 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt:66:20 'fun getSerializable(p0: String?): Serializable?' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt:90:38 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:95:38 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:153:34 'fun setWifiEnabled(p0: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:210:55 'fun isPlanetAvailable(callback: DataService.PlanetAvailableListener?): Unit' is deprecated. Use ConfigurationsRepository.checkServerAvailability instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:229:55 'fun isPlanetAvailable(callback: DataService.PlanetAvailableListener?): Unit' is deprecated. Use ConfigurationsRepository.checkServerAvailability instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:378:34 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt:483:34 'fun isPlanetAvailable(callback: DataService.PlanetAvailableListener?): Unit' is deprecated. Use ConfigurationsRepository.checkServerAvailability instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/DataService.kt:53:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/api/ChatApiService.kt:20:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdater.kt:24:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdater.kt:25:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmCourseProgress.kt:52:49 'fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int' is deprecated. Use ProgressRepository.getCurrentProgress instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmCourseProgress.kt:53:21 'fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean' is deprecated. Use CoursesRepository.isMyCourse instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:34:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:36:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:37:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/NotificationsRepositoryImpl.kt:88:25 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ResourcesRepositoryImpl.kt:25:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:25:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:28:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:43:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:107:11 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:254:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:31:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:34:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/AutoSyncWorker.kt:56:34 'fun checkVersion(callback: DataService.CheckVersionCallback, settings: SharedPreferences): Unit' is deprecated. Use ConfigurationsRepository.checkVersion instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/AutoSyncWorker.kt:82:54 'fun healthAccess(listener: OnSuccessListener): Unit' is deprecated. Use ConfigurationsRepository.checkHealth instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/DownloadService.kt:355:13 'fun stopForeground(p0: Boolean): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt:62:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt:65:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:43:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:45:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:51:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:90:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:259:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:284:28 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:325:44 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:343:51 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:373:39 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UploadToShelfService.kt:385:53 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UserSessionManager.kt:24:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UserSessionManager.kt:26:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/UserSessionManager.kt:27:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ImprovedSyncManager.kt:32:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ImprovedSyncManager.kt:34:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/LoginSyncManager.kt:174:33 Condition is always 'true'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/RealmConnectionPool.kt:107:37 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:63:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:65:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:69:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to property.
+- To opt in to applying to both value parameter and property, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt:530:36 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ThreadSafeRealmManager.kt:14:48 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/ThreadSafeRealmManager.kt:21:48 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/sync/TransactionSyncManager.kt:37:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/service/upload/UploadCoordinator.kt:26:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt:835:41 'static fun getActionView(p0: MenuItem!): View!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:175:33 'fun getNetworkInfo(p0: Int): NetworkInfo?' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:175:68 'static field TYPE_WIFI: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:178:20 'val isConnected: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:179:18 'var isWifiEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:187:18 'var isWifiEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:205:33 'val configuredNetworks: (Mutable)List<WifiConfiguration!>!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:206:21 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:206:43 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:207:29 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:208:29 'fun enableNetwork(p0: Int, p1: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/notifications/NotificationsFragment.kt:127:46 Unchecked cast of 'Serializable?' to 'Triple<String, String?, String?>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/notifications/NotificationsViewModel.kt:21:5 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/exam/UserInformationFragment.kt:323:9 This is a delicate API and its use requires care. Make sure you fully read and understand documentation of the declaration that is marked as a delicate API.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/health/AddExaminationActivity.kt:84:34 'val realmInstance: Realm' is deprecated. Use withRealm/withRealmAsync instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:76:13 'var allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:77:13 'var allowUniversalAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:95:17 'fun setSavePassword(p0: Boolean): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:102:25 'var forceDark: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:102:49 'static field FORCE_DARK_ON: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:109:25 'var forceDark: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:109:49 'static field FORCE_DARK_OFF: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:189:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:190:23 'fun onReceivedError(p0: WebView!, p1: Int, p2: String!, p3: String!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:277:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/reader/WebViewActivity.kt:279:27 'fun onConsoleMessage(p0: String!, p1: Int, p2: String!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/CollectionsFragment.kt:131:40 The corresponding parameter in the supertype 'OnTagClickListener' is named 'tag'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt:466:31 The corresponding parameter in the supertype 'OnTagClickListener' is named 'tag'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModel.kt:44:80 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt:436:22 'constructor(p0: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt:440:19 'fun updateConfiguration(p0: Configuration!, p1: DisplayMetrics!): Unit' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/RealtimeSyncMixin.kt:75:30 Unchecked cast of '(ListAdapter<*, *> & RecyclerView.Adapter<RecyclerView.ViewHolder!>..ListAdapter<*, *>)' to 'ListAdapter<Any, *>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamPageConfig.kt:16:45 This annotation is currently applied to the value parameter only, but in the future it will also be applied to field.
+- To opt in to applying to both value parameter and field, add '-Xannotation-default-target=param-property' to your compiler arguments.
+- To keep applying to the value parameter only, use the '@param:' annotation target.
+
+See https://youtrack.jetbrains.com/issue/KT-73255 for more details.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/teams/tasks/TeamsTasksFragment.kt:276:63 The corresponding parameter in the supertype 'OnTaskCompletedListener' is named 'b'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/user/BecomeMemberActivity.kt:144:36 The corresponding parameter in the supertype 'CreateUserCallback' is named 'message'. This may cause problems when calling this function with named arguments.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesAdapter.kt:320:42 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt:272:14 This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt:302:61 Unchecked cast of 'SpinnerAdapter!' to 'ArrayAdapter<String>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/ANRWatchdog.kt:57:44 'val id: Long' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/EdgeToEdgeUtils.kt:40:9 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/EdgeToEdgeUtils.kt:41:9 'var navigationBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/LocaleUtils.kt:24:22 'constructor(p0: String!): Locale' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/NetworkUtils.kt:157:58 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:6:8 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:7:8 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:22:25 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:22:35 'constructor(p0: Context): MasterKey.Builder' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:23:27 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:23:37 'enum class KeyScheme : Enum<MasterKey.KeyScheme!>' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:25:16 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:29:13 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:29:40 'enum class PrefKeyEncryptionScheme : Enum<EncryptedSharedPreferences.PrefKeyEncryptionScheme!>' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:30:13 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:30:40 'enum class PrefValueEncryptionScheme : Enum<EncryptedSharedPreferences.PrefValueEncryptionScheme!>' is deprecated. Deprecated in Java.
+
+> Task :app:compileLiteDebugJavaWithJavac
+Note: /app/app/build/generated/source/kapt/liteDebug/io/realm/DefaultRealmModuleMediator.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:compileDefaultDebugJavaWithJavac
+Note: /app/app/build/generated/source/kapt/defaultDebug/io/realm/DefaultRealmModuleMediator.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:hiltAggregateDepsLiteDebug
+> Task :app:hiltAggregateDepsDefaultDebug
+> Task :app:hiltJavaCompileLiteDebug
+> Task :app:hiltJavaCompileDefaultDebug
+> Task :app:processLiteDebugJavaRes
+> Task :app:processDefaultDebugJavaRes
+> Task :app:mergeLiteDebugJavaResource
+> Task :app:mergeDefaultDebugJavaResource
+> Task :app:defaultDebugRealmAccessorsTransformer
+> Task :app:liteDebugRealmAccessorsTransformer
+> Task :app:transformDefaultDebugClassesWithAsm
+> Task :app:transformLiteDebugClassesWithAsm
+> Task :app:dexBuilderDefaultDebug
+> Task :app:dexBuilderLiteDebug
+> Task :app:mergeDefaultDebugGlobalSynthetics
+> Task :app:mergeLiteDebugGlobalSynthetics
+> Task :app:mergeProjectDexDefaultDebug
+> Task :app:mergeProjectDexLiteDebug
+> Task :app:packageDefaultDebug
+> Task :app:assembleDefaultDebug
+> Task :app:packageLiteDebug
+> Task :app:assembleLiteDebug
+> Task :app:assembleDebug
+> Task :app:createDefaultDebugApkListingFileRedirect
+> Task :app:createLiteDebugApkListingFileRedirect
+
+[Incubating] Problems report is available at: file:///app/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 9m 6s
+95 actionable tasks: 67 executed, 10 from cache, 18 up-to-date
+Configuration cache entry stored.
+The remote build cache was disabled during the build due to errors.
