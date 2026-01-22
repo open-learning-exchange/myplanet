@@ -50,25 +50,32 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow {
         val realm = Realm.getDefaultInstance()
-        val results = realm.where(clazz).apply(builder).findAllAsync()
-        val listener = RealmChangeListener<RealmResults<T>> {
-            if (it.isLoaded && it.isValid) {
-                val frozenResults = it.freeze()
-                launch(databaseService.ioDispatcher) {
-                    val copiedList = databaseService.withRealmAsync { bgRealm ->
-                        bgRealm.copyFromRealm(frozenResults)
+        try {
+            val results = realm.where(clazz).apply(builder).findAllAsync()
+            val listener = RealmChangeListener<RealmResults<T>> {
+                if (!realm.isClosed && !realm.isInTransaction && it.isLoaded && it.isValid) {
+                    val frozenResults = it.freeze()
+                    launch(databaseService.ioDispatcher) {
+                        val copiedList = databaseService.withRealmAsync { bgRealm ->
+                            bgRealm.copyFromRealm(frozenResults)
+                        }
+                        send(copiedList)
                     }
-                    send(copiedList)
                 }
             }
-        }
-        results.addChangeListener(listener)
+            results.addChangeListener(listener)
 
-        awaitClose {
+            awaitClose {
+                if (!realm.isClosed) {
+                    results.removeChangeListener(listener)
+                    realm.close()
+                }
+            }
+        } catch (e: Exception) {
             if (!realm.isClosed) {
-                results.removeChangeListener(listener)
                 realm.close()
             }
+            throw e
         }
     }.flowOn(Dispatchers.Main.immediate)
 
