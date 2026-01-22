@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.voices
+package org.ole.planet.myplanet.ui.base
 
 import android.app.Activity
 import android.content.Context
@@ -32,6 +32,9 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
+import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
