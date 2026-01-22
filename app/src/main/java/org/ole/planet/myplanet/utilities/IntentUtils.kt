@@ -4,7 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
-import org.ole.planet.myplanet.ui.reader.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 
 object IntentUtils {
     @JvmStatic
