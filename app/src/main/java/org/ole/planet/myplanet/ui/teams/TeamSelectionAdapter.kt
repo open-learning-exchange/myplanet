@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamSelectionAdapter(private val section: String, private val onClick: (RealmMyTeam) -> Unit) :
     ListAdapter<RealmMyTeam, TeamSelectionAdapter.TeamSelectionViewHolder>(

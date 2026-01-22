@@ -18,8 +18,8 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.service.UserSessionManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,

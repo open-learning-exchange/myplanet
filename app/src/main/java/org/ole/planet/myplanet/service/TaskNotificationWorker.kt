@@ -7,8 +7,8 @@ import dagger.hilt.android.EntryPointAccessors
 import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
-import org.ole.planet.myplanet.utilities.NotificationUtils.create
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.NotificationUtils.create
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters) :
     CoroutineWorker(appContext, workerParams) {

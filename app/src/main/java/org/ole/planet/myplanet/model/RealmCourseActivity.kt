@@ -6,7 +6,7 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmCourseActivity : RealmObject() {
     @PrimaryKey

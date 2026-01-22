@@ -32,11 +32,11 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
+import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {

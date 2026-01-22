@@ -10,7 +10,7 @@ import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class ServerAddressAdapter(
     private val onItemClick: (ServerAddress) -> Unit,

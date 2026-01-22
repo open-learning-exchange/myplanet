@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.utilities.NotificationUtils
+import org.ole.planet.myplanet.utils.NotificationUtils
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {

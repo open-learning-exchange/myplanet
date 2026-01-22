@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.utilities.MarkdownUtils.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
 @AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
