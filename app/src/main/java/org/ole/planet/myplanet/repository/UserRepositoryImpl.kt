@@ -249,7 +249,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val isAvailable = withContext(Dispatchers.IO) {
             try {
-                val response = apiInterface.isPlanetAvailableSuspend(UrlUtils.getUpdateUrl(settings))
+                val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(settings))
                 response.code() == 200
             } catch (e: Exception) {
                 false
@@ -263,14 +263,14 @@ class UserRepositoryImpl @Inject constructor(
                 val userUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
 
                 val existsResponse = withContext(Dispatchers.IO) {
-                    apiInterface.getJsonObjectSuspended(header, userUrl)
+                    apiInterface.getJsonObject(header, userUrl)
                 }
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(Dispatchers.IO) {
-                        apiInterface.putDocSuspend(null, "application/json", userUrl, obj)
+                        apiInterface.putDoc(null, "application/json", userUrl, obj)
                     }
 
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
@@ -312,7 +312,7 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
-            apiInterface.putDocSuspend(null, "application/json", url, JsonObject())
+            apiInterface.putDoc(null, "application/json", url, JsonObject())
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -321,7 +321,7 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<RealmUserModel?> {
         return try {
             val userModel = withTimeout(20000) {
-                val response = apiInterface.getJsonObjectSuspended(
+                val response = apiInterface.getJsonObject(
                     UrlUtils.header,
                     "${UrlUtils.getUrl()}/_users/$id"
                 )

@@ -356,14 +356,13 @@ class ChatHistoryFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            chatApiService.fetchAiProviders { providers ->
-                sharedViewModel.setAiProvidersLoading(false)
-                if (providers == null || providers.values.all { !it }) {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                } else {
-                    sharedViewModel.setAiProviders(providers)
-                }
+            val providers = chatApiService.fetchAiProviders()
+            sharedViewModel.setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                sharedViewModel.setAiProvidersError(true)
+                sharedViewModel.setAiProviders(null)
+            } else {
+                sharedViewModel.setAiProviders(providers)
             }
         }
     }

@@ -320,7 +320,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailableSuspend(url)
+            val response = apiInterface.isPlanetAvailable(url)
             val code = response.code()
 
             if (response.isSuccessful) {
