@@ -151,7 +151,8 @@ object UploadConfigs {
         modelClass = RealmSubmission::class,
         endpoint = "submissions",
         queryBuilder = { query ->
-            query.isNotNull("parentId").isNotNull("userId")
+            query.equalTo("type", "exam")
+                .isNotNull("parentId").isNotNull("userId")
                 .beginGroup()
                 .isNull("_id").or().isEmpty("_id")
                 .endGroup()
@@ -167,9 +168,14 @@ object UploadConfigs {
         modelClass = RealmSubmission::class,
         endpoint = "submissions",
         queryBuilder = { query ->
-            query.equalTo("isUpdated", true).or().isEmpty("_id")
+            query.equalTo("status", "complete")
+                .beginGroup()
+                    .equalTo("isUpdated", true)
+                    .or()
+                    .isEmpty("_id")
+                .endGroup()
         },
-        serializer = UploadSerializer.WithRealm(RealmSubmission::serialize),
+        serializer = UploadSerializer.Full(RealmSubmission::serialize),
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         additionalUpdates = { _, submission, _ ->

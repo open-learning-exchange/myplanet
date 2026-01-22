@@ -237,7 +237,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
-            sub.isUpdated = true  // Mark for upload
+            sub.isUpdated = true // Mark for upload
             Log.d("SubmissionsRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }

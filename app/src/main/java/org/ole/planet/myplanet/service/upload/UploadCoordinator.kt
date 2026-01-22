@@ -59,7 +59,6 @@ class UploadCoordinator @Inject constructor(
             }
 
             Log.d(TAG, "Upload complete: ${allSucceeded.size} succeeded, ${allFailed.size} failed")
-
             when {
                 allFailed.isEmpty() -> UploadResult.Success(
                     data = allSucceeded.size,
@@ -68,9 +67,6 @@ class UploadCoordinator @Inject constructor(
                 allSucceeded.isEmpty() -> UploadResult.Failure(allFailed)
                 else -> UploadResult.PartialSuccess(allSucceeded, allFailed)
             }
-
-        } catch (e: CancellationException) {
-            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
             UploadResult.Failure(
@@ -109,10 +105,19 @@ class UploadCoordinator @Inject constructor(
                 return@mapNotNull null
             }
 
+            val localId = config.idExtractor(copiedItem) ?: ""
+            val dbId = config.dbIdExtractor?.invoke(copiedItem)
+            val jsonString = serialized.toString()
+            val chunkSize = 3000
+            var offset = 0
+            while (offset < jsonString.length) {
+                val end = minOf(offset + chunkSize, jsonString.length)
+                offset = end
+            }
             PreparedUpload(
                 item = copiedItem,
-                localId = config.idExtractor(copiedItem) ?: "",
-                dbId = config.dbIdExtractor?.invoke(copiedItem),
+                localId = localId,
+                dbId = dbId,
                 serialized = serialized
             )
         }
@@ -131,15 +136,20 @@ class UploadCoordinator @Inject constructor(
             try {
                 config.beforeUpload?.invoke(preparedItem.item)
 
-                val response = if (preparedItem.dbId.isNullOrEmpty()) {
-                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${config.endpoint}", preparedItem.serialized)
+                val requestUrl = if (preparedItem.dbId.isNullOrEmpty()) {
+                    "${UrlUtils.getUrl()}/${config.endpoint}"
                 } else {
-                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}", preparedItem.serialized)
+                    "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
+                }
+
+                val response = if (preparedItem.dbId.isNullOrEmpty()) {
+                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                } else {
+                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 }
 
                 if (response.isSuccessful && response.body() != null) {
                     val responseBody = response.body()!!
-
                     val (idField, revField) = when (config.responseHandler) {
                         is ResponseHandler.Standard -> "id" to "rev"
                         is ResponseHandler.Custom -> config.responseHandler.idField to config.responseHandler.revField
@@ -206,11 +216,23 @@ class UploadCoordinator @Inject constructor(
 
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
         try {
-            val field = obj.javaClass.getDeclaredField(fieldName)
-            field.isAccessible = true
-            field.set(obj, value)
-        } catch (e: NoSuchFieldException) {
-            Log.w(TAG, "Field $fieldName not found on ${obj.javaClass.simpleName}")
+            var clazz: Class<*>? = obj.javaClass
+            var field: java.lang.reflect.Field? = null
+
+            while (clazz != null && field == null) {
+                try {
+                    field = clazz.getDeclaredField(fieldName)
+                } catch (e: NoSuchFieldException) {
+                    clazz = clazz.superclass
+                }
+            }
+
+            if (field != null) {
+                field.isAccessible = true
+                field.set(obj, value)
+            } else {
+                Log.w(TAG, "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to set field $fieldName: ${e.message}")
         }
