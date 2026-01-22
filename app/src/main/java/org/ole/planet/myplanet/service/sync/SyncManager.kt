@@ -24,14 +24,11 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -57,104 +54,42 @@ import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
+import javax.inject.Inject
 
 @Singleton
-class SyncManager constructor(
+class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     @AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
-    private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
-    @ApplicationScope private val syncScope: CoroutineScope
-) {
+    private val syncCoordinator: SyncCoordinator,
+    private val syncStatusTracker: SyncStatusTracker
+) : SyncCoordinator.LegacySyncExecutor {
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
-    private var listener: OnSyncListener? = null
-    private var backgroundSync: Job? = null
     private var betaSync = false
-    private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
-    val syncStatus: StateFlow<SyncStatus> = _syncStatus
-    private val initializationJob: Job by lazy {
-        syncScope.launch {
-            improvedSyncManager.get().initialize()
-        }
-    }
+
+    val syncStatus: StateFlow<SyncStatusTracker.SyncStatus> = syncStatusTracker.syncStatus
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
-        this.listener = listener
-        if (!isSyncing) {
-            _syncStatus.value = SyncStatus.Idle
-            settings.edit { remove("concatenated_links") }
-            listener?.onSyncStarted()
-            _syncStatus.value = SyncStatus.Syncing
-
-            // Use improved sync manager if beta sync is enabled
-            val useImproved = settings.getBoolean("useImprovedSync", false)
-            val isSyncRequest = type.equals("sync", ignoreCase = true)
-            if (useImproved && isSyncRequest) {
-                initializeAndStartImprovedSync(listener, syncTables)
-            } else {
-                if (useImproved && !isSyncRequest) {
-                    createLog("sync_manager_route", "legacy|reason=$type")
-                } else if (!useImproved) {
-                    createLog("sync_manager_route", "legacy")
-                }
-                authenticateAndSync(type, syncTables)
-            }
-        }
+        syncCoordinator.start(listener, type, syncTables, this)
+        isSyncing = true
     }
 
-    sealed class SyncStatus {
-        object Idle : SyncStatus()
-        object Syncing : SyncStatus()
-        data class Success(val message: String) : SyncStatus()
-        data class Error(val message: String) : SyncStatus()
-    }
-
-    private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
-        syncScope.launch {
-            try {
-                initializationJob.join()
-
-                val manager = improvedSyncManager.get()
-                val syncMode = if (settings.getBoolean("fastSync", false)) {
-                    SyncMode.Fast
-                } else {
-                    SyncMode.Standard
-                }
-                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                manager.start(listener, syncMode, syncTables)
-            } catch (e: Exception) {
-                listener?.onSyncFailed(e.message)
-                _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
-            }
-        }
+    override suspend fun executeLegacySync(type: String, syncTables: List<String>?) {
+        startSync(type, syncTables)
     }
 
     private fun destroy() {
         if (betaSync) {
-            syncScope.cancel()
             ThreadSafeRealmManager.closeThreadRealm()
         }
-        cancelBackgroundSync()
         cancel(context, 111)
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
-        listener?.onSyncComplete()
-        listener = null
-        _syncStatus.value = SyncStatus.Success("Sync completed")
-    }
-
-    private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        backgroundSync = syncScope.launch(Dispatchers.IO) {
-            if (transactionSyncManager.authenticate()) {
-                startSync(type, syncTables)
-            } else {
-                handleException(context.getString(R.string.invalid_configuration))
-                cleanupMainSync()
-            }
-        }
+        syncStatusTracker.notifyComplete()
+        syncStatusTracker.setStatus(SyncStatusTracker.SyncStatus.Success("Sync completed"))
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
@@ -520,7 +455,7 @@ class SyncManager constructor(
         }
     }
 
-    private fun cleanupMainSync() {
+    override fun cleanupMainSync() {
         cancel(context, 111)
         isSyncing = false
     }
@@ -531,14 +466,11 @@ class SyncManager constructor(
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
             settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
         }
-        isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
 
     fun cancelBackgroundSync() {
-        backgroundSync?.cancel()
-        backgroundSync = null
-        listener = null
+        syncStatusTracker.listener = null
     }
 
     private suspend fun resourceTransactionSync() {
@@ -745,12 +677,10 @@ class SyncManager constructor(
     }
 
     private fun handleException(message: String?) {
-        if (listener != null) {
-            isSyncing = false
-            MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
-            _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
-        }
+        isSyncing = false
+        MainApplication.syncFailedCount++
+        syncStatusTracker.notifyFailed(message)
+        syncStatusTracker.setStatus(SyncStatusTracker.SyncStatus.Error(message ?: "Unknown error"))
     }
 
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {

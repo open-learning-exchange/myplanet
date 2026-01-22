@@ -112,6 +112,18 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindTeamRepository(impl: org.ole.planet.myplanet.repository.TeamRepositoryImpl): org.ole.planet.myplanet.repository.TeamRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamMemberRepository(impl: org.ole.planet.myplanet.repository.TeamMemberRepositoryImpl): org.ole.planet.myplanet.repository.TeamMemberRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamTaskRepository(impl: org.ole.planet.myplanet.repository.TeamTaskRepositoryImpl): org.ole.planet.myplanet.repository.TeamTaskRepository
+
+    @Binds
+    @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 
     @Binds
