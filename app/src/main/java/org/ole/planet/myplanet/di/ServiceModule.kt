@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SyncProgressRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.service.sync.ImprovedSyncManager
@@ -48,9 +49,10 @@ object ServiceModule {
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
+        syncProgressRepository: SyncProgressRepository,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, syncProgressRepository, scope)
     }
 
     @Provides
@@ -82,9 +84,10 @@ object ServiceModule {
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
+        syncProgressRepository: SyncProgressRepository,
         @ApplicationContext context: Context,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context)
+        return TransactionSyncManager(apiInterface, databaseService, syncProgressRepository, context)
     }
 }
