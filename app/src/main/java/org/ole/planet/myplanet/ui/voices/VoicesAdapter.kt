@@ -39,6 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
@@ -54,8 +55,8 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.ImageUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utilities.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -360,7 +361,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
 
             if (user?.id?.startsWith("guest") == false) {
-                chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
+                chatAdapter.setOnChatItemClickListener(object : OnChatItemClickListener {
                     override fun onChatItemClick(position: Int, chatItem: ChatMessage) {
                         listener?.onNewsItemClick(news)
                     }

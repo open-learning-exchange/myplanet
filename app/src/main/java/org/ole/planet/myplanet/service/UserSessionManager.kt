@@ -6,7 +6,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,9 +15,8 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -28,6 +26,7 @@ class UserSessionManager @Inject constructor(
     @AppPreferences private val settings: SharedPreferences,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
+    private val activitiesRepository: ActivitiesRepository
 ) {
     private val fullName: String
 
@@ -53,23 +52,12 @@ class UserSessionManager @Inject constructor(
         applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = getUserModelCopy()
-                val userId = model?.id
-                val userName = model?.name
-                val parentCode = model?.parentCode
-                val planetCode = model?.planetCode
-
-                realmService.executeTransactionAsync { realm ->
-                    val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-                    offlineActivities.userId = userId
-                    offlineActivities.userName = userName
-                    offlineActivities.parentCode = parentCode
-                    offlineActivities.createdOn = planetCode
-                    offlineActivities.type = KEY_LOGIN
-                    offlineActivities._rev = null
-                    offlineActivities._id = null
-                    offlineActivities.description = "Member login on offline application"
-                    offlineActivities.loginTime = Date().time
-                }
+                activitiesRepository.logLogin(
+                    userId = model?.id,
+                    userName = model?.name,
+                    parentCode = model?.parentCode,
+                    planetCode = model?.planetCode
+                )
                 withContext(Dispatchers.Main) {
                     callback?.invoke()
                 }
@@ -84,47 +72,28 @@ class UserSessionManager @Inject constructor(
     fun logoutAsync() {
         applicationScope.launch(Dispatchers.IO) {
             try {
-                realmService.executeTransactionAsync { realm ->
-                    RealmOfflineActivity.getRecentLogin(realm)
-                        ?.logoutTime = Date().time
-                }
+                activitiesRepository.logLogout(userModel?.name)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-
-    val lastVisit: Long? get() = realmService.withRealm { realm ->
-        realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-    }
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
-
-    fun getOfflineVisits(m: RealmUserModel?): Int {
-        return realmService.withRealm { realm ->
-            val dbUsers = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", m?.name)
-                .equalTo("type", KEY_LOGIN)
-                .findAll()
-            if (!dbUsers.isEmpty()) {
-                dbUsers.size
-            } else {
-                0
-            }
-        }
+    suspend fun getGlobalLastVisit(): Long? {
+        return activitiesRepository.getGlobalLastVisit()
     }
 
-    fun getLastVisit(m: RealmUserModel): String {
-        return realmService.withRealm { realm ->
-            val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", m.name)
-                .max("loginTime") as Long?
-            if (lastLogoutTimestamp != null) {
-                val date = Date(lastLogoutTimestamp)
-                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-            } else {
-                "No logout record found"
-            }
+    suspend fun getOfflineVisits(m: RealmUserModel?): Int {
+        return m?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
+    }
+
+    suspend fun getLastVisit(m: RealmUserModel): String {
+        val lastLogoutTimestamp = activitiesRepository.getLastVisit(m.name ?: "")
+        return if (lastLogoutTimestamp != null) {
+            val date = Date(lastLogoutTimestamp)
+            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+        } else {
+            "No logout record found"
         }
     }
 
@@ -143,65 +112,32 @@ class UserSessionManager @Inject constructor(
                     return@launch
                 }
 
-                val userName = model?.name
-                val parentCode = model?.parentCode
-                val planetCode = model?.planetCode
+                activitiesRepository.logResourceOpen(
+                    userName = model?.name,
+                    parentCode = model?.parentCode,
+                    planetCode = model?.planetCode,
+                    title = itemTitle,
+                    resourceId = itemResourceId,
+                    type = type
+                )
 
-                realmService.executeTransactionAsync { realm ->
-                    val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
-                    offlineActivities.user = userName
-                    offlineActivities.parentCode = parentCode
-                    offlineActivities.createdOn = planetCode
-                    offlineActivities.type = type
-                    offlineActivities.title = itemTitle
-                    offlineActivities.resourceId = itemResourceId
-                    offlineActivities.time = Date().time
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    val numberOfResourceOpen: String
-        get() = realmService.withRealm { realm ->
-            val count = realm.where(RealmResourceActivity::class.java)
-                .equalTo("user", fullName)
-                .equalTo("type", KEY_RESOURCE_OPEN)
-                .count()
-            if (count == 0L) "" else "Resource opened $count times."
-        }
+    suspend fun getNumberOfResourceOpen(): String {
+        val count = activitiesRepository.getResourceOpenCount(fullName, KEY_RESOURCE_OPEN)
+        return if (count == 0L) "" else "Resource opened $count times."
+    }
 
     suspend fun maxOpenedResource(): String {
-        return withContext(Dispatchers.IO) {
-            realmService.withRealm { realm ->
-                val activities = realm.where(RealmResourceActivity::class.java)
-                    .equalTo("user", fullName)
-                    .equalTo("type", KEY_RESOURCE_OPEN)
-                    .findAll()
-
-                if (activities.isEmpty()) {
-                    return@withRealm ""
-                }
-
-                val resourceCounts = activities
-                    .groupBy { it.resourceId }
-                    .mapValues { entry ->
-                        val count = entry.value.size
-                        val title = entry.value.first().title
-                        Pair(count, title)
-                    }
-
-                val maxEntry = resourceCounts.maxByOrNull { it.value.first }
-
-                if (maxEntry == null || maxEntry.value.first == 0) {
-                    ""
-                } else {
-                    val maxCount = maxEntry.value.first
-                    val title = maxEntry.value.second
-                    "$title opened $maxCount times"
-                }
-            }
+        val result = activitiesRepository.getMostOpenedResource(fullName, KEY_RESOURCE_OPEN)
+        return if (result == null) {
+            ""
+        } else {
+            "${result.first} opened ${result.second} times"
         }
     }
 

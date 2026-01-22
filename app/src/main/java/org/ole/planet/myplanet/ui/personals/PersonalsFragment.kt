@@ -13,7 +13,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
+import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
-class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
+class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     private var _binding: FragmentMyPersonalsBinding? = null
     private val binding get() = _binding!!
     private lateinit var pg: DialogUtils.CustomProgressDialog

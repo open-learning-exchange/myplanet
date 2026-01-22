@@ -12,6 +12,7 @@ import io.realm.Realm
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
+import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -62,7 +63,7 @@ class MembersFragment : BaseMemberFragment() {
             if (adapterJoined == null) {
                 adapterJoined = MembersAdapter(
                     requireActivity(), user?.id,
-                    object : MembersAdapter.MemberActionListener {
+                    object : OnMemberActionListener {
                         override fun onRemoveMember(member: JoinedMemberData, position: Int) {
                             handleRemoveMember(member)
                         }
