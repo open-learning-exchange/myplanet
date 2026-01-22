@@ -18,7 +18,7 @@ class StandardSyncStrategy @Inject constructor(
         
         try {
             // Use the existing TransactionSyncManager for standard sync
-            transactionSyncManager.syncDb(table)
+            transactionSyncManager.syncDb(table, throwOnError = true)
 
             val endTime = System.currentTimeMillis()
             emit(

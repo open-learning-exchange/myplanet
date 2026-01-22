@@ -10,11 +10,14 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
@@ -90,16 +93,18 @@ class ImprovedSyncManager @Inject constructor(
 
     private fun startSyncProcess(syncMode: SyncMode, syncTables: List<String>?) {
         syncScope.launch {
+            var success = false
             try {
                 if (transactionSyncManager.authenticate()) {
                     performSync(syncMode, syncTables)
+                    success = true
                 } else {
                     handleException("Authentication failed")
                 }
             } catch (e: Exception) {
                 handleException(e.message ?: "Unknown error")
             } finally {
-                cleanup()
+                cleanup(success)
             }
         }
     }
@@ -113,14 +118,33 @@ class ImprovedSyncManager @Inject constructor(
         val tablesToSync = syncTables ?: syncOrder
         val strategy = getStrategy(syncMode)
 
-        coroutineScope {
+        supervisorScope {
             val syncJobs = tablesToSync.map { table ->
                 async {
-                    syncTable(table, strategy, logger)
+                    var result = syncTable(table, strategy, logger)
+
+                    // Retry logic for failed tables
+                    if (!result.success) {
+                        var attempt = 1
+                        while (!result.success && attempt < 3) {
+                            delay(1000L * attempt)
+                            logger.logDetail(table, "Retrying sync (attempt ${attempt + 1})...")
+                            result = syncTable(table, strategy, logger)
+                            attempt++
+                        }
+                    }
+                    result
                 }
             }
 
-            syncJobs.awaitAll()
+            val results = syncJobs.awaitAll()
+
+            val failures = results.filter { !it.success }
+            if (failures.isNotEmpty()) {
+                val failedTables = failures.joinToString { it.table }
+                createLog("sync_summary", "Partial failure: $failedTables")
+                throw RuntimeException("Partial sync failure: $failedTables")
+            }
         }
 
         // Post-sync operations
@@ -137,27 +161,47 @@ class ImprovedSyncManager @Inject constructor(
         logger.stopLogging()
     }
 
-    private suspend fun syncTable(table: String, strategy: SyncStrategy, logger: SyncTimeLogger) {
+    private suspend fun syncTable(table: String, strategy: SyncStrategy, logger: SyncTimeLogger): SyncResult {
         val config = batchProcessor.getOptimalConfig(table)
+        val startTime = System.currentTimeMillis()
 
         try {
             logger.startProcess("${table}_sync")
 
-            if (strategy.isSupported(table)) {
+            val result = if (strategy.isSupported(table)) {
+                var lastResult: SyncResult? = null
                 poolManager.useRealm { realm ->
-                    strategy.syncTable(table, realm, config).collect()
+                    strategy.syncTable(table, realm, config).collect {
+                        lastResult = it
+                    }
                 }
+                lastResult ?: throw IllegalStateException("No result from syncTable")
             } else {
                 // Fallback to standard sync
-                transactionSyncManager.syncDb(table)
+                transactionSyncManager.syncDb(table, throwOnError = true)
+                SyncResult(
+                    table = table,
+                    processedItems = -1,
+                    success = true,
+                    duration = System.currentTimeMillis() - startTime,
+                    strategy = "fallback"
+                )
             }
 
             logger.endProcess("${table}_sync")
+            return result
 
         } catch (e: Exception) {
             logger.endProcess("${table}_sync")
-
-            throw e
+            createLog("sync_table_failed", "table=$table|error=${e.message}")
+            return SyncResult(
+                table = table,
+                processedItems = 0,
+                success = false,
+                errorMessage = e.message,
+                duration = System.currentTimeMillis() - startTime,
+                strategy = "failed"
+            )
         }
     }
 
@@ -178,11 +222,13 @@ class ImprovedSyncManager @Inject constructor(
         )
     }
 
-    private fun cleanup() {
+    private fun cleanup(success: Boolean) {
         isSyncing = false
-        settings.edit { putLong("LastSync", Date().time) }
+        if (success) {
+            settings.edit { putLong("LastSync", Date().time) }
+            listener?.onSyncComplete()
+        }
         NotificationUtils.cancel(context, 111)
-        listener?.onSyncComplete()
     }
 
     private fun SyncMode.describe(): String {
