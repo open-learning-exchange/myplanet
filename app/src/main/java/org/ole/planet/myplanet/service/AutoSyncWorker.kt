@@ -47,26 +47,30 @@ class AutoSyncWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         if (isStopped) return@withContext Result.success()
-        val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
-        preferences = entryPoint.sharedPreferences()
-        syncManager = entryPoint.syncManager()
-        uploadManager = entryPoint.uploadManager()
-        uploadToShelfService = entryPoint.uploadToShelfService()
-        val lastSync = preferences.getLong("LastSync", 0)
-        val currentTime = System.currentTimeMillis()
-        val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
-        if (currentTime - lastSync > syncInterval * 1000) {
-            if (isAppInForeground(context)) {
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(context, "Syncing started...")
+        try {
+            val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
+            preferences = entryPoint.sharedPreferences()
+            syncManager = entryPoint.syncManager()
+            uploadManager = entryPoint.uploadManager()
+            uploadToShelfService = entryPoint.uploadToShelfService()
+            val lastSync = preferences.getLong("LastSync", 0)
+            val currentTime = System.currentTimeMillis()
+            val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
+            if (currentTime - lastSync > syncInterval * 1000) {
+                if (isAppInForeground(context)) {
+                    withContext(Dispatchers.Main) {
+                        Utilities.toast(context, "Syncing started...")
+                    }
+                }
+                return@withContext suspendCancellableCoroutine { cont ->
+                    continuation = cont
+                    DataService(context).checkVersion(this@AutoSyncWorker, preferences)
                 }
             }
-            return@withContext suspendCancellableCoroutine { cont ->
-                continuation = cont
-                DataService(context).checkVersion(this@AutoSyncWorker, preferences)
-            }
+            return@withContext Result.success()
+        } finally {
+            workerScope.cancel()
         }
-        return@withContext Result.success()
     }
 
     override fun onSyncStarted() {}
@@ -145,12 +149,6 @@ class AutoSyncWorker(
     override fun onSuccess(success: String?) {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
-    }
-
-    override fun onStopped() {
-        super.onStopped()
-        workerScope.cancel()
-        MainApplication.isSyncRunning = false
     }
 
     private fun isAppInForeground(context: Context): Boolean {
