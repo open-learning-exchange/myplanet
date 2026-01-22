@@ -102,11 +102,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
@@ -286,22 +284,20 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
             binding.loadingSpinner.visibility = View.VISIBLE
             try {
-                val (surveys, infos, data) = withContext(Dispatchers.IO) {
-                    val currentSurveys = when {
-                        isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
-                        else -> surveysRepository.getIndividualSurveys()
-                    }
-                    val surveyInfos = surveysRepository.getSurveyInfos(
-                        isTeam,
-                        teamId,
-                        userProfileModel?.id,
-                        currentSurveys
-                    )
-                    val bindingData = surveysRepository.getSurveyFormState(currentSurveys, teamId)
-                    Triple(currentSurveys, surveyInfos, bindingData)
+                val currentSurveysList = when {
+                    isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                    else -> surveysRepository.getIndividualSurveys()
                 }
-                currentSurveys = surveys.sortedByDescending { survey ->
+                val surveyInfos = surveysRepository.getSurveyInfos(
+                    isTeam,
+                    teamId,
+                    userProfileModel?.id,
+                    currentSurveysList
+                )
+                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
+
+                currentSurveys = currentSurveysList.sortedByDescending { survey ->
                     if (survey.sourceSurveyId != null) {
                         if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
                     } else {
@@ -309,9 +305,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                     }
                 }
                 surveyInfoMap.clear()
-                surveyInfoMap.putAll(infos)
+                surveyInfoMap.putAll(surveyInfos)
                 bindingDataMap.clear()
-                bindingDataMap.putAll(data)
+                bindingDataMap.putAll(bindingData)
                 binding.spnSort.setSelection(0, false)
                 applySearchFilter()
             } finally {

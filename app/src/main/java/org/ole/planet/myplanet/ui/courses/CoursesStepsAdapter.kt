@@ -74,9 +74,7 @@ class CoursesStepsAdapter(private val context: Context, private val submissionsR
                     rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
                 } else {
                     loadJob = lifecycleOwner.lifecycleScope.launch {
-                        val size = withContext(Dispatchers.IO) {
-                            submissionsRepository.getExamQuestionCount(stepId)
-                        }
+                        val size = submissionsRepository.getExamQuestionCount(stepId)
                         examQuestionCountCache[stepId] = size
                         if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
                             return@launch

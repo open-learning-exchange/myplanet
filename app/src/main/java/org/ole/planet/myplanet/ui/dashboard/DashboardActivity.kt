@@ -616,10 +616,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                             }
                                         }
                                     } else {
-                                        withContext(Dispatchers.IO) {
-                                            delay(300)
-                                            refreshNotificationsWithRetry(userId)
-                                        }
+                                        delay(300)
+                                        refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
                                     android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")

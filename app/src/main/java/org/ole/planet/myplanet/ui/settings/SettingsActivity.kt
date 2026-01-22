@@ -202,16 +202,16 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             dialog.show()
-                            lifecycleScope.launch {
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 try {
                                     withTimeout(60 * 1000L) {
                                         resourcesRepository.markAllResourcesOffline(false)
                                         val f = File(FileUtils.getOlePath(requireContext()))
-                                        withContext(Dispatchers.IO) {
-                                            deleteRecursive(f)
-                                        }
+                                        deleteRecursive(f)
                                     }
-                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                    withContext(Dispatchers.Main) {
+                                        Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                    }
                                 } catch (e: Exception) {
                                     if (e is CancellationException && e !is TimeoutCancellationException) {
                                         throw e

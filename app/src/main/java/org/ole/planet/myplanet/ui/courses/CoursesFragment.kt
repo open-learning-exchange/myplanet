@@ -113,11 +113,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
@@ -505,13 +503,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val tagNames = searchTags.mapNotNull { it.name }
 
         lifecycleScope.launch {
-            val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = ratingsRepository.getCourseRatings(model?.id)
-                val progress = progressRepository.getCourseProgress(model?.id)
-                Triple(courses, ratings, progress)
-            }
-            adapterCourses.updateData(filteredCourses, map, progressMap)
+            val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+            val ratings = ratingsRepository.getCourseRatings(model?.id)
+            val progress = progressRepository.getCourseProgress(model?.id)
+            adapterCourses.updateData(courses, ratings, progress)
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         }

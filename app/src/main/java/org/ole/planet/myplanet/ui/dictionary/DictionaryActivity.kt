@@ -56,16 +56,16 @@ class DictionaryActivity : BaseActivity() {
         }
         if (isEmpty) {
             val context = this@DictionaryActivity
-            val json = withContext(Dispatchers.IO) {
-                try {
-                    val data = FileUtils.getStringFromFile(
+            val json = try {
+                val data = withContext(Dispatchers.IO) {
+                    FileUtils.getStringFromFile(
                         FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                     )
-                    JsonUtils.gson.fromJson(data, JsonArray::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
                 }
+                JsonUtils.gson.fromJson(data, JsonArray::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
             json?.let { jsonArray ->
                 databaseService.withRealm { realm ->
@@ -93,12 +93,8 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryCount(): Long {
-        return withContext(Dispatchers.IO) {
-            var count = 0L
-            databaseService.withRealm { realm ->
-                count = realm.where(RealmDictionary::class.java).count()
-            }
-            count
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmDictionary::class.java).count()
         }
     }
 

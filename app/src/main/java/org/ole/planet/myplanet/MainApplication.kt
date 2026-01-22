@@ -230,9 +230,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
     
     private suspend fun initializeDatabaseConnection() {
-        withContext(Dispatchers.IO) {
-            databaseService.withRealm { }
-        }
+        databaseService.withRealmAsync { }
     }
 
     private fun setupStrictMode() {
@@ -307,9 +305,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     val serverUrl = preferences.getString("serverURL", "")
                     if (!serverUrl.isNullOrEmpty()) {
                         applicationScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
+                            val canReachServer = isServerReachable(serverUrl)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
                                 backgroundDownload(
                                     downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),

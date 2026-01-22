@@ -109,11 +109,9 @@ class MyHealthFragment : Fragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
@@ -252,9 +250,7 @@ class MyHealthFragment : Fragment() {
             val fetchedUser = if (normalizedId.isNullOrEmpty()) {
                 null
             } else {
-                withContext(Dispatchers.IO) {
-                    userRepository.getUserByAnyId(normalizedId)
-                }
+                userRepository.getUserByAnyId(normalizedId)
             }
             if (!isAdded || _binding == null) {
                 return@launch
@@ -315,9 +311,7 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-                    val sortedList = withContext(Dispatchers.IO) {
-                        userRepository.getUsersSortedBy(sortBy, sort)
-                    }
+                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     if (isAdded) {
                         userModelList = sortedList
                         adapter.clear()
@@ -343,9 +337,7 @@ class MyHealthFragment : Fragment() {
                         lv.visibility = View.GONE
                     }
 
-                    val userModelList = withContext(Dispatchers.IO) {
-                        userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
-                    }
+                    val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
 
                     loadingJob.cancel()
                     if (isAdded) {
