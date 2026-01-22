@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.SubmissionDetail
 
 interface SubmissionsRepository {
     suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>>
@@ -26,7 +27,7 @@ interface SubmissionsRepository {
     suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)
-    suspend fun getSubmissionDetail(submissionId: String): org.ole.planet.myplanet.ui.submissions.SubmissionDetail?
+    suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
     fun getNormalizedSubmitterName(submission: RealmSubmission): String?
     suspend fun getAllPendingSubmissions(): List<RealmSubmission>
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String? = null): List<RealmSubmission>

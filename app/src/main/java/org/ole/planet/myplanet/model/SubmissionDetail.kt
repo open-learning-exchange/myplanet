@@ -1,6 +1,4 @@
-package org.ole.planet.myplanet.ui.submissions
-
-import org.ole.planet.myplanet.model.QuestionAnswer
+package org.ole.planet.myplanet.model
 
 data class SubmissionDetail(
     val title: String,
