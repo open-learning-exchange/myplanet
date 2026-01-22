@@ -14,13 +14,11 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
-import java.util.concurrent.Executors
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
@@ -70,7 +68,6 @@ class SyncManager constructor(
     private val transactionSyncManager: TransactionSyncManager,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var td: Thread? = null
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
@@ -78,7 +75,6 @@ class SyncManager constructor(
     private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
-    private val syncDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val initializationJob: Job by lazy {
         syncScope.launch {
             improvedSyncManager.get().initialize()
@@ -148,19 +144,10 @@ class SyncManager constructor(
         listener?.onSyncComplete()
         listener = null
         _syncStatus.value = SyncStatus.Success("Sync completed")
-        try {
-            if (!betaSync) {
-                td?.interrupt()
-            } else {
-                td?.interrupt()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        backgroundSync = syncScope.launch(syncDispatcher) {
+        backgroundSync = syncScope.launch(Dispatchers.IO) {
             if (transactionSyncManager.authenticate()) {
                 startSync(type, syncTables)
             } else {
@@ -536,15 +523,6 @@ class SyncManager constructor(
     private fun cleanupMainSync() {
         cancel(context, 111)
         isSyncing = false
-        if (!betaSync) {
-            try {
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            td?.interrupt()
-        } else {
-            td?.interrupt()
-        }
     }
 
     private fun initializeSync() {
