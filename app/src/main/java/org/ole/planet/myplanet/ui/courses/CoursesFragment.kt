@@ -524,16 +524,21 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val userId = model?.id
             val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
                 val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                courses.forEach { course ->
-                    course.isMyCourse = course.userId?.contains(userId) == true
+                val finalCourses = if (isMyCourseLib) {
+                    courses.filter { it.userId?.contains(userId) == true }
+                } else {
+                    courses.forEach { course ->
+                        course.isMyCourse = course.userId?.contains(userId) == true
+                    }
+                    courses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                 }
                 val ratings = ratingsRepository.getCourseRatings(userId)
                 val progress = progressRepository.getCourseProgress(userId)
-                Triple(courses, ratings, progress)
+                Triple(finalCourses, ratings, progress)
             }
             adapterCourses.updateData(filteredCourses, map, progressMap)
             scrollToTop()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            showNoData(tvMessage, filteredCourses.size, "courses")
         }
     }
 
