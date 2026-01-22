@@ -7,26 +7,26 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
-import org.ole.planet.myplanet.ui.references.ReferencesAdapter.ViewHolderOtherInfo
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.ui.references.ReferencesAdapter.ReferencesViewHolder
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
 
 class ReferencesAdapter(private val context: Context, list: List<String>) :
-    ListAdapter<String, ViewHolderOtherInfo>(DIFF_CALLBACK) {
+    ListAdapter<String, ReferencesViewHolder>(DIFF_CALLBACK) {
 
     init {
         submitList(list)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderOtherInfo {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReferencesViewHolder {
         val binding = RowOtherInfoBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolderOtherInfo(binding)
+        return ReferencesViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderOtherInfo, position: Int) {
+    override fun onBindViewHolder(holder: ReferencesViewHolder, position: Int) {
         val jsonString = getItem(position)
         val `object` = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
         val res = """
@@ -38,7 +38,7 @@ class ReferencesAdapter(private val context: Context, list: List<String>) :
         holder.rowOtherInfoBinding.tvDescription.text = res
     }
 
-    class ViewHolderOtherInfo(var rowOtherInfoBinding: RowOtherInfoBinding) : RecyclerView.ViewHolder(rowOtherInfoBinding.root)
+    class ReferencesViewHolder(var rowOtherInfoBinding: RowOtherInfoBinding) : RecyclerView.ViewHolder(rowOtherInfoBinding.root)
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<String>(

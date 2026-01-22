@@ -16,10 +16,10 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SurveyInfo
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -27,7 +27,6 @@ class SurveysRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
-
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
             equalTo("examId", examId)
@@ -37,10 +36,8 @@ class SurveysRepositoryImpl @Inject constructor(
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->
-                val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
-                if (exam == null) {
-                    return@executeTransaction
-                }
+                val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
+                    .findFirst() ?: return@executeTransaction
 
                 val userModel = userSessionManager.userModel
                 val sParentCode = settings.getString("parentCode", "")
@@ -268,12 +265,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSurveyInfos(
-        isTeam: Boolean,
-        teamId: String?,
-        userId: String?,
-        surveys: List<RealmStepExam>
-    ): Map<String, SurveyInfo> {
+    override suspend fun getSurveyInfos(isTeam: Boolean, teamId: String?, userId: String?, surveys: List<RealmStepExam>): Map<String, SurveyInfo> {
         val surveyIds = surveys.map { it.id }
         val submissionsQuery = queryList(RealmSubmission::class.java, ensureLatest = true) {
             if (isTeam) {
@@ -284,29 +276,26 @@ class SurveysRepositoryImpl @Inject constructor(
             }
         }
 
-        val submissionsByParentId = submissionsQuery
-            .filter { submission ->
-                val hasStatus = !submission.status.isNullOrEmpty()
-                val matchesParentId = surveyIds.any { surveyId ->
-                    submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
-                }
-                hasStatus && matchesParentId
+        val submissionsByParentId = submissionsQuery.filter { submission ->
+            val isComplete = submission.status == "complete" || submission.status == "requires grading"
+            val matchesParentId = surveyIds.any { surveyId ->
+                submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
             }
-            .groupBy { submission ->
-                val parentId = submission.parentId ?: return@groupBy null
-                surveyIds.find { surveyId ->
-                    parentId == surveyId || parentId.startsWith("$surveyId@")
-                }
+            isComplete && matchesParentId
+        }.groupBy { submission ->
+            val parentId = submission.parentId ?: return@groupBy null
+            surveyIds.find { surveyId ->
+                parentId == surveyId || parentId.startsWith("$surveyId@")
             }
-            .filterKeys { it != null }
-            .mapKeys { it.key!! }
+        }.filterKeys { it != null }.mapKeys { it.key!! }
 
         return surveys.filter { it.id != null }.associate { survey ->
             val surveyId = survey.id!!
             val surveySubmissions = submissionsByParentId[surveyId] ?: emptyList()
             val submissionCount = surveySubmissions.size
-            val lastSubmissionDate = surveySubmissions
-                .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
+            val lastSubmissionDate = surveySubmissions.maxByOrNull {
+                it.startTime
+            }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             val creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
 
             surveyId to SurveyInfo(

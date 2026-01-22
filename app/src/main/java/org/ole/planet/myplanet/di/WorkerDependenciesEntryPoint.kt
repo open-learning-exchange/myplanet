@@ -6,8 +6,8 @@ import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UserSessionManager
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)

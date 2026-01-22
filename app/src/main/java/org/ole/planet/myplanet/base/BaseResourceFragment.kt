@@ -47,16 +47,16 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.DownloadService
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
-import org.ole.planet.myplanet.utilities.DialogUtils.showError
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
+import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -83,7 +83,7 @@ abstract class BaseResourceFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
+    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
@@ -417,62 +417,23 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        if (!isRealmInitialized()) return
-        
         val userId = profileDbHandler.userModel?.id ?: return
-
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            selectedItems.forEach { index ->
-                val item = libraryItems[index]
-                if (item?.userId?.contains(userId) == false) {
-                    item.setUserId(userId)
-                    RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
-                }
-            }
-            
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-        } catch (e: Exception) {
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
+        val resourceIds = selectedItems.mapNotNull { index ->
+            libraryItems.getOrNull(index)?.resourceId
         }
-        Utilities.toast(activity, getString(R.string.added_to_my_library))
+        lifecycleScope.launch {
+            resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
+        }
     }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        if (!isRealmInitialized()) return
-
         val userId = profileDbHandler.userModel?.id ?: return
-
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            libraryItems.forEach { libraryItem ->
-                if (libraryItem?.userId?.contains(userId) == false) {
-                    libraryItem.setUserId(userId, mRealm)
-                    RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
-                }
-            }
-            
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-        } catch (e: Exception) {
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
+        val validLibraryItems = libraryItems.filterNotNull()
+        lifecycleScope.launch {
+            resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
         }
-        Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
     override fun onDestroyView() {
@@ -517,14 +478,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", false).findAll()
-            val libList: MutableList<RealmMyLibrary> = ArrayList()
-            val libraries = getLibraries(l)
-            libList.addAll(libraries)
-            return libList
-        }
 
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
             DataService(context).isPlanetAvailable(object : PlanetAvailableListener {

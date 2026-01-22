@@ -10,7 +10,6 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -20,46 +19,38 @@ import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
+import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.repository.JoinedMemberData
-import org.ole.planet.myplanet.utilities.NavigationHelper
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
 
 class MembersAdapter(
     private val context: Context,
     private val currentUserId: String?,
-    private val actionListener: MemberActionListener
-) : ListAdapter<JoinedMemberData, MembersAdapter.ViewHolderUser>(DIFF_CALLBACK) {
+    private val actionListener: OnMemberActionListener
+) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
-    interface MemberActionListener {
-        fun onRemoveMember(member: JoinedMemberData, position: Int)
-        fun onMakeLeader(member: JoinedMemberData)
-        fun onLeaveTeam()
-    }
+
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<JoinedMemberData>() {
-            override fun areItemsTheSame(oldItem: JoinedMemberData, newItem: JoinedMemberData): Boolean {
-                return oldItem.user.id == newItem.user.id
-            }
-
-            override fun areContentsTheSame(oldItem: JoinedMemberData, newItem: JoinedMemberData): Boolean {
-                return oldItem == newItem
-            }
-
-            override fun getChangePayload(oldItem: JoinedMemberData, newItem: JoinedMemberData): Any? {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.user.id == newItem.user.id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            getChangePayload = { oldItem, newItem ->
                 val payload = Bundle()
                 if (oldItem.isLeader != newItem.isLeader) {
                     payload.putBoolean("KEY_LEADER", newItem.isLeader)
                 }
-                return if (payload.isEmpty) null else payload
+                if (payload.isEmpty) null else payload
             }
-        }
+        )
     }
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MembersViewHolder {
         val binding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderUser(binding)
+        return MembersViewHolder(binding)
     }
 
     override fun onBindViewHolder(
-        holder: ViewHolderUser,
+        holder: MembersViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
@@ -77,7 +68,7 @@ class MembersAdapter(
         }
     }
 
-    override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
+    override fun onBindViewHolder(holder: MembersViewHolder, position: Int) {
         val memberData = getItem(position)
         val member = memberData.user
         val binding = holder.binding
@@ -142,12 +133,12 @@ class MembersAdapter(
     }
 
     private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
-        if (isLoggedInUserTeamLeader && itemCount > 1) {
+        val currentMember = getItem(position)
+        val isOwnCard = currentMember.user.id == currentUserId
+
+        if ((isLoggedInUserTeamLeader || isOwnCard) && itemCount > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
-                val currentMember = getItem(position)
-                val isOwnCard = currentMember.user.id == currentUserId
-
                 val overflowMenuOptions = if (isOwnCard) {
                     arrayOf(context.getString(R.string.leave))
                 } else {
@@ -193,6 +184,6 @@ class MembersAdapter(
         submitList(newList)
     }
 
-    class ViewHolderUser(val binding: RowJoinedUserBinding) :
+    class MembersViewHolder(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
 }

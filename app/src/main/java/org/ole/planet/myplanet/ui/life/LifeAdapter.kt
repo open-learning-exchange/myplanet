@@ -17,8 +17,8 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.ItemTouchHelperListener
-import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.callback.OnItemMoveListener
+import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
@@ -28,15 +28,15 @@ import org.ole.planet.myplanet.ui.references.ReferencesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
 
 class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
     private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
     private val reorderCallback: (List<RealmMyLife>) -> Unit
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperListener {
+) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
     private val hide = 0.5f
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -96,7 +96,7 @@ class LifeAdapter(
     }
 
     internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
-        ItemTouchHelperViewHolder {
+        OnItemDragStateListener {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
         var dragImageButton: ImageButton = itemView.findViewById(R.id.drag_image_button)

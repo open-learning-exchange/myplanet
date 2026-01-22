@@ -45,16 +45,16 @@ import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
@@ -66,7 +66,7 @@ class MyHealthFragment : Fragment() {
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var userRepository: UserRepository
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
@@ -109,11 +109,9 @@ class MyHealthFragment : Fragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
@@ -242,7 +240,7 @@ class MyHealthFragment : Fragment() {
                 }
             }
         }
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun getHealthRecords(memberId: String?) {
@@ -252,9 +250,7 @@ class MyHealthFragment : Fragment() {
             val fetchedUser = if (normalizedId.isNullOrEmpty()) {
                 null
             } else {
-                withContext(Dispatchers.IO) {
-                    userRepository.getUserByAnyId(normalizedId)
-                }
+                userRepository.getUserByAnyId(normalizedId)
             }
             if (!isAdded || _binding == null) {
                 return@launch
@@ -315,9 +311,7 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-                    val sortedList = withContext(Dispatchers.IO) {
-                        userRepository.getUsersSortedBy(sortBy, sort)
-                    }
+                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     if (isAdded) {
                         userModelList = sortedList
                         adapter.clear()
@@ -343,9 +337,7 @@ class MyHealthFragment : Fragment() {
                         lv.visibility = View.GONE
                     }
 
-                    val userModelList = withContext(Dispatchers.IO) {
-                        userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
-                    }
+                    val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
 
                     loadingJob.cancel()
                     if (isAdded) {
@@ -462,7 +454,7 @@ class MyHealthFragment : Fragment() {
 
     override fun onDestroyView() {
         if (::onRealtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(onRealtimeSyncListener)
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null

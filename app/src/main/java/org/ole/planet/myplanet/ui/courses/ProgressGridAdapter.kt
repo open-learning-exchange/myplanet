@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressGridBinding
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class ProgressGridAdapter(private val context: Context) :
     ListAdapter<JsonObject, ProgressGridAdapter.ViewHolderMyProgress>(DIFF_CALLBACK) {

@@ -26,10 +26,12 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.ChatApiService
+import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
@@ -39,12 +41,12 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.SharedPrefManager
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -80,7 +82,7 @@ class ChatHistoryFragment : Fragment() {
     lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var chatApiService: ChatApiService
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -196,11 +198,9 @@ class ChatHistoryFragment : Fragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
@@ -258,16 +258,14 @@ class ChatHistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
-            val (currentUser, newsMessages, chatHistory, targets) = withContext(Dispatchers.IO) {
-                val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
-                val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
-                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-                val targets = cachedTargets ?: loadShareTargets(
-                    settings.getString("parentCode", ""),
-                    settings.getString("communityName", "")
-                )
-                Quartet(currentUser, newsMessages, chatHistory, targets)
-            }
+
+            val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
+            val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+            val targets = cachedTargets ?: loadShareTargets(
+                settings.getString("parentCode", ""),
+                settings.getString("communityName", "")
+            )
 
             user = currentUser
             sharedNewsMessages = newsMessages
@@ -284,7 +282,7 @@ class ChatHistoryFragment : Fragment() {
                     shareTargets,
                     ::shareChat,
                 )
-                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryAdapter.ChatHistoryItemClickListener {
+                newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                         sharedViewModel.setSelectedId(id)
@@ -335,7 +333,7 @@ class ChatHistoryFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser)
+            val createdNews = voicesRepository.createNews(map, currentUser, null)
             if (currentUser?.planetCode != null) {
                 sharedNewsMessages = sharedNewsMessages + createdNews
             }
@@ -356,17 +354,15 @@ class ChatHistoryFragment : Fragment() {
 
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                chatApiService.fetchAiProviders { providers ->
-                    sharedViewModel.setAiProvidersLoading(false)
-                    if (providers == null || providers.values.all { !it }) {
-                        sharedViewModel.setAiProvidersError(true)
-                        sharedViewModel.setAiProviders(null)
-                    } else {
-                        sharedViewModel.setAiProviders(providers)
-                    }
+            chatApiService.fetchAiProviders { providers ->
+                sharedViewModel.setAiProvidersLoading(false)
+                if (providers == null || providers.values.all { !it }) {
+                    sharedViewModel.setAiProvidersError(true)
+                    sharedViewModel.setAiProviders(null)
+                } else {
+                    sharedViewModel.setAiProviders(providers)
                 }
             }
         }
@@ -382,12 +378,12 @@ class ChatHistoryFragment : Fragment() {
                 }
             }
         }
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     override fun onDestroyView() {
         if (::onRealtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(onRealtimeSyncListener)
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
         _binding = null

@@ -33,31 +33,28 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.ApiClient.client
-import org.ole.planet.myplanet.data.ApiInterface
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
-import org.ole.planet.myplanet.utilities.DialogUtils.showError
-import org.ole.planet.myplanet.utilities.FileUtils.installApk
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
-    
     @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
-    
-    @Inject
-    lateinit var databaseService: DatabaseService
     
     @Inject
     lateinit var uploadManager: UploadManager
@@ -67,6 +64,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     @Inject
     lateinit var userRepository: UserRepository
+
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -208,7 +210,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             })
             return
         } else if (source == "login") {
-            lifecycleScope.launch(Dispatchers.IO) {
+            applicationScope.launch(Dispatchers.Main) {
                 uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
             }
             return
@@ -216,16 +218,17 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        lifecycleScope.launch {
+        applicationScope.launch(Dispatchers.Main) {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
+            val activity = this@ProcessUserDataActivity
 
             fun checkAllOperationsComplete() {
                 if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    runOnUiThread {
-                        if (!isFinishing && !isDestroyed) {
+                    activity.runOnUiThread {
+                        if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()
-                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -261,7 +264,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 }
             })
 
-            lifecycleScope.launch(Dispatchers.IO) {
+            applicationScope.launch(Dispatchers.IO) {
                 val success = uploadManager.uploadFeedback()
                 withContext(Dispatchers.Main) {
                     checkAllOperationsComplete()

@@ -8,16 +8,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.flow.first
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 
 @HiltViewModel
 class BellDashboardViewModel @Inject constructor(
@@ -108,9 +108,7 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
-        val reachable = withContext(Dispatchers.IO) {
-            isServerReachable(serverUrl)
-        }
+        val reachable = isServerReachable(serverUrl)
         updateNetworkStatus(if (reachable) NetworkStatus.Connected else NetworkStatus.Disconnected)
         return reachable
     }

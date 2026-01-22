@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -212,12 +212,26 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun joinCourse(courseId: String, userId: String) {
+        if (courseId.isBlank() || userId.isBlank()) return
+
         executeTransaction { realm ->
             val course = realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()
-            course?.setUserId(userId)
-            RealmRemovedLog.onAdd(realm, "courses", userId, courseId)
+
+            course?.let {
+                if (it.userId?.contains(userId) == false) {
+                    it.setUserId(userId)
+                }
+
+                val removedLog = realm.where(RealmRemovedLog::class.java)
+                    .equalTo("type", "courses")
+                    .equalTo("userId", userId)
+                    .equalTo("docId", courseId)
+                    .findFirst()
+
+                removedLog?.deleteFromRealm()
+            }
         }
     }
 
@@ -289,25 +303,6 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
                 ob.addProperty("status", it.status)
             }
-        }
-    }
-
-    override suspend fun logCourseVisit(
-        userId: String?,
-        courseId: String?,
-        courseTitle: String?,
-        planetCode: String?,
-        parentCode: String?
-    ) {
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-            activity.type = "visit"
-            activity.title = courseTitle
-            activity.courseId = courseId
-            activity.time = Date().time
-            activity.parentCode = parentCode
-            activity.createdOn = planetCode
-            activity.user = userId
         }
     }
 

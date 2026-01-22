@@ -89,7 +89,7 @@
         <activity
             android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.reader.AudioPlayerActivity"
+        <activity android:name=".ui.viewer.AudioPlayerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
@@ -100,19 +100,19 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.reader.PDFReaderActivity"
+        <activity android:name=".ui.viewer.PDFReaderActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.reader.WebViewActivity"
+        <activity android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.reader.VideoViewerActivity"
+        <activity android:name=".ui.viewer.VideoViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.reader.ImageViewerActivity"
+        <activity android:name=".ui.viewer.ImageViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.reader.TextFileViewerActivity"
+        <activity android:name=".ui.viewer.TextFileViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.reader.MarkdownViewerActivity"
+        <activity android:name=".ui.viewer.MarkdownViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.reader.CSVViewerActivity"
+        <activity android:name=".ui.viewer.CSVViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
@@ -130,7 +130,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
         <service
-            android:name=".service.DownloadService"
+            android:name=".services.DownloadService"
             android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:permission="android.permission.FOREGROUND_SERVICE"
@@ -146,7 +146,7 @@
                 android:value="androidx.startup" />
         </provider>
 
-        <receiver android:name=".utilities.NotificationActionReceiver"
+        <receiver android:name=".utils.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="mark_as_read" />

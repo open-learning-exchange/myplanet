@@ -10,12 +10,16 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -242,10 +246,61 @@ class ResourcesRepositoryImpl @Inject constructor(
             false
         }
     }
-    override fun isResourceOpened(resourceId: String, mRealm: io.realm.Realm): Boolean {
-        return mRealm.where(org.ole.planet.myplanet.model.RealmResourceActivity::class.java)
-            .equalTo("resourceId", resourceId)
-            .equalTo("type", "resource_opened")
-            .findFirst() != null
+
+    override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", false)
+        }.filter { it.needToUpdate() }
+    }
+
+    override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String) {
+        if (resourceIds.isEmpty() || userId.isBlank()) return
+
+        executeTransaction { realm ->
+            resourceIds.forEach { resourceId ->
+                val libraryItem = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("resourceId", resourceId)
+                    .findFirst()
+
+                libraryItem?.let {
+                    if (it.userId?.contains(userId) == false) {
+                        it.setUserId(userId)
+                    }
+                }
+
+                val removedLog = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                    .equalTo("type", "resources")
+                    .equalTo("userId", userId)
+                    .equalTo("docId", resourceId)
+                    .findFirst()
+
+                removedLog?.deleteFromRealm()
+            }
+        }
+    }
+
+    override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String) {
+        val resourceIds = resources.mapNotNull { it.resourceId }
+        addResourcesToUserLibrary(resourceIds, userId)
+    }
+
+    override suspend fun getOpenedResourceIds(userId: String): Set<String> {
+        val user = queryList(RealmUserModel::class.java) { equalTo("id", userId) }.firstOrNull()
+        val userName = user?.name ?: return emptySet()
+
+        return queryList(RealmResourceActivity::class.java) {
+            equalTo("user", userName)
+            equalTo("type", "resource_opened")
+        }.mapNotNull { it.resourceId }.toSet()
+    }
+
+    override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
+        val user = queryList(RealmUserModel::class.java) { equalTo("id", userId) }.firstOrNull()
+        val userName = user?.name ?: return flowOf(emptySet())
+
+        return queryListFlow(RealmResourceActivity::class.java) {
+            equalTo("user", userName)
+            equalTo("type", "resource_opened")
+        }.map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
     }
 }

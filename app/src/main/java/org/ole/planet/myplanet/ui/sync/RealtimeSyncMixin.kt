@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
-import org.ole.planet.myplanet.callback.DiffRefreshableCallback
+import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
@@ -26,7 +26,7 @@ class RealtimeSyncHelper(
     private val mixin: RealtimeSyncMixin
 ) {
     
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     
     private val onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
         override fun onTableDataUpdated(update: TableDataUpdate) {
@@ -44,12 +44,12 @@ class RealtimeSyncHelper(
     }
     
     fun setupRealtimeSync() {
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
         
         // Listen to data update flow
         fragment.lifecycleScope.launch {
             fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                syncCoordinator.dataUpdateFlow
+                syncManagerInstance.dataUpdateFlow
                     .filter { update -> mixin.getWatchedTables().contains(update.table) }
                     .distinctUntilChanged { old, new -> 
                         old.table == new.table && 
@@ -70,7 +70,7 @@ class RealtimeSyncHelper(
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when {
-                adapter is DiffRefreshableCallback -> adapter.refreshWithDiff()
+                adapter is OnDiffRefreshListener -> adapter.refreshWithDiff()
                 adapter is ListAdapter<*, *> -> {
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
@@ -81,6 +81,6 @@ class RealtimeSyncHelper(
     }
     
     fun cleanup() {
-        syncCoordinator.removeListener(onRealtimeSyncListener)
+        syncManagerInstance.removeListener(onRealtimeSyncListener)
     }
 }

@@ -18,11 +18,10 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.utilities.ItemReorderHelper
-import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.ItemReorderHelper
+import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
@@ -85,8 +84,11 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     private fun refreshList() {
-        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        lifeAdapter.submitList(mRealm.copyFromRealm(myLifeList))
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userId = model?.id ?: profileDbHandler.userModel?.id
+            val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+            lifeAdapter.submitList(myLifeList)
+        }
     }
 
     override fun onDestroyView() {

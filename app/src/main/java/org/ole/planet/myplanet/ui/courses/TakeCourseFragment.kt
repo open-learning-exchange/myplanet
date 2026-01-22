@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager2.widget.ViewPager2
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.isNotEmpty
@@ -24,7 +23,6 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -33,20 +31,19 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DialogUtils.getDialog
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private var _binding: FragmentTakeCourseBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -55,7 +52,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
-    lateinit var mRealm: Realm
+    @Inject
+    lateinit var activitiesRepository: ActivitiesRepository
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
@@ -77,7 +75,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         userModel = userSessionManager.userModel
         return binding.root
     }
@@ -99,15 +96,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            withContext(Dispatchers.IO) {
-                steps = coursesRepository.getCourseSteps(courseId)
+            steps = coursesRepository.getCourseSteps(courseId)
 
-                if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
-                    try {
-                        cachedCourseProgress = getCourseProgress()
-                    } finally {
-                        isFetchingProgress.set(false)
-                    }
+            if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
+                try {
+                    cachedCourseProgress = getCourseProgress()
+                } finally {
+                    isFetchingProgress.set(false)
                 }
             }
 
@@ -227,33 +222,33 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val detachedUserModel = userModel
             val detachedCurrentCourse = currentCourse
 
-            withContext(Dispatchers.IO) {
-                try {
-                    coursesRepository.logCourseVisit(
-                        detachedUserModel?.name,
-                        detachedCurrentCourse?.courseId,
-                        detachedCurrentCourse?.courseTitle,
-                        detachedUserModel?.planetCode,
-                        detachedUserModel?.parentCode
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
+            try {
+                detachedCurrentCourse?.courseId?.let { courseId ->
+                    detachedCurrentCourse.courseTitle?.let { courseTitle ->
+                        detachedUserModel?.name?.let { userName ->
+                            activitiesRepository.logCourseVisit(
+                                courseId,
+                                courseTitle,
+                                userName
+                            )
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            withContext(Dispatchers.Main) {
-                binding.courseProgress.max = stepsSize
+            binding.courseProgress.max = stepsSize
 
-                if (containsUserId) {
-                    if(position < steps.size - 1){
-                        binding.nextStep.visibility = View.VISIBLE
-                    }
-                    binding.courseProgress.visibility = View.VISIBLE
-                } else {
-                    binding.nextStep.visibility = View.GONE
-                    binding.previousStep.visibility = View.GONE
-                    binding.courseProgress.visibility = View.GONE
+            if (containsUserId) {
+                if(position < steps.size - 1){
+                    binding.nextStep.visibility = View.VISIBLE
                 }
+                binding.courseProgress.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.GONE
+                binding.previousStep.visibility = View.GONE
+                binding.courseProgress.visibility = View.GONE
             }
         }
     }
@@ -342,10 +337,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val isJoined = withContext(Dispatchers.IO) {
-                    val course = courseId?.let { coursesRepository.getCourseById(it) }
-                    course?.userId?.contains(userModel?.id) == true
-                }
+                val course = courseId?.let { coursesRepository.getCourseById(it) }
+                val isJoined = course?.userId?.contains(userModel?.id) == true
 
                 userModel?.id?.let { userId ->
                     courseId?.let { cId ->
@@ -357,11 +350,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
 
-                withContext(Dispatchers.IO) {
-                    val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
-                    if (updatedCourse != null) {
-                        currentCourse = updatedCourse
-                    }
+                val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
+                if (updatedCourse != null) {
+                    currentCourse = updatedCourse
                 }
 
                 val statusMessage = if (isJoined) {
@@ -382,32 +373,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private suspend fun getCourseProgress(): Int {
-        return withContext(Dispatchers.IO) {
-            val user = userSessionManager.userModel
-            val courseProgressMap = progressRepository.getCourseProgress(user?.id)
-            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-        }
+        val user = userSessionManager.userModel
+        val courseProgressMap = progressRepository.getCourseProgress(user?.id)
+        return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 
     private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
-        var hasUnfinishedSurvey = false
-        run loop@{
-            steps.forEach { step ->
-                val stepSurvey = mRealm.copyFromRealm(
-                    mRealm.where(RealmStepExam::class.java)
-                        .equalTo("stepId", step?.id)
-                        .equalTo("type", "survey")
-                        .findAll()
-                )
-
-                stepSurvey.forEach { survey ->
-                    if (!submissionsRepository.hasSubmission(survey.id, courseId, userModel?.id, "survey")) {
-                        hasUnfinishedSurvey = true
-                        return@loop
-                    }
-                }
-            }
-        }
+        val hasUnfinishedSurvey = courseId?.let {
+            submissionsRepository.hasUnfinishedSurveys(it, userModel?.id)
+        } ?: false
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             binding.finishStep.setOnClickListener {
@@ -436,9 +410,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onDestroyView() {
         binding.courseProgress.setOnSeekBarChangeListener(null)
         lifecycleScope.coroutineContext.cancelChildren()
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         joinDialog?.dismiss()
         joinDialog = null
         _binding = null

@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import org.ole.planet.myplanet.base.BaseExamFragment
-
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -21,7 +19,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
-import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -37,31 +35,28 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
-import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
-import org.ole.planet.myplanet.utilities.ExamSubmissionUtils
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.ExamSubmissionUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
+import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private var _binding: FragmentExamTakingBinding? = null
     private val binding get() = _binding!!
     private var isCertified = false
-
+    private var isExplicitSubmission = false
     private val answerCache = mutableMapOf<String, AnswerData>()
-
     @Inject
     lateinit var userSessionManager: UserSessionManager
-
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
-
     @Inject
     lateinit var surveysRepository: SurveysRepository
 
@@ -90,9 +85,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 id
             }
             val submissions = submissionsRepository.getSubmissionsByParentId(
-                parentId,
-                user?.id,
-                if (type == "exam") "pending" else null
+                parentId, user?.id, if (type == "exam") "pending" else null
             )
             sub = submissions.firstOrNull()
             val courseId = exam?.courseId
@@ -133,7 +126,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val questionsSize = questions?.size ?: 0
-                if (currentIndex < 0 || currentIndex >= questionsSize) return
+                if (currentIndex !in 0..<questionsSize) return
 
                 val currentQuestion = questions?.get(currentIndex)
                 currentQuestion?.id?.let { questionId ->
@@ -154,11 +147,12 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun saveCurrentAnswer() {
         val questionsSize = questions?.size ?: 0
-        if (currentIndex < 0 || currentIndex >= questionsSize) return
+        if (currentIndex !in 0..<questionsSize) return
 
         val currentQuestion = questions?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
+
 
         when (currentQuestion.type) {
             "select", "ratingScale" -> {
@@ -201,15 +195,13 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         binding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
         val isLastQuestion = currentIndex == (questions?.size ?: 0) - 1
         val isCurrentQuestionAnswered = isQuestionAnswered()
-
         binding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
-
         setButtonText()
     }
 
     private fun isQuestionAnswered(): Boolean {
         val questionsSize = questions?.size ?: 0
-        if (currentIndex < 0 || currentIndex >= questionsSize) return false
+        if (currentIndex !in 0..<questionsSize) return false
 
         val currentQuestion = questions?.get(currentIndex)
         val questionId = currentQuestion?.id ?: return false
@@ -319,7 +311,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         sub?.membershipDoc = membershipDoc
 
         val userModel = userSessionManager.userModel
-
         try {
             val userJson = JSONObject()
             userJson.put("age", userModel?.dob ?: "")
@@ -327,7 +318,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             val membershipJson = JSONObject()
             membershipJson.put("teamId", teamId)
             userJson.put("membershipDoc", membershipJson)
-
             sub?.user = userJson.toString()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -578,15 +568,18 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
-                saveCurrentAnswer()
+                val isLastQuestion = currentIndex == (questions?.size?.minus(1) ?: 0)
+                if (isLastQuestion) {
+                    isExplicitSubmission = true
+                }
 
+                saveCurrentAnswer()
                 if (!isQuestionAnswered()) {
                     toast(activity, getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
                 val cont = updateAnsDb()
-
                 if (this.type == "exam" && !cont) {
                     Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
                     return
@@ -612,7 +605,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun updateAnsDb(): Boolean {
         val questionsSize = questions?.size ?: 0
-        if (currentIndex < 0 || currentIndex >= questionsSize) return true
+        if (currentIndex !in 0..<questionsSize) return true
 
         val currentQuestion = questions?.get(currentIndex) ?: return true
         val otherText = if (binding.etAnswer.isVisible) {
@@ -628,16 +621,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         val result = ExamSubmissionUtils.saveAnswer(
-            mRealm,
-            sub,
-            currentQuestion,
-            ans,
-            listAns,
-            otherText,
-            binding.etAnswer.isVisible,
-            type ?: "exam",
-            currentIndex,
-            questions?.size ?: 0
+            mRealm, sub, currentQuestion, ans, listAns, otherText,
+            binding.etAnswer.isVisible, type ?: "exam", currentIndex,
+            questions?.size ?: 0, isExplicitSubmission
         )
         return result
     }
@@ -650,7 +636,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         val questionsSize = questions?.size ?: 0
-        if (currentIndex < 0 || currentIndex >= questionsSize) return
+        if (currentIndex !in 0..<questionsSize) return
 
         val currentQuestion = questions?.get(currentIndex)
         currentQuestion?.id?.let { questionId ->
@@ -719,9 +705,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 submissionsRepository.deleteExamSubmissions(
-                    examIdValue ?: id ?: "",
-                    examCourseIdValue,
-                    userIdValue
+                    examIdValue ?: id ?: "", examCourseIdValue, userIdValue
                 )
 
                 withContext(Dispatchers.Main) {

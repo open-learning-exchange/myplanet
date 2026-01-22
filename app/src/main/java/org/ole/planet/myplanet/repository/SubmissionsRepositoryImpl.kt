@@ -8,16 +8,17 @@ import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.submissions.QuestionAnswer
-import org.ole.planet.myplanet.ui.submissions.SubmissionDetail
+import org.ole.planet.myplanet.model.SubmissionDetail
 
-class SubmissionsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+class SubmissionsRepositoryImpl @Inject internal constructor(
+    databaseService: DatabaseService,
+    private val submissionsRepositoryExporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
@@ -236,7 +237,7 @@ class SubmissionsRepositoryImpl @Inject constructor(
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
-            sub.isUpdated = true  // Mark for upload
+            sub.isUpdated = true // Mark for upload
             Log.d("SubmissionsRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }
@@ -301,7 +302,7 @@ class SubmissionsRepositoryImpl @Inject constructor(
                     }
                 }
 
-                org.ole.planet.myplanet.ui.submissions.QuestionAnswer(
+                QuestionAnswer(
                     questionId = question.id,
                     questionHeader = question.header,
                     questionBody = question.body,
@@ -312,7 +313,7 @@ class SubmissionsRepositoryImpl @Inject constructor(
                 )
             }
 
-            org.ole.planet.myplanet.ui.submissions.SubmissionDetail(
+            SubmissionDetail(
                 title = exam?.name ?: "Submission Details",
                 status = "Status: ${submission.status ?: "Unknown"}",
                 date = submission.startTime,
@@ -391,5 +392,27 @@ class SubmissionsRepositoryImpl @Inject constructor(
             equalTo("courseId", courseId)
             equalTo("type", "survey")
         }
+    }
+
+    override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
+        val surveys = getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!hasSubmission(survey.id, courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
+
+    override suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File? {
+        return submissionsRepositoryExporter.generateSubmissionPdf(context, submissionId)
+    }
+
+    override suspend fun generateMultipleSubmissionsPdf(
+        context: android.content.Context,
+        submissionIds: List<String>,
+        examTitle: String
+    ): java.io.File? {
+        return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 }

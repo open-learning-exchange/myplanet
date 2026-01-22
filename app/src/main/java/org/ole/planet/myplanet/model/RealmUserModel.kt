@@ -19,11 +19,11 @@ import org.apache.commons.lang3.StringUtils
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 open class RealmUserModel : RealmObject() {
     @PrimaryKey
@@ -149,7 +149,11 @@ open class RealmUserModel : RealmObject() {
     }
 
     fun getRoleAsString(): String {
-        return StringUtils.join(rolesList, ",")
+        return if (rolesList != null) {
+            StringUtils.join(rolesList, ",")
+        } else {
+            ""
+        }
     }
 
     fun getFullName(): String {
@@ -453,6 +457,12 @@ open class RealmUserModel : RealmObject() {
                     val docObject = docsArray.getJSONObject(i)
                     val user = RealmUserModel()
                     user.name = docObject.getString("name")
+                    user.id = if (!docObject.isNull("_id")) {
+                        docObject.getString("_id")
+                    } else {
+                        "org.couchdb.user:${user.name}"
+                    }
+                    user.rolesList = RealmList()
                     if (!docObject.isNull("firstName")) {
                         user.firstName = docObject.getString("firstName")
                     }

@@ -85,7 +85,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun refresh() {
-        databaseService.realmInstance.refresh()
+        withRealm { it.refresh() }
     }
 
     override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {

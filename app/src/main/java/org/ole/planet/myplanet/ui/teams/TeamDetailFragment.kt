@@ -27,10 +27,11 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
@@ -46,9 +47,9 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
@@ -59,7 +60,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     @Inject
     lateinit var syncManager: SyncManager
 
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
 
     private var _binding: FragmentTeamDetailBinding? = null
@@ -207,9 +208,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch {
-            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                updateServerIfNecessary(mapping)
-            }
+            updateServerIfNecessary(mapping)
             startSyncManager()
         }
     }
@@ -270,9 +269,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         team?._id?.let { id ->
             viewLifecycleOwner.lifecycleScope.launch {
-                val memberCount = withContext(Dispatchers.IO) {
-                    teamsRepository.getJoinedMemberCount(id)
-                }
+                val memberCount = teamsRepository.getJoinedMemberCount(id)
                 if (memberCount <= 1 && isMyTeam) {
                     binding.btnLeave.visibility = View.GONE
                 }
@@ -429,9 +426,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                 binding.subtitle.text = updatedTeam.type
 
                 team?._id?.let { id ->
-                    val memberCount = withContext(Dispatchers.IO) {
-                        teamsRepository.getJoinedMemberCount(id)
-                    }
+                    val memberCount = teamsRepository.getJoinedMemberCount(id)
                     if (memberCount <= 1 && isMyTeam) {
                         binding.btnLeave.visibility = View.GONE
                     } else {
@@ -449,9 +444,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         _binding?.let { binding ->
             val teamId = team?._id ?: return@let
             viewLifecycleOwner.lifecycleScope.launch {
-                val joinedCount = withContext(Dispatchers.IO) {
-                    teamsRepository.getJoinedMemberCount(teamId)
-                }
+                val joinedCount = teamsRepository.getJoinedMemberCount(teamId)
                 binding.btnLeave.visibility = if (joinedCount <= 1) {
                     View.GONE
                 } else {
@@ -488,15 +481,13 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         val teamType = getEffectiveTeamType()
 
         viewLifecycleOwner.lifecycleScope.launch {
-            withContext(kotlinx.coroutines.Dispatchers.IO) {
-                teamsRepository.logTeamVisit(
-                    teamId = getEffectiveTeamId(),
-                    userName = userName,
-                    userPlanetCode = userPlanetCode,
-                    userParentCode = userParentCode,
-                    teamType = teamType,
-                )
-            }
+            teamsRepository.logTeamVisit(
+                teamId = getEffectiveTeamId(),
+                userName = userName,
+                userPlanetCode = userPlanetCode,
+                userParentCode = userParentCode,
+                teamType = teamType,
+            )
         }
     }
 
@@ -510,7 +501,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                 }
             }
         }
-        syncCoordinator.addListener(onRealtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun shouldQueryRealm(teamId: String): Boolean {
@@ -521,7 +512,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         loadTeamJob?.cancel()
         loadTeamJob = null
         if (::onRealtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(onRealtimeSyncListener)
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         super.onDestroyView()
         _binding = null
