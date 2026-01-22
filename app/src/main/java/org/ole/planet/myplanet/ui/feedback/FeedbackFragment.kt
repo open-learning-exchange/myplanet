@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
