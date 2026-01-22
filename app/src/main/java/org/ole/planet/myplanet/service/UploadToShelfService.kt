@@ -9,6 +9,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
+import io.realm.RealmQuery
+import io.realm.RealmResults
 import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
@@ -70,10 +72,13 @@ class UploadToShelfService @Inject constructor(
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
                     val userExists = checkIfUserExists(apiInterface, header, model)
 
-                    if (!userExists) {
-                        uploadNewUser(apiInterface, model)
-                    } else if (model.isUpdated) {
-                        updateExistingUser(apiInterface, header, model)
+                    val modelId = model.id
+                    if (modelId != null) {
+                        if (!userExists) {
+                            uploadNewUser(apiInterface, model, modelId)
+                        } else if (model.isUpdated) {
+                            updateExistingUser(apiInterface, header, model, modelId)
+                        }
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
@@ -103,10 +108,13 @@ class UploadToShelfService @Inject constructor(
 
                     val userExists = checkIfUserExists(apiInterface, header, userModel)
 
-                    if (!userExists) {
-                        uploadNewUser(apiInterface, userModel)
-                    } else if (userModel.isUpdated) {
-                        updateExistingUser(apiInterface, header, userModel)
+                    val modelId = userModel.id
+                    if (modelId != null) {
+                        if (!userExists) {
+                            uploadNewUser(apiInterface, userModel, modelId)
+                        } else if (userModel.isUpdated) {
+                            updateExistingUser(apiInterface, header, userModel, modelId)
+                        }
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
@@ -129,7 +137,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun uploadNewUser(apiInterface: ApiInterface, model: RealmUserModel) {
+    private suspend fun uploadNewUser(apiInterface: ApiInterface, model: RealmUserModel, modelId: String) {
         try {
             val obj = model.serialize()
             val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
@@ -138,23 +146,26 @@ class UploadToShelfService @Inject constructor(
                 val id = createResponse.body()?.get("id")?.asString
                 val rev = createResponse.body()?.get("rev")?.asString
 
-                dbService.executeTransactionAsync { transactionRealm ->
-                     transactionRealm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()?.let {
-                        it._id = id
-                        it._rev = rev
+                dbService.withRealm { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                         val user = transactionRealm.where(RealmUserModel::class.java).equalTo("id", modelId).findFirst()
+                         if (user != null) {
+                            user._id = id
+                            user._rev = rev
+                        }
                     }
                 }
 
                 model._id = id
                 model._rev = rev
-                processUserAfterCreation(apiInterface, model, obj)
+                processUserAfterCreation(apiInterface, model, obj, modelId)
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUserModel, obj: JsonObject) {
+    private suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUserModel, obj: JsonObject, modelId: String) {
         try {
             val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -167,21 +178,27 @@ class UploadToShelfService @Inject constructor(
                 model.salt = getString("salt", body)
                 model.iterations = getString("iterations", body)
 
-                dbService.executeTransactionAsync { transactionRealm ->
-                    transactionRealm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()?.let {
-                        it.password_scheme = model.password_scheme
-                        it.derived_key = model.derived_key
-                        it.salt = model.salt
-                        it.iterations = model.iterations
+                dbService.withRealm { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val user = transactionRealm.where(RealmUserModel::class.java).equalTo("id", modelId).findFirst()
+                        if (user != null) {
+                            user.password_scheme = model.password_scheme
+                            user.derived_key = model.derived_key
+                            user.salt = model.salt
+                            user.iterations = model.iterations
+                        }
                     }
                 }
 
-                saveKeyIv(apiInterface, model, obj)
+                saveKeyIv(apiInterface, model, obj, modelId)
 
-                dbService.executeTransactionAsync { transactionRealm ->
-                    val list = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
-                    for (p in list) {
-                        p.userId = model._id
+                val userServerId = model._id
+                dbService.withRealm { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val list = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", modelId).findAll()
+                        for (p in list) {
+                            p.userId = userServerId
+                        }
                     }
                 }
             }
@@ -190,7 +207,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun updateExistingUser(apiInterface: ApiInterface, header: String, model: RealmUserModel) {
+    private suspend fun updateExistingUser(apiInterface: ApiInterface, header: String, model: RealmUserModel, modelId: String) {
         try {
             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
@@ -209,10 +226,13 @@ class UploadToShelfService @Inject constructor(
 
                 if (updateResponse.isSuccessful) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
-                    dbService.executeTransactionAsync { transactionRealm ->
-                        transactionRealm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()?.let {
-                            it._rev = updatedRev
-                            it.isUpdated = false
+                    dbService.withRealm { realm ->
+                        realm.executeTransaction { transactionRealm ->
+                            val user = transactionRealm.where(RealmUserModel::class.java).equalTo("id", modelId).findFirst()
+                            if (user != null) {
+                                user._rev = updatedRev
+                                user.isUpdated = false
+                            }
                         }
                     }
                 }
@@ -231,7 +251,7 @@ class UploadToShelfService @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject, modelId: String? = null) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -263,10 +283,16 @@ class UploadToShelfService @Inject constructor(
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
-            dbService.executeTransactionAsync { transactionRealm ->
-                transactionRealm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()?.let {
-                    it.key = keyString
-                    it.iv = iv
+            val idToUse = modelId ?: model.id
+            if (idToUse != null) {
+                dbService.withRealm { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val user = transactionRealm.where(RealmUserModel::class.java).equalTo("id", idToUse).findFirst()
+                        if (user != null) {
+                            user.key = keyString
+                            user.iv = iv
+                        }
+                    }
                 }
             }
             model.key = keyString
@@ -292,10 +318,14 @@ class UploadToShelfService @Inject constructor(
 
                     if (res.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
-                        dbService.executeTransactionAsync { transactionRealm ->
-                            transactionRealm.where(RealmHealthExamination::class.java).equalTo("id", pojo.id).findFirst()?.let {
-                                it._rev = rev
-                                it.isUpdated = false
+                        val pojoId = pojo.id
+                        dbService.withRealm { realm ->
+                            realm.executeTransaction { transactionRealm ->
+                                val health = transactionRealm.where(RealmHealthExamination::class.java).equalTo("id", pojoId).findFirst()
+                                if (health != null) {
+                                    health._rev = rev
+                                    health.isUpdated = false
+                                }
                             }
                         }
                     }
@@ -335,10 +365,14 @@ class UploadToShelfService @Inject constructor(
 
                     if (res.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
-                        dbService.executeTransactionAsync { transactionRealm ->
-                            transactionRealm.where(RealmHealthExamination::class.java).equalTo("id", pojo.id).findFirst()?.let {
-                                it._rev = rev
-                                it.isUpdated = false
+                        val pojoId = pojo.id
+                        dbService.withRealm { realm ->
+                            realm.executeTransaction { transactionRealm ->
+                                val health = transactionRealm.where(RealmHealthExamination::class.java).equalTo("id", pojoId).findFirst()
+                                if (health != null) {
+                                    health._rev = rev
+                                    health.isUpdated = false
+                                }
                             }
                         }
                     }

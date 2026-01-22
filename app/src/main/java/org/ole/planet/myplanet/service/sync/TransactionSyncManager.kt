@@ -10,10 +10,14 @@ import io.realm.Realm
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.DocumentResponse
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -28,7 +32,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import retrofit2.Response
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -36,62 +39,88 @@ class TransactionSyncManager @Inject constructor(
     private val databaseService: DatabaseService,
     @ApplicationContext private val context: Context
 ) {
-    fun authenticate(): Boolean {
-        try {
+    suspend fun authenticate(): Boolean {
+        return try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
-            val response: Response<DocumentResponse>? = apiInterface.getDocuments(
-                UrlUtils.header,
-                targetUrl
-            ).execute()
-
-            if (response != null) {
-                val code = response.code()
-                val isSuccess = code == 200
-                return isSuccess
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
+            val response = apiInterface.getDocuments(UrlUtils.header, targetUrl)
+            response.code() == 200
         } catch (e: Exception) {
             e.printStackTrace()
+            false
         }
-        return false
     }
 
     fun syncAllHealthData(settings: SharedPreferences, listener: OnSyncListener) {
-        listener.onSyncStarted()
+        // This method relies on async Realm transactions, so we launch a coroutine to handle network calls
+        // Note: The original code used Realm.getDefaultInstance on the main thread (or caller thread)
+        // We will adapt it to be safe.
+        // However, this method is likely called from UI.
+        // To properly support suspend network calls, we need a scope.
+        // Since we don't have a scope injected here easily for this specific method pattern without refactoring caller,
+        // we might need to rely on the fact that callers should be updated or we launch in GlobalScope/ApplicationScope.
+        // But better is to make this suspend or launch in injected scope.
+        // Given the constraints and previous patterns, let's assume we can use a scope if we had one,
+        // but `syncAllHealthData` signature is not suspend.
+        // Ideally, we should inject a scope. Let's assume we can use `MainApplication.applicationScope` or similar if available,
+        // or just `CoroutineScope(Dispatchers.IO)`.
+        // But for now, let's keep it simple and assume the caller will handle scope if we make it suspend,
+        // OR we launch a job.
+        // The previous implementation used `mRealm.executeTransactionAsync` which is async.
+        // We can mimic this by launching a coroutine.
+
+        // Refactoring to suspend is safer.
+        // But since we can't easily change the signature in the interface if it's used by legacy code (though it's not an override here),
+        // let's try to use CoroutineScope.
+
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
-        val mRealm = Realm.getDefaultInstance()
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            for (userModel in users) {
-                syncHealthData(userModel, header)
+
+        // We need a scope. Let's use GlobalScope or create one for now as a quick fix,
+        // or better, update the class to have a scope injected.
+        // I'll assume we can't easily change constructor too much without affecting DI module in a complex way
+        // (though I already did for ServiceModule).
+        // Let's use `CoroutineScope(Dispatchers.IO)` just for this method execution.
+
+        CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) { listener.onSyncStarted() }
+
+            try {
+                // Fetch users first
+                val users = databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().let { realm.copyFromRealm(it) }
+                }
+
+                users.forEach { userModel ->
+                    syncHealthData(userModel, header)
+                }
+
+                withContext(Dispatchers.Main) { listener.onSyncComplete() }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { listener.onSyncFailed(e.message ?: "Unknown error") }
             }
-        }, {
-            listener.onSyncComplete()
-            mRealm.close()
-        }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
-            mRealm.close()
         }
     }
 
-    private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table =
-            "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
-        val response: Response<DocumentResponse>?
+    private suspend fun syncHealthData(userModel: RealmUserModel?, header: String) {
+        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
         try {
-            response =
-                apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs").execute()
-            val ob = response?.body()
+            val response = apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")
+            val ob = response.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id")
-                        .execute().body()
-                    userModel?.key = getString("key", jsonDoc)
-                    userModel?.iv = getString("iv", jsonDoc)
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()
+                    val key = getString("key", jsonDoc)
+                    val iv = getString("iv", jsonDoc)
+
+                    if (!key.isNullOrEmpty() && !iv.isNullOrEmpty()) {
+                        databaseService.executeTransactionAsync { realm ->
+                            val user = realm.where(RealmUserModel::class.java).equalTo("id", userModel?.id).findFirst()
+                            user?.key = key
+                            user?.iv = iv
+                        }
+                    }
                 }
             }
         } catch (e: IOException) {
@@ -104,54 +133,55 @@ class TransactionSyncManager @Inject constructor(
         listener: OnSyncListener,
         userSessionManager: UserSessionManager
     ) {
-        listener.onSyncStarted()
         val model = userSessionManager.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        val id = model?.id
-        val mRealm = Realm.getDefaultInstance()
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-            syncHealthData(userModel, header)
-        }, {
-            listener.onSyncComplete()
-            mRealm.close()
-        }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
-            mRealm.close()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) { listener.onSyncStarted() }
+            try {
+                // Get fresh copy of user
+                val userModel = databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).equalTo("id", model?.id).findFirst()?.let { realm.copyFromRealm(it) }
+                }
+
+                syncHealthData(userModel, header)
+
+                withContext(Dispatchers.Main) { listener.onSyncComplete() }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { listener.onSyncFailed(e.message ?: "Unknown error") }
+            }
         }
     }
 
-    suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun syncDb(table: String) = withContext(Dispatchers.IO) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
 
         try {
-            // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
-                "ratings" -> 20      // Small batches for slow endpoint
-                "submissions" -> 100  // Medium batches for slow endpoint
-                else -> 1000          // Large batches for fast endpoints
+                "ratings" -> 20
+                "submissions" -> 100
+                else -> 1000
             }
 
             var skip = 0
             var totalDocs = 0
             var batchNumber = 0
 
-            // Paginated fetching to avoid long-blocking API calls
             while (true) {
                 batchNumber++
                 val batchStartTime = System.currentTimeMillis()
-
-                // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
+
                 val response = apiInterface.findDocs(
                     UrlUtils.header,
                     "application/json",
                     UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
-                    JsonObject() // Empty body for GET-style query
-                ).execute()
+                    JsonObject()
+                )
+
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
 
                 if (response.body() == null || !response.isSuccessful) {
@@ -161,7 +191,7 @@ class TransactionSyncManager @Inject constructor(
 
                 val arr = getJsonArray("rows", response.body())
                 if (arr.size() == 0) {
-                    break // No more documents
+                    break
                 }
 
                 org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
@@ -171,24 +201,21 @@ class TransactionSyncManager @Inject constructor(
                     arr.size()
                 )
 
-                // Use async transaction to avoid blocking (ANR-safe)
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { mRealm: Realm ->
-                        val insertStartTime = System.currentTimeMillis()
+                databaseService.executeTransactionAsync { mRealm ->
+                    val insertStartTime = System.currentTimeMillis()
 
-                        if (table == "chat_history") {
-                            insertToChat(arr, mRealm)
-                        }
-                        insertDocs(arr, mRealm, table)
-
-                        val insertDuration = System.currentTimeMillis() - insertStartTime
-                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                            "insert_batch",
-                            table,
-                            insertDuration,
-                            arr.size()
-                        )
+                    if (table == "chat_history") {
+                        insertToChat(arr, mRealm)
                     }
+                    insertDocs(arr, mRealm, table)
+
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 }
 
                 totalDocs += arr.size()
@@ -197,12 +224,10 @@ class TransactionSyncManager @Inject constructor(
                 val batchDuration = System.currentTimeMillis() - batchStartTime
                 android.util.Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
 
-                // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
 
-                // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
                     break
                 }

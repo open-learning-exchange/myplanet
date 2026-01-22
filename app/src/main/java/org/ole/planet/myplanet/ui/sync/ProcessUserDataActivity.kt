@@ -26,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,11 +37,10 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
-import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -343,11 +343,15 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
-                val apiInterface = client?.create(ApiInterface::class.java)
+                val apiInterface = client.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObjectSuspended(UrlUtils.header, userDocUrl)
 
-                if (response?.isSuccessful == true && response.body() != null) {
+                // Use withContext(Dispatchers.IO) for network call
+                val response = withContext(Dispatchers.IO) {
+                    apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
+                }
+
+                if (response.isSuccessful && response.body() != null) {
                     val userDoc = response.body()
                     val derivedKey = userDoc?.get("derived_key")?.asString
                     val salt = userDoc?.get("salt")?.asString

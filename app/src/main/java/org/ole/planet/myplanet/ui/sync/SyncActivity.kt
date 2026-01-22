@@ -314,7 +314,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailableSuspend(url)
+            // Using withContext(Dispatchers.IO) to ensure we're not blocking the main thread even if called from it
+            // although `isPlanetAvailable` is suspend now.
+            val response = withContext(Dispatchers.IO) {
+                apiInterface.isPlanetAvailable(url)
+            }
             val code = response.code()
 
             if (response.isSuccessful) {

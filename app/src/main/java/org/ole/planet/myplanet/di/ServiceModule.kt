@@ -62,9 +62,10 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences,
         gson: Gson,
         uploadCoordinator: org.ole.planet.myplanet.service.upload.UploadCoordinator,
-        personalsRepository: PersonalsRepository
+        personalsRepository: PersonalsRepository,
+        @ApplicationScope applicationScope: CoroutineScope
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, applicationScope)
     }
 
     @Provides
