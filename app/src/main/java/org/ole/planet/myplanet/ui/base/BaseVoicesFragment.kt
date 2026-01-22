@@ -11,6 +11,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -147,6 +148,11 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
         if (path.isNullOrEmpty()) return
 
+        if (isImageAlreadyAdded(path)) {
+            Toast.makeText(requireContext(), R.string.image_already_added, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
@@ -162,6 +168,17 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun isImageAlreadyAdded(path: String): Boolean {
+        return imageList.any { imageJson ->
+            try {
+                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                JsonUtils.getString("imageUrl", imgObject) == path
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 }

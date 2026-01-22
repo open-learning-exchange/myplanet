@@ -1182,5 +1182,6 @@
     <string name="app_theme">سمة التطبيق</string>
     <string name="team_surveys">استطلاعات الفريق</string>
     <string name="enterprise_created">تم إنشاء المؤسسة</string>
+    <string name="image_already_added">تمت إضافة هذه الصورة بالفعل</string>
 
 </resources>
