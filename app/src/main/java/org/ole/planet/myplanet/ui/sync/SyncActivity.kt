@@ -168,15 +168,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         }
 
                         is SyncManager.SyncStatus.Syncing -> {
-                            onSyncStarted()
+                            withContext(Dispatchers.Main) {
+                                onSyncStarted()
+                            }
                         }
 
                         is SyncManager.SyncStatus.Success -> {
-                            onSyncComplete()
+                            withContext(Dispatchers.Main) {
+                                onSyncComplete()
+                            }
                         }
 
                         is SyncManager.SyncStatus.Error -> {
-                            onSyncFailed(status.message)
+                            withContext(Dispatchers.Main) {
+                                onSyncFailed(status.message)
+                            }
                         }
                     }
                 }
@@ -324,21 +330,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 val dbCount = myList?.size ?: 0
 
                 return if (dbCount < 8) {
-                    withContext(Dispatchers.Main) {
-                        customProgressDialog.dismiss()
-                        alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                    }
+                    customProgressDialog.dismiss()
+                    alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     false
                 } else {
-                    withContext(Dispatchers.Main) {
-                        startSync(type)
-                    }
+                    startSync(type)
                     true
                 }
             } else if (code == 401) {
-                withContext(Dispatchers.Main) {
-                    startSync(type)
-                }
+                startSync(type)
                 return true
             }
         } catch (e: Exception) {
@@ -352,10 +352,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
             else -> ""
         }
-        withContext(Dispatchers.Main) {
-            customProgressDialog.dismiss()
-            alertDialogOkay(errorMessage)
-        }
+        customProgressDialog.dismiss()
+        alertDialogOkay(errorMessage)
         return false
     }
 
@@ -465,13 +463,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
-    private fun onSyncStarted() {
-        customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
-        customProgressDialog.show()
-        isProgressDialogShowing = true
+    private suspend fun onSyncStarted() {
+        withContext(Dispatchers.Main) {
+            customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
+            customProgressDialog.show()
+            isProgressDialogShowing = true
+        }
     }
 
-    private fun onSyncFailed(msg: String?) {
+    private suspend fun onSyncFailed(msg: String?) {
         if (isProgressDialogShowing) {
             customProgressDialog.dismiss()
         }
@@ -487,29 +487,28 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    private fun onSyncComplete() {
+    private suspend fun onSyncComplete() {
         val activityContext = this@SyncActivity
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                var attempt = 0
-                val maxAttempts = 3 // Maximum 3 seconds wait
-                while (attempt < maxAttempts) {
-                    val hasUser = databaseService.withRealm { realm ->
-                        realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
-                    }
-                    if (hasUser) {
-                        break
-                    }
-                    attempt++
-                    delay(1000)
+        try {
+            var attempt = 0
+            val maxAttempts = 3 // Maximum 3 seconds wait
+            while (attempt < maxAttempts) {
+                val hasUser = databaseService.withRealmAsync { realm ->
+                    realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                 }
-
-                if (attempt >= maxAttempts) {
-                    Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
+                if (hasUser) {
+                    break
                 }
+                attempt++
+                delay(1000)
+            }
 
-                withContext(Dispatchers.Main) {
-                    forceSyncTrigger()
+            if (attempt >= maxAttempts) {
+                Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
+            }
+
+            withContext(Dispatchers.Main) {
+                forceSyncTrigger()
                     val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
                     if (
                         syncedUrl != null &&
@@ -567,13 +566,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     cancelAll(activityContext)
 
-                    if (activityContext is LoginActivity) {
-                        activityContext.invalidateTeamsCacheAndReload()
-                    }
+                if (activityContext is LoginActivity) {
+                    activityContext.invalidateTeamsCacheAndReload()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -889,12 +887,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         private val urlProtocolRegex by lazy { Regex("^https?://") }
 
         suspend fun clearRealmDb() {
-            withContext(Dispatchers.IO) {
-                val databaseService = (context.applicationContext as MainApplication).databaseService
-                databaseService.withRealm { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        transactionRealm.deleteAll()
-                    }
+            val databaseService = (context.applicationContext as MainApplication).databaseService
+            databaseService.withRealmAsync { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    transactionRealm.deleteAll()
                 }
             }
         }

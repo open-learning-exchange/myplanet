@@ -45,40 +45,38 @@ class CSVViewerActivity : AppCompatActivity() {
         binding.csvProgressBar.visibility = View.VISIBLE
         binding.csvFileContent.text = ""
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
-                withContext(Dispatchers.IO) {
-                    val csvFile: File = if (fileName?.startsWith("/") == true) {
-                        File(fileName)
-                    } else {
-                        val basePath = getExternalFilesDir(null)
-                        File(basePath, "ole/$fileName")
-                    }
-                    val reader = CSVReaderBuilder(FileReader(csvFile))
-                        .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
-                        .build()
+                val csvFile: File = if (fileName?.startsWith("/") == true) {
+                    File(fileName)
+                } else {
+                    val basePath = getExternalFilesDir(null)
+                    File(basePath, "ole/$fileName")
+                }
+                val reader = CSVReaderBuilder(FileReader(csvFile))
+                    .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
+                    .build()
 
-                    val chunkSize = 100
-                    val chunk = mutableListOf<Array<String>>()
+                val chunkSize = 100
+                val chunk = mutableListOf<Array<String>>()
 
-                    reader.use { csvReader ->
-                        for (row in csvReader) {
-                            chunk.add(row)
-                            if (chunk.size >= chunkSize) {
-                                val spannableChunk = buildSpannableForChunk(chunk)
-                                withContext(Dispatchers.Main) {
-                                    binding.csvFileContent.append(spannableChunk)
-                                }
-                                chunk.clear()
-                                yield()
-                            }
-                        }
-
-                        if (chunk.isNotEmpty()) {
+                reader.use { csvReader ->
+                    for (row in csvReader) {
+                        chunk.add(row)
+                        if (chunk.size >= chunkSize) {
                             val spannableChunk = buildSpannableForChunk(chunk)
                             withContext(Dispatchers.Main) {
                                 binding.csvFileContent.append(spannableChunk)
                             }
+                            chunk.clear()
+                            yield()
+                        }
+                    }
+
+                    if (chunk.isNotEmpty()) {
+                        val spannableChunk = buildSpannableForChunk(chunk)
+                        withContext(Dispatchers.Main) {
+                            binding.csvFileContent.append(spannableChunk)
                         }
                     }
                 }
