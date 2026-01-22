@@ -4,9 +4,9 @@ import android.content.SharedPreferences
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.sync.SyncManager
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)

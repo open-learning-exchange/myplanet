@@ -11,8 +11,8 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 object SyncTimeLogger {
     private val processTimes = ConcurrentHashMap<String, Long>()

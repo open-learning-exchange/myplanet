@@ -322,14 +322,12 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             return
         }
         lifecycleScope.launch {
-            val teams = withContext(Dispatchers.IO) {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmMyTeam::class.java)
-                        .isEmpty("teamId")
-                        .equalTo("status", "active")
-                        .findAll()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+            val teams = databaseService.withRealmAsync { realm ->
+                realm.where(RealmMyTeam::class.java)
+                    .isEmpty("teamId")
+                    .equalTo("status", "active")
+                    .findAll()
+                    ?.let { realm.copyFromRealm(it) }
             }
             cachedTeams = teams
             setupTeamDropdown(teams)
@@ -529,10 +527,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
-                        }
+                    val model = databaseService.withRealmAsync { realm ->
+                        RealmUserModel.createGuestUser(username, realm, settings)
+                            ?.let { realm.copyFromRealm(it) }
                     }
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
