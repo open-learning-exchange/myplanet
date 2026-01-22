@@ -22,12 +22,12 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {

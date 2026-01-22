@@ -5,7 +5,7 @@ import java.net.SocketTimeoutException
 import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.NetworkResult
-import org.ole.planet.myplanet.utilities.RetryUtils
+import org.ole.planet.myplanet.utils.RetryUtils
 import retrofit2.Response
 import retrofit2.Retrofit
 
@@ -42,7 +42,7 @@ object ApiClient {
                 }
             } else 0
 
-            org.ole.planet.myplanet.utilities.SyncTimeLogger.logApiCall(
+            org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
                 endpoint,
                 duration,
                 result?.isSuccessful == true,

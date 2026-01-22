@@ -33,14 +33,14 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.reader.WebViewActivity
-import org.ole.planet.myplanet.utilities.CourseRatingUtils
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.ResourceOpener
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.ResourceOpener
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {

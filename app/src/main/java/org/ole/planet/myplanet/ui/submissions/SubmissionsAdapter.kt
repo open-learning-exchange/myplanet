@@ -13,8 +13,8 @@ import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class SubmissionsAdapter(
     private val context: Context,

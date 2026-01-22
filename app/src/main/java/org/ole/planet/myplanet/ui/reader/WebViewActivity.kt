@@ -20,7 +20,7 @@ import java.io.File
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding

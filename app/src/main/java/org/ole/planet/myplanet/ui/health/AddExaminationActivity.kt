@@ -29,18 +29,18 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.TimeUtils.getAge
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getBoolean
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeUtils.getAge
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {

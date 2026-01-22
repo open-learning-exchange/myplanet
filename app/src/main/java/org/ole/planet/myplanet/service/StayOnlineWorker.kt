@@ -6,8 +6,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
-import org.ole.planet.myplanet.utilities.NetworkUtils.isWifiConnected
+import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
+import org.ole.planet.myplanet.utils.NetworkUtils.isWifiConnected
 
 class StayOnlineWorker(private val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     override suspend fun doWork(): Result {

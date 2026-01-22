@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 
 internal class SubmissionsRepositoryExporter @Inject constructor(private val databaseService: DatabaseService) {
 

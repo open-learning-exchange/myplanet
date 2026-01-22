@@ -12,7 +12,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentTeamDetailBinding? = null

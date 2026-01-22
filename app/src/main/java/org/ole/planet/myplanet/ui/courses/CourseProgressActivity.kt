@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {

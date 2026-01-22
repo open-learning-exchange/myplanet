@@ -18,10 +18,10 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
