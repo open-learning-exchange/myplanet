@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.reader
+package org.ole.planet.myplanet.ui.viewer
 
 import android.os.Bundle
 import android.view.View
