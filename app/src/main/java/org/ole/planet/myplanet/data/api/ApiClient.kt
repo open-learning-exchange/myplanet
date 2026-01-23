@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.data.api
 
 import java.io.IOException
 import java.net.SocketTimeoutException
-import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.utils.RetryUtils
@@ -20,8 +19,8 @@ object ApiClient {
         val startTime = System.currentTimeMillis()
         val result = RetryUtils.retry(
             maxAttempts = 3,
-            delayMs = 2000L,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful },
+            initialDelay = 2000L,
+            shouldRetry = { resp, _ -> resp == null || !resp.isSuccessful },
             block = { operation() },
         )
         val duration = System.currentTimeMillis() - startTime
@@ -69,43 +68,45 @@ object ApiClient {
     }
 
     suspend fun <T> executeWithResult(operation: suspend () -> Response<T>?): NetworkResult<T> {
-        var retryCount = 0
-        var lastException: Exception? = null
-
-        while (retryCount < 3) {
+        val result = RetryUtils.retry(
+            maxAttempts = 3,
+            initialDelay = 2000L,
+            shouldRetry = { res, _ ->
+                when (res) {
+                    is NetworkResult.Error -> {
+                        val code = res.code ?: 0
+                        // Retry on timeout (408) or server errors (5xx)
+                        code == 408 || code == 503 || (code in 500..599)
+                    }
+                    is NetworkResult.Exception -> {
+                        val ex = res.exception
+                        ex is IOException || ex is SocketTimeoutException
+                    }
+                    else -> false
+                }
+            }
+        ) {
             try {
                 val response = operation()
                 if (response != null) {
                     if (response.isSuccessful) {
                         val body = response.body()
                         if (body != null) {
-                            return NetworkResult.Success(body)
+                            NetworkResult.Success(body)
+                        } else {
+                            NetworkResult.Error(response.code(), "Empty body")
                         }
-                        return NetworkResult.Error(response.code(), null)
-                    } else if (retryCount < 2) {
-                        retryCount++
-                        delay(2000L * (retryCount + 1))
-                        continue
                     } else {
                         val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
-                        return NetworkResult.Error(response.code(), errorBody)
+                        NetworkResult.Error(response.code(), errorBody)
                     }
+                } else {
+                    NetworkResult.Exception(IOException("Response is null"))
                 }
-            } catch (e: SocketTimeoutException) {
-                lastException = e
-            } catch (e: IOException) {
-                lastException = e
             } catch (e: Exception) {
-                lastException = e
-            }
-
-            if (retryCount < 2) {
-                retryCount++
-                delay(2000L * (retryCount + 1))
-            } else {
-                break
+                NetworkResult.Exception(e)
             }
         }
-        return NetworkResult.Exception(lastException ?: Exception("Unknown error"))
+        return result ?: NetworkResult.Exception(Exception("Unknown error"))
     }
 }
