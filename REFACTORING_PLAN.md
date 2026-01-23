@@ -326,10 +326,10 @@ Worker classes (AutoSyncWorker, DownloadWorker, NetworkMonitorWorker, etc.) are 
 
 These 15 tasks focus exclusively on naming consistency and structural organization improvements:
 
-- **Tasks 1-11**: Standardize repository naming from plural to singular (TeamsRepository → TeamRepository, etc.)
-- **Task 12**: Organize 33 callback interfaces into feature-based subdirectories
-- **Task 13**: Consolidate manager classes into services/managers/ subdirectory
-- **Task 14**: Group worker classes into services/workers/ subdirectory
+- **Tasks 1-12**: Standardize repository naming from plural to singular (TeamsRepository → TeamRepository, ActivitiesRepository → ActivityRepository, EventsRepository → EventRepository, VoicesRepository → VoiceRepository, PersonalsRepository → PersonalRepository, NotificationsRepository → NotificationRepository, RatingsRepository → RatingRepository, TagsRepository → TagRepository, ResourcesRepository → ResourceRepository, CoursesRepository → CourseRepository, SubmissionsRepository → SubmissionRepository, SurveysRepository → SurveyRepository)
+- **Task 13**: Organize 33 callback interfaces into feature-based subdirectories (chat/, teams/, sync/, library/, dashboard/)
+- **Task 14**: Consolidate manager classes into services/managers/ subdirectory (ConfigurationManager, UserSessionManager, UploadManager, ChallengeManager, VoicesLabelManager)
+- **Task 15**: Group worker classes into services/workers/ subdirectory (AutoSyncWorker, DownloadWorker, NetworkMonitorWorker, ServerReachabilityWorker, TaskNotificationWorker, StayOnlineWorker)
 
 All tasks are:
 - ✅ Non-functional changes (no logic modifications)
