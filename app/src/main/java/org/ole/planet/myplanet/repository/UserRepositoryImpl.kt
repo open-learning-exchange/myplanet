@@ -337,11 +337,7 @@ class UserRepositoryImpl @Inject constructor(
             if (userModel != null) {
                 try {
                     uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
-                } catch (keyIvException: Exception) {
-                    // Key/IV saving failed (likely server doesn't allow database creation)
-                    // This is non-fatal - user is created and can log in
-                    // Key/IV will be set up during later sync when database becomes available
-                }
+                } catch (keyIvException: Exception) { }
                 Result.success(userModel)
             } else {
                 Result.failure(Exception("Failed to save user or user model was null"))

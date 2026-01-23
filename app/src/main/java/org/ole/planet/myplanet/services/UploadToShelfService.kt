@@ -234,8 +234,7 @@ class UploadToShelfService @Inject constructor(
         val maxAttempts = 3
         val retryDelayMs = 2000L
         val dbUrl = "${UrlUtils.getUrl()}/$table"
-
-        // First, try to create the database if it doesn't exist
+        
         withContext(Dispatchers.IO) {
             try {
                 apiInterface?.putDocSuspend(header, "application/json", dbUrl, JsonObject())

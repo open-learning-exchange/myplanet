@@ -68,13 +68,10 @@ open class RealmOfflineActivity : RealmObject() {
             val loginTime = JsonUtils.getLong("loginTime", act)
             val userName = JsonUtils.getString("user", act)
 
-            // First try to find by server _id
             var activities = mRealm.where(RealmOfflineActivity::class.java)
                 .equalTo("_id", serverIdStr)
                 .findFirst()
 
-            // If not found by _id, check for local record with same loginTime and userName
-            // (this handles the case where local record hasn't been synced yet)
             if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
                 activities = mRealm.where(RealmOfflineActivity::class.java)
                     .equalTo("loginTime", loginTime)
