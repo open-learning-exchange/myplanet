@@ -7,9 +7,9 @@ import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey

@@ -19,16 +19,16 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.SecurityDataListener
+import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
@@ -166,7 +166,7 @@ class BecomeMemberActivity : BaseActivity() {
                 Log.d(TAG, "DataService.becomeMember callback onSuccess: $success")
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
-        }, object : SecurityDataListener {
+        }, object : OnSecurityDataListener {
             override fun onSecurityDataUpdated() {
                 Log.d(TAG, "SecurityDataListener callback triggered - member creation completed")
                 runOnUiThread {

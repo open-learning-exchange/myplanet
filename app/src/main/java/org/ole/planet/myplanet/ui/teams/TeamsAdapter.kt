@@ -13,17 +13,18 @@ import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTeamActionsListener
+import org.ole.planet.myplanet.callback.OnTeamEditListener
+import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.callback.OnTeamActionsListener
-import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.TimeUtils
 
 class TeamsAdapter(
     private val context: Context,
@@ -32,17 +33,12 @@ class TeamsAdapter(
     private val sharedPrefManager: SharedPrefManager
 ) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
     private var type: String? = ""
-    private var teamListener: OnClickTeamItem? = null
+    private var teamListener: OnTeamEditListener? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var teamActionsListener: OnTeamActionsListener? = null
     private val teamStatusCache = mutableMapOf<String, TeamStatus>()
 
-    interface OnClickTeamItem {
-        fun onEditTeam(team: TeamDetails?)
-    }
-
-
-    fun setTeamListener(teamListener: OnClickTeamItem?) {
+    fun setTeamListener(teamListener: OnTeamEditListener?) {
         this.teamListener = teamListener
     }
 

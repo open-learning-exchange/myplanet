@@ -7,20 +7,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class UserProfileAdapter(
-    private val onItemClickListener: OnItemClickListener
+    private val onItemClickListener: OnUserProfileClickListener
 ) : ListAdapter<User, UserProfileAdapter.ViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
-    }
-
-    interface OnItemClickListener {
-        fun onItemClick(user: User)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {

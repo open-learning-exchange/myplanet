@@ -5,19 +5,19 @@ import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
-import org.ole.planet.myplanet.ui.teams.discussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
-import org.ole.planet.myplanet.ui.teams.tasks.TeamTaskFragment
+import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksFragment
+import org.ole.planet.myplanet.ui.teams.voices.TeamsVoicesFragment
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment
 
     object ChatPage : TeamPageConfig("CHAT", R.string.chat) {
-        override fun createFragment() = DiscussionListFragment()
+        override fun createFragment() = TeamsVoicesFragment()
     }
 
     object PlanPage : TeamPageConfig("PLAN", R.string.plan) {
@@ -37,7 +37,7 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     }
 
     object TasksPage : TeamPageConfig("TASKS", R.string.tasks) {
-        override fun createFragment() = TeamTaskFragment()
+        override fun createFragment() = TeamsTasksFragment()
     }
 
     object CalendarPage : TeamPageConfig("CALENDAR", R.string.calendar) {

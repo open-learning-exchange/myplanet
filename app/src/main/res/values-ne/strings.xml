@@ -1181,5 +1181,7 @@
     <string name="no_images_to_download">डाउनलोड गर्नका लागि कुनै तस्बिरहरू छैनन्</string>
     <string name="app_theme">एप थिम</string>
     <string name="team_surveys">टोली सर्वेक्षणहरू</string>
+    <string name="enterprise_created">उद्यम सिर्जना गरियो</string>
+    <string name="image_already_added">यो तस्बिर पहिले नै थपिएको छ</string>
 
 </resources>

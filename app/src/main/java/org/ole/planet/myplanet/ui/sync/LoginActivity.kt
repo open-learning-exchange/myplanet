@@ -34,7 +34,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
@@ -44,18 +43,19 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.ui.user.UserProfileAdapter
-import org.ole.planet.myplanet.utilities.AuthUtils
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utils.AuthUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.ThemeManager
+import org.ole.planet.myplanet.utils.UrlUtils.getUrl
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
-class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
+class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
@@ -112,7 +112,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            configurationRepository.checkVersion(this, settings)
+            configurationsRepository.checkVersion(this, settings)
         }
         checkUsagesPermission()
         forceSyncTrigger()
@@ -192,13 +192,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                realm.where(RealmUserModel::class.java)
-                                    .equalTo("name", enterUserName).findFirst()
-                                    ?.let { realm.copyFromRealm(it) }
-                            }
-                        }
+                        val user = userRepository.getUserByName(enterUserName)
                         if (user == null || !user.isArchived) {
                             submitForm(enterUserName, binding.inputPassword.text.toString())
                         } else {
@@ -243,7 +237,7 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
         binding.btnGuestLogin.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
-                showGuestLoginDialog()
+                showGuestLoginDialog(userRepository)
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -328,14 +322,12 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
             return
         }
         lifecycleScope.launch {
-            val teams = withContext(Dispatchers.IO) {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmMyTeam::class.java)
-                        .isEmpty("teamId")
-                        .equalTo("status", "active")
-                        .findAll()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+            val teams = databaseService.withRealmAsync { realm ->
+                realm.where(RealmMyTeam::class.java)
+                    .isEmpty("teamId")
+                    .equalTo("status", "active")
+                    .findAll()
+                    ?.let { realm.copyFromRealm(it) }
             }
             cachedTeams = teams
             setupTeamDropdown(teams)
@@ -535,10 +527,9 @@ class LoginActivity : SyncActivity(), UserProfileAdapter.OnItemClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
-                        }
+                    val model = databaseService.withRealmAsync { realm ->
+                        RealmUserModel.createGuestUser(username, realm, settings)
+                            ?.let { realm.copyFromRealm(it) }
                     }
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))

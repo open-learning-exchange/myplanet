@@ -6,7 +6,7 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmCourseActivity : RealmObject() {
     @PrimaryKey
@@ -22,26 +22,6 @@ open class RealmCourseActivity : RealmObject() {
     var user: String? = null
 
     companion object {
-        @JvmStatic
-        suspend fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
-            try {
-                if (!realm.isInTransaction) {
-                    realm.executeTransaction { realmInstance ->
-                        val activity = realmInstance.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-                        activity.type = "visit"
-                        activity.title = course?.courseTitle
-                        activity.courseId = course?.courseId
-                        activity.time = Date().time
-                        activity.parentCode = userModel?.parentCode
-                        activity.createdOn = userModel?.planetCode
-                        activity.user = userModel?.name
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
         @JvmStatic
         fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
             val ob = JsonObject()

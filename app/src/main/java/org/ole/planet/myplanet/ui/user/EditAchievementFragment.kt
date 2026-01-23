@@ -42,11 +42,11 @@ import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.components.CheckboxListView
-import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils.getDialog
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utils.Utilities
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
@@ -92,29 +92,25 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    databaseService.withRealmAsync { realm ->
-                        realm.executeTransaction { transactionRealm ->
-                            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                                .equalTo("_id", achievementId)
-                                .findFirst()
-                            if (achievement != null) {
-                                achievement.achievementsHeader = header
-                                achievement.goals = goals
-                                achievement.purpose = purpose
-                                achievement.sendToNation = sendToNation
-                                achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
-                                achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
-                            }
+                databaseService.withRealmAsync { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val achievement = transactionRealm.where(RealmAchievement::class.java)
+                            .equalTo("_id", achievementId)
+                            .findFirst()
+                        if (achievement != null) {
+                            achievement.achievementsHeader = header
+                            achievement.goals = goals
+                            achievement.purpose = purpose
+                            achievement.sendToNation = sendToNation
+                            achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
+                            achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
                         }
                     }
                 }
 
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(activity, getString(R.string.achievement_saved))
-                    fragmentEditAchievementBinding.btnUpdate.isEnabled = true
-                    NavigationHelper.popBackStack(parentFragmentManager)
-                }
+                Utilities.toast(activity, getString(R.string.achievement_saved))
+                fragmentEditAchievementBinding.btnUpdate.isEnabled = true
+                NavigationHelper.popBackStack(parentFragmentManager)
             }
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {

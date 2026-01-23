@@ -37,10 +37,11 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.ui.events.EventsAdapter
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {

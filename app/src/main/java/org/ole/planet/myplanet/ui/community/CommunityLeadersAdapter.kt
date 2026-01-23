@@ -10,15 +10,15 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.NavigationHelper
 
 internal class CommunityLeadersAdapter(
     var context: Context,
     private val userSessionManager: UserSessionManager
-) : ListAdapter<RealmUserModel, CommunityLeadersAdapter.ViewHolderLeader>(
+) : ListAdapter<RealmUserModel, CommunityLeadersAdapter.CommunityLeadersViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
             areContentsTheSame = { oldItem, newItem ->
@@ -28,13 +28,13 @@ internal class CommunityLeadersAdapter(
             }
         )
     ) {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderLeader {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommunityLeadersViewHolder {
         val rowJoinedUserBinding =
             RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderLeader(rowJoinedUserBinding)
+        return CommunityLeadersViewHolder(rowJoinedUserBinding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderLeader, position: Int) {
+    override fun onBindViewHolder(holder: CommunityLeadersViewHolder, position: Int) {
         val leader = getItem(position)
         if (leader.firstName == null) {
             holder.title.text = leader.name
@@ -72,7 +72,7 @@ internal class CommunityLeadersAdapter(
         }
     }
 
-    internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
+    internal inner class CommunityLeadersViewHolder(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
         var title = rowJoinedUserBinding.tvTitle
         var tvDescription = rowJoinedUserBinding.tvDescription
         var icon = rowJoinedUserBinding.icMore

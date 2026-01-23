@@ -31,8 +31,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
@@ -40,20 +39,21 @@ import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkMonitorWorker
-import org.ole.planet.myplanet.service.StayOnlineWorker
-import org.ole.planet.myplanet.service.TaskNotificationWorker
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.ANRWatchdog
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
-import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
-import org.ole.planet.myplanet.utilities.ThemeMode
-import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.AutoSyncWorker
+import org.ole.planet.myplanet.services.NetworkMonitorWorker
+import org.ole.planet.myplanet.services.StayOnlineWorker
+import org.ole.planet.myplanet.services.TaskNotificationWorker
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
+import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.ThemeMode
+import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
@@ -71,6 +71,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     lateinit var defaultPreferencesProvider: Provider<SharedPreferences>
     val defaultPref: SharedPreferences by lazy { defaultPreferencesProvider.get() }
 
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
@@ -80,7 +83,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var isCollectionSwitchOn = false
         var showDownload = false
         var isSyncRunning = false
-        var listener: TeamPageListener? = null
+        var listener: OnTeamPageListener? = null
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -227,9 +230,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
     
     private suspend fun initializeDatabaseConnection() {
-        withContext(Dispatchers.IO) {
-            databaseService.withRealm { }
-        }
+        databaseService.withRealmAsync { }
     }
 
     private fun setupStrictMode() {
@@ -304,16 +305,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     val serverUrl = preferences.getString("serverURL", "")
                     if (!serverUrl.isNullOrEmpty()) {
                         applicationScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
+                            val canReachServer = isServerReachable(serverUrl)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                databaseService.withRealm { realm ->
-                                    backgroundDownload(
-                                        downloadAllFiles(getAllLibraryList(realm)),
-                                        applicationContext
-                                    )
-                                }
+                                backgroundDownload(
+                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
+                                    applicationContext
+                                )
                             }
                         }
                     }

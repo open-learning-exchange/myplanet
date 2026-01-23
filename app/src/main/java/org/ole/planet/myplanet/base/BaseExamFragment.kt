@@ -35,12 +35,12 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.utilities.CameraUtils
-import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
+import org.ole.planet.myplanet.utils.CameraUtils
+import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {

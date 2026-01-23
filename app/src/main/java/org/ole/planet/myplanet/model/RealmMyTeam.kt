@@ -10,10 +10,10 @@ import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
+import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
@@ -305,16 +305,6 @@ open class RealmMyTeam : RealmObject() {
                 .notEqualTo("status", "archived")
                 .findAll()
         }
-    }
-
-    fun requested(userId: String?, mRealm: Realm): Boolean {
-        val m = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("docType", "request")
-            .equalTo("teamId", _id)
-            .equalTo("userId", userId)
-            .findAll()
-
-        return m.isNotEmpty()
     }
 
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {

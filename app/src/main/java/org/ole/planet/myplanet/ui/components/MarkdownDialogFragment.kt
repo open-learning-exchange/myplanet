@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
 class MarkdownDialogFragment : DialogFragment() {
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding

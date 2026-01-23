@@ -8,7 +8,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
@@ -56,6 +56,7 @@ open class RealmCourseProgress : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use ProgressRepository.getCurrentProgress instead")
         fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
             val progresses = mRealm.where(RealmCourseProgress::class.java)
                 .equalTo("userId", userId)

@@ -14,21 +14,22 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.TeamUpdateListener
+import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.Utilities
 
 class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
-    private var teamUpdateListener: TeamUpdateListener? = null
+    private var teamUpdateListener: OnTeamUpdateListener? = null
 
-    fun setTeamUpdateListener(listener: TeamUpdateListener) {
+    fun setTeamUpdateListener(listener: OnTeamUpdateListener) {
         teamUpdateListener = listener
     }
 

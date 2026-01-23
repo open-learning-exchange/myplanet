@@ -9,21 +9,21 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
-import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
+import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.ui.personals.PersonalsAdapter.PersonalsViewHolder
-import org.ole.planet.myplanet.ui.reader.ImageViewerActivity
-import org.ole.planet.myplanet.ui.reader.PDFReaderActivity
-import org.ole.planet.myplanet.ui.reader.VideoViewerActivity
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
+import org.ole.planet.myplanet.ui.viewer.VideoViewerActivity
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.IntentUtils.openAudioFile
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPersonal, PersonalsViewHolder>(DiffCallback) {
-    private var listener: OnSelectedMyPersonal? = null
+    private var listener: OnPersonalSelectedListener? = null
 
-    fun setListener(listener: OnSelectedMyPersonal?) {
+    fun setListener(listener: OnPersonalSelectedListener?) {
         this.listener = listener
     }
 

@@ -20,17 +20,17 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.ResourcesUpdateListener
-import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.CheckboxListView
-import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
+import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 
 @AndroidEntryPoint
-class TeamResourcesFragment : BaseTeamFragment(), TeamPageListener, ResourcesUpdateListener {
+class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResourcesUpdateListener {
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapterLibrary: TeamResourcesAdapter

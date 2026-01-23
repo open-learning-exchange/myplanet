@@ -10,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,23 +26,23 @@ import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserSessionManager
-import org.ole.planet.myplanet.ui.voices.NewsActions
-import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
-import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
+import org.ole.planet.myplanet.utils.FileUtils.getImagePath
+import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.SharedPrefManager
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -137,13 +138,15 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = NewsActions.showMemberDetails(userModel, userSessionManager) ?: return
-        NavigationHelper.replaceFragment(
-            supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+        lifecycleScope.launch {
+            val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return@launch
+            NavigationHelper.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     override fun clearImages() {
@@ -169,6 +172,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
+        if (isImageAlreadyAdded(path)) {
+            Toast.makeText(this, R.string.image_already_added, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
@@ -178,6 +186,17 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             showSelectedImages()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun isImageAlreadyAdded(path: String): Boolean {
+        return imageList.any { imageJson ->
+            try {
+                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                getString("imageUrl", imgObject) == path
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 

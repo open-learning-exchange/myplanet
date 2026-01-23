@@ -7,15 +7,15 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.ResourcesUpdateListener
+import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamResourcesAdapter(
     private val context: Context,
     private val canRemoveResources: Boolean,
-    private val updateListener: ResourcesUpdateListener,
+    private val updateListener: OnResourcesUpdateListener,
     private val onRemoveResource: (RealmMyLibrary, Int) -> Unit,
 ) : ListAdapter<RealmMyLibrary, TeamResourcesAdapter.ViewHolderTeamResources>(ITEM_CALLBACK) {
 

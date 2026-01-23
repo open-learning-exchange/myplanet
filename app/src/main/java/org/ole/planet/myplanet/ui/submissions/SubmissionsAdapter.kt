@@ -13,12 +13,12 @@ import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class SubmissionsAdapter(
     private val context: Context,
-) : ListAdapter<RealmSubmission, SubmissionsAdapter.ViewHolderMySurvey>(
+) : ListAdapter<RealmSubmission, SubmissionsAdapter.SubmissionsViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             oldItem.id == newItem.id
@@ -55,13 +55,13 @@ class SubmissionsAdapter(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMySurvey {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SubmissionsViewHolder {
         val binding = RowMysurveyBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderMySurvey(binding)
+        return SubmissionsViewHolder(binding)
     }
 
     override fun onBindViewHolder(
-        holder: ViewHolderMySurvey,
+        holder: SubmissionsViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
@@ -101,7 +101,7 @@ class SubmissionsAdapter(
         }
     }
 
-    override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
+    override fun onBindViewHolder(holder: SubmissionsViewHolder, position: Int) {
         val submission = getItem(position)
         val binding = holder.binding
         binding.status.text = submission.status
@@ -167,7 +167,7 @@ class SubmissionsAdapter(
         listener?.openCallFragment(fragment)
     }
 
-    class ViewHolderMySurvey(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
+    class SubmissionsViewHolder(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         private const val PAYLOAD_EXAM_UPDATE = "payload_exam_update"

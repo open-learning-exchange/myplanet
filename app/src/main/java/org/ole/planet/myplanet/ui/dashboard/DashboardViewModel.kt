@@ -7,9 +7,12 @@ import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -19,7 +22,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.repository.ActivityRepository
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -47,7 +50,7 @@ class DashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
-    private val activityRepository: ActivityRepository,
+    private val activitiesRepository: ActivitiesRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -136,7 +139,7 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { it.copy(fullName = fullName) }
 
                 if (userName != null) {
-                    activityRepository.getOfflineLogins(userName).collect { logins ->
+                    activitiesRepository.getOfflineLogins(userName).collect { logins ->
                         _uiState.update { it.copy(offlineLogins = logins.size) }
                     }
                 }
@@ -148,7 +151,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
-        return activityRepository.getOfflineActivities(userName, type)
+        return activitiesRepository.getOfflineActivities(userName, type)
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
@@ -160,5 +163,14 @@ class DashboardViewModel @Inject constructor(
             val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             _uiState.update { it.copy(users = users) }
         }
+    }
+
+    suspend fun dashboardDataFlow(userId: String?): Flow<Unit> {
+        return merge(
+            resourcesRepository.getRecentResources(userId ?: "").map {},
+            resourcesRepository.getPendingDownloads(userId ?: "").map {},
+            submissionsRepository.getPendingSurveysFlow(userId).map {},
+            teamsRepository.getTasksFlow(userId).map {}
+        )
     }
 }

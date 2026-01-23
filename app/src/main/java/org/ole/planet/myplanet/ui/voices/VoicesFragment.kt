@@ -22,27 +22,25 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.base.BaseVoicesFragment
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.textChanges
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class VoicesFragment : BaseNewsFragment() {
+class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
     var user: RealmUserModel? = null
@@ -141,14 +139,20 @@ class VoicesFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
-            imageList.clear()
-            llImage?.removeAllViews()
-            adapterNews?.addItem(n)
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
-            scrollToTop()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    imageList.clear()
+                    llImage?.removeAllViews()
+                    adapterNews?.addItem(n)
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                    binding.llAddNews.visibility = View.GONE
+                    binding.btnNewVoice.text = getString(R.string.new_voice)
+                }
+            }
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -186,10 +190,9 @@ class VoicesFragment : BaseNewsFragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 if (resourceIds.isNotEmpty()) {
                     val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                    getUrlsAndStartDownload(
-                        libraries.map<RealmMyLibrary, RealmMyLibrary?> { it },
-                        arrayListOf()
-                    )
+                    if (resourcesRepository.downloadResources(libraries)) {
+                        showProgressDialog()
+                    }
                 }
             }
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
@@ -212,8 +215,6 @@ class VoicesFragment : BaseNewsFragment() {
             (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-        binding.llAddNews.visibility = View.GONE
-        binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {

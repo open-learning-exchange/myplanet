@@ -10,8 +10,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,21 +19,20 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.CameraUtils
-import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utils.CameraUtils
+import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
 private data class CourseStepData(
     val step: RealmCourseStep,
@@ -101,8 +98,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
 
-    private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
-        val intermediateData = databaseService.withRealm { realm ->
+    private suspend fun loadStepData(): CourseStepData {
+        val intermediateData = databaseService.withRealmAsync { realm ->
             val step = realm.where(RealmCourseStep::class.java)
                 .equalTo("id", stepId)
                 .findFirst()
@@ -124,7 +121,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             IntermediateStepData(step, resources, stepExams, stepSurvey)
         }
         val userHasCourse = coursesRepository.isMyCourse(user?.id, intermediateData.step.courseId)
-        return@withContext CourseStepData(
+        return CourseStepData(
             step = intermediateData.step,
             resources = intermediateData.resources,
             stepExams = intermediateData.stepExams,

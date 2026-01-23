@@ -1181,5 +1181,7 @@
     <string name="no_images_to_download">Ma jiraan sawiro la soo dejinayo</string>
     <string name="app_theme">Mawduuca app-ka</string>
     <string name="team_surveys">Sahaminta kooxda</string>
+    <string name="enterprise_created">Ganacsi La Sameeyay</string>
+    <string name="image_already_added">Sawirkan horay ayaa loo daray</string>
 
 </resources>

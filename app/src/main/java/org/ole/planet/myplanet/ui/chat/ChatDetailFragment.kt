@@ -38,7 +38,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.ChatApiService
+import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
@@ -52,10 +52,10 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -125,7 +125,7 @@ class ChatDetailFragment : Fragment() {
         refreshInputState()
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = settings.getString("userId", "") ?: ""
-            user = withContext(Dispatchers.IO) { userRepository.getUserById(userId) }
+            user = userRepository.getUserById(userId)
             isUserLoaded = true
             refreshInputState()
         }
@@ -328,17 +328,15 @@ class ChatDetailFragment : Fragment() {
 
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                chatApiService.fetchAiProviders { providers ->
-                    sharedViewModel.setAiProvidersLoading(false)
-                    if (providers == null || providers.values.all { !it }) {
-                        sharedViewModel.setAiProvidersError(true)
-                        sharedViewModel.setAiProviders(null)
-                    } else {
-                        sharedViewModel.setAiProviders(providers)
-                    }
+            chatApiService.fetchAiProviders { providers ->
+                sharedViewModel.setAiProvidersLoading(false)
+                if (providers == null || providers.values.all { !it }) {
+                    sharedViewModel.setAiProvidersError(true)
+                    sharedViewModel.setAiProviders(null)
+                } else {
+                    sharedViewModel.setAiProviders(providers)
                 }
             }
         }
@@ -446,7 +444,7 @@ class ChatDetailFragment : Fragment() {
         disableUI()
         val mapping = processServerUrl()
         viewLifecycleOwner.lifecycleScope.launch {
-            withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
+            updateServerIfNecessary(mapping)
             sendChatRequest(content, query, id, id == null)
         }
     }
