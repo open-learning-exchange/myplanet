@@ -249,7 +249,7 @@ class UploadToShelfService @Inject constructor(
         val dbUrl = "${UrlUtils.getUrl()}/$table"
         Log.d(TAG, "[UploadToShelf] Database URL: $dbUrl")
 
-        // First, create the database if it doesn't exist
+        // First, try to create the database if it doesn't exist
         Log.d(TAG, "[UploadToShelf] Creating user database: $table")
         val createDbResponse = withContext(Dispatchers.IO) {
             try {

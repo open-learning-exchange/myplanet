@@ -377,7 +377,15 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 Log.d(TAG, "[Repository] User saved to database, saving key/IV for username: $userName")
-                uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                try {
+                    uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                    Log.d(TAG, "[Repository] saveKeyIv completed successfully for username: $userName")
+                } catch (keyIvException: Exception) {
+                    // Key/IV saving failed (likely server doesn't allow database creation)
+                    // This is non-fatal - user is created and can log in
+                    // Key/IV will be set up during later sync when database becomes available
+                    Log.w(TAG, "[Repository] saveKeyIv failed for username: $userName - ${keyIvException.message}. User can still log in; key/IV will be set up during sync.")
+                }
                 Log.d(TAG, "[Repository] saveUserToDb completed successfully for username: $userName")
                 Result.success(userModel)
             } else {

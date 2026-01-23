@@ -504,7 +504,7 @@ class UploadManager @Inject constructor(
                     } else {
                         val copiedActivity = realm.copyFromRealm(activity)
                         ActivityData(
-                            activityId = copiedActivity._id,
+                            activityId = copiedActivity.id,  // Use primary key 'id' instead of '_id'
                             userId = copiedActivity.userId,
                             serialized = RealmOfflineActivity.serializeLoginActivities(copiedActivity, context)
                         )
@@ -521,7 +521,7 @@ class UploadManager @Inject constructor(
 
                         databaseService.executeTransactionAsync { transactionRealm ->
                             transactionRealm.where(RealmOfflineActivity::class.java)
-                                .equalTo("_id", activityData.activityId)
+                                .equalTo("id", activityData.activityId)  // Query by primary key 'id'
                                 .findFirst()?.changeRev(`object`)
                         }
                     } catch (e: IOException) {

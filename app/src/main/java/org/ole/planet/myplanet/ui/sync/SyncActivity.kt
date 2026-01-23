@@ -695,9 +695,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun onLogin() {
+        android.util.Log.d("AUTH_LOGIN", "[SyncActivity] onLogin() called - recording login activity")
         profileDbHandler.onLoginAsync(
-            callback = {},
+            callback = {
+                android.util.Log.d("AUTH_LOGIN", "[SyncActivity] onLoginAsync callback completed")
+            },
             onError = { error ->
+                android.util.Log.e("AUTH_LOGIN", "[SyncActivity] onLoginAsync error", error)
                 error.printStackTrace()
             }
         )
