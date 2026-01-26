@@ -59,14 +59,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             val userId = profileDbHandler.userModel?.id
             try {
-                val updatedLibrary = withContext(Dispatchers.IO) {
-                    val backgroundLibrary = fetchLibrary(libraryId!!)
-                    when {
-                        backgroundLibrary == null -> null
-                        backgroundLibrary.userId?.contains(userId) != true && userId != null ->
-                            resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
-                        else -> backgroundLibrary
-                    }
+                val backgroundLibrary = fetchLibrary(libraryId!!)
+                val updatedLibrary = when {
+                    backgroundLibrary == null -> null
+                    backgroundLibrary.userId?.contains(userId) != true && userId != null ->
+                        resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
+                    else -> backgroundLibrary
                 }
                 if (updatedLibrary != null) {
                     library = updatedLibrary
@@ -145,9 +143,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
             try {
-                withContext(Dispatchers.IO) {
-                    profileDbHandler.setResourceOpenCount(library)
-                }
+                profileDbHandler.setResourceOpenCount(library)
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }
@@ -226,17 +222,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (!isAdded) {
                     return@launch
                 }
-                val updatedLibrary = withContext(Dispatchers.IO) {
-                    try {
-                        if (userId != null) {
-                            resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
-                        } else {
-                            null
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                val updatedLibrary = try {
+                    if (userId != null) {
+                        resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                    } else {
                         null
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
                 }
                 try {
                     if (updatedLibrary != null) {

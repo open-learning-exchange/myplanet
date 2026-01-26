@@ -4,7 +4,7 @@ import android.widget.Toast
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.sync.LoginSyncManager
+import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 
 object AuthUtils {

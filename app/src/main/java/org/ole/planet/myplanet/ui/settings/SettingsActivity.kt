@@ -38,8 +38,8 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.FreeSpaceWorker
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.FreeSpaceWorker
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
