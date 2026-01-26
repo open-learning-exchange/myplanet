@@ -246,7 +246,7 @@ class UploadToShelfService @Inject constructor(
         
         withContext(Dispatchers.IO) {
             try {
-                apiInterface?.putDocSuspend(header, "application/json", dbUrl, JsonObject())
+                apiInterface?.putDoc(header, "application/json", dbUrl, JsonObject())
             } catch (e: Exception) {
                 null
             }
@@ -258,7 +258,7 @@ class UploadToShelfService @Inject constructor(
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface?.postDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
             }
         }
 
