@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
