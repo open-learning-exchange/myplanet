@@ -14,6 +14,7 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -78,7 +79,7 @@ class UploadToShelfService @Inject constructor(
 
                 uploadToShelf(object : OnSuccessListener {
                     override fun onSuccess(success: String?) {
-                        withContext(Dispatchers.Main) {
+                        MainScope().launch {
                             listener.onSuccess(success)
                         }
                     }
@@ -152,8 +153,12 @@ class UploadToShelfService @Inject constructor(
                 // Persist _id and _rev to database
                 dbService.executeTransactionAsync { realm ->
                     val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
-                    managedModel?._id = id
-                    managedModel?._rev = rev
+                    if (managedModel != null) {
+                        managedModel._id = id
+                        managedModel._rev = rev
+                    } else {
+                        android.util.Log.e("UploadToShelfService", "Failed to find user model with id: ${model.id} for persisting _id and _rev")
+                    }
                 }
                 
                 processUserAfterCreation(apiInterface, model, obj)
