@@ -14,7 +14,7 @@ import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.service.BroadcastService
+import org.ole.planet.myplanet.services.BroadcastService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 

@@ -4,7 +4,7 @@ import android.content.Intent
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
-import org.ole.planet.myplanet.service.BroadcastService
+import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
 import java.io.IOException
 import javax.inject.Inject
