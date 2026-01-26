@@ -146,6 +146,18 @@ class UploadToShelfService @Inject constructor(
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
                 model._rev = rev
+                
+                // Persist _id and _rev to database
+                dbService.executeTransactionAsync { realm ->
+                    val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                    if (managedModel != null) {
+                        managedModel._id = id
+                        managedModel._rev = rev
+                    } else {
+                        android.util.Log.e("UploadToShelfService", "Failed to find user model with id: ${model.id} for persisting _id and _rev")
+                    }
+                }
+                
                 processUserAfterCreation(apiInterface, model, obj)
             }
         } catch (e: Exception) {
@@ -263,8 +275,6 @@ class UploadToShelfService @Inject constructor(
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
-            model.key = keyString
-            model.iv = iv
             changeUserSecurity(model, obj)
 
             dbService.executeTransactionAsync { realm ->
