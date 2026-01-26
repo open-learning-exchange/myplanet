@@ -22,17 +22,14 @@ import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
 import javax.inject.Inject
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.yield
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
@@ -41,6 +38,7 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
@@ -202,45 +200,53 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             dialog.show()
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                try {
-                                    withTimeout(60 * 1000L) {
-                                        resourcesRepository.markAllResourcesOffline(false)
-                                        val f = File(FileUtils.getOlePath(requireContext()))
-                                        deleteRecursive(f)
+                            val workManager = WorkManager.getInstance(requireContext())
+                            val freeSpaceWork = OneTimeWorkRequestBuilder<FreeSpaceWorker>()
+                                .addTag("freeSpaceWork")
+                                .build()
+
+                            workManager.enqueue(freeSpaceWork)
+
+                            workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
+                                .observe(viewLifecycleOwner) { workInfo ->
+                                    if (workInfo != null) {
+                                        when (workInfo.state) {
+                                            WorkInfo.State.RUNNING -> {
+                                                val progress = workInfo.progress
+                                                val deletedFiles = progress.getInt("deletedFiles", 0)
+                                                val freedBytes = progress.getLong("freedBytes", 0)
+                                                dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
+                                            }
+                                            WorkInfo.State.SUCCEEDED -> {
+                                                dialog.dismiss()
+                                                Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                                val output = workInfo.outputData
+                                                val deletedFiles = output.getInt("deletedFiles", 0)
+                                                val freedBytes = output.getLong("freedBytes", 0)
+                                                Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
+                                            }
+                                            WorkInfo.State.FAILED -> {
+                                                dialog.dismiss()
+                                                Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                            }
+                                            WorkInfo.State.CANCELLED -> {
+                                                dialog.dismiss()
+                                            }
+                                            else -> {
+                                                // ENQUEUED or BLOCKED
+                                            }
+                                        }
                                     }
-                                    withContext(Dispatchers.Main) {
-                                        Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                    }
-                                } catch (e: Exception) {
-                                    if (e is CancellationException && e !is TimeoutCancellationException) {
-                                        throw e
-                                    }
-                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                                    e.printStackTrace()
-                                } finally {
-                                    dialog.dismiss()
                                 }
+
+                            dialog.setNegativeButton("Cancel") {
+                                workManager.cancelWorkById(freeSpaceWork.id)
                             }
+
                         }.setNegativeButton("No", null).show()
                     false
                 }
             }
-        }
-
-        private suspend fun deleteRecursive(fileOrDirectory: File) {
-            if (org.ole.planet.myplanet.BuildConfig.DEBUG) {
-                if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
-                    throw RuntimeException("File deletion on main thread!")
-                }
-            }
-            yield()
-            if (fileOrDirectory.isDirectory) {
-                fileOrDirectory.listFiles()?.forEach { child ->
-                    deleteRecursive(child)
-                }
-            }
-            fileOrDirectory.delete()
         }
 
         private fun setBetaToggleOn() {
