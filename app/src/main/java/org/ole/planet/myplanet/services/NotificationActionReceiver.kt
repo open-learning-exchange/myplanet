@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utils
+package org.ole.planet.myplanet.services
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.NotificationsRepository
-import org.ole.planet.myplanet.services.getBroadcastService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.utils.NotificationUtils
 
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {

@@ -146,7 +146,7 @@
                 android:value="androidx.startup" />
         </provider>
 
-        <receiver android:name=".utils.NotificationActionReceiver"
+        <receiver android:name=".services.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="mark_as_read" />
