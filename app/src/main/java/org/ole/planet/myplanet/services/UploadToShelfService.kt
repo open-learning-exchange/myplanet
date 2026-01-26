@@ -14,7 +14,6 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -79,9 +78,7 @@ class UploadToShelfService @Inject constructor(
 
                 uploadToShelf(object : OnSuccessListener {
                     override fun onSuccess(success: String?) {
-                        MainScope().launch {
-                            listener.onSuccess(success)
-                        }
+                        listener.onSuccess(success)
                     }
                 })
             } catch (e: Exception) {
