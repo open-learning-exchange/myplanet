@@ -36,7 +36,7 @@ class BecomeMemberActivity : BaseActivity() {
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
-    
+
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -71,20 +71,23 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
-    private fun collectMemberInfo() = MemberInfo(
-        activityBecomeMemberBinding.etUsername.text.toString(),
-        activityBecomeMemberBinding.etPassword.text.toString(),
-        activityBecomeMemberBinding.etRePassword.text.toString(),
-        activityBecomeMemberBinding.etFname.text.toString(),
-        activityBecomeMemberBinding.etLname.text.toString(),
-        activityBecomeMemberBinding.etMname.text.toString(),
-        activityBecomeMemberBinding.etEmail.text.toString(),
-        activityBecomeMemberBinding.spnLang.selectedItem.toString(),
-        activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
-        activityBecomeMemberBinding.etPhone.text.toString(),
-        dob,
-        selectedGender()
-    )
+    private fun collectMemberInfo(): MemberInfo {
+        val info = MemberInfo(
+            activityBecomeMemberBinding.etUsername.text.toString(),
+            activityBecomeMemberBinding.etPassword.text.toString(),
+            activityBecomeMemberBinding.etRePassword.text.toString(),
+            activityBecomeMemberBinding.etFname.text.toString(),
+            activityBecomeMemberBinding.etLname.text.toString(),
+            activityBecomeMemberBinding.etMname.text.toString(),
+            activityBecomeMemberBinding.etEmail.text.toString(),
+            activityBecomeMemberBinding.spnLang.selectedItem.toString(),
+            activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
+            activityBecomeMemberBinding.etPhone.text.toString(),
+            dob,
+            selectedGender()
+        )
+        return info
+    }
 
     private fun validateMemberInfo(info: MemberInfo): Boolean {
         return when {
@@ -181,7 +184,6 @@ class BecomeMemberActivity : BaseActivity() {
             activityBecomeMemberBinding.etUsername.setText(username)
             activityBecomeMemberBinding.etUsername.isFocusable = false
         }
-
 
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
             finish()
