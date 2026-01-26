@@ -18,8 +18,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.service.DownloadService
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 
