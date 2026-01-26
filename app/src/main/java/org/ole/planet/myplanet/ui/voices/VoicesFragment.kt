@@ -27,7 +27,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.base.BaseVoicesFragment
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
@@ -148,6 +149,8 @@ class VoicesFragment : BaseVoicesFragment() {
                     searchFilteredList = applySearchFilter(labelFilteredList)
                     setData(searchFilteredList)
                     scrollToTop()
+                    binding.llAddNews.visibility = View.GONE
+                    binding.btnNewVoice.text = getString(R.string.new_voice)
                 }
             }
         }
@@ -212,8 +215,6 @@ class VoicesFragment : BaseVoicesFragment() {
             (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
-        binding.llAddNews.visibility = View.GONE
-        binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {

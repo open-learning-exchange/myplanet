@@ -41,11 +41,11 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkMonitorWorker
-import org.ole.planet.myplanet.service.StayOnlineWorker
-import org.ole.planet.myplanet.service.TaskNotificationWorker
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.AutoSyncWorker
+import org.ole.planet.myplanet.services.NetworkMonitorWorker
+import org.ole.planet.myplanet.services.StayOnlineWorker
+import org.ole.planet.myplanet.services.TaskNotificationWorker
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.ANRWatchdog
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
@@ -231,9 +231,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
     
     private suspend fun initializeDatabaseConnection() {
-        withContext(Dispatchers.IO) {
-            databaseService.withRealm { }
-        }
+        databaseService.withRealmAsync { }
     }
 
     private fun setupStrictMode() {
@@ -308,9 +306,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     val serverUrl = preferences.getString("serverURL", "")
                     if (!serverUrl.isNullOrEmpty()) {
                         applicationScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
+                            val canReachServer = isServerReachable(serverUrl)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
                                 backgroundDownload(
                                     downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
