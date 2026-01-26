@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {

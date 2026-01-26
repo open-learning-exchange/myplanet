@@ -64,19 +64,32 @@ open class RealmOfflineActivity : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            var activities = mRealm.where(RealmOfflineActivity::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+            val serverIdStr = JsonUtils.getString("_id", act)
+            val loginTime = JsonUtils.getLong("loginTime", act)
+            val userName = JsonUtils.getString("user", act)
+
+            var activities = mRealm.where(RealmOfflineActivity::class.java)
+                .equalTo("_id", serverIdStr)
+                .findFirst()
+
+            if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
+                activities = mRealm.where(RealmOfflineActivity::class.java)
+                    .equalTo("loginTime", loginTime)
+                    .equalTo("userName", userName)
+                    .findFirst()
+            }
+
             if (activities == null) {
-                activities = mRealm.createObject(RealmOfflineActivity::class.java, JsonUtils.getString("_id", act))
+                activities = mRealm.createObject(RealmOfflineActivity::class.java, serverIdStr)
             }
             if (activities != null) {
                 activities._rev = JsonUtils.getString("_rev", act)
-                activities._id = JsonUtils.getString("_id", act)
-                activities.loginTime = JsonUtils.getLong("loginTime", act)
+                activities._id = serverIdStr
+                activities.loginTime = loginTime
                 activities.type = JsonUtils.getString("type", act)
-                activities.userName = JsonUtils.getString("user", act)
+                activities.userName = userName
                 activities.parentCode = JsonUtils.getString("parentCode", act)
                 activities.createdOn = JsonUtils.getString("createdOn", act)
-                activities.userName = JsonUtils.getString("user", act)
                 activities.logoutTime = JsonUtils.getLong("logoutTime", act)
                 activities.androidId = JsonUtils.getString("androidId", act)
             }
