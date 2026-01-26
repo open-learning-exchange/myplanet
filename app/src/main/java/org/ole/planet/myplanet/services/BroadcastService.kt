@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 @Singleton
-class BroadcastService @Inject constructor() {
+open class BroadcastService @Inject constructor() {
     private val _events = MutableSharedFlow<Intent>()
     val events = _events.asSharedFlow()
 
-    suspend fun sendBroadcast(intent: Intent) {
+    open suspend fun sendBroadcast(intent: Intent) {
         _events.emit(intent)
     }
 }
