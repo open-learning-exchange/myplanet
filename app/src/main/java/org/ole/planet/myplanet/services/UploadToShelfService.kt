@@ -78,7 +78,9 @@ class UploadToShelfService @Inject constructor(
 
                 uploadToShelf(object : OnSuccessListener {
                     override fun onSuccess(success: String?) {
-                        listener.onSuccess(success)
+                        withContext(Dispatchers.Main) {
+                            listener.onSuccess(success)
+                        }
                     }
                 })
             } catch (e: Exception) {
@@ -146,6 +148,14 @@ class UploadToShelfService @Inject constructor(
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
                 model._rev = rev
+                
+                // Persist _id and _rev to database
+                dbService.executeTransactionAsync { realm ->
+                    val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                    managedModel?._id = id
+                    managedModel?._rev = rev
+                }
+                
                 processUserAfterCreation(apiInterface, model, obj)
             }
         } catch (e: Exception) {
@@ -263,8 +273,6 @@ class UploadToShelfService @Inject constructor(
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
-            model.key = keyString
-            model.iv = iv
             changeUserSecurity(model, obj)
 
             dbService.executeTransactionAsync { realm ->

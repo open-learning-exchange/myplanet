@@ -43,21 +43,23 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             try {
                 val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
                 if (healthUrl.isBlank()) {
-                    listener.onSuccess("")
+                    withContext(Dispatchers.Main) { listener.onSuccess("") }
                     return@launch
                 }
 
                 try {
                     val response = apiInterface.healthAccess(healthUrl)
-                    when (response.code()) {
-                        200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                        401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                        404 -> listener.onSuccess("Server endpoint not found")
-                        500 -> listener.onSuccess("Server internal error")
-                        502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                        503 -> listener.onSuccess("Service temporarily unavailable")
-                        504 -> listener.onSuccess("Gateway timeout")
-                        else -> listener.onSuccess("Server error: ${response.code()}")
+                    withContext(Dispatchers.Main) {
+                        when (response.code()) {
+                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
+                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
+                            404 -> listener.onSuccess("Server endpoint not found")
+                            500 -> listener.onSuccess("Server internal error")
+                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
+                            503 -> listener.onSuccess("Service temporarily unavailable")
+                            504 -> listener.onSuccess("Gateway timeout")
+                            else -> listener.onSuccess("Server error: ${response.code()}")
+                        }
                     }
                 } catch (t: Exception) {
                     t.printStackTrace()
@@ -68,11 +70,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         is java.io.IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
-                    listener.onSuccess(errorMsg)
+                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                listener.onSuccess("Health access initialization failed")
+                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
             }
         }
     }
