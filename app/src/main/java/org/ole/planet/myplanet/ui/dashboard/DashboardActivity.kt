@@ -69,7 +69,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -616,10 +616,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                             }
                                         }
                                     } else {
-                                        withContext(Dispatchers.IO) {
-                                            delay(300)
-                                            refreshNotificationsWithRetry(userId)
-                                        }
+                                        delay(300)
+                                        refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
                                     android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")

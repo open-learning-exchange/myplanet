@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv

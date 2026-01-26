@@ -41,9 +41,9 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.SharedPrefManager
@@ -198,11 +198,9 @@ class ChatHistoryFragment : Fragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
@@ -260,16 +258,14 @@ class ChatHistoryFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
-            val (currentUser, newsMessages, chatHistory, targets) = withContext(Dispatchers.IO) {
-                val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
-                val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
-                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-                val targets = cachedTargets ?: loadShareTargets(
-                    settings.getString("parentCode", ""),
-                    settings.getString("communityName", "")
-                )
-                Quartet(currentUser, newsMessages, chatHistory, targets)
-            }
+
+            val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
+            val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+            val targets = cachedTargets ?: loadShareTargets(
+                settings.getString("parentCode", ""),
+                settings.getString("communityName", "")
+            )
 
             user = currentUser
             sharedNewsMessages = newsMessages
@@ -358,17 +354,15 @@ class ChatHistoryFragment : Fragment() {
 
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+        viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                chatApiService.fetchAiProviders { providers ->
-                    sharedViewModel.setAiProvidersLoading(false)
-                    if (providers == null || providers.values.all { !it }) {
-                        sharedViewModel.setAiProvidersError(true)
-                        sharedViewModel.setAiProviders(null)
-                    } else {
-                        sharedViewModel.setAiProviders(providers)
-                    }
+            chatApiService.fetchAiProviders { providers ->
+                sharedViewModel.setAiProvidersLoading(false)
+                if (providers == null || providers.values.all { !it }) {
+                    sharedViewModel.setAiProvidersError(true)
+                    sharedViewModel.setAiProviders(null)
+                } else {
+                    sharedViewModel.setAiProviders(providers)
                 }
             }
         }

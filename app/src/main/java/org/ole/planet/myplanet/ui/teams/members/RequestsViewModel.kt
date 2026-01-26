@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 
 data class RequestsUiState(
     val members: List<RealmUserModel> = emptyList(),

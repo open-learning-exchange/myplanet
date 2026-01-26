@@ -108,9 +108,7 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
-        val reachable = withContext(Dispatchers.IO) {
-            isServerReachable(serverUrl)
-        }
+        val reachable = isServerReachable(serverUrl)
         updateNetworkStatus(if (reachable) NetworkStatus.Connected else NetworkStatus.Disconnected)
         return reachable
     }

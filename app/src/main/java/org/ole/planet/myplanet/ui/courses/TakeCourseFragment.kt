@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.Utilities
@@ -96,15 +96,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            withContext(Dispatchers.IO) {
-                steps = coursesRepository.getCourseSteps(courseId)
+            steps = coursesRepository.getCourseSteps(courseId)
 
-                if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
-                    try {
-                        cachedCourseProgress = getCourseProgress()
-                    } finally {
-                        isFetchingProgress.set(false)
-                    }
+            if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
+                try {
+                    cachedCourseProgress = getCourseProgress()
+                } finally {
+                    isFetchingProgress.set(false)
                 }
             }
 
@@ -224,37 +222,33 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val detachedUserModel = userModel
             val detachedCurrentCourse = currentCourse
 
-            withContext(Dispatchers.IO) {
-                try {
-                    detachedCurrentCourse?.courseId?.let { courseId ->
-                        detachedCurrentCourse.courseTitle?.let { courseTitle ->
-                            detachedUserModel?.name?.let { userName ->
-                                activitiesRepository.logCourseVisit(
-                                    courseId,
-                                    courseTitle,
-                                    userName
-                                )
-                            }
+            try {
+                detachedCurrentCourse?.courseId?.let { courseId ->
+                    detachedCurrentCourse.courseTitle?.let { courseTitle ->
+                        detachedUserModel?.name?.let { userName ->
+                            activitiesRepository.logCourseVisit(
+                                courseId,
+                                courseTitle,
+                                userName
+                            )
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            withContext(Dispatchers.Main) {
-                binding.courseProgress.max = stepsSize
+            binding.courseProgress.max = stepsSize
 
-                if (containsUserId) {
-                    if(position < steps.size - 1){
-                        binding.nextStep.visibility = View.VISIBLE
-                    }
-                    binding.courseProgress.visibility = View.VISIBLE
-                } else {
-                    binding.nextStep.visibility = View.GONE
-                    binding.previousStep.visibility = View.GONE
-                    binding.courseProgress.visibility = View.GONE
+            if (containsUserId) {
+                if(position < steps.size - 1){
+                    binding.nextStep.visibility = View.VISIBLE
                 }
+                binding.courseProgress.visibility = View.VISIBLE
+            } else {
+                binding.nextStep.visibility = View.GONE
+                binding.previousStep.visibility = View.GONE
+                binding.courseProgress.visibility = View.GONE
             }
         }
     }
@@ -343,10 +337,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val isJoined = withContext(Dispatchers.IO) {
-                    val course = courseId?.let { coursesRepository.getCourseById(it) }
-                    course?.userId?.contains(userModel?.id) == true
-                }
+                val course = courseId?.let { coursesRepository.getCourseById(it) }
+                val isJoined = course?.userId?.contains(userModel?.id) == true
 
                 userModel?.id?.let { userId ->
                     courseId?.let { cId ->
@@ -358,11 +350,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
 
-                withContext(Dispatchers.IO) {
-                    val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
-                    if (updatedCourse != null) {
-                        currentCourse = updatedCourse
-                    }
+                val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
+                if (updatedCourse != null) {
+                    currentCourse = updatedCourse
                 }
 
                 val statusMessage = if (isJoined) {
@@ -383,11 +373,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private suspend fun getCourseProgress(): Int {
-        return withContext(Dispatchers.IO) {
-            val user = userSessionManager.userModel
-            val courseProgressMap = progressRepository.getCourseProgress(user?.id)
-            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
-        }
+        val user = userSessionManager.userModel
+        val courseProgressMap = progressRepository.getCourseProgress(user?.id)
+        return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 
     private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
