@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserSessionManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
@@ -202,16 +202,16 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             dialog.show()
-                            lifecycleScope.launch {
+                            lifecycleScope.launch(Dispatchers.IO) {
                                 try {
                                     withTimeout(60 * 1000L) {
                                         resourcesRepository.markAllResourcesOffline(false)
                                         val f = File(FileUtils.getOlePath(requireContext()))
-                                        withContext(Dispatchers.IO) {
-                                            deleteRecursive(f)
-                                        }
+                                        deleteRecursive(f)
                                     }
-                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                    withContext(Dispatchers.Main) {
+                                        Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                    }
                                 } catch (e: Exception) {
                                     if (e is CancellationException && e !is TimeoutCancellationException) {
                                         throw e

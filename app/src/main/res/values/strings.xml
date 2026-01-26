@@ -1182,5 +1182,6 @@
     <string name="app_theme">app theme</string>
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
+    <string name="image_already_added">This image has already been added</string>
 
 </resources>
