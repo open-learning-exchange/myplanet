@@ -233,6 +233,15 @@ class UploadToShelfService @Inject constructor(
 
         val maxAttempts = 3
         val retryDelayMs = 2000L
+        val dbUrl = "${UrlUtils.getUrl()}/$table"
+        
+        withContext(Dispatchers.IO) {
+            try {
+                apiInterface?.putDocSuspend(header, "application/json", dbUrl, JsonObject())
+            } catch (e: Exception) {
+                null
+            }
+        }
 
         val response = withContext(Dispatchers.IO) {
             RetryUtils.retry(
@@ -240,7 +249,7 @@ class UploadToShelfService @Inject constructor(
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface?.postDocSuspend(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+                apiInterface?.postDocSuspend(header, "application/json", dbUrl, ob)
             }
         }
 
@@ -249,8 +258,7 @@ class UploadToShelfService @Inject constructor(
             model.iv = iv
             changeUserSecurity(model, obj)
         } else {
-            val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
-            throw IOException(errorMessage)
+            throw IOException("Failed to save key/IV after $maxAttempts attempts")
         }
     }
 
