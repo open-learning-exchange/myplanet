@@ -1183,5 +1183,13 @@
     <string name="team_surveys">استطلاعات الفريق</string>
     <string name="enterprise_created">تم إنشاء المؤسسة</string>
     <string name="image_already_added">تمت إضافة هذه الصورة بالفعل</string>
+    <string name="debug_retry_queue">قائمة إعادة المحاولة (تصحيح)</string>
+    <string name="debug_retry_queue_summary">عرض وإدارة محاولات الرفع الفاشلة</string>
+    <string name="retry_queue_status">حالة قائمة إعادة المحاولة</string>
+    <string name="pending_retries">محاولات معلّقة: %d</string>
+    <string name="trigger_retry_now">إعادة المحاولة الآن</string>
+    <string name="clear_retry_queue">مسح القائمة</string>
+    <string name="retry_triggered">تم تشغيل إعادة المحاولة</string>
+    <string name="retry_queue_cleared">تم مسح قائمة إعادة المحاولة</string>
 
 </resources>

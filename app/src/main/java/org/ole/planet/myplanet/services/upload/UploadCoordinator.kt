@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -23,7 +24,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class UploadCoordinator @Inject constructor(
     private val databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val retryQueue: RetryQueue
 ) {
 
     companion object {
@@ -56,6 +58,10 @@ class UploadCoordinator @Inject constructor(
 
                 allSucceeded.addAll(succeeded)
                 allFailed.addAll(failed)
+            }
+
+            if (allFailed.isNotEmpty()) {
+                queueRetryableFailures(config, allFailed, itemsToUpload)
             }
 
             Log.d(TAG, "Upload complete: ${allSucceeded.size} succeeded, ${allFailed.size} failed")
@@ -206,6 +212,30 @@ class UploadCoordinator @Inject constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update item ${uploadedItem.localId}", e)
                 }
+            }
+        }
+    }
+
+    private suspend fun <T : RealmObject> queueRetryableFailures(
+        config: UploadConfig<T>,
+        errors: List<UploadError>,
+        preparedUploads: List<PreparedUpload<T>>
+    ) {
+        val uploadType = config.modelClass.simpleName ?: "Unknown"
+        val payloadMap = preparedUploads.associateBy { it.localId }
+
+        errors.filter { it.retryable }.forEach { error ->
+            val preparedUpload = payloadMap[error.itemId]
+            if (preparedUpload != null) {
+                retryQueue.queueFailedOperation(
+                    uploadType = uploadType,
+                    error = error,
+                    payload = preparedUpload.serialized,
+                    endpoint = config.endpoint,
+                    httpMethod = if (preparedUpload.dbId.isNullOrEmpty()) "POST" else "PUT",
+                    dbId = preparedUpload.dbId,
+                    modelClassName = config.modelClass.java.simpleName
+                )
             }
         }
     }

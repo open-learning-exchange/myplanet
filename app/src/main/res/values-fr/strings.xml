@@ -1183,5 +1183,13 @@
     <string name="team_surveys">Enquêtes d\'équipe</string>
     <string name="enterprise_created">Entreprise créée</string>
     <string name="image_already_added">Cette image a déjà été ajoutée</string>
+    <string name="debug_retry_queue">File de réessai (Debug)</string>
+    <string name="debug_retry_queue_summary">Afficher et gérer les tentatives de téléversement échouées</string>
+    <string name="retry_queue_status">Statut de la file de réessai</string>
+    <string name="pending_retries">Réessais en attente : %d</string>
+    <string name="trigger_retry_now">Réessayer maintenant</string>
+    <string name="clear_retry_queue">Vider la file</string>
+    <string name="retry_triggered">Réessai déclenché</string>
+    <string name="retry_queue_cleared">File de réessai vidée</string>
 
 </resources>
