@@ -255,6 +255,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return adapterCourses
     }
 
+    override fun refreshAdapter() {
+        loadDataAsync()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userModel = userSessionManager.userModel

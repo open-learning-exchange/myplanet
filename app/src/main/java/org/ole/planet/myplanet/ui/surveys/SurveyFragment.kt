@@ -171,6 +171,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     override fun getAdapter(): RecyclerView.Adapter<*> = adapter
 
+    override fun refreshAdapter() {
+        updateAdapterData()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         realtimeSyncHelper = RealtimeSyncHelper(this, this)

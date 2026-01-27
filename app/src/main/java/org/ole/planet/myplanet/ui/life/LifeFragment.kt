@@ -71,6 +71,10 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return lifeAdapter
     }
 
+    override fun refreshAdapter() {
+        refreshList()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         refreshList()

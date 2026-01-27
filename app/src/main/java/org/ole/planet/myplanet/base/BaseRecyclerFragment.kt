@@ -87,7 +87,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.realmInstance
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -113,8 +112,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onRatingChanged() {
-        recyclerView.adapter = getAdapter()
+        refreshAdapter()
     }
+
+    open fun refreshAdapter() {}
 
     fun addToMyList() {
         if (!isRealmInitialized() || isAddInProgress) return
@@ -164,13 +165,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
-            }
-
-            val newAdapter = getAdapter()
-            recyclerView.adapter = newAdapter
-            showNoData(tvMessage, newAdapter.itemCount, "")
+            refreshAdapter()
 
             result.exceptionOrNull()?.let {
                 it.printStackTrace()
@@ -215,8 +210,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 throw e
             }
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+        refreshAdapter()
     }
 
     fun countSelected(): Int {
