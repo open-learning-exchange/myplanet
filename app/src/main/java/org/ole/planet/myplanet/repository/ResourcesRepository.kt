@@ -19,6 +19,24 @@ interface ResourcesRepository {
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun saveLibraryItem(item: RealmMyLibrary)
+    suspend fun addResource(
+        title: String,
+        addedBy: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        openWith: String,
+        language: String,
+        mediaType: String,
+        resourceType: String,
+        subjects: List<String>,
+        levels: List<String>,
+        resourceFor: List<String>,
+        resourceUrl: String?,
+        userId: String?
+    )
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)

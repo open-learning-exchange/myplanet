@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
@@ -96,6 +97,53 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
+    }
+
+    override suspend fun addResource(
+        title: String,
+        addedBy: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        openWith: String,
+        language: String,
+        mediaType: String,
+        resourceType: String,
+        subjects: List<String>,
+        levels: List<String>,
+        resourceFor: List<String>,
+        resourceUrl: String?,
+        userId: String?
+    ) {
+        val id = UUID.randomUUID().toString()
+        val resource = RealmMyLibrary().apply {
+            this.id = id
+            this.resourceId = id
+            this.title = title
+            this.addedBy = addedBy
+            this.author = author
+            this.year = year
+            this.description = description
+            this.publisher = publisher
+            this.linkToLicense = linkToLicense
+            this.openWith = openWith
+            this.language = language
+            this.mediaType = mediaType
+            this.resourceType = resourceType
+            this.subject = RealmList<String>().apply { addAll(subjects) }
+            this.level = RealmList<String>().apply { addAll(levels) }
+            this.resourceFor = RealmList<String>().apply { addAll(resourceFor) }
+            this.createdDate = Calendar.getInstance().timeInMillis
+            this.resourceLocalAddress = resourceUrl
+            this.resourceOffline = true
+            this.filename = resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
+            setUserId(RealmList())
+            setUserId(userId)
+        }
+        save(resource)
+        activitiesRepository.markResourceAdded(userId, id)
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {

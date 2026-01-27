@@ -84,41 +84,42 @@ class AddResourceActivity : AppCompatActivity() {
     private fun saveResource() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
-        val id = UUID.randomUUID().toString()
-        val resource = RealmMyLibrary().apply {
-            this.id = id
-            this.title = title
-            createResource(this, id)
-            setUserId(userModel?.id)
-        }
+        val addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' }
+        val author = binding.etAuthor.text.toString().trim { it <= ' ' }
+        val year = binding.etYear.text.toString().trim { it <= ' ' }
+        val description = binding.etDescription.text.toString().trim { it <= ' ' }
+        val publisher = binding.etPublisher.text.toString().trim { it <= ' ' }
+        val linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' }
+        val openWith = binding.spnOpenWith.selectedItem.toString()
+        val language = binding.spnLang.selectedItem.toString()
+        val mediaType = binding.spnMedia.selectedItem.toString()
+        val resourceType = binding.spnResourceType.selectedItem.toString()
+        val subjectList = subjects?.toList() ?: emptyList()
+        val levelList = levels?.toList() ?: emptyList()
+        val resourceForList = resourceFor?.toList() ?: emptyList()
+
         lifecycleScope.launch {
-            resourcesRepository.saveLibraryItem(resource)
-            resourcesRepository.markResourceAdded(userModel?.id, id)
+            resourcesRepository.addResource(
+                title,
+                addedBy,
+                author,
+                year,
+                description,
+                publisher,
+                linkToLicense,
+                openWith,
+                language,
+                mediaType,
+                resourceType,
+                subjectList,
+                levelList,
+                resourceForList,
+                resourceUrl,
+                userModel?.id
+            )
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             finish()
         }
-    }
-
-    private fun createResource(resource: RealmMyLibrary, id: String) {
-        resource.addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' }
-        resource.author = binding.etAuthor.text.toString().trim { it <= ' ' }
-        resource.resourceId = id
-        resource.year = binding.etYear.text.toString().trim { it <= ' ' }
-        resource.description = binding.etDescription.text.toString().trim { it <= ' ' }
-        resource.publisher = binding.etPublisher.text.toString().trim { it <= ' ' }
-        resource.linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' }
-        resource.openWith = binding.spnOpenWith.selectedItem.toString()
-        resource.language = binding.spnLang.selectedItem.toString()
-        resource.mediaType = binding.spnMedia.selectedItem.toString()
-        resource.resourceType = binding.spnResourceType.selectedItem.toString()
-        resource.subject = subjects
-        resource.setUserId(RealmList())
-        resource.level = levels
-        resource.createdDate = Calendar.getInstance().timeInMillis
-        resource.resourceFor = resourceFor
-        resource.resourceLocalAddress = resourceUrl
-        resource.resourceOffline = true
-        resource.filename = resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
     }
 
     private fun validate(title: String): Boolean {
