@@ -189,9 +189,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
                 val map = ratingsRepository.getCourseRatings(model?.id)
                 val progressMap = progressRepository.getCourseProgress(model?.id)
-                val courseList = coursesRepository.getAllCourses().filter { !it.courseTitle.isNullOrBlank() }
-                courseList.forEach { course ->
+                val allCourses = coursesRepository.getAllCourses().filter { !it.courseTitle.isNullOrBlank() }
+                allCourses.forEach { course ->
                     course.isMyCourse = course.userId?.contains(model?.id) == true
+                }
+                val courseList = if (isMyCourseLib) {
+                    allCourses.filter { it.isMyCourse }
+                } else {
+                    allCourses
                 }
                 val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
 
