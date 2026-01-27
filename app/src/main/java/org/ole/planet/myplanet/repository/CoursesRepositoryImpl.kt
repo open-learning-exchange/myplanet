@@ -44,6 +44,10 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java)
+    }
+
     override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java)
