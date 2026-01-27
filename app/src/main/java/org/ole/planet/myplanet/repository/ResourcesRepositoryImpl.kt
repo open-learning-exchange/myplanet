@@ -303,4 +303,20 @@ class ResourcesRepositoryImpl @Inject constructor(
             equalTo("type", "resource_opened")
         }.map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
     }
+
+    override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+        val allNeedingUpdate = filterLibrariesNeedingUpdate(results)
+
+        if (!userId.isNullOrBlank()) {
+            val userLibraries = allNeedingUpdate.filter { it.userId?.contains(userId) == true }
+            if (userLibraries.isNotEmpty()) {
+                return userLibraries
+            }
+        }
+
+        return allNeedingUpdate
+    }
 }
