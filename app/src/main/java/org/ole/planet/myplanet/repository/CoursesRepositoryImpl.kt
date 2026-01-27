@@ -310,4 +310,8 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findFirst()?.courseTitle
         }
     }
+
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java)
+    }
 }

@@ -37,4 +37,5 @@ interface CoursesRepository {
     )
     suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData?
     suspend fun getCourseTitleById(courseId: String): String?
+    suspend fun getAllCourses(): List<RealmMyCourse>
 }
