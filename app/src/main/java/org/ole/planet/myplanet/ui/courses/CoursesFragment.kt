@@ -256,7 +256,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         userModel = userSessionManager.userModel
         searchTags = ArrayList()
         initializeView()
@@ -270,6 +269,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         startCoursesSync()
+        super.onViewCreated(view, savedInstanceState)
     }
 
     override fun onAdapterReady() {
