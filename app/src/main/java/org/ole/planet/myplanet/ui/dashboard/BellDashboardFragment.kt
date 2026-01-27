@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -49,7 +49,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
 

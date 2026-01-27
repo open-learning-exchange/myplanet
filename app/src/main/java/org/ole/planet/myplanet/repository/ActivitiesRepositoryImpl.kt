@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
@@ -68,7 +68,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             activity.time = Date().time
             activity.user = userId
 
-            val user = realm.where(RealmUserModel::class.java).equalTo("name", userId).findFirst()
+            val user = realm.where(RealmUser::class.java).equalTo("name", userId).findFirst()
             if (user != null) {
                 activity.parentCode = user.parentCode
                 activity.createdOn = user.planetCode

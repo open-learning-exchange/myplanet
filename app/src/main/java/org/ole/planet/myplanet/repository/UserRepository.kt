@@ -4,20 +4,20 @@ import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import io.realm.Sort
 import org.ole.planet.myplanet.model.HealthRecord
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 interface UserRepository {
-    suspend fun getUserById(userId: String): RealmUserModel?
-    suspend fun getUserByAnyId(id: String): RealmUserModel?
-    suspend fun getUserByName(name: String): RealmUserModel?
-    suspend fun getAllUsers(): List<RealmUserModel>
-    suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUserModel>
+    suspend fun getUserById(userId: String): RealmUser?
+    suspend fun getUserByAnyId(id: String): RealmUser?
+    suspend fun getUserByName(name: String): RealmUser?
+    suspend fun getAllUsers(): List<RealmUser>
+    suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
     suspend fun getMonthlyLoginCounts(
         userId: String,
         startMillis: Long,
         endMillis: Long,
     ): Map<Int, Int>
-    suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUserModel?
+    suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun updateSecurityData(
         name: String,
         userId: String?,
@@ -39,12 +39,12 @@ interface UserRepository {
         language: String?,
         gender: String?,
         dob: String?,
-    ): RealmUserModel?
+    ): RealmUser?
 
     suspend fun updateUserImage(
         userId: String?,
         imagePath: String?,
-    ): RealmUserModel?
+    ): RealmUser?
 
     suspend fun updateProfileFields(
         userId: String?,
@@ -53,19 +53,19 @@ interface UserRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
-    suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUserModel>
+    suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUser>
     suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
-        currentUser: RealmUserModel
+        currentUser: RealmUser
     ): HealthRecord?
 
-    fun getUserModel(): RealmUserModel?
-    suspend fun getUserModelSuspending(): RealmUserModel?
-    suspend fun getUserProfile(): RealmUserModel?
+    fun getUserModel(): RealmUser?
+    suspend fun getUserModelSuspending(): RealmUser?
+    suspend fun getUserProfile(): RealmUser?
     suspend fun getUserImageUrl(): String?
     fun getActiveUserId(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
-    fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUserModel?
+    fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
 }

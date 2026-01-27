@@ -61,7 +61,7 @@ import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -494,7 +494,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
                 val hasUser = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
+                    realm.where(RealmUser::class.java).findAll().isNotEmpty()
                 }
                 if (hasUser) {
                     break

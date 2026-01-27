@@ -200,12 +200,12 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
+        fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
             return getUsers(teamId, realm, "request")
         }
 
         @JvmStatic
-        fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
+        fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
             return getUsers(teamId, realm, "membership")
         }
 
@@ -227,15 +227,15 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUserModel> {
+        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUser> {
             var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)
             }
             val myTeam = query.findAll()
-            val list = mutableListOf<RealmUserModel>()
+            val list = mutableListOf<RealmUser>()
             for (team in myTeam) {
-                val model = mRealm.where(RealmUserModel::class.java)
+                val model = mRealm.where(RealmUser::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
                 if (model != null && !list.contains(model)) list.add(model)
@@ -315,7 +315,7 @@ open class RealmMyTeam : RealmObject() {
             .count() > 0
     }
 
-    fun leave(user: RealmUserModel?, mRealm: Realm) {
+    fun leave(user: RealmUser?, mRealm: Realm) {
         val teams = mRealm.where(RealmMyTeam::class.java)
             .equalTo("userId", user?.id)
             .equalTo("teamId", this._id)

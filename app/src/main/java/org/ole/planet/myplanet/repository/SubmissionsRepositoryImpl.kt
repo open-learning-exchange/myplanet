@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
@@ -265,7 +265,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 .equalTo("id", examId)
                 .findFirst()
 
-            val user = realm.where(RealmUserModel::class.java)
+            val user = realm.where(RealmUser::class.java)
                 .equalTo("id", submission.userId)
                 .findFirst()
 

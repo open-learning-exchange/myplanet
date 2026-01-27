@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
@@ -73,7 +73,7 @@ class AddHealthActivity : AppCompatActivity() {
     private fun createMyHealth() {
         lifecycleScope.launch {
             databaseService.executeTransactionAsync { realm ->
-                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
                 val oldProfile = myHealth?.profile
                 val health = RealmMyHealthProfile()
                 userModel?.firstName = "${binding.etFname.editText?.text}".trim { ch -> ch <= ' ' }
@@ -137,7 +137,7 @@ class AddHealthActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val healthData = databaseService.withRealmAsync { realm ->
-                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
                 val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                     ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
 

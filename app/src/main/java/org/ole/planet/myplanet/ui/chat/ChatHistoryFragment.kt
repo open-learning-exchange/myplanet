@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -54,7 +54,7 @@ class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: ChatViewModel
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -306,7 +306,7 @@ class ChatHistoryFragment : Fragment() {
         }
     }
 
-    private suspend fun loadCurrentUser(userId: String?): RealmUserModel? {
+    private suspend fun loadCurrentUser(userId: String?): RealmUser? {
         if (userId.isNullOrEmpty()) {
             return null
         }

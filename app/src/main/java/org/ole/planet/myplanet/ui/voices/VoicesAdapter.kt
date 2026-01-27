@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -63,7 +63,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.makeExpandable
 
-class VoicesAdapter(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userSessionManager: UserSessionManager, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class VoicesAdapter(var context: Context, private var currentUser: RealmUser?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userSessionManager: UserSessionManager, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -101,15 +101,15 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var labelManager: VoicesLabelManager? = null
     private val profileDbHandler = userSessionManager
     lateinit var settings: SharedPreferences
-    private val userCache = mutableMapOf<String, RealmUserModel?>()
+    private val userCache = mutableMapOf<String, RealmUser?>()
     private val fetchingUserIds = mutableSetOf<String>()
-    private val leadersList: List<RealmUserModel> by lazy {
+    private val leadersList: List<RealmUser> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
-        RealmUserModel.parseLeadersJson(raw)
+        RealmUser.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
 
@@ -246,7 +246,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         }
     }
 
-    private fun configureUser(holder: VoicesViewHolder, news: RealmNews): RealmUserModel? {
+    private fun configureUser(holder: VoicesViewHolder, news: RealmNews): RealmUser? {
         val userId = news.userId
         if (userId.isNullOrEmpty()) return null
 
@@ -392,7 +392,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         }
     }
 
-    private fun getCurrentLeader(userModel: RealmUserModel?, news: RealmNews): RealmUserModel? {
+    private fun getCurrentLeader(userModel: RealmUser?, news: RealmNews): RealmUser? {
         if (userModel == null) {
             for (leader in leadersList) {
                 if (leader.name == news.userName) {
@@ -417,7 +417,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
         submitList(list, commitCallback)
     }
 
-    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
+    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUser?, currentLeader: RealmUser?) {
         if (!fromLogin) {
             holder.binding.imgUser.setOnClickListener {
                 val model = userModel ?: currentLeader

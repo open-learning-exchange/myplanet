@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
@@ -72,7 +72,7 @@ class UploadManager @Inject constructor(
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
         val model = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("id", pref.getString("userId", ""))
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
@@ -167,7 +167,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    private fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
+    private fun createImage(user: RealmUser?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
         `object`.addProperty("createdDate", Date().time)
@@ -291,7 +291,7 @@ class UploadManager @Inject constructor(
             )
 
             val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java)
+                realm.where(RealmUser::class.java)
                     .equalTo("id", pref.getString("userId", "")).findFirst()
                     ?.let { realm.copyFromRealm(it) }
             }
@@ -481,7 +481,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
         val model = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("id", pref.getString("userId", ""))
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
@@ -598,7 +598,7 @@ class UploadManager @Inject constructor(
 
         val apiInterface = client.create(ApiInterface::class.java)
         val user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("id", pref.getString("userId", ""))
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }

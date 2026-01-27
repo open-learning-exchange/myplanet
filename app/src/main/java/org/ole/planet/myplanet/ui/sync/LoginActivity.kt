@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
@@ -59,7 +59,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var nameWatcher2: TextWatcher
     private lateinit var passwordWatcher: TextWatcher
     private var guest = false
-    var users: List<RealmUserModel>? = null
+    var users: List<RealmUser>? = null
     private var mAdapter: UserProfileAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
@@ -460,7 +460,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             users = databaseService.withRealm { realm ->
                 RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
             }
-            val userList = (users as? MutableList<RealmUserModel>)?.map {
+            val userList = (users as? MutableList<RealmUser>)?.map {
                 User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
 
@@ -494,7 +494,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 val model = databaseService.withRealm { realm ->
-                    RealmUserModel.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
+                    RealmUser.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
                 }
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
@@ -526,7 +526,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
                     val model = databaseService.withRealmAsync { realm ->
-                        RealmUserModel.createGuestUser(username, realm, settings)
+                        RealmUser.createGuestUser(username, realm, settings)
                             ?.let { realm.copyFromRealm(it) }
                     }
                     if (model == null) {

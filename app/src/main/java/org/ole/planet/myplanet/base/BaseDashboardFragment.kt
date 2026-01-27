@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
@@ -391,7 +391,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                         val adapter = HealthUsersAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
                         alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
+                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUser
                             selected._id?.let { userId ->
                                 viewLifecycleOwner.lifecycleScope.launch {
                                     val libraryList = viewModel.getLibraryForSelectedUser(userId)

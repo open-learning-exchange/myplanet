@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -51,7 +51,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
 
     private val viewModel: ReplyViewModel by viewModels()
     
@@ -137,7 +137,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onNewsItemClick(news: RealmNews?) {}
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
+    override fun onMemberSelected(userModel: RealmUser?) {
         lifecycleScope.launch {
             val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return@launch
             NavigationHelper.replaceFragment(

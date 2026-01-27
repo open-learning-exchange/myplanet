@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -130,7 +130,7 @@ object VoicesActions {
         components: EditDialogComponents,
         news: RealmNews?,
         realm: Realm,
-        currentUser: RealmUserModel?,
+        currentUser: RealmUser?,
         imageList: RealmList<String>?,
         listener: OnNewsItemClickListener?
     ) {
@@ -153,7 +153,7 @@ object VoicesActions {
         context: Context,
         id: String?,
         isEdit: Boolean,
-        currentUser: RealmUserModel?,
+        currentUser: RealmUser?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
@@ -188,7 +188,7 @@ object VoicesActions {
         realm: Realm,
         s: String?,
         news: RealmNews?,
-        currentUser: RealmUserModel?,
+        currentUser: RealmUser?,
         imageList: RealmList<String>?
     ) {
         val shouldCommit = !realm.isInTransaction
@@ -232,7 +232,7 @@ object VoicesActions {
     }
 
     suspend fun showMemberDetails(
-        userModel: RealmUserModel?,
+        userModel: RealmUser?,
         profileDbHandler: UserSessionManager
     ): MembersDetailFragment? {
         if (userModel == null) return null

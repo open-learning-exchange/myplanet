@@ -19,8 +19,8 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -62,7 +62,7 @@ class TransactionSyncManager @Inject constructor(
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val users = databaseService.withRealm { realm ->
-                    realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
+                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
                 }
 
                 users.forEach { userModel ->
@@ -79,7 +79,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    private suspend fun syncHealthData(userModel: RealmUserModel, header: String) {
+    private suspend fun syncHealthData(userModel: RealmUser, header: String) {
         val table =
             "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
         try {
@@ -95,7 +95,7 @@ class TransactionSyncManager @Inject constructor(
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
                         databaseService.executeTransactionAsync { realm ->
-                            val managedUser = realm.where(RealmUserModel::class.java).equalTo("id", userModel.id).findFirst()
+                            val managedUser = realm.where(RealmUser::class.java).equalTo("id", userModel.id).findFirst()
                             managedUser?.key = key
                             managedUser?.iv = iv
                         }
@@ -122,7 +122,7 @@ class TransactionSyncManager @Inject constructor(
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val userModel = databaseService.withRealm { realm ->
-                    realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
+                    realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
                 }
 
                 if (userModel != null) {

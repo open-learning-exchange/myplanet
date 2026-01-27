@@ -9,7 +9,7 @@ import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -101,18 +101,18 @@ class RatingsRepositoryImpl @Inject constructor(
             rate = rate,
         )
 
-    private suspend fun findUserForRating(userId: String): RealmUserModel {
+    private suspend fun findUserForRating(userId: String): RealmUser {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
-        val user = findByField(RealmUserModel::class.java, "id", userId)
-            ?: findByField(RealmUserModel::class.java, "_id", userId)
+        val user = findByField(RealmUser::class.java, "id", userId)
+            ?: findByField(RealmUser::class.java, "_id", userId)
 
         return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
     }
 
     private fun setRatingData(
         ratingObject: RealmRating,
-        userModel: RealmUserModel?,
+        userModel: RealmUser?,
         type: String,
         itemId: String,
         title: String,

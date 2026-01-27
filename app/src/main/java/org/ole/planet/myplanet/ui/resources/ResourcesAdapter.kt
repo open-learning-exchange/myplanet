@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
@@ -37,7 +37,7 @@ class ResourcesAdapter(
     private val context: Context,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
-    private val userModel: RealmUserModel?,
+    private val userModel: RealmUser?,
     private var tagsMap: Map<String, List<RealmTag>>,
     private var openedResourceIds: Set<String>
 ) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnDiffRefreshListener {
