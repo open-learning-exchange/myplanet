@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.NavigationHelper
 
 class MembersAdapter(
     private val context: Context,

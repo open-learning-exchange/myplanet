@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.NavigationHelper
 
 internal class CommunityLeadersAdapter(
     var context: Context,

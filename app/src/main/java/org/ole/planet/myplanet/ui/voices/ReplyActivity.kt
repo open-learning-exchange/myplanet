@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.utils.FileUtils.getImagePath
 import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.NavigationHelper
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {

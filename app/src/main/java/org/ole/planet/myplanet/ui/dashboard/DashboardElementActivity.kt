@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.NavigationHelper
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
