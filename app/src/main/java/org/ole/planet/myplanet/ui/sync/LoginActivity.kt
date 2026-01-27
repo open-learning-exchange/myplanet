@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.ThemeManager
+import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
 
