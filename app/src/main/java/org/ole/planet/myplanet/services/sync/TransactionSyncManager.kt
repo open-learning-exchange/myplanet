@@ -94,11 +94,16 @@ class TransactionSyncManager @Inject constructor(
                     val iv = getString("iv", jsonDoc)
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
-                        databaseService.executeTransactionAsync { realm ->
-                            val managedUser = realm.where(RealmUserModel::class.java).equalTo("id", userModel.id).findFirst()
-                            managedUser?.key = key
-                            managedUser?.iv = iv
-                        }
+                        databaseService.executeTransactionAsync(
+                            transaction = { realm ->
+                                val managedUser = realm.where(RealmUserModel::class.java).equalTo("id", userModel.id).findFirst()
+                                managedUser?.key = key
+                                managedUser?.iv = iv
+                            },
+                            onError = { error ->
+                                android.util.Log.e("TransactionSyncManager", "Failed to sync health key/iv", error)
+                            }
+                        )
                     }
                 }
             }
