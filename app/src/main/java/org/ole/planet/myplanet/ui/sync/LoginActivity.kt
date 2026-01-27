@@ -29,6 +29,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.ThemeManager
@@ -54,6 +56,9 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
+
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
@@ -320,13 +325,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             return
         }
         lifecycleScope.launch {
-            val teams = databaseService.withRealmAsync { realm ->
-                realm.where(RealmMyTeam::class.java)
-                    .isEmpty("teamId")
-                    .equalTo("status", "active")
-                    .findAll()
-                    ?.let { realm.copyFromRealm(it) }
-            }
+            val teams = teamsRepository.getAllActiveTeams()
             cachedTeams = teams
             setupTeamDropdown(teams)
         }
