@@ -39,16 +39,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: OnSuccessListener) {
-        try {
-            val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
-            if (healthUrl.isBlank()) {
-                listener.onSuccess("")
-                return
-            }
+        serviceScope.launch {
+            try {
+                val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
+                if (healthUrl.isBlank()) {
+                    withContext(Dispatchers.Main) { listener.onSuccess("") }
+                    return@launch
+                }
 
-            apiInterface.healthAccess(healthUrl).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    try {
+                try {
+                    val response = apiInterface.healthAccess(healthUrl)
+                    withContext(Dispatchers.Main) {
                         when (response.code()) {
                             200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
                             401 -> listener.onSuccess("Unauthorized - Invalid credentials")
@@ -59,32 +60,22 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                             504 -> listener.onSuccess("Gateway timeout")
                             else -> listener.onSuccess("Server error: ${response.code()}")
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("")
                     }
-                }
-
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable"
-                            is java.net.SocketTimeoutException -> "Connection timeout"
-                            is java.net.ConnectException -> "Unable to connect to server"
-                            is java.io.IOException -> "Network connection error"
-                            else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                        }
-                        listener.onSuccess(errorMsg)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSuccess("Health check failed")
+                } catch (t: Exception) {
+                    t.printStackTrace()
+                    val errorMsg = when (t) {
+                        is java.net.UnknownHostException -> "Server not reachable"
+                        is java.net.SocketTimeoutException -> "Connection timeout"
+                        is java.net.ConnectException -> "Unable to connect to server"
+                        is java.io.IOException -> "Network connection error"
+                        else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
+                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
                 }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSuccess("Health access initialization failed")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
+            }
         }
     }
 
@@ -195,30 +186,23 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
 
-            apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                    val isAvailable = callback != null && response.code() == 200
-                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            if (isAvailable) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
+            try {
+                val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
+                val isAvailable = callback != null && response.code() == 200
+                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                withContext(Dispatchers.Main) {
+                    if (isAvailable) {
+                        callback.isAvailable()
+                    } else {
+                        callback?.notAvailable()
                     }
                 }
-
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                    serviceScope.launch {
-                        withContext(Dispatchers.Main) {
-                            callback?.notAvailable()
-                        }
-                    }
+            } catch (e: Exception) {
+                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                withContext(Dispatchers.Main) {
+                    callback?.notAvailable()
                 }
-            })
+            }
         }
     }
 
@@ -288,7 +272,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private suspend fun isServerReachable(url: String): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiInterface.isPlanetAvailable(url).execute()
+                val response = apiInterface.isPlanetAvailable(url)
                 response.isSuccessful
             } catch (e: Exception) {
                 false

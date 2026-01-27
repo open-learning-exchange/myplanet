@@ -143,9 +143,9 @@ class UploadCoordinator @Inject constructor(
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
-                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                    apiInterface.postDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 } else {
-                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                    apiInterface.putDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 }
 
                 if (response.isSuccessful && response.body() != null) {

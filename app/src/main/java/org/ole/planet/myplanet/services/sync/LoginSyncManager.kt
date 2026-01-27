@@ -33,91 +33,83 @@ class LoginSyncManager private constructor(
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
-        try {
-            if (userName.isNullOrBlank() || password.isNullOrBlank()) {
-                listener.onSyncFailed("Username and password are required.")
-                return
-            }
-            
-            listener.onSyncStarted()
-            
-            val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-            if (apiInterface == null) {
-                listener.onSyncFailed("Network client not available.")
-                return
-            }
-            
-            val authHeader = try {
-                "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                listener.onSyncFailed("Authentication encoding failed.")
-                return
-            }
-            
-            val userUrl = try {
-                String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
-            } catch (e: Exception) {
-                e.printStackTrace()
-                listener.onSyncFailed("Invalid server URL.")
-                return
-            }
-
-            apiInterface.getJsonObject(authHeader, userUrl).enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    try {
-                        when {
-                            !response.isSuccessful -> {
-                                val errorMsg = when (response.code()) {
-                                    401 -> "Name or password is incorrect."
-                                    404 -> "User not found."
-                                    500 -> "Server error. Please try again later."
-                                    else -> "Login failed. Error code: ${response.code()}"
-                                }
-                                listener.onSyncFailed(errorMsg)
-                                return
-                            }
-
-                            response.body() == null -> {
-                                listener.onSyncFailed("Empty response from server.")
-                                return
-                            }
-                        }
-
-                        val jsonDoc = response.body()
-                        if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
-                            MainApplication.applicationScope.launch {
-                                try {
-                                    val derivedKey = jsonDoc["derived_key"].asString
-                                    val salt = jsonDoc["salt"].asString
-                                    val isAuthenticated = withContext(Dispatchers.Default) {
-                                        androidDecrypter(userName, password, derivedKey, salt)
-                                    }
-
-                                    if (isAuthenticated) {
-                                        checkManagerAndInsert(jsonDoc, listener)
-                                    } else {
-                                        withContext(Dispatchers.Main) {
-                                            listener.onSyncFailed("Authentication failed. Invalid credentials.")
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    withContext(Dispatchers.Main) {
-                                        listener.onSyncFailed("Authentication processing failed.")
-                                    }
-                                }
-                            }
-                        } else {
-                            listener.onSyncFailed("Server response missing authentication data.")
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        listener.onSyncFailed("Login processing failed.")
-                    }
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            try {
+                if (userName.isNullOrBlank() || password.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) { listener.onSyncFailed("Username and password are required.") }
+                    return@launch
                 }
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                withContext(Dispatchers.Main) { listener.onSyncStarted() }
+
+                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
+                if (apiInterface == null) {
+                    withContext(Dispatchers.Main) { listener.onSyncFailed("Network client not available.") }
+                    return@launch
+                }
+
+                val authHeader = try {
+                    "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) { listener.onSyncFailed("Authentication encoding failed.") }
+                    return@launch
+                }
+
+                val userUrl = try {
+                    String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) { listener.onSyncFailed("Invalid server URL.") }
+                    return@launch
+                }
+
+                try {
+                    val response = apiInterface.getJsonObject(authHeader, userUrl)
+                    when {
+                        !response.isSuccessful -> {
+                            val errorMsg = when (response.code()) {
+                                401 -> "Name or password is incorrect."
+                                404 -> "User not found."
+                                500 -> "Server error. Please try again later."
+                                else -> "Login failed. Error code: ${response.code()}"
+                            }
+                            withContext(Dispatchers.Main) { listener.onSyncFailed(errorMsg) }
+                            return@launch
+                        }
+
+                        response.body() == null -> {
+                            withContext(Dispatchers.Main) { listener.onSyncFailed("Empty response from server.") }
+                            return@launch
+                        }
+                    }
+
+                    val jsonDoc = response.body()
+                    if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
+                        try {
+                            val derivedKey = jsonDoc["derived_key"].asString
+                            val salt = jsonDoc["salt"].asString
+                            val isAuthenticated = withContext(Dispatchers.Default) {
+                                androidDecrypter(userName, password, derivedKey, salt)
+                            }
+
+                            if (isAuthenticated) {
+                                checkManagerAndInsert(jsonDoc, listener)
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    listener.onSyncFailed("Authentication failed. Invalid credentials.")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            withContext(Dispatchers.Main) {
+                                listener.onSyncFailed("Authentication processing failed.")
+                            }
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) { listener.onSyncFailed("Server response missing authentication data.") }
+                    }
+                } catch (t: Exception) {
                     try {
                         t.printStackTrace()
                         val errorMsg = when (t) {
@@ -126,74 +118,65 @@ class LoginSyncManager private constructor(
                             is java.net.ConnectException -> "Unable to connect to server."
                             else -> "Network error: ${t.message ?: "Unknown error"}"
                         }
-                        listener.onSyncFailed(errorMsg)
+                        withContext(Dispatchers.Main) { listener.onSyncFailed(errorMsg) }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        listener.onSyncFailed("Network error occurred.")
+                        withContext(Dispatchers.Main) { listener.onSyncFailed("Network error occurred.") }
                     }
                 }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            listener.onSyncFailed("Login initialization failed.")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) { listener.onSyncFailed("Login initialization failed.") }
+            }
         }
     }
 
     fun syncAdmin() {
-        try {
-            val `object` = JsonObject()
-            val selector = JsonObject()
-            selector.addProperty("isUserAdmin", true)
-            `object`.add("selector", selector)
-            
-            val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-            if (apiInterface == null) {
-                return
-            }
-            
-            val header = UrlUtils.header
-            if (header.isBlank()) {
-                return
-            }
-            
-            val url = try {
-                UrlUtils.getUrl() + "/_users/_find"
-            } catch (e: Exception) {
-                e.printStackTrace()
-                return
-            }
+        MainApplication.applicationScope.launch {
+            try {
+                val `object` = JsonObject()
+                val selector = JsonObject()
+                selector.addProperty("isUserAdmin", true)
+                `object`.add("selector", selector)
 
-            apiInterface.findDocs(header, "application/json", url, `object`).enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    try {
-                        if (response.isSuccessful && response.body() != null) {
-                            val responseBody = response.body()
-                            settings.edit { putString("communityLeaders", "$responseBody") }
+                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
+                if (apiInterface == null) {
+                    return@launch
+                }
 
-                            val array = JsonUtils.getJsonArray("docs", responseBody)
-                            if (array != null && array.size() > 0) {
-                                try {
-                                    settings.edit { putString("user_admin", JsonUtils.gson.toJson(array[0])) }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
+                val header = UrlUtils.header
+                if (header.isBlank()) {
+                    return@launch
+                }
+
+                val url = try {
+                    UrlUtils.getUrl() + "/_users/_find"
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return@launch
+                }
+
+                try {
+                    val response = apiInterface.findDocs(header, "application/json", url, `object`)
+                    if (response.isSuccessful && response.body() != null) {
+                        val responseBody = response.body()
+                        settings.edit { putString("communityLeaders", "$responseBody") }
+
+                        val array = JsonUtils.getJsonArray("docs", responseBody)
+                        if (array != null && array.size() > 0) {
+                            try {
+                                settings.edit { putString("user_admin", JsonUtils.gson.toJson(array[0])) }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

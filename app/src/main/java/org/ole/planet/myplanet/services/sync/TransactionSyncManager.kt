@@ -10,10 +10,13 @@ import io.realm.Realm
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -28,7 +31,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import retrofit2.Response
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -36,21 +38,16 @@ class TransactionSyncManager @Inject constructor(
     private val databaseService: DatabaseService,
     @ApplicationContext private val context: Context
 ) {
-    fun authenticate(): Boolean {
+    suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
-            val response: Response<DocumentResponse>? = apiInterface.getDocuments(
+            val response = apiInterface.getDocuments(
                 UrlUtils.header,
                 targetUrl
-            ).execute()
+            )
 
-            if (response != null) {
-                val code = response.code()
-                val isSuccess = code == 200
-                return isSuccess
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
+            val code = response.code()
+            return code == 200
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -62,39 +59,51 @@ class TransactionSyncManager @Inject constructor(
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
-        val mRealm = Realm.getDefaultInstance()
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            for (userModel in users) {
-                syncHealthData(userModel, header)
+
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            try {
+                val users = databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
+                }
+
+                users.forEach { userModel ->
+                    syncHealthData(userModel, header)
+                }
+                withContext(Dispatchers.Main) {
+                    listener.onSyncComplete()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    listener.onSyncFailed(e.message)
+                }
             }
-        }, {
-            listener.onSyncComplete()
-            mRealm.close()
-        }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
-            mRealm.close()
         }
     }
 
-    private fun syncHealthData(userModel: RealmUserModel?, header: String) {
+    private suspend fun syncHealthData(userModel: RealmUserModel, header: String) {
         val table =
-            "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
-        val response: Response<DocumentResponse>?
+            "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
         try {
-            response =
-                apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs").execute()
-            val ob = response?.body()
+            val response =
+                apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")
+            val ob = response.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id")
-                        .execute().body()
-                    userModel?.key = getString("key", jsonDoc)
-                    userModel?.iv = getString("iv", jsonDoc)
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()
+                    val key = getString("key", jsonDoc)
+                    val iv = getString("iv", jsonDoc)
+
+                    if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
+                        databaseService.executeTransactionAsync { realm ->
+                            val managedUser = realm.where(RealmUserModel::class.java).equalTo("id", userModel.id).findFirst()
+                            managedUser?.key = key
+                            managedUser?.iv = iv
+                        }
+                    }
                 }
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             e.printStackTrace()
         }
     }
@@ -110,16 +119,25 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
-        val mRealm = Realm.getDefaultInstance()
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-            syncHealthData(userModel, header)
-        }, {
-            listener.onSyncComplete()
-            mRealm.close()
-        }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
-            mRealm.close()
+
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            try {
+                val userModel = databaseService.withRealm { realm ->
+                    realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
+                }
+
+                if (userModel != null) {
+                    syncHealthData(userModel, header)
+                }
+
+                withContext(Dispatchers.Main) {
+                    listener.onSyncComplete()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    listener.onSyncFailed(e.message)
+                }
+            }
         }
     }
 
@@ -151,7 +169,7 @@ class TransactionSyncManager @Inject constructor(
                     "application/json",
                     UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject() // Empty body for GET-style query
-                ).execute()
+                )
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
 
                 if (response.body() == null || !response.isSuccessful) {
