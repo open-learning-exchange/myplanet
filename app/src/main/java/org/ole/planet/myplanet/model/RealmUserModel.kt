@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import android.util.Base64
+import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.JsonArray
@@ -505,7 +506,8 @@ open class RealmUserModel : RealmObject() {
                 }
             }, {
                 onSuccess.invoke()
-            }) {
+            }) { error ->
+                Log.e("RealmUserModel", "Failed to cleanup duplicate users", error)
             }
         }
     }
