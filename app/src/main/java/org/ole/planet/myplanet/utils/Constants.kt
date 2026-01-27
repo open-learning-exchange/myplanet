@@ -33,6 +33,7 @@ object Constants {
     var LABELS = mutableMapOf<String, String>()
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
+    const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
 
     init {
         initClasses()
