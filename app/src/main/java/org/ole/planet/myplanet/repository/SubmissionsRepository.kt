@@ -24,6 +24,7 @@ interface SubmissionsRepository {
     ): Boolean
     suspend fun hasPendingOfflineSubmissions(): Boolean
     suspend fun hasPendingExamResults(): Boolean
+    suspend fun createExamSubmission(examId: String, userId: String?, type: String?, teamId: String?): RealmSubmission
     suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)

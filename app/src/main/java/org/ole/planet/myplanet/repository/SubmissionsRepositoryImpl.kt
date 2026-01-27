@@ -1,18 +1,24 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.model.RealmTeamReference
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.SubmissionDetail
 
@@ -196,6 +202,74 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             equalTo("status", "pending", Case.INSENSITIVE)
             isNotEmpty("answers")
         } > 0
+    }
+
+    override suspend fun createExamSubmission(
+        examId: String,
+        userId: String?,
+        type: String?,
+        teamId: String?
+    ): RealmSubmission {
+        return databaseService.withRealmAsync { realm ->
+            var sub: RealmSubmission? = null
+            realm.executeTransaction { r ->
+                val exam = r.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+                    ?: throw IllegalStateException("Exam not found")
+
+                val id = UUID.randomUUID().toString()
+                sub = r.createObject(RealmSubmission::class.java, id)
+                sub?.userId = userId
+                sub?.type = type
+                sub?.status = "pending"
+                sub?.startTime = Date().time
+                sub?.lastUpdateTime = Date().time
+                sub?.answers = RealmList()
+
+                val parentId = if (!exam.courseId.isNullOrEmpty()) {
+                    "${exam.id}@${exam.courseId}"
+                } else {
+                    exam.id
+                }
+                sub?.parentId = parentId
+
+                val parentJson = JsonObject().apply {
+                    addProperty("_id", exam.id ?: "")
+                    addProperty("name", exam.name ?: "")
+                    addProperty("courseId", exam.courseId ?: "")
+                    addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                    addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                    addProperty("noOfQuestions", exam.noOfQuestions)
+                    addProperty("isFromNation", exam.isFromNation)
+                }
+                sub?.parent = parentJson.toString()
+
+                if (!teamId.isNullOrEmpty()) {
+                    val team = r.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                    if (team != null) {
+                        val teamRef = r.createObject(RealmTeamReference::class.java)
+                        teamRef._id = team._id
+                        teamRef.name = team.name
+                        teamRef.type = team.type ?: "team"
+                        sub?.teamObject = teamRef
+                    }
+
+                    val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
+                    membershipDoc.teamId = teamId
+                    sub?.membershipDoc = membershipDoc
+
+                    val userModel = r.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                    val userJson = JsonObject().apply {
+                        addProperty("age", userModel?.dob ?: "")
+                        addProperty("gender", userModel?.gender ?: "")
+                        val membershipJson = JsonObject()
+                        membershipJson.addProperty("teamId", teamId)
+                        add("membershipDoc", membershipJson)
+                    }
+                    sub?.user = userJson.toString()
+                }
+            }
+            realm.copyFromRealm(sub!!)
+        }
     }
 
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
