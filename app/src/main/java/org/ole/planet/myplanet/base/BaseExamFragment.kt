@@ -47,7 +47,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
     lateinit var databaseService: DatabaseService
-    lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
@@ -70,7 +69,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")
@@ -86,7 +84,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (TextUtils.isEmpty(stepId)) {
             id = requireArguments().getString("id")
             if (isMySurvey) {
-                sub = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                sub = databaseService.withRealm { realm ->
+                    realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }
                 id = if (sub?.parentId?.contains("@") == true) {
                     sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
                 } else {
@@ -103,10 +104,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun initExam() {
-        exam = if (!TextUtils.isEmpty(stepId)) {
-            mRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
-        } else {
-            mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+        exam = databaseService.withRealm { realm ->
+            if (!TextUtils.isEmpty(stepId)) {
+                realm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            } else {
+                realm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            }
         }
     }
 
@@ -152,13 +157,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        val progress = mRealm.where(RealmCourseProgress::class.java)
-            .equalTo("courseId", exam?.courseId)
-            .equalTo("stepNum", stepNumber).findFirst()
-        if (progress != null) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            progress.passed = sub?.status == "graded"
-            mRealm.commitTransaction()
+        databaseService.withRealm { realm ->
+            val progress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", exam?.courseId)
+                .equalTo("stepNum", stepNumber).findFirst()
+            if (progress != null) {
+                realm.executeTransaction {
+                    progress.passed = sub?.status == "graded"
+                }
+            }
         }
     }
 
@@ -166,9 +173,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (!isMySurvey && exam?.isFromNation != true) {
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            databaseService.withRealm { realm ->
+                realm.executeTransaction {
+                    val managedSub = realm.where(RealmSubmission::class.java).equalTo("id", sub?.id).findFirst()
+                    managedSub?.status = "complete"
+                }
+            }
             sub?.status = "complete"
-            mRealm.commitTransaction()
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             navigateToSurveyList(requireActivity())
         }
@@ -186,17 +197,20 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
-        mRealm.beginTransaction()
-        val submit = mRealm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
-        submit.submissionId = submitId
-        submit.examId = exam?.id
-        submit.courseId = exam?.courseId
-        submit.memberId = user?.id
-        submit.date = date
-        submit.uniqueId = uniqueId
-        submit.photoLocation = photoPath
-        submit.uploaded = false
-        mRealm.commitTransaction()
+        databaseService.withRealm { realm ->
+            realm.executeTransaction {
+                val submit =
+                    realm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
+                submit.submissionId = submitId
+                submit.examId = exam?.id
+                submit.courseId = exam?.courseId
+                submit.memberId = user?.id
+                submit.date = date
+                submit.uniqueId = uniqueId
+                submit.photoLocation = photoPath
+                submit.uploaded = false
+            }
+        }
     }
 
     override fun onImageCapture(fileUri: String?) {
@@ -230,9 +244,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         CameraUtils.release()
         super.onDestroy()
     }
