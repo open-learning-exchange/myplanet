@@ -42,6 +42,10 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun getCurrentUser(): RealmUserModel? {
+        return getUserModel()
+    }
+
     override suspend fun getUserByAnyId(id: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "_id", id)
             ?: findByField(RealmUserModel::class.java, "id", id)
