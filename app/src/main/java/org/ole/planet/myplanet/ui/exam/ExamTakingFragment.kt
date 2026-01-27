@@ -115,10 +115,12 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
+            lifecycleScope.launch { updateAnsDb() }
             goToPreviousQuestion()
         }
         binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
+            lifecycleScope.launch { updateAnsDb() }
             goToNextQuestion()
         }
 
@@ -174,7 +176,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 answerData.singleAnswer = binding.etAnswer.text.toString()
             }
         }
-        updateAnsDb()
     }
 
     private fun goToPreviousQuestion() {
@@ -740,6 +741,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+        lifecycleScope.launch { updateAnsDb() }
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
