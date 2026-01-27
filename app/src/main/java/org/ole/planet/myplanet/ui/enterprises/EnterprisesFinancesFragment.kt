@@ -17,11 +17,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 

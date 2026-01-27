@@ -56,8 +56,6 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
 
 @AndroidEntryPoint
