@@ -100,6 +100,7 @@ class TransactionSyncManager @Inject constructor(
                                 managedUser?.key = key
                                 managedUser?.iv = iv
                             },
+                            onSuccess = null,
                             onError = { error ->
                                 android.util.Log.e("TransactionSyncManager", "Failed to sync health key/iv", error)
                             }
