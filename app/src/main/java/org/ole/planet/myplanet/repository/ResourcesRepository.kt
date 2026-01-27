@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.model.RealmTag
 
 interface ResourcesRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
+    suspend fun getAllPublicLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary>
