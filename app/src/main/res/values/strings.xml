@@ -1179,5 +1179,8 @@
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
     <string name="image_already_added">This image has already been added</string>
+    <string name="edit_team">Edit Team</string>
+    <string name="team_updated">Team updated successfully</string>
+    <string name="unable_to_update_team">Unable to update team</string>
 
 </resources>

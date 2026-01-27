@@ -87,12 +87,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var tagsRepository: TagsRepository
-
-    @Inject
-    lateinit var progressRepository: ProgressRepository
-
-    @Inject
     lateinit var ratingsRepository: RatingsRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -184,17 +178,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         lifecycleScope.launch {
             try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.refresh()
-                }
                 val map = ratingsRepository.getCourseRatings(model?.id)
                 val progressMap = progressRepository.getCourseProgress(model?.id)
-                val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
-                val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                    copiedList.forEachIndexed { index, course ->
-                        course.isMyCourse = managedCourseList[index].isMyCourse
-                    }
-                }
+                val courseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
+
                 val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
 
                 if (isMyCourseLib) {
@@ -224,29 +211,26 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
-        val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
-        val allCourses: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
-            copiedList.forEachIndexed { index, course ->
-                course.isMyCourse = managedCourses[index].isMyCourse
-            }
-        }
-
-        val courseList = if (isMyCourseLib) {
-            allCourses.filter { it.isMyCourse }
-        } else {
-            allCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-        }
-
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         val map = HashMap<String?, com.google.gson.JsonObject>()
         val progressMap = HashMap<String?, com.google.gson.JsonObject>()
 
         adapterCourses = CoursesAdapter(requireActivity(), map, userModel, tagsRepository)
-        adapterCourses.submitList(courseList) {
-            if (isAdded && view != null && ::selectAll.isInitialized) {
-                selectedItems?.clear()
-                clearAllSelections()
-                checkList()
+
+        lifecycleScope.launch {
+            val courseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
+            val sortedList = if (isMyCourseLib) {
+                courseList.filter { it.isMyCourse }
+            } else {
+                courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            }
+
+            adapterCourses.submitList(sortedList) {
+                if (isAdded && view != null && ::selectAll.isInitialized) {
+                    selectedItems?.clear()
+                    clearAllSelections()
+                    checkList()
+                }
             }
         }
         adapterCourses.setProgressMap(progressMap)
@@ -265,7 +249,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupButtonVisibility()
         setupEventListeners()
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        // adapterCourses is initialized in loadDataAsync or getAdapter
+        // Wait for it
+
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -281,7 +267,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (isMyCourseLib) {
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
-            checkList()
+            // checkList() called after adapter loaded
         } else {
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
@@ -411,7 +397,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         setupSpinners()
         setupSelectAll()
-        checkList()
+        // checkList()
     }
 
     private fun setupSpinners() {
@@ -467,7 +453,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
-        if (adapterCourses.currentList.isEmpty()) {
+        if (!::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
@@ -714,19 +700,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 lifecycleScope.launch {
                     val map = ratingsRepository.getCourseRatings(model?.id)
                     val progressMap = progressRepository.getCourseProgress(model?.id)
-                    val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
+                    val courseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
                         .filterIsInstance<RealmMyCourse>()
                         .filter { !it.courseTitle.isNullOrBlank() }
-                    val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                        copiedList.forEachIndexed { index, course ->
-                            course.isMyCourse = managedCourseList[index].isMyCourse
-                        }
-                    }
+
                     val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     adapterCourses.updateData(sortedCourseList, map, progressMap)
                 }
             } else {
-                recyclerView.adapter = getAdapter()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    recyclerView.adapter = getAdapter()
+                }
             }
         }
     }

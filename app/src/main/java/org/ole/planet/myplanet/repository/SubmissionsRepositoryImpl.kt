@@ -415,4 +415,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     ): java.io.File? {
         return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
+
+    override suspend fun deleteCourseSubmissions(courseId: String) {
+        executeTransaction { realm ->
+            val submissions = realm.where(RealmSubmission::class.java)
+                .contains("parentId", courseId)
+                .findAll()
+            submissions.forEach { submission ->
+                submission.answers?.deleteAllFromRealm()
+            }
+            submissions.deleteAllFromRealm()
+        }
+    }
 }

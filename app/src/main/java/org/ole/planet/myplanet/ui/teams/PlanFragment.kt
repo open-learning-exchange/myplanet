@@ -1,37 +1,30 @@
 package org.ole.planet.myplanet.ui.teams
 
-import android.app.AlertDialog
-import android.content.Context
+import android.content.DialogInterface
 import android.os.Bundle
-import android.text.Html
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.isVisible
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.Lifecycle
+import android.widget.EditText
+import android.widget.Spinner
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
-import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 
+@AndroidEntryPoint
 class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
-    private var isEnterprise: Boolean = false
     private var teamUpdateListener: OnTeamUpdateListener? = null
-
-    fun setTeamUpdateListener(listener: OnTeamUpdateListener) {
-        teamUpdateListener = listener
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentPlanBinding.inflate(inflater, container, false)
@@ -40,219 +33,69 @@ class PlanFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                teamFlow.collect { updatedTeam ->
-                    if (updatedTeam != null) {
-                        updateUIWithTeamDetails(updatedTeam)
-                        updateButtonVisibility(updatedTeam)
-                    }
-                }
-            }
+        if (teamId.isNotEmpty()) {
+            val description = if (TextUtils.isEmpty(team?.description)) getString(R.string.no_description_available) else team?.description
+            binding.tvDescription.text = description
+            binding.tvDate.text = "${getString(R.string.created_on)} ${formatDate(team?.createdDate ?: 0)}"
         }
         
-        if (team != null) {
-            updateUIWithTeamDetails(team)
-            updateButtonVisibility(team!!)
-        }
-    }
-
-    private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
-        val isMyTeam = RealmMyTeam.isTeamLeader(currentTeam._id, user?.id, mRealm)
-        isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
-
-        binding.btnAddPlan.text = if (isEnterprise) {
-            getString(R.string.edit_mission_and_services)
-        } else {
-            getString(R.string.edit_plan)
-        }
-
-        binding.btnAddPlan.isVisible = isMyTeam
-        binding.btnAddPlan.isEnabled = isMyTeam
-
-        binding.btnAddPlan.setOnClickListener {
-            if (isMyTeam) {
-                editTeam()
-            }
-        }
-    }
-
-    private fun editTeam() {
-        if (!isAdded) {
-            return
-        }
-        team?.let {
-            showCreateTeamDialog(requireContext(), requireActivity(), it)
-        }
-    }
-
-    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: RealmMyTeam) {
-        val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
-        setupDialogFields(alertCreateTeamBinding, team)
-
-        val dialog = AlertDialog.Builder(activity, R.style.AlertDialogTheme)
-            .setTitle("${context.getString(R.string.enter)} ${team.type} ${context.getString(R.string.detail)}")
-            .setView(alertCreateTeamBinding.root)
-            .setPositiveButton(context.getString(R.string.save), null)
-            .setNegativeButton(context.getString(R.string.cancel), null)
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                handleSaveButtonClick(alertCreateTeamBinding, activity, context, team, dialog)
-            }
-        }
-        dialog.show()
-    }
-
-    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: RealmMyTeam) {
-        binding.spnTeamType.visibility = if (isEnterprise) View.GONE else View.VISIBLE
-        binding.etServices.visibility = if (isEnterprise) View.VISIBLE else View.GONE
-        binding.etRules.visibility = if (isEnterprise) View.VISIBLE else View.GONE
-        binding.etDescription.hint = requireContext().getString(
-            if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan
-        )
-        binding.etName.hint = requireContext().getString(
-            if (isEnterprise) R.string.enter_enterprise_s_name else R.string.enter_team_s_name
-        )
-
-        binding.etServices.setText(team.services)
-        binding.etRules.setText(team.rules)
-        binding.etDescription.setText(team.description)
-        binding.etName.setText(team.name)
-
-        val teamTypePosition = when (team.teamType) {
-            "local" -> 0
-            "sync" -> 1
-            else -> 0
-        }
-        binding.spnTeamType.setSelection(teamTypePosition)
-        binding.switchPublic.isChecked = team.isPublic
-    }
-
-    private fun handleSaveButtonClick(
-        binding: AlertCreateTeamBinding,
-        activity: FragmentActivity,
-        context: Context,
-        team: RealmMyTeam,
-        dialog: AlertDialog,
-    ) {
-        val name = binding.etName.text.toString().trim()
-        if (name.isEmpty()) {
-            Utilities.toast(activity, context.getString(R.string.name_is_required))
-            binding.etName.error = context.getString(R.string.please_enter_a_name)
-            return
-        }
-
-        val userId = user?.id ?: return
-        val createdBy = userId
-        val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
-            ?: team.teamId?.takeIf { it.isNotBlank() }
-        if (teamIdentifier == null) {
-            Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
-            return
-        }
-        val servicesToSave = binding.etServices.text.toString()
-        val rulesToSave = binding.etRules.text.toString()
-        val descriptionToSave = binding.etDescription.text.toString()
-        val teamType = when (binding.spnTeamType.selectedItemPosition) {
-            0 -> "local"
-            1 -> "sync"
-            else -> ""
-        }
-        val isPublic = binding.switchPublic.isChecked
-
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val teamTypeForValidation = team.type ?: "team"
-                val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
+            val isMember = teamId.let { teamsRepository.isMember(user?.id, it) }
+            val isLeader = user?.let { teamsRepository.isTeamLeader(teamId, it.id) } == true
 
-                if (nameExists) {
-                    val duplicateMessage = if (isEnterprise) {
-                        context.getString(R.string.enterprise_name_already_exists)
-                    } else {
-                        context.getString(R.string.team_name_already_exists)
-                    }
-                    Utilities.toast(activity, duplicateMessage)
-                    binding.etName.error = duplicateMessage
-                    return@launch
+            if (isMember && isLeader) {
+                binding.btnAddPlan.visibility = View.VISIBLE
+                binding.btnAddPlan.setOnClickListener {
+                    showCreateTeamDialog()
                 }
-
-                val wasUpdated = teamsRepository.updateTeamDetails(
-                    teamId = teamIdentifier,
-                    name = name,
-                    description = descriptionToSave,
-                    services = servicesToSave,
-                    rules = rulesToSave,
-                    teamType = teamType,
-                    isPublic = isPublic,
-                    createdBy = createdBy,
-                )
-
-                if (wasUpdated) {
-                    val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
-                        ?: (this@PlanFragment.team ?: team)
-
-                    refreshedTeam.apply {
-                        this.name = name
-                        this.services = servicesToSave
-                        this.rules = rulesToSave
-                        this.description = descriptionToSave
-                        this.teamType = teamType
-                        this.isPublic = isPublic
-                        this.createdBy = createdBy.takeIf { it.isNotBlank() } ?: this.createdBy
-                        this.updated = true
-                    }
-
-                    this@PlanFragment.team = refreshedTeam
-                    updateUIWithTeamDetails(refreshedTeam)
-                    teamUpdateListener?.onTeamDetailsUpdated()
-                    Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
-                    dialog.dismiss()
-                } else {
-                    Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
-                }
-            } catch (e: Exception) {
-                Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
+            } else {
+                binding.btnAddPlan.visibility = View.GONE
             }
         }
     }
 
-    private fun updateUIWithTeamDetails(updatedTeam: RealmMyTeam?) {
-        if (updatedTeam == null) return
-        isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
-
-        val missionText = formatTeamDetail(updatedTeam.description,
-            getString(if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan)
-        )
-        val servicesText = formatTeamDetail(updatedTeam.services,
-            if (isEnterprise) getString(R.string.entServices) else ""
-        )
-        val rulesText = formatTeamDetail(updatedTeam.rules,
-            if (isEnterprise) getString(R.string.entRules) else ""
-        )
-
-        val finalText = if (missionText.isEmpty() && servicesText.isEmpty() && rulesText.isEmpty()) {
-            "<br/>" + (if (isEnterprise) getString(R.string.entEmptyDescription) else getString(R.string.this_team_has_no_description_defined)) + "<br/>"
-        } else {
-            missionText + servicesText + rulesText
+    private fun showCreateTeamDialog() {
+        val view = LayoutInflater.from(activity).inflate(R.layout.alert_create_team, null)
+        val etName = view.findViewById<EditText>(R.id.et_name)
+        val etDescription = view.findViewById<EditText>(R.id.et_description)
+        val spnType = view.findViewById<Spinner>(R.id.spn_team_type)
+        if (team != null) {
+            etName.setText(team?.name)
+            etDescription.setText(team?.description)
+            spnType.visibility = View.GONE
         }
-
-        binding.tvDescription.text = Html.fromHtml(finalText, Html.FROM_HTML_MODE_LEGACY)
-        binding.tvDate.text = getString(
-            R.string.two_strings,
-            getString(R.string.created_on),
-            updatedTeam.createdDate?.let { formatDate(it) }
-        )
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.edit_team)
+            .setView(view)
+            .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
+                val name = etName.text.toString()
+                val description = etDescription.text.toString()
+                if (name.isEmpty()) {
+                    Utilities.toast(activity, getString(R.string.name_is_required))
+                } else {
+                    saveTeamDetails(name, description)
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
-    private fun formatTeamDetail(detail: String?, title: String): String {
-        if (detail?.trim().isNullOrEmpty()) return ""
-        val formattedDetail = detail?.replace("\n", "<br/>")
-        return "<b>$title</b><br/>$formattedDetail<br/><br/>"    }
+    private fun saveTeamDetails(name: String, description: String) {
+        lifecycleScope.launch {
+            if (team != null) {
+                val success = teamsRepository.updateTeam(teamId, name, description, team?.services ?: "", team?.rules ?: "", null)
+                if (success.isSuccess) {
+                    Utilities.toast(activity, getString(R.string.team_updated))
+                    teamUpdateListener?.onTeamDetailsUpdated()
+                } else {
+                    Utilities.toast(activity, getString(R.string.unable_to_update_team))
+                }
+            }
+        }
+    }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
@@ -261,5 +104,9 @@ class PlanFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    fun setTeamUpdateListener(listener: OnTeamUpdateListener) {
+        this.teamUpdateListener = listener
     }
 }

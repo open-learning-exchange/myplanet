@@ -983,6 +983,10 @@ class TeamsRepositoryImpl @Inject constructor(
         }.toInt()
     }
 
+    override suspend fun getTeamCreator(teamId: String?): String {
+        return findByField(RealmMyTeam::class.java, "teamId", teamId ?: "")?.userId ?: ""
+    }
+
     override suspend fun getAssignee(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }

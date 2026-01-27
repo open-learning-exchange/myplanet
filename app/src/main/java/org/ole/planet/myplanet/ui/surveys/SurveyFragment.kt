@@ -52,8 +52,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -169,7 +168,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> = adapter
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> = adapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

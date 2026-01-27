@@ -243,6 +243,12 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllSurveys(): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
+        }
+    }
+
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {
         val submissions = queryList(RealmSubmission::class.java) {
             isNotNull("membershipDoc")

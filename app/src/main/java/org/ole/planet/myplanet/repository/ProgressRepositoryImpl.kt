@@ -174,4 +174,13 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             equalTo("actionType", "sync")
         } > 0
     }
+
+    override suspend fun deleteCourseProgress(courseId: String) {
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+                .deleteAllFromRealm()
+        }
+    }
 }

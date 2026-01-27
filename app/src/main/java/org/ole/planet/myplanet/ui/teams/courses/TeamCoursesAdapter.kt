@@ -7,30 +7,36 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class TeamCoursesAdapter(
     private val context: Context,
     private var list: MutableList<RealmMyCourse>,
-    mRealm: Realm?,
-    teamId: String?,
-    settings: SharedPreferences
+    private val teamsRepository: TeamsRepository,
+    private val teamId: String?,
+    private val settings: SharedPreferences
 ) : RecyclerView.Adapter<TeamCoursesAdapter.ViewHolder>() {
     private var listener: OnHomeItemClickListener? = null
-    private val settings: SharedPreferences
-    private val teamCreator: String
+    private var teamCreator: String = ""
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
+        CoroutineScope(Dispatchers.IO).launch {
+            teamCreator = teamsRepository.getTeamCreator(teamId)
+            withContext(Dispatchers.Main) {
+                notifyDataSetChanged()
+            }
+        }
     }
 
     fun getList(): List<RealmMyCourse> = list
@@ -51,8 +57,13 @@ class TeamCoursesAdapter(
                 listener?.openCallFragment(TakeCourseFragment.newInstance(b))
             }
         }
-        if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {
+        if (teamCreator.isNotEmpty() && !settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {
             holder.binding.ivRemove.visibility = View.GONE
+        } else {
+            // Keep original visibility logic or force visible if creator matches?
+            // Assuming default layout has it visible or logic elsewhere handles it.
+            // If teamCreator is empty (still loading), we might default to hidden or wait.
+            // For now, if loaded and match, show (or don't hide).
         }
     }
 

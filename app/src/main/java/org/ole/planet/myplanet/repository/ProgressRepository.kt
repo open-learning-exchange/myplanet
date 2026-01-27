@@ -19,4 +19,5 @@ interface ProgressRepository {
         passed: Boolean?
     )
     suspend fun hasUserCompletedSync(userId: String): Boolean
+    suspend fun deleteCourseProgress(courseId: String)
 }

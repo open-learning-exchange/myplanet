@@ -31,6 +31,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         return queryList(RealmMyLibrary::class.java)
     }
 
+    override suspend fun getFilteredPublicLibraryItems(userId: String?): List<RealmMyLibrary> {
+        val allItems = queryList(RealmMyLibrary::class.java)
+        return RealmMyLibrary.getOurLibrary(userId, allItems)
+    }
+
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
         return findByField(RealmMyLibrary::class.java, "id", id)
     }

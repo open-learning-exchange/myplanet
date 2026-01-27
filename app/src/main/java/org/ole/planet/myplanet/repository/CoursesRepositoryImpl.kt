@@ -310,4 +310,24 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findFirst()?.courseTitle
         }
     }
+
+    override suspend fun getUserCourses(userId: String?): List<RealmMyCourse> {
+        if (userId == null) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+        }
+    }
+
+    override suspend fun getFilteredCourses(userId: String?): List<RealmMyCourse> {
+        val results = queryList(RealmMyCourse::class.java) {
+            isNotEmpty("courseTitle")
+        }
+        return results.filter { it.userId?.contains(userId) == false }
+    }
+
+    override suspend fun isCourseCertified(courseId: String): Boolean {
+        return count(org.ole.planet.myplanet.model.RealmCertification::class.java) {
+            contains("courseIds", courseId)
+        } > 0
+    }
 }

@@ -11,24 +11,22 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
-import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -48,10 +46,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var courseLib: String? = null
     private var isAddInProgress = false
 
+    @Inject
+    lateinit var tagsRepository: TagsRepository
+    @Inject
+    lateinit var progressRepository: ProgressRepository
 
     abstract fun getLayout(): Int
 
-    abstract fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +89,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.realmInstance
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -113,11 +114,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onRatingChanged() {
-        recyclerView.adapter = getAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
     }
 
     fun addToMyList() {
-        if (!isRealmInitialized() || isAddInProgress) return
+        if (isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
@@ -164,10 +167,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
-            }
-
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
@@ -197,85 +196,64 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+        viewLifecycleOwner.lifecycleScope.launch {
+            selectedItems?.forEach { item ->
+                try {
+                    val `object` = item as RealmObject
+                    if (deleteProgress && `object` is RealmMyCourse) {
+                        `object`.courseId?.let { courseId ->
+                            progressRepository.deleteCourseProgress(courseId)
+                            submissionsRepository.deleteCourseSubmissions(courseId)
+                        }
+                    }
+                    removeFromShelf(`object`)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
             }
+            recyclerView.adapter = getAdapter()
+            showNoData(tvMessage, getAdapter().itemCount, "")
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
-        }
-    }
+    private suspend fun <T : RealmModel> getData(s: String, c: Class<T>): List<T> {
+        val allData = getList(c)
 
-    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
-        for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
-                .equalTo("linkId", course?.courseId).count()
-            if (count > 0 && !courses.contains(course)) {
-                course?.let { courses.add(it) }
-            }
-        }
-    }
-
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        if (s.isEmpty()) return mRealm.where(c).findAll()
+        if (s.isEmpty()) return allData as List<T>
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = mRealm.where(c).findAll()
         val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<LI>()
-        val containsQuery = mutableListOf<LI>()
+        val startsWithQuery = mutableListOf<T>()
+        val containsQuery = mutableListOf<T>()
 
-        for (item in data) {
-            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
+        for (item in allData) {
+            @Suppress("UNCHECKED_CAST")
+            val typedItem = item as T
+
+            val title = getTitle(typedItem, c)?.let { normalizeText(it) } ?: continue
 
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(item)
+                startsWithQuery.add(typedItem)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(item)
+                containsQuery.add(typedItem)
             }
         }
         return startsWithQuery + containsQuery
     }
 
-    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
+    private fun <T : RealmModel> getTitle(item: T, c: Class<T>): String? {
         return when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
             else -> (item as RealmMyCourse).courseTitle
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
+    suspend fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
@@ -283,17 +261,24 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             getOurLibrary(model?.id, list)
         }
 
-        val libraries = if (tags.isNotEmpty()) {
-            val filteredLibraries = mutableListOf<RealmMyLibrary>()
-            for (library in list) {
-                filter(tags, library, filteredLibraries)
-            }
-            filteredLibraries
-        } else {
-            list
+        if (tags.isEmpty()) {
+            return list
         }
 
-        return libraries
+        val filteredLibraries = mutableListOf<RealmMyLibrary>()
+        val resourceIds = list.mapNotNull { it.resourceId }
+        val tagsMap = tagsRepository.getTagsForResources(resourceIds)
+
+        for (library in list) {
+            val libTags = tagsMap[library.resourceId] ?: emptyList()
+            if (tags.any { selectedTag -> libTags.any { it.id == selectedTag.id } }) {
+                 if (!filteredLibraries.contains(library)) {
+                     filteredLibraries.add(library)
+                 }
+            }
+        }
+
+        return filteredLibraries
     }
 
     fun normalizeText(str: String): String {
@@ -301,38 +286,41 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+        val allCourses = getList(RealmMyCourse::class.java) as List<RealmMyCourse>
+
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
+            return applyCourseFilter(filterRealmMyCourseList(allCourses))
         }
+
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
             coursesRepository.getMyCourses(model?.id, list)
         } else {
             getAllCourses(model?.id, list)
         }
+
         if (tags.isEmpty()) {
             return list
         }
-        val courses = RealmList<RealmMyCourse>()
+
+        val courses = ArrayList<RealmMyCourse>()
+        val courseIds = list.mapNotNull { it.courseId }
+        val tagsMap = tagsRepository.getTagsForCourses(courseIds)
+
         list.forEach { course ->
-            checkAndAddToList(course, courses, tags)
+            val courseTags = tagsMap[course.courseId] ?: emptyList()
+             if (tags.any { selectedTag -> courseTags.any { it.id == selectedTag.id } }) {
+                 if (!courses.contains(course)) {
+                     courses.add(course)
+                 }
+             }
         }
         return applyCourseFilter(courses)
     }
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
         return items.filterIsInstance<RealmMyCourse>()
-    }
-
-    private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
-        for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
-                .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
-            if (count > 0 && !libraries.contains(library)) {
-                library?.let { libraries.add(it) }
-            }
-        }
     }
 
     fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
@@ -366,30 +354,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onDestroy() {
-        cleanupRealm()
         super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (e: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
     }
 
     override fun onDetach() {
