@@ -260,21 +260,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = userSessionManager.userModel
         searchTags = ArrayList()
         initializeView()
-        loadDataAsync()
         updateCheckBoxState(false)
-        setupButtonVisibility()
         setupEventListeners()
-        clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
-        additionalSetup()
         setupMyProgressButton()
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         startCoursesSync()
+    }
+
+    override fun onAdapterReady() {
+        setupButtonVisibility()
+        clearTags()
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        additionalSetup()
     }
 
     private fun setupButtonVisibility() {
