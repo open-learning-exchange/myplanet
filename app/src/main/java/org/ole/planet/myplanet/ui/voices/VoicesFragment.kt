@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utils.Constants
