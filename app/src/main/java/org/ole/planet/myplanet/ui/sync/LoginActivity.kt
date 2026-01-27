@@ -23,6 +23,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
@@ -55,9 +56,7 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
-    private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUserModel>? = null
     private var mAdapter: UserProfileAdapter? = null
@@ -273,10 +272,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
         declareHideKeyboardElements()
         binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-        nameWatcher1 = MyTextWatcher(binding.inputName)
-        passwordWatcher = MyTextWatcher(binding.inputPassword)
-        binding.inputName.addTextChangedListener(nameWatcher1)
-        binding.inputPassword.addTextChangedListener(passwordWatcher)
+        binding.inputName.doAfterTextChanged { binding.inputName.error = null }
+        binding.inputPassword.doAfterTextChanged { binding.inputPassword.error = null }
         binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
             if (isFinishing || isDestroyed) {
                 return@setOnEditorActionListener false
@@ -642,14 +639,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::nameWatcher1.isInitialized) {
-            binding.inputName.removeTextChangedListener(nameWatcher1)
-        }
         if (this::nameWatcher2.isInitialized) {
             binding.inputName.removeTextChangedListener(nameWatcher2)
-        }
-        if (this::passwordWatcher.isInitialized) {
-            binding.inputPassword.removeTextChangedListener(passwordWatcher)
         }
     }
 }
