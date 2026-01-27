@@ -65,6 +65,7 @@ interface UserRepository {
     suspend fun getUserImageUrl(): String?
     fun getActiveUserId(): String
     suspend fun validateUsername(username: String): String?
+    suspend fun createGuestUser(username: String?): RealmUserModel?
     suspend fun cleanupDuplicateUsers()
     fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUserModel?
     fun hasAtLeastOneUser(): Boolean

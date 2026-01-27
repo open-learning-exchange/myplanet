@@ -423,6 +423,16 @@ class UserRepositoryImpl @Inject constructor(
         return if (isTaken) context.getString(R.string.username_taken) else null
     }
 
+    override suspend fun createGuestUser(username: String?): RealmUserModel? {
+        return withRealm { realm ->
+            var user: RealmUserModel? = null
+            realm.executeTransaction { r ->
+                user = RealmUserModel.createGuestUser(username, r, settings)
+            }
+            user?.let { realm.copyFromRealm(it) }
+        }
+    }
+
     override suspend fun cleanupDuplicateUsers() {
         withRealm { realm ->
             val allUsers = realm.where(RealmUserModel::class.java).findAll()
