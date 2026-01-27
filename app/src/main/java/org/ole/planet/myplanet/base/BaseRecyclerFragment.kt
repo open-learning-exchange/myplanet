@@ -90,6 +90,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter
+            refreshAdapter()
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
@@ -118,7 +119,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     open fun refreshAdapter() {}
 
     fun addToMyList() {
-        if (!isRealmInitialized() || isAddInProgress) return
+        if (isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
@@ -192,20 +193,21 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
+        val realm = requireRealmInstance()
         selectedItems?.forEach { item ->
             try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+                if (!realm.isInTransaction) {
+                    realm.beginTransaction()
                 }
                 val `object` = item as RealmObject
                 deleteCourseProgress(deleteProgress, `object`)
                 removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
                 }
             } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
+                if (realm.isInTransaction) {
+                    realm.cancelTransaction()
                 }
                 throw e
             }
@@ -218,11 +220,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+        val realm = requireRealmInstance()
         if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
+            realm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
+            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
             for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
+                realm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
                     .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
                     .deleteAllFromRealm()
             }

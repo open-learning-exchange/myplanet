@@ -191,7 +191,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
         setupRecyclerView()
         setupListeners()
-        updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
     }
 
