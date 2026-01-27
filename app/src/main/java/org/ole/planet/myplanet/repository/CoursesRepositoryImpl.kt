@@ -79,6 +79,15 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", courseIds.toTypedArray())
+        }
+    }
+
     override suspend fun getCourseExamCount(courseId: String?): Int {
         if (courseId.isNullOrEmpty()) {
             return 0

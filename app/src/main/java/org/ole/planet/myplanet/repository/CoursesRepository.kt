@@ -14,6 +14,7 @@ interface CoursesRepository {
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
+    suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse>
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep>
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
