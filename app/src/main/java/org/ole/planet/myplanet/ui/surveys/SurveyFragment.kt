@@ -280,41 +280,45 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
         val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
         currentIsTeamShareAllowed = useTeamShareAllowed
-        val userProfileModel = profileDbHandler.userModel
         loadSurveysJob?.cancel()
         loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
-            binding.loadingSpinner.visibility = View.VISIBLE
-            try {
-                val currentSurveysList = when {
-                    isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
-                    else -> surveysRepository.getIndividualSurveys()
-                }
-                val surveyInfos = surveysRepository.getSurveyInfos(
-                    isTeam,
-                    teamId,
-                    userProfileModel?.id,
-                    currentSurveysList
-                )
-                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
+            updateAdapterDataInternal(useTeamShareAllowed)
+        }
+    }
 
-                currentSurveys = currentSurveysList.sortedByDescending { survey ->
-                    if (survey.sourceSurveyId != null) {
-                        if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
-                    } else {
-                        survey.createdDate
-                    }
+    private suspend fun updateAdapterDataInternal(isTeamShareAllowed: Boolean) {
+        val userProfileModel = profileDbHandler.userModel
+        binding.loadingSpinner.visibility = View.VISIBLE
+        try {
+            val currentSurveysList = when {
+                isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                else -> surveysRepository.getIndividualSurveys()
+            }
+            val surveyInfos = surveysRepository.getSurveyInfos(
+                isTeam,
+                teamId,
+                userProfileModel?.id,
+                currentSurveysList
+            )
+            val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
+
+            currentSurveys = currentSurveysList.sortedByDescending { survey ->
+                if (survey.sourceSurveyId != null) {
+                    if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
+                } else {
+                    survey.createdDate
                 }
-                surveyInfoMap.clear()
-                surveyInfoMap.putAll(surveyInfos)
-                bindingDataMap.clear()
-                bindingDataMap.putAll(bindingData)
-                binding.spnSort.setSelection(0, false)
-                applySearchFilter()
-            } finally {
-                if (isAdded && _binding != null) {
-                    binding.loadingSpinner.visibility = View.GONE
-                }
+            }
+            surveyInfoMap.clear()
+            surveyInfoMap.putAll(surveyInfos)
+            bindingDataMap.clear()
+            bindingDataMap.putAll(bindingData)
+            binding.spnSort.setSelection(0, false)
+            applySearchFilter()
+        } finally {
+            if (isAdded && _binding != null) {
+                binding.loadingSpinner.visibility = View.GONE
             }
         }
     }

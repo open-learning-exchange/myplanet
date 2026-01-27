@@ -179,54 +179,58 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
 
-    private fun loadDataAsync() {
+    private suspend fun loadDataAsync() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        lifecycleScope.launch {
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.refresh()
+        try {
+            val realm = requireRealmInstance()
+            if (!realm.isInTransaction) {
+                realm.refresh()
+            }
+            val map = ratingsRepository.getCourseRatings(model?.id)
+            val progressMap = progressRepository.getCourseProgress(model?.id)
+            val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
+            val courseList: List<RealmMyCourse> = realm.copyFromRealm(managedCourseList).also { copiedList ->
+                copiedList.forEachIndexed { index, course ->
+                    course.isMyCourse = managedCourseList[index].isMyCourse
                 }
-                val map = ratingsRepository.getCourseRatings(model?.id)
-                val progressMap = progressRepository.getCourseProgress(model?.id)
-                val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
-                val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                    copiedList.forEachIndexed { index, course ->
-                        course.isMyCourse = managedCourseList[index].isMyCourse
-                    }
-                }
-                val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            }
+            val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
 
-                if (isMyCourseLib) {
-                    val courseIds = courseList.mapNotNull { it.id }
-                    resources = coursesRepository.getCourseOfflineResources(courseIds)
-                    courseLib = "courses"
-                }
+            if (isMyCourseLib) {
+                val courseIds = courseList.mapNotNull { it.id }
+                resources = coursesRepository.getCourseOfflineResources(courseIds)
+                courseLib = "courses"
+            }
 
-                recyclerView.adapter = null
+            if (!::adapterCourses.isInitialized) {
                 adapterCourses = CoursesAdapter(
                     requireActivity(),
                     map,
                     userModel,
                     tagsRepository
                 )
-                adapterCourses.submitList(sortedCourseList)
-                adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
                 adapterCourses.setRatingChangeListener(this@CoursesFragment)
                 recyclerView.adapter = adapterCourses
-
-                checkList()
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } else {
+                adapterCourses.setRatingMap(map)
             }
+
+            adapterCourses.submitList(sortedCourseList)
+            adapterCourses.setProgressMap(progressMap)
+
+            checkList()
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
+        val realm = requireRealmInstance()
         val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
-        val allCourses: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
+        val allCourses: List<RealmMyCourse> = realm.copyFromRealm(managedCourses).also { copiedList ->
             copiedList.forEachIndexed { index, course ->
                 course.isMyCourse = managedCourses[index].isMyCourse
             }
@@ -255,7 +259,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return adapterCourses
     }
 
-    override fun refreshAdapter() {
+    override suspend fun refreshAdapter() {
         loadDataAsync()
     }
 

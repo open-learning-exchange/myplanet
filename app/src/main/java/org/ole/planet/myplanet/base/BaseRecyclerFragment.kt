@@ -113,10 +113,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onRatingChanged() {
-        refreshAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            refreshAdapter()
+        }
     }
 
-    open fun refreshAdapter() {}
+    open suspend fun refreshAdapter() {}
 
     fun addToMyList() {
         if (isAddInProgress) return
@@ -200,7 +202,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     realm.beginTransaction()
                 }
                 val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
+                deleteCourseProgress(realm, deleteProgress, `object`)
                 removeFromShelf(`object`)
                 if (realm.isInTransaction) {
                     realm.commitTransaction()
@@ -212,15 +214,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 throw e
             }
         }
-        refreshAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            refreshAdapter()
+        }
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        val realm = requireRealmInstance()
+    private fun deleteCourseProgress(realm: io.realm.Realm, deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
             realm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
             val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()

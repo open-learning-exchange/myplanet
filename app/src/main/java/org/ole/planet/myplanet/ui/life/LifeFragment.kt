@@ -71,7 +71,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return lifeAdapter
     }
 
-    override fun refreshAdapter() {
+    override suspend fun refreshAdapter() {
         refreshList()
     }
 
@@ -86,12 +86,10 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
 
-    private fun refreshList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = model?.id ?: profileDbHandler.userModel?.id
-            val myLifeList = lifeRepository.getMyLifeByUserId(userId)
-            lifeAdapter.submitList(myLifeList)
-        }
+    private suspend fun refreshList() {
+        val userId = model?.id ?: profileDbHandler.userModel?.id
+        val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        lifeAdapter.submitList(myLifeList)
     }
 
     override fun onDestroyView() {
