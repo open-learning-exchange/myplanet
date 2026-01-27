@@ -5,14 +5,10 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.launch
 import okhttp3.RequestBody
-import okhttp3.ResponseBody
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Callback
 import retrofit2.Response
 
 @Singleton

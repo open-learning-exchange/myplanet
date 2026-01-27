@@ -1,17 +1,14 @@
 package org.ole.planet.myplanet.ui.dashboard.notifications
 
-import android.content.Context
 import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.util.regex.Pattern
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.DiffUtils as DiffUtilExtensions
 
 class NotificationsAdapter(
     private val onMarkAsReadClick: (String) -> Unit,

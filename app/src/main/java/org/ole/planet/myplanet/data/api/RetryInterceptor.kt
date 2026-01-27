@@ -1,14 +1,14 @@
 package org.ole.planet.myplanet.data.api
 
 import android.content.Intent
+import java.io.IOException
+import javax.inject.Inject
+import kotlin.math.pow
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
-import java.io.IOException
-import javax.inject.Inject
-import kotlin.math.pow
 
 class RetryInterceptor @Inject constructor(
     private val broadcastService: BroadcastService

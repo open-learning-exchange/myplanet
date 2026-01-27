@@ -12,6 +12,7 @@ import androidx.viewpager.widget.ViewPager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
 import org.ole.planet.myplanet.model.OnboardingItem
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utils.SecurePrefs
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 class OnboardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnboardingBinding

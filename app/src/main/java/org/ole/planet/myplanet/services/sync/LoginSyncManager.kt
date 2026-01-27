@@ -22,9 +22,6 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class LoginSyncManager private constructor(
     private val context: Context,
