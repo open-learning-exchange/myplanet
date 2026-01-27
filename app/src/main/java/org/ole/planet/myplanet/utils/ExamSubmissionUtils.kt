@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.Log
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Date
@@ -48,9 +49,9 @@ object ExamSubmissionUtils {
                 updateSubmissionStatus(realmSubmission, index, total, type, isExplicitSubmission)
             }
         }, {
-            // Success
-        }, { _ ->
-            // Error
+            Log.d("ExamSubmissionUtils", "Answer saved successfully")
+        }, { error ->
+            Log.e("ExamSubmissionUtils", "Failed to save answer", error)
         })
 
         val result = if (type == "exam") {
