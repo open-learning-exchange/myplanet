@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.text.TextUtils
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.Normalizer
@@ -18,12 +19,16 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmMyHealth
+import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
@@ -355,18 +360,18 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: RealmUserModel
     ): HealthRecord? = withRealm { realm ->
-        var mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
+        var mh = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
-            mh = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+            mh = realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
         if (mh == null) return@withRealm null
 
-        val json = org.ole.planet.myplanet.utils.AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
-        val mm = if (android.text.TextUtils.isEmpty(json)) {
+        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val mm = if (TextUtils.isEmpty(json)) {
             null
         } else {
             try {
-                org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(json, org.ole.planet.myplanet.model.RealmMyHealth::class.java)
+                JsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -374,7 +379,7 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mm == null) return@withRealm null
 
-        val healths = realm.where(org.ole.planet.myplanet.model.RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
+        val healths = realm.where(RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
             return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())
@@ -393,6 +398,97 @@ class UserRepositoryImpl @Inject constructor(
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
         HealthRecord(mh, mm, list, userMap)
+    }
+
+    override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
+        return withRealm { realm ->
+            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
+                ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+
+            if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
+                try {
+                    val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
+                    return@withRealm JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            null
+        }
+    }
+
+    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
+                    ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+                    ?: realm.createObject(RealmHealthExamination::class.java, userId)
+
+                userModel?.apply {
+                    firstName = (userData["firstName"] as? String)?.trim()
+                    middleName = (userData["middleName"] as? String)?.trim()
+                    lastName = (userData["lastName"] as? String)?.trim()
+                    email = (userData["email"] as? String)?.trim()
+                    phoneNumber = (userData["phoneNumber"] as? String)?.trim()
+                    birthPlace = (userData["birthPlace"] as? String)?.trim()
+                    userData["dob"]?.let { dobVal ->
+                        val dobInput = (dobVal as String).trim()
+                        dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
+                    }
+                    isUpdated = true
+                }
+
+                var myHealth: RealmMyHealth? = null
+                if (!TextUtils.isEmpty(healthPojo.data)) {
+                    try {
+                        val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
+                        myHealth = JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                if (myHealth == null) {
+                    myHealth = RealmMyHealth()
+                }
+                if (TextUtils.isEmpty(myHealth?.userKey)) {
+                    myHealth?.userKey = AndroidDecrypter.generateKey()
+                }
+
+                val profile = myHealth?.profile ?: RealmMyHealthProfile().also { myHealth?.profile = it }
+
+                profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
+                val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
+                profile.emergencyContact = if (TextUtils.isEmpty(newEmergencyContact)) {
+                     profile.emergencyContact
+                } else {
+                     newEmergencyContact
+                }
+
+                val newEmergencyContactType = (userData["emergencyContactType"] as? String)?.trim() ?: ""
+                profile.emergencyContactType = if (TextUtils.isEmpty(newEmergencyContactType)) {
+                     profile.emergencyContactType
+                } else {
+                     newEmergencyContactType
+                }
+
+                profile.specialNeeds = (userData["specialNeeds"] as? String)?.trim() ?: ""
+                profile.notes = (userData["notes"] as? String)?.trim() ?: ""
+
+                healthPojo.userId = userModel?._id
+                healthPojo.isUpdated = true
+
+                try {
+                    val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
+                    val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
+                    healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     override suspend fun validateUsername(username: String): String? {

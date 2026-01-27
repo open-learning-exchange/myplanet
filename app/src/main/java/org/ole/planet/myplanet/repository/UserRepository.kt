@@ -4,9 +4,13 @@ import android.content.SharedPreferences
 import com.google.gson.JsonObject
 import io.realm.Sort
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUserModel
 
 interface UserRepository {
+    suspend fun getHealthProfile(userId: String): RealmMyHealth?
+    suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
+
     suspend fun getUserById(userId: String): RealmUserModel?
     suspend fun getUserByAnyId(id: String): RealmUserModel?
     suspend fun getUserByName(name: String): RealmUserModel?
