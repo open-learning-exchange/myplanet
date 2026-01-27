@@ -31,6 +31,8 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -49,6 +51,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
     lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
@@ -188,7 +193,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
-        viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        applicationScope.launch {
             submissionsRepository.addSubmissionPhoto(
                 submitId,
                 exam?.id,
