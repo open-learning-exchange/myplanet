@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.sync
 
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
@@ -45,6 +47,14 @@ class RealtimeSyncHelper(
     
     fun setupRealtimeSync() {
         syncManagerInstance.addListener(onRealtimeSyncListener)
+
+        fragment.viewLifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                if (event == Lifecycle.Event.ON_DESTROY) {
+                    cleanup()
+                }
+            }
+        })
         
         // Listen to data update flow
         fragment.lifecycleScope.launch {
