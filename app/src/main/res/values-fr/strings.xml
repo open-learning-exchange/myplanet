@@ -576,7 +576,6 @@
     <string name="added_to_my_library">ajouté à myLibrary</string>
     <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
-    <string name="planet_not_available">Planète non disponible</string>
     <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
     <string name="all_files_downloaded_successfully">Tous les fichiers ont été téléchargés avec succès</string>
     <string name="removed_from_mylibrary">Supprimé de ma bibliothèque</string>
@@ -704,12 +703,10 @@
     <string name="please_enter_server_url_first">Veuillez d\'abord saisir l\'URL du serveur.</string>
     <string name="username_cannot_be_empty">Le nom d\'utilisateur ne peut pas être vide</string>
     <string name="unable_to_login">Impossible de se connecter</string>
-    <string name="planet_server_not_reachable">Serveur Planet inaccessible.</string>
     <string name="select_language">Sélectionner la langue</string>
     <string name="thank_you">Merci !</string>
     <string name="please_wait">Veuillez patienter…</string>
     <string name="update_later">Mettre à jour plus tard</string>
-    <string name="checking_version">Vérification de la version....</string>
     <string name="downloading">"Téléchargement.... "</string>
     <string name="pin_is_required">Le code PIN est requis.</string>
     <string name="invalid_url">URL invalide</string>
@@ -1153,7 +1150,6 @@
     <string name="filter_by_label">filtrer par étiquette</string>
     <string name="is_available">%1$s est disponible. Appuyez pour continuer à apprendre</string>
     <string name="failed_to_add_please_retry">Échec de l\'ajout. Veuillez réessayer</string>
-    <string name="failed_to_mark_as_read">Échec du marquage comme lu. Veuillez réessayer</string>
     <string name="failed_to_remove_resource">Échec de la suppression de la ressource. Veuillez réessayer</string>
     <string name="failed_to_adopt_survey">Échec de l\'adoption du sondage. Veuillez réessayer</string>
     <string name="failed_to_save_chat">Échec de l\'enregistrement de la conversation. Veuillez réessayer.</string>

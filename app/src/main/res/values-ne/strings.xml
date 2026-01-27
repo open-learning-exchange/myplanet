@@ -576,7 +576,6 @@
     <string name="added_to_my_library">myLibrary मा थपियो</string>
     <string name="added_to_my_courses">myCourses मा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
-    <string name="planet_not_available">ग्रह उपलब्ध छैन</string>
     <string name="device_not_connected_to_planet">उपकरण ग्रहसँग जडान गरिएको छैन।</string>
     <string name="all_files_downloaded_successfully">सबै फाइलहरू सफलतापूर्वक डाउनलोड भयो</string>
     <string name="removed_from_mylibrary">मेरो पुस्तकालयबाट हटाइयो</string>
@@ -704,12 +703,10 @@
     <string name="please_enter_server_url_first">कृपया पहिलोमा सर्भर URL लेख्नुहोस्।</string>
     <string name="username_cannot_be_empty">प्रयोगकर्ता नाम खाली हुनसक्दैन</string>
     <string name="unable_to_login">लगइन गर्न सकिएन</string>
-    <string name="planet_server_not_reachable">प्लानेट सर्भर सम्पर्क गर्न सकिएन।</string>
     <string name="select_language">भाषा चयन गर्नुहोस्</string>
     <string name="thank_you">धन्यवाद!</string>
     <string name="please_wait">कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="update_later">पछील्लो अद्यावधिक गर्नुहोस्</string>
-    <string name="checking_version">संस्करण जाँच गर्दै…</string>
     <string name="downloading">"डाउनलोड गर्दै… "</string>
     <string name="pin_is_required">पिन आवश्यक छ।</string>
     <string name="invalid_url">अमान्य URL</string>
@@ -1153,7 +1150,6 @@
     <string name="filter_by_label">लेबलद्वारा फिल्टर गर्नुहोस्</string>
     <string name="is_available">%1$s उपलब्ध छ। सिकाइ जारी राख्न ट्याप गर्नुहोस्।</string>
     <string name="failed_to_add_please_retry">थप गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
-    <string name="failed_to_mark_as_read">पढिएको रूपमा चिन्ह लगाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_remove_resource">स्रोत हटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_adopt_survey">सर्वेक्षण अपनाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_save_chat">कुराकानी सुरक्षित गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्।</string>
