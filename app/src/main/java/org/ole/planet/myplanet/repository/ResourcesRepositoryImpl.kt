@@ -31,6 +31,12 @@ class ResourcesRepositoryImpl @Inject constructor(
         return queryList(RealmMyLibrary::class.java)
     }
 
+    override suspend fun getAllPublicLibraryItems(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+    }
+
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
         return findByField(RealmMyLibrary::class.java, "id", id)
     }

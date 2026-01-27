@@ -178,7 +178,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         lifecycleScope.launch {
             try {
                 map = getRatings(mRealm, "resource", model?.id)
-                val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+                val libraryList = if (isMyCourseLib) {
+                    resourcesRepository.getMyLibrary(model?.id)
+                } else {
+                    val publicItems = resourcesRepository.getAllPublicLibraryItems()
+                    RealmMyLibrary.getOurLibrary(model?.id, publicItems)
+                }
                 val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
                 val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
                 val filteredLibraryList: List<RealmMyLibrary> =
@@ -192,7 +197,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 tagsMap = tagsRepository.getTagsForResources(resourceIds)
 
                 if (::adapterLibrary.isInitialized) {
-                    adapterLibrary.setLibraryList(mRealm.copyFromRealm(filteredLibraryList))
+                    adapterLibrary.setLibraryList(filteredLibraryList)
                     adapterLibrary.setRatingMap(map!!)
                     adapterLibrary.setTagsMap(tagsMap)
                 }
@@ -205,11 +210,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+        val libraryList = if (isMyCourseLib) {
+            resourcesRepository.getMyLibrary(model?.id)
+        } else {
+            val publicItems = resourcesRepository.getAllPublicLibraryItems()
+            RealmMyLibrary.getOurLibrary(model?.id, publicItems)
+        }
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(libraryList))
+        adapterLibrary.setLibraryList(libraryList)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
