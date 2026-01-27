@@ -276,13 +276,12 @@ class DataService constructor(
         serviceScope.launch {
             val result = userRepository.becomeMember(obj)
             withContext(Dispatchers.Main) {
-                if (result.first) { // success
+                if (result.first) {
                     if (context is ProcessUserDataActivity) {
                         val userName = obj["name"].asString
                         context.startUpload("becomeMember", userName, securityCallback)
                     }
 
-                    // Handle offline logic regardless of context
                     if (result.second == context.getString(R.string.not_connect_to_planet_created_user_offline)) {
                         Utilities.toast(MainApplication.context, result.second)
                         securityCallback?.onSecurityDataUpdated()
@@ -290,7 +289,6 @@ class DataService constructor(
 
                     callback.onSuccess(result.second)
                 } else {
-                    // failure
                     callback.onSuccess(result.second)
                     securityCallback?.onSecurityDataUpdated()
                 }

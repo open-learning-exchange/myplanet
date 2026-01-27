@@ -247,6 +247,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
+        val userName = obj["name"]?.asString ?: "unknown"
+
         val isAvailable = withContext(Dispatchers.IO) {
             try {
                 val response = apiInterface.isPlanetAvailableSuspend(UrlUtils.getUpdateUrl(settings))
@@ -259,7 +261,6 @@ class UserRepositoryImpl @Inject constructor(
         if (isAvailable) {
             return try {
                 val header = UrlUtils.header
-                val userName = obj["name"].asString
                 val userUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
 
                 val existsResponse = withContext(Dispatchers.IO) {
@@ -276,7 +277,6 @@ class UserRepositoryImpl @Inject constructor(
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
                         val id = createResponse.body()?.get("id")?.asString ?: ""
 
-                        // Fire and forget uploadToShelf
                         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                             uploadToShelf(obj)
                         }
@@ -296,7 +296,6 @@ class UserRepositoryImpl @Inject constructor(
                 Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
-            val userName = obj["name"].asString
             val existingUser = getUserByName(userName)
             if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
                 return Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
@@ -336,7 +335,9 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             if (userModel != null) {
-                uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                try {
+                    uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                } catch (keyIvException: Exception) { }
                 Result.success(userModel)
             } else {
                 Result.failure(Exception("Failed to save user or user model was null"))
