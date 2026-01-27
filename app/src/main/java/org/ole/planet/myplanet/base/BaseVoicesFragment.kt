@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.base
+package org.ole.planet.myplanet.base
 
 import android.app.Activity
 import android.content.Context
