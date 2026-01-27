@@ -168,6 +168,16 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         }
     }
 
+    override suspend fun updateCourseProgressForExam(courseId: String?, stepNum: Int, passed: Boolean) {
+        executeTransaction { realm ->
+            val progress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("stepNum", stepNum)
+                .findFirst()
+            progress?.passed = passed
+        }
+    }
+
     override suspend fun hasUserCompletedSync(userId: String): Boolean {
         return count(RealmUserChallengeActions::class.java) {
             equalTo("userId", userId)

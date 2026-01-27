@@ -47,6 +47,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var progressRepository: org.ole.planet.myplanet.repository.ProgressRepository
     lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
@@ -133,33 +135,28 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         } else if (isTeam == true && type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
-            saveCourseProgress()
-            val titleView = TextView(requireContext()).apply {
-                text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
-                textSize = 18f
-                setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-                setTypeface(null, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(20, 25, 20, 0)
-            }
+            lifecycleScope.launch {
+                saveCourseProgress()
+                val titleView = TextView(requireContext()).apply {
+                    text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
+                    textSize = 18f
+                    setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+                    setTypeface(null, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                    setPadding(20, 25, 20, 0)
+                }
 
-            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setCustomTitle(titleView)
-                .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    NavigationHelper.popBackStack(parentFragmentManager)
-                }.setCancelable(false).show()
+                AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                    .setCustomTitle(titleView)
+                    .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
+                        NavigationHelper.popBackStack(parentFragmentManager)
+                    }.setCancelable(false).show()
+            }
         }
     }
 
-    private fun saveCourseProgress() {
-        val progress = mRealm.where(RealmCourseProgress::class.java)
-            .equalTo("courseId", exam?.courseId)
-            .equalTo("stepNum", stepNumber).findFirst()
-        if (progress != null) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            progress.passed = sub?.status == "graded"
-            mRealm.commitTransaction()
-        }
+    private suspend fun saveCourseProgress() {
+        progressRepository.updateCourseProgressForExam(exam?.courseId, stepNumber, sub?.status == "graded")
     }
 
     private fun showUserInfoDialog() {

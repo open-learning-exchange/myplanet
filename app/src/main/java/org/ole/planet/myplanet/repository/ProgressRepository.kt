@@ -18,5 +18,6 @@ interface ProgressRepository {
         stepNum: Int,
         passed: Boolean?
     )
+    suspend fun updateCourseProgressForExam(courseId: String?, stepNum: Int, passed: Boolean)
     suspend fun hasUserCompletedSync(userId: String): Boolean
 }
