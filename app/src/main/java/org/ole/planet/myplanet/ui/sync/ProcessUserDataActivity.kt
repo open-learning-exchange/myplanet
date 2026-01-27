@@ -345,7 +345,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObjectSuspended(UrlUtils.header, userDocUrl)
+                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)
 
                 if (response?.isSuccessful == true && response.body() != null) {
                     val userDoc = response.body()

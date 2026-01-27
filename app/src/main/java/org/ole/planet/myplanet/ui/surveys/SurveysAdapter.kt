@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class SurveyAdapter(
+class SurveysAdapter(
     private val context: Context,
     private val userId: String?,
     private val isTeam: Boolean,
@@ -23,7 +23,7 @@ class SurveyAdapter(
     private val onAdoptSurveyListener: OnSurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<RealmStepExam, SurveyAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
+) : ListAdapter<RealmStepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
     { oldItem, newItem -> oldItem == newItem }
 )) {
