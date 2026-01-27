@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.SubmissionDetail
+import org.ole.planet.myplanet.model.SubmissionItem
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
@@ -352,6 +353,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     }
                 }
                 .sort("startTime", Sort.DESCENDING)
+        }
+    }
+
+    override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {
+        return getSubmissionsByParentId(parentId, userId).map {
+            SubmissionItem(
+                id = it.id,
+                lastUpdateTime = it.lastUpdateTime,
+                status = it.status ?: "",
+                uploaded = it.uploaded
+            )
         }
     }
 
