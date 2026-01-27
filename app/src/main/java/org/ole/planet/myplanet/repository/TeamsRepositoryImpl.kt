@@ -887,10 +887,6 @@ class TeamsRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
     }
 
-    override suspend fun getTeamMembers(teamId: String): List<RealmUserModel> {
-        return getJoinedMembers(teamId)
-    }
-
     override suspend fun getJoinedMembers(teamId: String): List<RealmUserModel> {
         val teamMembers = queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)

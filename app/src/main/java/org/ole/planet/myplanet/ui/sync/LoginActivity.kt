@@ -463,7 +463,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         lifecycleScope.launch {
             selectedTeamId = prefData.getSelectedTeamId().toString()
             if (selectedTeamId?.isNotEmpty() == true) {
-                val teamMembers = teamsRepository.getTeamMembers(selectedTeamId!!)
+                val teamMembers = teamsRepository.getJoinedMembers(selectedTeamId!!)
                 users = teamMembers
                 val userList = users?.map {
                     User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
