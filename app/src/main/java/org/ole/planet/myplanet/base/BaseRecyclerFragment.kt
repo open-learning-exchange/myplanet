@@ -17,7 +17,9 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -140,7 +142,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         val userId = profileDbHandler.userModel?.id ?: return
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             var libraryAdded = false
             var courseAdded = false
 
@@ -159,27 +161,29 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 }
             }
 
-            isAddInProgress = false
-            setJoinInProgress(false)
+            withContext(Dispatchers.Main) {
+                isAddInProgress = false
+                setJoinInProgress(false)
 
-            if (view == null || !isAdded || requireActivity().isFinishing) return@launch
+                if (view == null || !isAdded || requireActivity().isFinishing) return@withContext
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
+                if (!mRealm.isClosed) {
+                    mRealm.refresh()
+                }
+
+                val newAdapter = getAdapter()
+                recyclerView.adapter = newAdapter
+                showNoData(tvMessage, newAdapter.itemCount, "")
+
+                result.exceptionOrNull()?.let {
+                    it.printStackTrace()
+                    toast(activity, "An error occurred: ${it.message}")
+                    return@withContext
+                }
+
+                if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
+                if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
             }
-
-            val newAdapter = getAdapter()
-            recyclerView.adapter = newAdapter
-            showNoData(tvMessage, newAdapter.itemCount, "")
-
-            result.exceptionOrNull()?.let {
-                it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
-                return@launch
-            }
-
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 
