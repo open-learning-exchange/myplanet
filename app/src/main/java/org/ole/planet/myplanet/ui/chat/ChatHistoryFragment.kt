@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -356,14 +356,13 @@ class ChatHistoryFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            chatApiService.fetchAiProviders { providers ->
-                sharedViewModel.setAiProvidersLoading(false)
-                if (providers == null || providers.values.all { !it }) {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                } else {
-                    sharedViewModel.setAiProviders(providers)
-                }
+            val providers = chatApiService.fetchAiProviders()
+            sharedViewModel.setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                sharedViewModel.setAiProvidersError(true)
+                sharedViewModel.setAiProviders(null)
+            } else {
+                sharedViewModel.setAiProviders(providers)
             }
         }
     }

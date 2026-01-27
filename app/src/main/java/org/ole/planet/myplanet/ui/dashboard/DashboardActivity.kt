@@ -95,7 +95,7 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.NotificationUtils
-import org.ole.planet.myplanet.utils.ThemeManager
+import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint  

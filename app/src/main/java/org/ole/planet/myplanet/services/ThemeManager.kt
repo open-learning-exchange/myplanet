@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utils
+package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.view.ViewGroup
@@ -7,6 +7,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.ThemeMode
 
 object ThemeManager {
     fun showThemeDialog(context: Context) {

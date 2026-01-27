@@ -85,7 +85,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.ServerConfigUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -320,7 +320,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailableSuspend(url)
+            val response = apiInterface.isPlanetAvailable(url)
             val code = response.code()
 
             if (response.isSuccessful) {
