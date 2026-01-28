@@ -169,10 +169,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> = adapter
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> = adapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
@@ -189,6 +188,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         setupListeners()
         updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
+        super.onViewCreated(view, savedInstanceState)
     }
 
     override fun onResume() {

@@ -224,7 +224,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
         val allCourses: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
             copiedList.forEachIndexed { index, course ->
@@ -256,25 +256,27 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
         userModel = userSessionManager.userModel
         searchTags = ArrayList()
         initializeView()
-        loadDataAsync()
         updateCheckBoxState(false)
-        setupButtonVisibility()
         setupEventListeners()
-        clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
-        additionalSetup()
         setupMyProgressButton()
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         startCoursesSync()
+        super.onViewCreated(view, savedInstanceState)
+    }
+
+    override fun onAdapterReady() {
+        setupButtonVisibility()
+        clearTags()
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        additionalSetup()
     }
 
     private fun setupButtonVisibility() {
@@ -467,7 +469,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
-        if (adapterCourses.currentList.isEmpty()) {
+        if (!::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
@@ -726,7 +728,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     adapterCourses.updateData(sortedCourseList, map, progressMap)
                 }
             } else {
-                recyclerView.adapter = getAdapter()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    recyclerView.adapter = getAdapter()
+                }
             }
         }
     }

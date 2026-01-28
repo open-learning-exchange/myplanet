@@ -51,7 +51,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,6 +91,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter
+            onAdapterReady()
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
@@ -105,6 +106,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    open fun onAdapterReady() {}
+
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
@@ -113,7 +116,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onRatingChanged() {
-        recyclerView.adapter = getAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
     }
 
     fun addToMyList() {
@@ -170,6 +175,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
+            onAdapterReady()
             showNoData(tvMessage, newAdapter.itemCount, "")
 
             result.exceptionOrNull()?.let {
@@ -197,26 +203,30 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+        viewLifecycleOwner.lifecycleScope.launch {
+            selectedItems?.forEach { item ->
+                try {
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    val `object` = item as RealmObject
+                    deleteCourseProgress(deleteProgress, `object`)
+                    removeFromShelf(`object`)
+                    if (mRealm.isInTransaction) {
+                        mRealm.commitTransaction()
+                    }
+                } catch (e: Exception) {
+                    if (mRealm.isInTransaction) {
+                        mRealm.cancelTransaction()
+                    }
+                    throw e
                 }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
             }
+            val adapter = getAdapter()
+            recyclerView.adapter = adapter
+            onAdapterReady()
+            showNoData(tvMessage, adapter.itemCount, "")
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun countSelected(): Int {
