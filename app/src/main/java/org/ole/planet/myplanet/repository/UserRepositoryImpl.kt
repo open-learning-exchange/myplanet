@@ -23,8 +23,8 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -38,41 +38,41 @@ class UserRepositoryImpl @Inject constructor(
     private val uploadToShelfService: UploadToShelfService,
     @ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), UserRepository {
-    override suspend fun getUserById(userId: String): RealmUserModel? {
+    override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("id", userId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         }
     }
 
-    override fun getCurrentUser(): RealmUserModel? {
+    override fun getCurrentUser(): RealmUser? {
         return getUserModel()
     }
 
-    override suspend fun getUserByAnyId(id: String): RealmUserModel? {
-        return findByField(RealmUserModel::class.java, "_id", id)
-            ?: findByField(RealmUserModel::class.java, "id", id)
+    override suspend fun getUserByAnyId(id: String): RealmUser? {
+        return findByField(RealmUser::class.java, "_id", id)
+            ?: findByField(RealmUser::class.java, "id", id)
     }
 
-    override suspend fun getUserByName(name: String): RealmUserModel? {
-        return findByField(RealmUserModel::class.java, "name", name)
+    override suspend fun getUserByName(name: String): RealmUser? {
+        return findByField(RealmUser::class.java, "name", name)
     }
 
-    override suspend fun getAllUsers(): List<RealmUserModel> {
-        return queryList(RealmUserModel::class.java)
+    override suspend fun getAllUsers(): List<RealmUser> {
+        return queryList(RealmUser::class.java)
     }
 
-    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
-        return queryList(RealmUserModel::class.java) {
+    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
+        return queryList(RealmUser::class.java) {
             sort(fieldName, sortOrder)
         }
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUserModel> {
+    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUser> {
         return withRealm { realm ->
-            val results = realm.where(RealmUserModel::class.java)
+            val results = realm.where(RealmUser::class.java)
                 .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
                 .contains("lastName", query, io.realm.Case.INSENSITIVE).or()
                 .contains("name", query, io.realm.Case.INSENSITIVE)
@@ -115,7 +115,7 @@ class UserRepositoryImpl @Inject constructor(
         settings: SharedPreferences,
         key: String?,
         iv: String?,
-    ): RealmUserModel? {
+    ): RealmUser? {
         if (jsonDoc == null) return null
 
         return withRealm { realm ->
@@ -140,7 +140,7 @@ class UserRepositoryImpl @Inject constructor(
         passwordScheme: String?,
         iterations: String?,
     ) {
-        update(RealmUserModel::class.java, "name", name) { user ->
+        update(RealmUser::class.java, "name", name) { user ->
             user._id = userId
             user._rev = rev
             user.derived_key = derivedKey
@@ -162,12 +162,12 @@ class UserRepositoryImpl @Inject constructor(
         language: String?,
         gender: String?,
         dob: String?,
-    ): RealmUserModel? {
+    ): RealmUser? {
         if (userId.isNullOrBlank()) {
             return null
         }
 
-        update(RealmUserModel::class.java, "id", userId) { user ->
+        update(RealmUser::class.java, "id", userId) { user ->
             user.firstName = firstName
             user.lastName = lastName
             user.middleName = middleName
@@ -183,12 +183,12 @@ class UserRepositoryImpl @Inject constructor(
         return getUserByAnyId(userId)
     }
 
-    override suspend fun updateUserImage(userId: String?, imagePath: String?): RealmUserModel? {
+    override suspend fun updateUserImage(userId: String?, imagePath: String?): RealmUser? {
         if (userId.isNullOrBlank()) {
             return null
         }
 
-        update(RealmUserModel::class.java, "id", userId) { user ->
+        update(RealmUser::class.java, "id", userId) { user ->
             user.userImage = imagePath
             user.isUpdated = true
         }
@@ -201,7 +201,7 @@ class UserRepositoryImpl @Inject constructor(
             return
         }
 
-        update(RealmUserModel::class.java, "id", userId) { model ->
+        update(RealmUser::class.java, "id", userId) { model ->
             payload.keySet().forEach { key ->
                 when (key) {
                     "firstName" -> model.firstName = payload.get(key).asString
@@ -220,10 +220,10 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getUserModel(): RealmUserModel? {
+    override fun getUserModel(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
         return databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("id", userId)
                 .or()
                 .equalTo("_id", userId)
@@ -232,10 +232,10 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserModelSuspending(): RealmUserModel? {
+    override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("id", userId)
                 .or()
                 .equalTo("_id", userId)
@@ -244,9 +244,9 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserProfile(): RealmUserModel? {
+    override suspend fun getUserProfile(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
-        return queryList(RealmUserModel::class.java) {
+        return queryList(RealmUser::class.java) {
             equalTo("id", userId).or().equalTo("_id", userId)
         }.firstOrNull()
     }
@@ -326,7 +326,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<RealmUserModel?> {
+    private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<RealmUser?> {
         return try {
             val userModel = withTimeout(20000) {
                 val response = apiInterface.getJsonObject(
@@ -362,7 +362,7 @@ class UserRepositoryImpl @Inject constructor(
     }
     override suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
-        currentUser: RealmUserModel
+        currentUser: RealmUser
     ): HealthRecord? = withRealm { realm ->
         var mh = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
@@ -398,7 +398,7 @@ class UserRepositoryImpl @Inject constructor(
         val userMap = if (userIds.isEmpty()) {
             emptyMap()
         } else {
-            val users = realm.where(RealmUserModel::class.java).`in`("id", userIds.toTypedArray()).findAll()
+            val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
         HealthRecord(mh, mm, list, userMap)
@@ -406,7 +406,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
         return withRealm { realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
 
@@ -425,7 +425,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         withRealm { realm ->
             realm.executeTransaction {
-                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
                 val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                     ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
                     ?: realm.createObject(RealmHealthExamination::class.java, userId)
@@ -514,7 +514,7 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val isTaken = withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
+            realm.where(RealmUser::class.java)
                 .equalTo("name", username)
                 .not().beginsWith("_id", "guest")
                 .count() > 0L
@@ -525,7 +525,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun cleanupDuplicateUsers() {
         withRealm { realm ->
-            val allUsers = realm.where(RealmUserModel::class.java).findAll()
+            val allUsers = realm.where(RealmUser::class.java).findAll()
             val usersByName = allUsers.groupBy { it.name }
 
             usersByName.forEach { (_, users) ->
@@ -548,10 +548,10 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUserModel? {
+    override fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser? {
         try {
             val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
+                realm.where(RealmUser::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
             }
             user?.let {
                 if (it._id?.isEmpty() == true) {

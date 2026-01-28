@@ -11,10 +11,10 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class UserArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
+class UserArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUser>) : ArrayAdapter<RealmUser>(activity, view, list) {
     private class ViewHolder {
         var tvName: TextView? = null
         var joined: TextView? = null

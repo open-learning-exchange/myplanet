@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.Utilities
@@ -38,9 +38,9 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    val userModel: RealmUserModel? get() = userRepository.getUserModel()
+    val userModel: RealmUser? get() = userRepository.getUserModel()
 
-    fun getUserModelCopy(): RealmUserModel? {
+    fun getUserModelCopy(): RealmUser? {
         return userRepository.getUserModel()
     }
 
@@ -83,11 +83,11 @@ class UserSessionManager @Inject constructor(
         return activitiesRepository.getGlobalLastVisit()
     }
 
-    suspend fun getOfflineVisits(m: RealmUserModel?): Int {
+    suspend fun getOfflineVisits(m: RealmUser?): Int {
         return m?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
     }
 
-    suspend fun getLastVisit(m: RealmUserModel): String {
+    suspend fun getLastVisit(m: RealmUser): String {
         val lastLogoutTimestamp = activitiesRepository.getLastVisit(m.name ?: "")
         return if (lastLogoutTimestamp != null) {
             val date = Date(lastLogoutTimestamp)

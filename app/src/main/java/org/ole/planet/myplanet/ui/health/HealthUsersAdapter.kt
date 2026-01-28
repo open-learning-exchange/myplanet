@@ -9,13 +9,13 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class HealthUsersAdapter(private val clickListener: ((RealmUserModel) -> Unit)? = null) :
-    ListAdapter<RealmUserModel, HealthUsersAdapter.ViewHolder>(
-        DiffUtils.itemCallback<RealmUserModel>(
+class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = null) :
+    ListAdapter<RealmUser, HealthUsersAdapter.ViewHolder>(
+        DiffUtils.itemCallback<RealmUser>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.name == new.name &&
@@ -26,7 +26,7 @@ class HealthUsersAdapter(private val clickListener: ((RealmUserModel) -> Unit)? 
     ) {
 
     class ViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(user: RealmUserModel, clickListener: ((RealmUserModel) -> Unit)?) {
+        fun bind(user: RealmUser, clickListener: ((RealmUser) -> Unit)?) {
             binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
             binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 

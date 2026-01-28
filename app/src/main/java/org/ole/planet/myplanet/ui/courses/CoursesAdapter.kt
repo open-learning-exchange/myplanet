@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class CoursesAdapter(
     private val context: Context,
     private val map: HashMap<String?, JsonObject>,
-    private var userModel: RealmUserModel?,
+    private var userModel: RealmUser?,
     private val tagsRepository: TagsRepository
 ) : ListAdapter<RealmMyCourse, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<RealmMyCourse>(

@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -73,8 +73,8 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    var userModel: RealmUserModel? = null
-    lateinit var userModelList: List<RealmUserModel>
+    var userModel: RealmUser? = null
+    lateinit var userModelList: List<RealmUser>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
@@ -207,7 +207,7 @@ class MyHealthFragment : Fragment() {
         getHealthRecords(userId)
     }
 
-    private fun getCurrentUserProfileCopy(): RealmUserModel? {
+    private fun getCurrentUserProfileCopy(): RealmUser? {
         return userSessionManager.getUserModelCopy()
     }
 

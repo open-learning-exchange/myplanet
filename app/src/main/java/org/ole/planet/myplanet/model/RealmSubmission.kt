@@ -157,7 +157,7 @@ open class RealmSubmission : RealmObject() {
         @JvmStatic
         fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
             val `object` = JsonObject()
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
+            val user = mRealm.where(RealmUser::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
             if (sub.parentId?.contains("@") == true) {
                 examId = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]

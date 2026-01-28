@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -24,8 +24,8 @@ class RatingsViewModel @Inject constructor(
     private val _submitState = MutableStateFlow<SubmitState>(SubmitState.Idle)
     val submitState: StateFlow<SubmitState> = _submitState.asStateFlow()
 
-    private val _userState = MutableStateFlow<RealmUserModel?>(null)
-    val userState: StateFlow<RealmUserModel?> = _userState.asStateFlow()
+    private val _userState = MutableStateFlow<RealmUser?>(null)
+    val userState: StateFlow<RealmUser?> = _userState.asStateFlow()
 
     sealed class RatingUiState {
         object Loading : RatingUiState()
