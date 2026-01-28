@@ -6,7 +6,7 @@ import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.AdapterView
+import androidx.recyclerview.widget.LinearLayoutManager
 import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -388,10 +388,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             viewModel.uiState.collect {
                 if (dialog.isShowing) {
                     if (it.users.isNotEmpty()) {
-                        val adapter = HealthUsersAdapter(requireActivity(), android.R.layout.simple_list_item_1, it.users)
-                        alertHealthListBinding.list.adapter = adapter
-                        alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
-                            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
+                        val adapter = HealthUsersAdapter { selected ->
                             selected._id?.let { userId ->
                                 viewLifecycleOwner.lifecycleScope.launch {
                                     val libraryList = viewModel.getLibraryForSelectedUser(userId)
@@ -400,6 +397,9 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                             }
                             dialog.dismiss()
                         }
+                        adapter.submitList(it.users)
+                        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
+                        alertHealthListBinding.list.adapter = adapter
                         alertHealthListBinding.list.visibility = View.VISIBLE
                     } else {
                         alertHealthListBinding.list.visibility = View.GONE
