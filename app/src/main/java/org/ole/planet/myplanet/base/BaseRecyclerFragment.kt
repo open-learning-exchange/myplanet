@@ -175,6 +175,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
+            onAdapterReady()
             showNoData(tvMessage, newAdapter.itemCount, "")
 
             result.exceptionOrNull()?.let {
@@ -223,6 +224,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
             val adapter = getAdapter()
             recyclerView.adapter = adapter
+            onAdapterReady()
             showNoData(tvMessage, adapter.itemCount, "")
         }
     }
