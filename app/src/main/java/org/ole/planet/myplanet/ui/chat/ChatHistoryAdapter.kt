@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class ChatHistoryAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,
-    private var currentUser: RealmUserModel?,
+    private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
@@ -63,7 +63,7 @@ class ChatHistoryAdapter(
         submitList(chatHistory)
     }
 
-    fun updateCachedData(user: RealmUserModel?, sharedNews: List<RealmNews>) {
+    fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
     }

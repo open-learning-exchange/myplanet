@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -24,8 +24,8 @@ class UserProfileViewModel @Inject constructor(
     private val userSessionManager: UserSessionManager,
 ) : ViewModel() {
 
-    private val _userModel = MutableStateFlow<RealmUserModel?>(null)
-    val userModel: StateFlow<RealmUserModel?> = _userModel.asStateFlow()
+    private val _userModel = MutableStateFlow<RealmUser?>(null)
+    val userModel: StateFlow<RealmUser?> = _userModel.asStateFlow()
 
     private val _updateState = MutableStateFlow<ProfileUpdateState>(ProfileUpdateState.Idle)
     val updateState: StateFlow<ProfileUpdateState> = _updateState.asStateFlow()

@@ -57,11 +57,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone" />
-    <ListView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:choiceMode="singleChoice" />
+        android:layout_height="wrap_content" />
     <ProgressBar
         android:id="@+id/loading"
         android:layout_width="wrap_content"

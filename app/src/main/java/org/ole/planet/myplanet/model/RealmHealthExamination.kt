@@ -33,7 +33,7 @@ open class RealmHealthExamination : RealmObject() {
     var creatorId: String? = null
     var gender: String? = null
     var age = 0
-    fun getEncryptedDataAsJson(model: RealmUserModel): JsonObject {
+    fun getEncryptedDataAsJson(model: RealmUser): JsonObject {
         return if (!TextUtils.isEmpty(data)) JsonUtils.gson.fromJson(
             AndroidDecrypter.decrypt(data, model.key, model.iv), JsonObject::class.java
         ) else JsonObject()

@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.Utilities
@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
-    private var users: List<RealmUserModel> = emptyList()
+    private var users: List<RealmUser> = emptyList()
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
@@ -58,7 +58,7 @@ class SendSurveyFragment : BaseDialogFragment() {
         }
     }
 
-    private fun initListView(users: List<RealmUserModel>) {
+    private fun initListView(users: List<RealmUser>) {
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users)
         fragmentSendSurveyBinding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         fragmentSendSurveyBinding.listUsers.adapter = adapter

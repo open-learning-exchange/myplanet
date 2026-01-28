@@ -20,9 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
-import io.realm.Realm
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -31,9 +29,11 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
@@ -47,6 +47,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
@@ -54,7 +59,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     private var stepNumber = 0
     var questions: List<RealmExamQuestion>? = null
     var ans = ""
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var sub: RealmSubmission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
@@ -197,19 +202,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
-        databaseService.withRealm { realm ->
-            realm.executeTransaction {
-                val submit =
-                    realm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
-                submit.submissionId = submitId
-                submit.examId = exam?.id
-                submit.courseId = exam?.courseId
-                submit.memberId = user?.id
-                submit.date = date
-                submit.uniqueId = uniqueId
-                submit.photoLocation = photoPath
-                submit.uploaded = false
-            }
+        applicationScope.launch {
+            submissionsRepository.addSubmissionPhoto(
+                submitId,
+                exam?.id,
+                exam?.courseId,
+                user?.id,
+                photoPath
+            )
         }
     }
 

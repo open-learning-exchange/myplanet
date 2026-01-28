@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
@@ -37,25 +37,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        withRealmAsync { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
+        executeTransaction { realm ->
             realm.where(RealmRemovedLog::class.java)
                 .equalTo("type", "resources")
                 .equalTo("userId", userId)
                 .equalTo("docId", resourceId)
                 .findAll().deleteAllFromRealm()
-            realm.commitTransaction()
         }
     }
 
     override suspend fun markResourceRemoved(userId: String, resourceId: String) {
-        withRealmAsync { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
+        executeTransaction { realm ->
             val log = realm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
             log.docId = resourceId
             log.userId = userId
             log.type = "resources"
-            realm.commitTransaction()
         }
     }
 
@@ -68,7 +64,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             activity.time = Date().time
             activity.user = userId
 
-            val user = realm.where(RealmUserModel::class.java).equalTo("name", userId).findFirst()
+            val user = realm.where(RealmUser::class.java).equalTo("name", userId).findFirst()
             if (user != null) {
                 activity.parentCode = user.parentCode
                 activity.createdOn = user.planetCode

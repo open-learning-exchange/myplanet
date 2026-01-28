@@ -11,6 +11,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import io.realm.annotations.RealmClass
 import java.io.File
 import java.io.InputStream
 import java.util.Locale
@@ -25,7 +26,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
-open class RealmUserModel : RealmObject() {
+@RealmClass(name = "RealmUserModel")
+open class RealmUser : RealmObject() {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -199,7 +201,7 @@ open class RealmUserModel : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
+        fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUser? {
             val `object` = JsonObject()
             `object`.addProperty("_id", "guest_$username")
             `object`.addProperty("name", username)
@@ -212,21 +214,21 @@ open class RealmUserModel : RealmObject() {
         }
 
         @JvmStatic
-        fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
+        fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUser? {
             if (jsonDoc == null || mRealm == null) return null
             try {
                 val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
                 val userName = JsonUtils.getString("name", jsonDoc)
-                var user: RealmUserModel? = null
+                var user: RealmUser? = null
 
                 if (!mRealm.isInTransaction) {
                     mRealm.executeTransaction { realm ->
-                        user = realm.where(RealmUserModel::class.java)
+                        user = realm.where(RealmUser::class.java)
                             .equalTo("_id", id)
                             .findFirst()
 
                         if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                            val guestUser = realm.where(RealmUserModel::class.java)
+                            val guestUser = realm.where(RealmUser::class.java)
                                 .equalTo("name", userName)
                                 .beginsWith("_id", "guest_")
                                 .findFirst()
@@ -257,23 +259,23 @@ open class RealmUserModel : RealmObject() {
                                 }
                                 tempData.add("roles", rolesArray)
                                 guestUser.deleteFromRealm()
-                                user = realm.createObject(RealmUserModel::class.java, id)
+                                user = realm.createObject(RealmUser::class.java, id)
                                 user?.let { insertIntoUsers(tempData, it, settings) }
                             }
                         }
 
                         if (user == null) {
-                            user = realm.createObject(RealmUserModel::class.java, id)
+                            user = realm.createObject(RealmUser::class.java, id)
                         }
                         user?.let { insertIntoUsers(jsonDoc, it, settings) }
                     }
                 } else {
-                    user = mRealm.where(RealmUserModel::class.java)
+                    user = mRealm.where(RealmUser::class.java)
                         .equalTo("_id", id)
                         .findFirst()
 
                     if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                        val guestUser = mRealm.where(RealmUserModel::class.java)
+                        val guestUser = mRealm.where(RealmUser::class.java)
                             .equalTo("name", userName)
                             .beginsWith("_id", "guest_")
                             .findFirst()
@@ -303,13 +305,13 @@ open class RealmUserModel : RealmObject() {
                             }
                             tempData.add("roles", rolesArray)
                             guestUser.deleteFromRealm()
-                            user = mRealm.createObject(RealmUserModel::class.java, id)
+                            user = mRealm.createObject(RealmUser::class.java, id)
                             user?.let { insertIntoUsers(tempData, it, settings) }
                         }
                     }
 
                     if (user == null) {
-                        user = mRealm.createObject(RealmUserModel::class.java, id)
+                        user = mRealm.createObject(RealmUser::class.java, id)
                     }
                     user?.let { insertIntoUsers(jsonDoc, it, settings) }
                 }
@@ -320,7 +322,7 @@ open class RealmUserModel : RealmObject() {
             return null
         }
 
-        private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUserModel, settings: SharedPreferences) {
+        private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUser, settings: SharedPreferences) {
             if (jsonDoc == null) return
 
             val planetCodes = JsonUtils.getString("planetCode", jsonDoc)
@@ -417,7 +419,7 @@ open class RealmUserModel : RealmObject() {
 
         @JvmStatic
         fun isUserExists(realm: Realm, name: String?): Boolean {
-            return realm.where(RealmUserModel::class.java)
+            return realm.where(RealmUser::class.java)
                 .equalTo("name", name)
                 .not().beginsWith("_id", "guest").count() > 0
         }
@@ -426,7 +428,7 @@ open class RealmUserModel : RealmObject() {
         middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
         gender: String?, dob: String?, onSuccess: () -> Unit) {
             realm.executeTransactionAsync({ mRealm ->
-                val user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val user = mRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
                 if (user != null) {
                     user.firstName = firstName
                     user.lastName = lastName
@@ -448,14 +450,14 @@ open class RealmUserModel : RealmObject() {
         }
 
         @JvmStatic
-        fun parseLeadersJson(jsonString: String): List<RealmUserModel> {
-            val leadersList = mutableListOf<RealmUserModel>()
+        fun parseLeadersJson(jsonString: String): List<RealmUser> {
+            val leadersList = mutableListOf<RealmUser>()
             try {
                 val jsonObject = JSONObject(jsonString)
                 val docsArray = jsonObject.getJSONArray("docs")
                 for (i in 0 until docsArray.length()) {
                     val docObject = docsArray.getJSONObject(i)
-                    val user = RealmUserModel()
+                    val user = RealmUser()
                     user.name = docObject.getString("name")
                     user.id = if (!docObject.isNull("_id")) {
                         docObject.getString("_id")
@@ -483,7 +485,7 @@ open class RealmUserModel : RealmObject() {
         @JvmStatic
         fun cleanupDuplicateUsers(realm: Realm, onSuccess: () -> Unit) {
             realm.executeTransactionAsync({ mRealm: Realm ->
-                val allUsers = mRealm.where(RealmUserModel::class.java).findAll()
+                val allUsers = mRealm.where(RealmUser::class.java).findAll()
                 val usersByName = allUsers.groupBy { it.name }
 
                 usersByName.forEach { (_, users) ->

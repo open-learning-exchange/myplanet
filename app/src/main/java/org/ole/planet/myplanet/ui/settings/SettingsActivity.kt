@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDow
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ThemeManager
@@ -107,7 +107,7 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         @AppPreferences
         lateinit var settings: SharedPreferences
-        var user: RealmUserModel? = null
+        var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 

@@ -33,8 +33,8 @@ import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
@@ -88,7 +88,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private fun showTaskAlert(t: RealmTeamTask?) {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
-        var selectedAssignee: RealmUserModel? = null
+        var selectedAssignee: RealmUser? = null
 
         if (t != null) {
             alertTaskBinding.etTask.setText(t.title)
@@ -131,7 +131,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 }
 
                 val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-                val adapter: ArrayAdapter<RealmUserModel> = HealthUsersAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+                val adapter: ArrayAdapter<RealmUser> = UserArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
                 alertUsersSpinnerBinding.spnUser.adapter = adapter
 
                 AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -141,7 +141,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
                         if (selectedItem != null) {
-                            selectedAssignee = selectedItem as RealmUserModel
+                            selectedAssignee = selectedItem as RealmUser
                             val displayName = selectedAssignee.getFullName().ifBlank {
                                 selectedAssignee.name ?: getString(R.string.no_assignee)
                             }
@@ -308,7 +308,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             }
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter: ArrayAdapter<RealmUserModel> = HealthUsersAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+            val adapter: ArrayAdapter<RealmUser> = UserArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
             alertUsersSpinnerBinding.spnUser.adapter = adapter
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(R.string.select_member)
@@ -319,7 +319,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                         Toast.makeText(context, R.string.no_member_selected, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    val user = selectedItem as RealmUserModel
+                    val user = selectedItem as RealmUser
                     val taskId = realmTeamTask?.id
                     if (taskId.isNullOrBlank()) {
                         Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()

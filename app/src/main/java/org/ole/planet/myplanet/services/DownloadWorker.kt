@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.services.getBroadcastService
+import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl

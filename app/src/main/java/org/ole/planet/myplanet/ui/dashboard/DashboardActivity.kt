@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -72,8 +72,8 @@ import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
-import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
@@ -100,7 +100,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
@@ -579,8 +579,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupDashboardDataObserver() {
         lifecycleScope.launch {
-            dashboardViewModel.dashboardDataFlow(user?.id).collect {
-                onRealmDataChange()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.dashboardDataFlow(user?.id).collect {
+                    onRealmDataChange()
+                }
             }
         }
     }

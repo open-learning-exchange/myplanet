@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
@@ -27,7 +27,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     lateinit var feedbackRepository: FeedbackRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    private var model: RealmUserModel ?= null
+    private var model: RealmUser ?= null
     var user: String? = ""
 
     private var mListener: OnFeedbackSubmittedListener? = null

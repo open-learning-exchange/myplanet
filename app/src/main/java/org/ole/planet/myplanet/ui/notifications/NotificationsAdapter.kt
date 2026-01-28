@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard.notifications
+package org.ole.planet.myplanet.ui.notifications
 
 import android.text.Html
 import android.view.LayoutInflater

@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -29,12 +29,12 @@ import org.ole.planet.myplanet.utils.Utilities
 class HealthExaminationAdapter(
     private val context: Context,
     private var mh: RealmHealthExamination,
-    private var userModel: RealmUserModel?,
-    private var userMap: Map<String, RealmUserModel>
+    private var userModel: RealmUser?,
+    private var userMap: Map<String, RealmUser>
 ) : ListAdapter<RealmHealthExamination, HealthExaminationViewHolder>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
 
-    fun updateData(mh: RealmHealthExamination, userModel: RealmUserModel?, userMap: Map<String, RealmUserModel>) {
+    fun updateData(mh: RealmHealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap

@@ -11,12 +11,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 data class RequestsUiState(
-    val members: List<RealmUserModel> = emptyList(),
+    val members: List<RealmUser> = emptyList(),
     val isLeader: Boolean = false,
     val memberCount: Int = 0
 )
@@ -41,7 +41,7 @@ class RequestsViewModel @Inject constructor(
         }
     }
 
-    fun respondToRequest(teamId: String?, user: RealmUserModel, isAccepted: Boolean) {
+    fun respondToRequest(teamId: String?, user: RealmUser, isAccepted: Boolean) {
         if (teamId.isNullOrBlank() || user.id.isNullOrBlank()) return
 
         val originalState = _uiState.value

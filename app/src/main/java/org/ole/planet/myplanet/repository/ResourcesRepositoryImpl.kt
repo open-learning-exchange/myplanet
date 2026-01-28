@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -285,7 +285,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getOpenedResourceIds(userId: String): Set<String> {
-        val user = queryList(RealmUserModel::class.java) { equalTo("id", userId) }.firstOrNull()
+        val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
         val userName = user?.name ?: return emptySet()
 
         return queryList(RealmResourceActivity::class.java) {
@@ -295,12 +295,28 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val user = queryList(RealmUserModel::class.java) { equalTo("id", userId) }.firstOrNull()
+        val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
         val userName = user?.name ?: return flowOf(emptySet())
 
         return queryListFlow(RealmResourceActivity::class.java) {
             equalTo("user", userName)
             equalTo("type", "resource_opened")
         }.map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
+    }
+
+    override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+        val allNeedingUpdate = filterLibrariesNeedingUpdate(results)
+
+        if (!userId.isNullOrBlank()) {
+            val userLibraries = allNeedingUpdate.filter { it.userId?.contains(userId) == true }
+            if (userLibraries.isNotEmpty()) {
+                return userLibraries
+            }
+        }
+
+        return allNeedingUpdate
     }
 }
