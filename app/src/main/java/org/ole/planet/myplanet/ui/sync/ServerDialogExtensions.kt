@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.ui.sync
 
 import android.text.TextUtils
 import android.view.View
+import android.webkit.URLUtil
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.RadioGroup
+import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -317,7 +319,9 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
         binding.spnCloud.visibility = if (b) View.VISIBLE else View.GONE
         setUrlAndPin(binding.switchServerUrl.isChecked)
     }
-    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
+    serverUrl.doAfterTextChanged { s ->
+        positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
+    }
     binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
     setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
     protocolSemantics()
