@@ -182,13 +182,13 @@ class UploadManager @Inject constructor(
         return `object`
     }
 
-    private fun createVideo(user: RealmUserModel?, vidObject: JsonObject?): JsonObject {
+    private fun createVideo(user: RealmUser?, vidObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", vidObject))
         `object`.addProperty("createdDate", Date().time)
         `object`.addProperty("filename", getString("fileName", vidObject))
         `object`.addProperty("private", true)
-        user?.id?.let { `object`.addProperty("addedBy", it) }
+        user?._id?.let { `object`.addProperty("addedBy", it) }
         user?.parentCode?.let { `object`.addProperty("resideOn", it) }
         user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
         val object1 = JsonObject()

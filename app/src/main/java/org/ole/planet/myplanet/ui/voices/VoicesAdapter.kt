@@ -891,7 +891,7 @@ class VoicesAdapter(
     private fun loadLibraryVideo(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         scope.launch {
-            val library = voicesRepository.getLibraryResource(resourceId)
+            val library = getLibraryResourceFn(resourceId)
             withContext(Dispatchers.Main) {
                 val basePath = context.getExternalFilesDir(null)
                 if (library != null && basePath != null) {
@@ -918,7 +918,7 @@ class VoicesAdapter(
     private fun addLibraryVideoToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         scope.launch {
-            val library = voicesRepository.getLibraryResource(resourceId)
+            val library = getLibraryResourceFn(resourceId)
             withContext(Dispatchers.Main) {
                 val basePath = context.getExternalFilesDir(null)
                 if (library != null && basePath != null) {
