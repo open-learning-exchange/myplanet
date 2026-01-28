@@ -12,19 +12,26 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
 
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>): List<LI> {
+        databaseService.realmInstance.use { realm ->
+            return realm.copyFromRealm(getList(realm, c) as List<RealmModel>) as List<LI>
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun getList(realm: io.realm.Realm, c: Class<*>): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").findAll().toList() as List<LI>
+                realm.where(c).equalTo("type", "surveys").findAll().toList() as List<LI>
             }
             isMyCourseLib -> {
-                getMyLibItems(c as Class<out RealmModel>)
+                getMyLibItems(realm, c as Class<out RealmModel>)
             }
             c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
+                RealmMyLibrary.getOurLibrary(model?.id, realm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
             }
             else -> {
-                val myLibItems = getMyLibItems(c as Class<out RealmModel>)
-                val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
+                val myLibItems = getMyLibItems(realm, c as Class<out RealmModel>)
+                val results: List<RealmMyCourse> = realm.where(RealmMyCourse::class.java)
                     .isNotEmpty("courseTitle")
                     .findAll()
                     .toList()
@@ -55,25 +62,32 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
 
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
+        databaseService.realmInstance.use { realm ->
+            return realm.copyFromRealm(getList(realm, c, orderBy, sort) as List<RealmModel>) as List<LI>
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun getList(realm: io.realm.Realm, c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").sort(orderBy ?: "", sort).findAll().toList() as List<LI>
+                realm.where(c).equalTo("type", "surveys").sort(orderBy ?: "", sort).findAll().toList() as List<LI>
             }
             isMyCourseLib -> {
-                getMyLibItems(c as Class<out RealmModel>, orderBy)
+                getMyLibItems(realm, c as Class<out RealmModel>, orderBy)
             }
             c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
+                RealmMyLibrary.getOurLibrary(model?.id, realm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
             }
             else -> {
-                val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
+                val results = realm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
                 RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
             }
         }
     }
     @Suppress("UNCHECKED_CAST")
-    private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
-        val query = mRealm.where(c)
+    private fun <T : RealmModel> getMyLibItems(realm: io.realm.Realm, c: Class<T>, orderBy: String? = null): List<LI> {
+        val query = realm.where(c)
         val realmResults = if (orderBy != null) {
             query.sort(orderBy).findAll()
         } else {

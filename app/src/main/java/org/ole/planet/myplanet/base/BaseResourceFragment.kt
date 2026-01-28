@@ -259,7 +259,9 @@ abstract class BaseResourceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
-            val exams = getExamMap(mRealm, list)
+            val exams = databaseService.realmInstance.use { realm ->
+                getExamMap(realm, list)
+            }
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
@@ -389,18 +391,18 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
+    fun removeFromShelf(realm: Realm, `object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
-            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
+            val myObject = realm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
             myObject?.removeUserId(model?.id)
             model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
+                onRemove(realm, "resources", it, it1)
             } }
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+            val myObject = getMyCourse(realm, (`object` as RealmMyCourse).courseId)
             myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
+            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(realm, "courses", it, it1) } }
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
     }
