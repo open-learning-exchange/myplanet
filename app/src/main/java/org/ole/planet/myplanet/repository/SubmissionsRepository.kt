@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SubmissionDetail
+import org.ole.planet.myplanet.model.SubmissionItem
 
 interface SubmissionsRepository {
     suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>>
@@ -31,10 +32,12 @@ interface SubmissionsRepository {
     fun getNormalizedSubmitterName(submission: RealmSubmission): String?
     suspend fun getAllPendingSubmissions(): List<RealmSubmission>
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String? = null): List<RealmSubmission>
+    suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem>
     suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File?
     suspend fun generateMultipleSubmissionsPdf(context: android.content.Context, submissionIds: List<String>, examTitle: String): java.io.File?
+    suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
 }

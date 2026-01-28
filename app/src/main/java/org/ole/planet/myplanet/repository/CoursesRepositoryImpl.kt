@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
@@ -309,5 +310,12 @@ class CoursesRepositoryImpl @Inject constructor(
                 .equalTo("courseId", courseId)
                 .findFirst()?.courseTitle
         }
+    }
+
+    override suspend fun isCourseCertified(courseId: String): Boolean {
+        if (courseId.isBlank()) return false
+        return count(RealmCertification::class.java) {
+            contains("courseIds", courseId)
+        } > 0
     }
 }

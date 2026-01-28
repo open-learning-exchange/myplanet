@@ -6,7 +6,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.RequestBody
-import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
@@ -45,7 +45,7 @@ class ChatApiService @Inject constructor(
         }
     }
 
-    suspend fun sendChatRequest(content: RequestBody): Response<ChatModel> {
+    suspend fun sendChatRequest(content: RequestBody): Response<ChatResponse> {
         val hostUrl = UrlUtils.hostUrl
         if (hostUrl.isBlank()) {
             throw IllegalArgumentException("Host URL is not available")
