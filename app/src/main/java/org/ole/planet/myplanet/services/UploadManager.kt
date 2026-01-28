@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
@@ -62,7 +63,8 @@ class UploadManager @Inject constructor(
     @AppPreferences private val pref: SharedPreferences,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
-    private val personalsRepository: PersonalsRepository
+    private val personalsRepository: PersonalsRepository,
+    private val userRepository: UserRepository
 ) : FileUploadService() {
 
     private suspend fun uploadNewsActivities() {
@@ -71,12 +73,7 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", pref.getString("userId", ""))
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        } ?: run {
+        val model = userRepository.getCurrentUser() ?: run {
             listener?.onSuccess("Cannot upload activities: user model is null")
             return
         }
@@ -290,11 +287,7 @@ class UploadManager @Inject constructor(
                 val serialized: JsonObject
             )
 
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java)
-                    .equalTo("id", pref.getString("userId", "")).findFirst()
-                    ?.let { realm.copyFromRealm(it) }
-            }
+            val user = userRepository.getCurrentUser()
 
             val resourcesToUpload = databaseService.withRealm { realm ->
                 val data = realm.where(RealmMyLibrary::class.java).isNull("_rev").findAll()
@@ -480,12 +473,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", pref.getString("userId", ""))
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        } ?: run {
+        val model = userRepository.getCurrentUser() ?: run {
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }
@@ -597,12 +585,7 @@ class UploadManager @Inject constructor(
         // the coordinator for the core upload/update flow where possible.
 
         val apiInterface = client.create(ApiInterface::class.java)
-        val user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", pref.getString("userId", ""))
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        val user = userRepository.getCurrentUser()
 
         val newsItems = databaseService.withRealm { realm ->
             realm.where(RealmNews::class.java)
