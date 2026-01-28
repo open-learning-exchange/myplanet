@@ -44,6 +44,8 @@ import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
 import org.ole.planet.myplanet.services.StayOnlineWorker
 import org.ole.planet.myplanet.services.TaskNotificationWorker
+import org.ole.planet.myplanet.di.RetryQueueEntryPoint
+import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.ANRWatchdog
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -273,7 +275,24 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             scheduleStayOnlineWork()
             scheduleTaskNotificationWork()
             startNetworkMonitoring()
+            scheduleRetryQueueWork()
         }
+    }
+
+    private fun scheduleRetryQueueWork() {
+        // Recover any operations stuck in "in_progress" from previous crash
+        applicationScope.launch {
+            try {
+                val entryPoint = EntryPointAccessors.fromApplication(
+                    this@MainApplication,
+                    RetryQueueEntryPoint::class.java
+                )
+                entryPoint.retryQueue().recoverStuckOperations()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        RetryQueueWorker.schedule(this)
     }
 
     private fun registerExceptionHandler() {

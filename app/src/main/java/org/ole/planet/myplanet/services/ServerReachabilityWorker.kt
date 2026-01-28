@@ -16,10 +16,12 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -188,6 +190,9 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                 }
             }
             uploadExamResultWrapper()
+            if (!MainApplication.isSyncRunning) {
+                RetryQueueWorker.triggerImmediateRetry(applicationContext)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
