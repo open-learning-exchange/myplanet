@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
@@ -78,29 +80,33 @@ class SubmissionDetailFragment : Fragment() {
     }
 
     private fun observeViewModel() {
-        lifecycleScope.launch {
-            viewModel.questionAnswers.collect { questionAnswers ->
-                adapter.submitList(questionAnswers)
-            }
-        }
-        lifecycleScope.launch {
-            viewModel.title.collect { title ->
-                binding.tvSubmissionTitle.text = title
-            }
-        }
-        lifecycleScope.launch {
-            viewModel.status.collect { status ->
-                binding.tvSubmissionStatus.text = status
-            }
-        }
-        lifecycleScope.launch {
-            viewModel.date.collect { date ->
-                binding.tvSubmissionDate.text = date
-            }
-        }
-        lifecycleScope.launch {
-            viewModel.submittedBy.collect { submittedBy ->
-                binding.tvSubmittedBy.text = submittedBy
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.questionAnswers.collect { questionAnswers ->
+                        adapter.submitList(questionAnswers)
+                    }
+                }
+                launch {
+                    viewModel.title.collect { title ->
+                        binding.tvSubmissionTitle.text = title
+                    }
+                }
+                launch {
+                    viewModel.status.collect { status ->
+                        binding.tvSubmissionStatus.text = status
+                    }
+                }
+                launch {
+                    viewModel.date.collect { date ->
+                        binding.tvSubmissionDate.text = date
+                    }
+                }
+                launch {
+                    viewModel.submittedBy.collect { submittedBy ->
+                        binding.tvSubmittedBy.text = submittedBy
+                    }
+                }
             }
         }
     }
