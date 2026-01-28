@@ -182,14 +182,14 @@ class RetryQueueWorker(
             }
 
             val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
-                apiInterface.putDocSuspend(
+                apiInterface.putDoc(
                     UrlUtils.header,
                     "application/json",
                     requestUrl,
                     payload
                 )
             } else {
-                apiInterface.postDocSuspend(
+                apiInterface.postDoc(
                     UrlUtils.header,
                     "application/json",
                     requestUrl,
