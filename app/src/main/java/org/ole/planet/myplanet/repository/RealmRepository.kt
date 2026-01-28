@@ -7,6 +7,7 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
@@ -49,10 +50,36 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow {
-        val realm = Realm.getDefaultInstance()
+        var realm: Realm? = null
+        var results: RealmResults<T>? = null
+        var listener: RealmChangeListener<RealmResults<T>>? = null
+
         try {
-            val results = realm.where(clazz).apply(builder).findAllAsync()
-            val listener = RealmChangeListener<RealmResults<T>> {
+            var retryCount = 0
+            val maxRetries = 10
+            while (retryCount < maxRetries) {
+                realm = Realm.getDefaultInstance()
+                if (!realm.isInTransaction) {
+                    break
+                }
+                realm.close()
+                realm = null
+                retryCount++
+                delay(50)
+            }
+
+            if (realm == null) {
+                realm = Realm.getDefaultInstance()
+            }
+
+            val initialResults = realm.where(clazz).apply(builder).findAll()
+            if (initialResults.isValid && initialResults.isLoaded) {
+                val initialCopy = realm.copyFromRealm(initialResults)
+                send(initialCopy)
+            }
+            
+            results = realm.where(clazz).apply(builder).findAllAsync()
+            listener = RealmChangeListener<RealmResults<T>> {
                 if (!realm.isClosed && !realm.isInTransaction && it.isLoaded && it.isValid) {
                     val frozenResults = it.freeze()
                     launch(databaseService.ioDispatcher) {
@@ -66,18 +93,24 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             results.addChangeListener(listener)
 
             awaitClose {
-                if (!realm.isClosed) {
-                    results.removeChangeListener(listener)
-                    realm.close()
+                realm?.let { r ->
+                    if (!r.isClosed) {
+                        results?.let { res ->
+                            listener.let { l -> res.removeChangeListener(l) }
+                        }
+                        r.close()
+                    }
                 }
             }
         } catch (e: Exception) {
-            if (!realm.isClosed) {
-                realm.close()
+            realm?.let { r ->
+                if (!r.isClosed) {
+                    r.close()
+                }
             }
             throw e
         }
-    }.flowOn(Dispatchers.Main.immediate)
+    }.flowOn(Dispatchers.Main)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
