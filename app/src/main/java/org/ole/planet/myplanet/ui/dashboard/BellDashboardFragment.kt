@@ -29,7 +29,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -386,12 +385,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun setColor(courseId: String?, star: ImageView) {
-        val isRealmReady = isRealmInitialized()
-
-        if (isRealmReady && RealmCertification.isCourseCertified(mRealm, courseId)) {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-        } else {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (courseId != null && coursesRepository.isCourseCertified(courseId)) {
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+            } else {
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+            }
         }
     }
 
