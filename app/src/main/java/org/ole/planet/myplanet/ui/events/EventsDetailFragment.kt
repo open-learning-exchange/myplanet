@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
@@ -34,7 +34,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     @Inject
     lateinit var eventsRepository: EventsRepository
     private var meetUpId: String? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var listUsers: ListView? = null
     private var listDesc: ListView? = null
     private var tvJoined: TextView? = null
@@ -68,7 +68,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         }
     }
 
-    private fun setUserList(users: List<RealmUserModel>) {
+    private fun setUserList(users: List<RealmUser>) {
         listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
         val joinedText = if (users.isEmpty()) {
             """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}"""

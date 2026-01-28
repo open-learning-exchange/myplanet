@@ -354,9 +354,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncHelper.isInitialized) {
-            realtimeSyncHelper.cleanup()
-        }
         loadSurveysJob?.cancel()
         loadSurveysJob = null
         currentSurveys = emptyList()

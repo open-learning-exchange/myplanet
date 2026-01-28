@@ -12,7 +12,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
@@ -34,7 +34,7 @@ class LeadersFragment : Fragment() {
         if (leaders.isNullOrEmpty()) {
             binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
         } else {
-            val leadersList = RealmUserModel.parseLeadersJson(leaders)
+            val leadersList = RealmUser.parseLeadersJson(leaders)
             binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
             val adapter = CommunityLeadersAdapter(requireActivity(), userSessionManager)
             binding?.rvMember?.adapter = adapter

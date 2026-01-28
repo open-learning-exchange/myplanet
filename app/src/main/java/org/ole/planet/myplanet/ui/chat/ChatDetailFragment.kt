@@ -43,13 +43,13 @@ import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -70,7 +70,7 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
@@ -522,7 +522,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
+    private fun handleResponse(response: Response<ChatResponse>, query: String, id: String?) {
         val responseBody = response.body()
         if (response.isSuccessful && responseBody != null) {
             if (responseBody.status == "Success") {
@@ -539,7 +539,7 @@ class ChatDetailFragment : Fragment() {
         enableUI()
     }
 
-    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatModel, query: String, id: String?) {
+    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
         mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
         id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
@@ -558,7 +558,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
+    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatResponse) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -574,7 +574,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
+    private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatResponse): JsonObject =
         JsonObject().apply {
             val id = responseBody.couchDBResponse?.id
             val rev = responseBody.couchDBResponse?.rev

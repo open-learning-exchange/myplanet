@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -57,14 +57,14 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?, imageList: io.realm.RealmList<String>?, videoList: io.realm.RealmList<String>?): RealmNews {
+    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?, videoList: io.realm.RealmList<String>?): RealmNews {
         return withRealmAsync { realm ->
             val managedNews = createNews(map, realm, user, imageList, videoList)
             realm.copyFromRealm(managedNews)
         }
     }
 
-    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?, videoList: io.realm.RealmList<String>?): Boolean {
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: io.realm.RealmList<String>?, videoList: io.realm.RealmList<String>?): Boolean {
         return try {
             databaseService.executeTransactionAsync { realm ->
                 RealmNews.createNews(newsData, realm, user, imageList, videoList)

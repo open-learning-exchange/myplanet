@@ -5,6 +5,7 @@ import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.Sort
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
@@ -13,8 +14,11 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
+import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
@@ -265,7 +269,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 .equalTo("id", examId)
                 .findFirst()
 
-            val user = realm.where(RealmUserModel::class.java)
+            val user = realm.where(RealmUser::class.java)
                 .equalTo("id", submission.userId)
                 .findFirst()
 
@@ -355,6 +359,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {
+        return getSubmissionsByParentId(parentId, userId).map {
+            SubmissionItem(
+                id = it.id,
+                lastUpdateTime = it.lastUpdateTime,
+                status = it.status ?: "",
+                uploaded = it.uploaded
+            )
+        }
+    }
+
     override suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?) {
         databaseService.executeTransactionAsync { realm ->
             val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
@@ -414,5 +429,26 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         examTitle: String
     ): java.io.File? {
         return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
+
+    override suspend fun addSubmissionPhoto(
+        submissionId: String?,
+        examId: String?,
+        courseId: String?,
+        memberId: String?,
+        photoPath: String?
+    ) {
+        executeTransaction { realm ->
+            val id = UUID.randomUUID().toString()
+            val submit = realm.createObject(RealmSubmitPhotos::class.java, id)
+            submit.submissionId = submissionId
+            submit.examId = examId
+            submit.courseId = courseId
+            submit.memberId = memberId
+            submit.date = Date().toString()
+            submit.uniqueId = NetworkUtils.getUniqueIdentifier()
+            submit.photoLocation = photoPath
+            submit.uploaded = false
+        }
     }
 }

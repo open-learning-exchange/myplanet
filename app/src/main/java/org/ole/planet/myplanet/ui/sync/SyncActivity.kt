@@ -7,9 +7,7 @@ import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
@@ -61,7 +59,7 @@ import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -494,7 +492,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
                 val hasUser = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
+                    realm.where(RealmUser::class.java).findAll().isNotEmpty()
                 }
                 if (hasUser) {
                     break
@@ -864,17 +862,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-
-    inner class MyTextWatcher(var view: View?) : TextWatcher {
-        override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-        override fun onTextChanged(s: CharSequence, i: Int, i1: Int, i2: Int) {
-            if (view?.id == R.id.input_server_url) {
-                positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
-            }
-        }
-        override fun afterTextChanged(editable: Editable) {}
     }
 
     override fun onDestroy() {

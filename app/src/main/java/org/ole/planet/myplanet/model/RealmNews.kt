@@ -235,7 +235,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, videoUrls: RealmList<String>? = null, isReply: Boolean = false): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUser?, imageUrls: RealmList<String>?, videoUrls: RealmList<String>? = null, isReply: Boolean = false): RealmNews {
             val shouldManageTransaction = !mRealm.isInTransaction
             if (shouldManageTransaction) {
                 mRealm.beginTransaction()

@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
@@ -51,8 +51,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private lateinit var binding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
     var userId: String? = null
-    var user: RealmUserModel? = null
-    private var currentUser: RealmUserModel? = null
+    var user: RealmUser? = null
+    private var currentUser: RealmUser? = null
     private var pojo: RealmHealthExamination? = null
     var health: RealmMyHealth? = null
     private var customDiag: MutableSet<String?>? = null
@@ -87,7 +87,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (pojo == null) {
             pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
-        user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        user = mRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
         if (user != null && (user?.key == null || user?.iv == null)) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             user?.key = generateKey()

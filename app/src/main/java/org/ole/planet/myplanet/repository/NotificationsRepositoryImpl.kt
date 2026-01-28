@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
 class NotificationsRepositoryImpl @Inject constructor(
@@ -286,7 +286,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     .findFirst()
             }
             val requester = joinRequest?.userId?.let { uid ->
-                realm.where(RealmUserModel::class.java)
+                realm.where(RealmUser::class.java)
                     .equalTo("id", uid)
                     .findFirst()
             }

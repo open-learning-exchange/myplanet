@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.utils.textChanges
 class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -214,7 +214,25 @@ class VoicesFragment : BaseVoicesFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = VoicesAdapter(requireActivity(), user, null, "", null, userSessionManager, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+            adapterNews = VoicesAdapter(
+                context = requireActivity(),
+                currentUser = user,
+                parentNews = null,
+                teamName = "",
+                teamId = null,
+                userSessionManager = userSessionManager,
+                scope = viewLifecycleOwner.lifecycleScope,
+                isTeamLeaderFn = { false },
+                getUserFn = { userId -> userRepository.getUserById(userId) },
+                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
+                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                },
+                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                labelManager = labelManager
+            )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)

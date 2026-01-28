@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.model.CourseProgressData
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -22,7 +22,7 @@ class CourseProgressActivity : BaseActivity() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     lateinit var courseId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
