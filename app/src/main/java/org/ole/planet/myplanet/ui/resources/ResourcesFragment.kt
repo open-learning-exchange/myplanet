@@ -12,7 +12,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
@@ -241,9 +243,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userModel?.id != null) {
             lifecycleScope.launch {
-                resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
-                    if (::adapterLibrary.isInitialized) {
-                        adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                        }
                     }
                 }
             }
@@ -580,10 +584,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             customProgressDialog?.dismiss()
         }
         customProgressDialog = null
-
-        if (::realtimeSyncHelper.isInitialized) {
-            realtimeSyncHelper.cleanup()
-        }
 
         _binding = null
         super.onDestroyView()

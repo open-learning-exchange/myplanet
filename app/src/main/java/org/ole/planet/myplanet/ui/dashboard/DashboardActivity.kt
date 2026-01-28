@@ -579,8 +579,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupDashboardDataObserver() {
         lifecycleScope.launch {
-            dashboardViewModel.dashboardDataFlow(user?.id).collect {
-                onRealmDataChange()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.dashboardDataFlow(user?.id).collect {
+                    onRealmDataChange()
+                }
             }
         }
     }
