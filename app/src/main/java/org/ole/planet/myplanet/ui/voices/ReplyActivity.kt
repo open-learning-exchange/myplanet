@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -42,7 +43,6 @@ import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {

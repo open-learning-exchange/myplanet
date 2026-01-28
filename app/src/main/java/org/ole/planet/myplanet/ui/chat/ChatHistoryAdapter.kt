@@ -13,10 +13,10 @@ import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
-import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.teams.TeamSelectionAdapter
+import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -251,7 +251,7 @@ class ChatHistoryAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val teamSelectionAdapter = TeamSelectionAdapter(section) { selectedItem ->
+        val teamSelectionAdapter = TeamsSelectionAdapter(section) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }

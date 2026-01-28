@@ -11,10 +11,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -217,7 +215,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
-        if (!isAdded) return
+        if (!isAdded || !::step.isInitialized) return
         lifecycleScope.launch {
             try {
                 if (visible) {

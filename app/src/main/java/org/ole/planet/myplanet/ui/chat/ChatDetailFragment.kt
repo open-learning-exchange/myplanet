@@ -56,8 +56,6 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
 
 @AndroidEntryPoint
@@ -330,14 +328,13 @@ class ChatDetailFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            chatApiService.fetchAiProviders { providers ->
-                sharedViewModel.setAiProvidersLoading(false)
-                if (providers == null || providers.values.all { !it }) {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                } else {
-                    sharedViewModel.setAiProviders(providers)
-                }
+            val providers = chatApiService.fetchAiProviders()
+            sharedViewModel.setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                sharedViewModel.setAiProvidersError(true)
+                sharedViewModel.setAiProviders(null)
+            } else {
+                sharedViewModel.setAiProviders(providers)
             }
         }
     }
@@ -516,15 +513,12 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            chatApiService.sendChatRequest(content, object : Callback<ChatModel> {
-                override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                    handleResponse(response, query, id)
-                }
-
-                override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                    handleFailure(t.message, query, id)
-                }
-            })
+            try {
+                val response = chatApiService.sendChatRequest(content)
+                handleResponse(response, query, id)
+            } catch (t: Exception) {
+                handleFailure(t.message, query, id)
+            }
         }
     }
 

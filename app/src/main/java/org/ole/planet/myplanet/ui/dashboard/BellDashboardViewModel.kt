@@ -4,16 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsRepository

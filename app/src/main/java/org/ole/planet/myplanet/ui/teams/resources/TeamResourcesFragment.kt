@@ -20,6 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.CheckboxListView
-import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 
 @AndroidEntryPoint
 class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResourcesUpdateListener {

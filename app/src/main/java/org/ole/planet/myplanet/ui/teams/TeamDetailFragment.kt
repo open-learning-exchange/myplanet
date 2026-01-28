@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -27,11 +28,11 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint

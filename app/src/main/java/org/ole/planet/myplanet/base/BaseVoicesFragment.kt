@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.base
+package org.ole.planet.myplanet.base
 
 import android.app.Activity
 import android.content.Context
@@ -17,7 +17,6 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,6 +24,7 @@ import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import java.io.File
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment

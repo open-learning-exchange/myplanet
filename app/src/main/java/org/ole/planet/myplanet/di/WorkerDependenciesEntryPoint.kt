@@ -4,6 +4,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UploadManager
@@ -17,4 +18,5 @@ interface WorkerDependenciesEntryPoint {
     fun uploadManager(): UploadManager
     fun teamsRepository(): TeamsRepository
     fun submissionsRepository(): SubmissionsRepository
+    fun resourcesRepository(): ResourcesRepository
 }

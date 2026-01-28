@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.services
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -14,9 +16,6 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 open class FileUploadService {
     fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: OnSuccessListener) {
@@ -45,24 +44,24 @@ open class FileUploadService {
 
     private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        try {
-            val connection = f.toURI().toURL().openConnection()
-            val mimeType = connection.contentType
-            val body = FileUtils.fullyReadFileToBytes(f)
-                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-            val url = String.format(format, UrlUtils.getUrl(), id, name)
-            apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    onDataReceived(response.body(), listener)
-                }
+        MainApplication.applicationScope.launch {
+            try {
+                val connection = f.toURI().toURL().openConnection()
+                val mimeType = connection.contentType
+                val body = FileUtils.fullyReadFileToBytes(f)
+                    .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+                val url = String.format(format, UrlUtils.getUrl(), id, name)
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                try {
+                    val response = apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)
+                    onDataReceived(response?.body(), listener)
+                } catch (t: Exception) {
                     listener.onSuccess("Unable to upload resource")
                 }
-            })
-        } catch (e: IOException) {
-            e.printStackTrace()
-            listener.onSuccess("Unable to upload resource")
+            } catch (e: IOException) {
+                e.printStackTrace()
+                listener.onSuccess("Unable to upload resource")
+            }
         }
     }
 

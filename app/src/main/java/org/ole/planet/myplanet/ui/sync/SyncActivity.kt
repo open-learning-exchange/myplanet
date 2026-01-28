@@ -53,18 +53,19 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
@@ -85,7 +86,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.ServerConfigUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -320,7 +320,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailableSuspend(url)
+            val response = apiInterface.isPlanetAvailable(url)
             val code = response.code()
 
             if (response.isSuccessful) {

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.voices
+package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.view.View

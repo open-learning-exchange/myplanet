@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -51,7 +52,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint

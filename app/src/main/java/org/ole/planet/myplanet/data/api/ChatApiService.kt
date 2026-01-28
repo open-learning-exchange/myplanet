@@ -6,12 +6,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.RequestBody
-import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
 
 @Singleton
@@ -19,105 +16,40 @@ class ChatApiService @Inject constructor(
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context
 ) {
-    fun fetchAiProviders(result: (Map<String, Boolean>?) -> Unit) {
-        try {
+    suspend fun fetchAiProviders(): Map<String, Boolean>? {
+        return try {
             val hostUrl = UrlUtils.hostUrl
             if (hostUrl.isBlank()) {
-                result(null)
-                return
+                return null
             }
-            
+
             val checkProvidersUrl = "${hostUrl}checkProviders/"
+            val response = apiInterface.checkAiProviders(checkProvidersUrl)
 
-            apiInterface.checkAiProviders(checkProvidersUrl).enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    try {
-                        when {
-                            !response.isSuccessful -> {
-                                result(null)
-                                return
-                            }
+            if (!response.isSuccessful || response.body() == null) {
+                return null
+            }
 
-                            response.body() == null -> {
-                                result(null)
-                                return
-                            }
-                        }
+            val responseString = response.body()?.string()
+            if (responseString.isNullOrBlank()) {
+                return null
+            }
 
-                        val responseString = response.body()?.string()
-                        if (responseString.isNullOrBlank()) {
-                            result(null)
-                            return
-                        }
-
-                        val providers: Map<String, Boolean> = JsonUtils.gson.fromJson(
-                            responseString,
-                            object : TypeToken<Map<String, Boolean>>() {}.type
-                        )
-                        result(providers)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        result(null)
-                    }
-                }
-
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        result(null)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        result(null)
-                    }
-                }
-            })
+            JsonUtils.gson.fromJson(
+                responseString,
+                object : TypeToken<Map<String, Boolean>>() {}.type
+            )
         } catch (e: Exception) {
             e.printStackTrace()
-            result(null)
+            null
         }
     }
 
-    fun sendChatRequest(content: RequestBody, callback: Callback<ChatModel>) {
-        try {
-            val hostUrl = UrlUtils.hostUrl
-            if (hostUrl.isBlank()) {
-                callback.onFailure(
-                    apiInterface.chatGpt(hostUrl, content),
-                    IllegalArgumentException("Host URL is not available")
-                )
-                return
-            }
-
-            apiInterface.chatGpt(hostUrl, content).enqueue(object : Callback<ChatModel> {
-                override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                    try {
-                        callback.onResponse(call, response)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        callback.onFailure(call, e)
-                    }
-                }
-
-                override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                    try {
-                        t.printStackTrace()
-                        callback.onFailure(call, t)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        callback.onFailure(call, e)
-                    }
-                }
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            try {
-                callback.onFailure(
-                    apiInterface.chatGpt(UrlUtils.hostUrl, content),
-                    e
-                )
-            } catch (callbackError: Exception) {
-                callbackError.printStackTrace()
-            }
+    suspend fun sendChatRequest(content: RequestBody): Response<ChatModel> {
+        val hostUrl = UrlUtils.hostUrl
+        if (hostUrl.isBlank()) {
+            throw IllegalArgumentException("Host URL is not available")
         }
+        return apiInterface.chatGpt(hostUrl, content)
     }
 }
