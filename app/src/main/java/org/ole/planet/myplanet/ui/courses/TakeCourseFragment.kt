@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.NavigationHelper
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint

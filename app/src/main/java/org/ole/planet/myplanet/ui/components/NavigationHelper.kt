@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utils
+package org.ole.planet.myplanet.ui.components
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
