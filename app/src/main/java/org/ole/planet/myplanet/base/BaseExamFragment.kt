@@ -31,9 +31,11 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
@@ -47,6 +49,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
     lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
@@ -186,17 +193,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
-        mRealm.beginTransaction()
-        val submit = mRealm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
-        submit.submissionId = submitId
-        submit.examId = exam?.id
-        submit.courseId = exam?.courseId
-        submit.memberId = user?.id
-        submit.date = date
-        submit.uniqueId = uniqueId
-        submit.photoLocation = photoPath
-        submit.uploaded = false
-        mRealm.commitTransaction()
+        applicationScope.launch {
+            submissionsRepository.addSubmissionPhoto(
+                submitId,
+                exam?.id,
+                exam?.courseId,
+                user?.id,
+                photoPath
+            )
+        }
     }
 
     override fun onImageCapture(fileUri: String?) {

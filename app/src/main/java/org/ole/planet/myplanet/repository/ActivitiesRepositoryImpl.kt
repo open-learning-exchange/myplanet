@@ -37,25 +37,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        withRealmAsync { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
+        executeTransaction { realm ->
             realm.where(RealmRemovedLog::class.java)
                 .equalTo("type", "resources")
                 .equalTo("userId", userId)
                 .equalTo("docId", resourceId)
                 .findAll().deleteAllFromRealm()
-            realm.commitTransaction()
         }
     }
 
     override suspend fun markResourceRemoved(userId: String, resourceId: String) {
-        withRealmAsync { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
+        executeTransaction { realm ->
             val log = realm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
             log.docId = resourceId
             log.userId = userId
             log.type = "resources"
-            realm.commitTransaction()
         }
     }
 

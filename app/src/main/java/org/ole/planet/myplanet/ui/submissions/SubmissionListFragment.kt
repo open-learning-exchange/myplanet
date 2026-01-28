@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -20,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
@@ -74,21 +74,13 @@ class SubmissionListFragment : Fragment() {
 
     private fun loadSubmissions() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val submissions = submissionsRepository.getSubmissionsByParentId(parentId, userId)
-            val submissionItems = submissions.map {
-                SubmissionItem(
-                    id = it.id,
-                    lastUpdateTime = it.lastUpdateTime,
-                    status = it.status ?: "",
-                    uploaded = it.uploaded
-                )
-            }
+            val submissionItems = submissionsRepository.getSubmissionItems(parentId, userId)
 
             withContext(Dispatchers.Main) {
                 if (_binding == null) return@withContext
                 adapter.submitList(submissionItems)
 
-                val submissionIds = submissions.mapNotNull { it.id }
+                val submissionIds = submissionItems.mapNotNull { it.id }
                 binding.btnDownloadReport.setOnClickListener {
                     generateReport(submissionIds)
                 }
@@ -104,7 +96,7 @@ class SubmissionListFragment : Fragment() {
 
             if (file != null) {
                 Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                openPdf(file)
+                FileUtils.openPdf(requireContext(), file)
             } else {
                 Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
             }
@@ -123,28 +115,10 @@ class SubmissionListFragment : Fragment() {
 
             if (file != null) {
                 Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                openPdf(file)
+                FileUtils.openPdf(requireContext(), file)
             } else {
                 Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
-
-    private fun openPdf(file: java.io.File) {
-        try {
-            val uri = FileProvider.getUriForFile(
-                requireContext(),
-                "${requireContext().packageName}.provider",
-                file
-            )
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-            startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
     }
 
