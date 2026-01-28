@@ -26,12 +26,19 @@ class TeamCoursesFragment : BaseTeamFragment() {
     }
     
     private fun setupCoursesList() {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
-        binding.rvCourse.layoutManager = LinearLayoutManager(activity)
-        binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val courseIds = team?.courses?.filterNotNull() ?: emptyList()
+            val courses = if (courseIds.isNotEmpty()) {
+                coursesRepository.getCoursesByIds(courseIds)
+            } else {
+                emptyList<org.ole.planet.myplanet.model.RealmMyCourse>()
+            }
+            adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), null, teamId, it) }
+            binding.rvCourse.layoutManager = LinearLayoutManager(activity)
+            binding.rvCourse.adapter = adapterTeamCourse
+            adapterTeamCourse?.let {
+                showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+            }
         }
     }
     override fun onNewsItemClick(news: RealmNews?) {}

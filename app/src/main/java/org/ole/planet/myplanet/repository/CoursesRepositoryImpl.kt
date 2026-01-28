@@ -80,6 +80,13 @@ class CoursesRepositoryImpl @Inject constructor(
         return getCourseResources(courseId, isOffline = true)
     }
 
+    override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+        }
+    }
+
     override suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary> {
         if (courseIds.isEmpty()) {
             return emptyList()

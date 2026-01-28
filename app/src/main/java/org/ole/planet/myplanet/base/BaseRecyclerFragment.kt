@@ -203,8 +203,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
+    @Suppress("UNCHECKED_CAST")
     private suspend fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val list = getList(c)
+        val list = getList(c) as List<LI>
         if (s.isEmpty()) return list
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
