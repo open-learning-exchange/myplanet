@@ -19,9 +19,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.RealmResults
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -34,17 +31,15 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -61,7 +56,6 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    protected lateinit var mRealm: Realm
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -74,6 +68,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var tagsRepository: TagsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -88,17 +84,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
     private var broadcastJob: Job? = null
-
-    protected fun requireRealmInstance(): Realm {
-        if (!isRealmInitialized()) {
-            mRealm = databaseService.realmInstance
-        }
-        return mRealm
-    }
-
-    protected fun isRealmInitialized(): Boolean {
-        return ::mRealm.isInitialized && !mRealm.isClosed
-    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -253,7 +238,7 @@ abstract class BaseResourceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
-            val exams = getExamMap(mRealm, list)
+            val exams = submissionsRepository.getExamMapForSubmissions(list)
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
@@ -269,7 +254,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private fun createSurveyAdapter(
         list: List<RealmSubmission>,
-        exams: HashMap<String?, RealmStepExam>
+        exams: Map<String?, RealmStepExam>
     ): ArrayAdapter<RealmSubmission> {
         return object : ArrayAdapter<RealmSubmission>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -368,7 +353,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
@@ -383,19 +367,20 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
-        if (`object` is RealmMyLibrary) {
-            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
-            } }
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-        } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+    fun removeFromShelf(item: Any) {
+        val userId = model?.id ?: return
+        lifecycleScope.launch {
+            if (item is RealmMyLibrary) {
+                item.resourceId?.let {
+                    resourcesRepository.updateUserLibrary(it, userId, false)
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                }
+            } else if (item is RealmMyCourse) {
+                item.courseId?.let {
+                    coursesRepository.leaveCourse(it, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                }
+            }
         }
     }
 
@@ -443,32 +428,6 @@ abstract class BaseResourceFragment : Fragment() {
         super.onDestroyView()
     }
 
-    override fun onDestroy() {
-        cleanupRealm()
-        super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (e: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
-    }
-
     companion object {
         var auth = ""
 
@@ -482,16 +441,6 @@ abstract class BaseResourceFragment : Fragment() {
 
                 override fun notAvailable() {}
             })
-        }
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
         }
     }
 }

@@ -27,6 +27,12 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmRating.getRatings(realm, "resource", userId)
+        }
+    }
+
     override suspend fun getRatingSummary(
         type: String,
         itemId: String,
