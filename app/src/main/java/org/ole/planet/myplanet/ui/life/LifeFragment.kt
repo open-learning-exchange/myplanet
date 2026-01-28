@@ -99,4 +99,8 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {
         viewHolder?.let { mItemTouchHelper?.startDrag(it) }
     }
+
+    override fun refreshAdapter() {
+        refreshList()
+    }
 }

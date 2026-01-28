@@ -753,4 +753,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         filterCoursesAndUpdateUi()
     }
+
+    override fun refreshAdapter() {
+        loadDataAsync()
+    }
 }

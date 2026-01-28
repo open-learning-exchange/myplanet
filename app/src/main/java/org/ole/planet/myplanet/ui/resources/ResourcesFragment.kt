@@ -677,5 +677,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
     }
-    
+
+    override fun refreshAdapter() {
+        refreshResourcesData()
+    }
 }

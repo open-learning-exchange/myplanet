@@ -374,4 +374,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         }
     }
 
+    override fun refreshAdapter() {
+        updateAdapterData()
+    }
 }
