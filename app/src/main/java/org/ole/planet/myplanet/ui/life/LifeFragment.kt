@@ -88,7 +88,9 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
 
     private suspend fun refreshList() {
         val userId = model?.id ?: profileDbHandler.userModel?.id
-        val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        val myLifeList = withContext(Dispatchers.IO) {
+            lifeRepository.getMyLifeByUserId(userId)
+        }
         lifeAdapter.submitList(myLifeList)
     }
 

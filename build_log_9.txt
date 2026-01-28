@@ -1,0 +1,17 @@
+Reusing configuration cache.
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preLiteDebugBuild UP-TO-DATE
+> Task :app:generateLiteDebugResources UP-TO-DATE
+> Task :app:dataBindingTriggerLiteDebug UP-TO-DATE
+> Task :app:generateLiteDebugBuildConfig UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsLiteDebug UP-TO-DATE
+> Task :app:processLiteDebugNavigationResources UP-TO-DATE
+> Task :app:mergeLiteDebugResources UP-TO-DATE
+> Task :app:packageLiteDebugResources UP-TO-DATE
+> Task :app:parseLiteDebugLocalResources UP-TO-DATE
+> Task :app:generateLiteDebugRFile UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesLiteDebug UP-TO-DATE
+> Task :app:kspLiteDebugKotlin
+Could not load entry 6bcdf157e1ad0daffbabf8922e92fe4e from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out

@@ -171,7 +171,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     override fun getAdapter(): RecyclerView.Adapter<*> = adapter
 
-    override fun refreshAdapter() {
+    override suspend fun refreshAdapter() {
         updateAdapterData()
     }
 

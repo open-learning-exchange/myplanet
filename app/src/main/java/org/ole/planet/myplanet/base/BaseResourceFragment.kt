@@ -259,7 +259,9 @@ abstract class BaseResourceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
-            val exams = getExamMap(requireRealmInstance(), list)
+            val exams = databaseService.realmInstance.use { realm ->
+                getExamMap(realm, list)
+            }
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
@@ -389,8 +391,7 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
-        val realm = requireRealmInstance()
+    fun removeFromShelf(realm: Realm, `object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
             val myObject = realm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
             myObject?.removeUserId(model?.id)

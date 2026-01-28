@@ -195,23 +195,24 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        val realm = requireRealmInstance()
-        selectedItems?.forEach { item ->
-            try {
-                if (!realm.isInTransaction) {
-                    realm.beginTransaction()
+        databaseService.realmInstance.use { realm ->
+            selectedItems?.forEach { item ->
+                try {
+                    if (!realm.isInTransaction) {
+                        realm.beginTransaction()
+                    }
+                    val `object` = item as RealmObject
+                    deleteCourseProgress(realm, deleteProgress, `object`)
+                    removeFromShelf(realm, `object`)
+                    if (realm.isInTransaction) {
+                        realm.commitTransaction()
+                    }
+                } catch (e: Exception) {
+                    if (realm.isInTransaction) {
+                        realm.cancelTransaction()
+                    }
+                    throw e
                 }
-                val `object` = item as RealmObject
-                deleteCourseProgress(realm, deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (realm.isInTransaction) {
-                    realm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (realm.isInTransaction) {
-                    realm.cancelTransaction()
-                }
-                throw e
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {

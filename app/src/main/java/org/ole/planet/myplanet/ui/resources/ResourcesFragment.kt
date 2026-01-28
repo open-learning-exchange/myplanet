@@ -176,40 +176,42 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            val realm = requireRealmInstance()
-            map = getRatings(realm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-            val filteredLibraryList: List<RealmMyLibrary> =
-                if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                applyFilter(libraryList.filterNotNull())
-                } else {
-                applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
+            withContext(Dispatchers.IO) {
+                databaseService.realmInstance.use { realm ->
+                    map = getRatings(realm, "resource", model?.id)
+                    val libraryList: List<RealmMyLibrary> = getList(realm, RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+                    val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                    val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+                    val filteredLibraryList: List<RealmMyLibrary> =
+                        if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
+                        applyFilter(libraryList.filterNotNull())
+                        } else {
+                        applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
+                        }
+
+                    val resourceIds = filteredLibraryList.mapNotNull { it.id }
+                    tagsMap = tagsRepository.getTagsForResources(resourceIds)
+
+                    val copiedList = realm.copyFromRealm(filteredLibraryList)
+
+                    withContext(Dispatchers.Main) {
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setLibraryList(copiedList)
+                            adapterLibrary.setRatingMap(map!!)
+                            adapterLibrary.setTagsMap(tagsMap)
+                        }
+                        checkList()
+                        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                    }
                 }
-
-            val resourceIds = filteredLibraryList.mapNotNull { it.id }
-            tagsMap = tagsRepository.getTagsForResources(resourceIds)
-
-            if (::adapterLibrary.isInitialized) {
-                adapterLibrary.setLibraryList(realm.copyFromRealm(filteredLibraryList))
-                adapterLibrary.setRatingMap(map!!)
-                adapterLibrary.setTagsMap(tagsMap)
             }
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val realm = requireRealmInstance()
-        map = getRatings(realm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
-        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
-        adapterLibrary.setLibraryList(realm.copyFromRealm(libraryList))
+        adapterLibrary = ResourcesAdapter(requireActivity(), HashMap(), resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -560,7 +562,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onResume() {
         super.onResume()
         if (isFirstResume) {
-            refreshResourcesData()
+            lifecycleScope.launch { refreshResourcesData() }
             isFirstResume = false
         }
         selectAll.isChecked = false
