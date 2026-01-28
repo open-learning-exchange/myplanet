@@ -1,0 +1,39 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: compileLiteDebugKotlin
+Gradle cache: GRADLE_BUILD_CACHE_URL=http://34.134.219.48:5071/cache/
+
+> Configure project :app
+WARNING: The option setting 'android.builtInKotlin=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preLiteDebugBuild UP-TO-DATE
+> Task :app:dataBindingTriggerLiteDebug
+> Task :app:generateLiteDebugResources FROM-CACHE
+> Task :app:processLiteDebugNavigationResources FROM-CACHE
+> Task :app:dataBindingMergeDependencyArtifactsLiteDebug
+> Task :app:generateLiteDebugBuildConfig
+> Task :app:mergeLiteDebugResources
+
+> Task :app:generateLiteDebugBuildConfig
+Could not load entry f4411c6d9b49baafa8427862e8f7e843 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:packageLiteDebugResources
+Could not load entry 49d05a53cb6a3afee17f8f2c092c3081 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:parseLiteDebugLocalResources FROM-CACHE
+
+> Task :app:mergeLiteDebugResources
+Could not load entry 6024ed3fcacbe505521da12c281a49c9 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:generateLiteDebugRFile FROM-CACHE
+> Task :app:dataBindingGenBaseClassesLiteDebug FROM-CACHE

@@ -44,9 +44,11 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -61,22 +63,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.makeExpandable
 
-class VoicesAdapter(
-    var context: Context,
-    private var currentUser: RealmUserModel?,
-    private val parentNews: RealmNews?,
-    private val teamName: String = "",
-    private val teamId: String? = null,
-    private val userSessionManager: UserSessionManager,
-    private val scope: CoroutineScope,
-    private val isTeamLeaderFn: suspend () -> Boolean,
-    private val getUserFn: suspend (String) -> RealmUserModel?,
-    private val getReplyCountFn: suspend (String) -> Int,
-    private val deletePostFn: suspend (String) -> Unit,
-    private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
-    private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
-    private val labelManager: VoicesLabelManager
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+class VoicesAdapter(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userSessionManager: UserSessionManager, private val scope: CoroutineScope, private val userRepository: UserRepository, private val voicesRepository: VoicesRepository, private val teamsRepository: TeamsRepository) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -115,6 +102,7 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
+    private var labelManager: VoicesLabelManager? = null
     private val profileDbHandler = userSessionManager
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUserModel?>()
@@ -136,7 +124,7 @@ class VoicesAdapter(
         }
         scope.launch {
             val isLeader = withTimeoutOrNull(2000) {
-                isTeamLeaderFn()
+                teamsRepository.isTeamLeader(teamId, currentUser?._id)
             }
             _isTeamLeader = isLeader
         }
@@ -176,6 +164,7 @@ class VoicesAdapter(
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         user = userSessionManager.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        labelManager = VoicesLabelManager(context, voicesRepository, scope)
         return VoicesViewHolder(binding)
     }
 
@@ -198,8 +187,8 @@ class VoicesAdapter(
                 loadImage(viewHolder.binding, news)
                 showReplyButton(viewHolder, news, position)
                 val canManageLabels = canAddLabel(news)
-                labelManager.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
-                news.let { labelManager.showChips(viewHolder.binding, it, canManageLabels) }
+                labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
+                news.let { labelManager?.showChips(viewHolder.binding, it, canManageLabels) }
                 handleChat(viewHolder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(viewHolder, userModel, currentLeader)
@@ -280,7 +269,7 @@ class VoicesAdapter(
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
                 scope.launch {
-                    val userModel = getUserFn(userId)
+                    val userModel = userRepository.getUserById(userId)
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
                     withContext(Dispatchers.Main) {
@@ -334,7 +323,7 @@ class VoicesAdapter(
                         if (adjustedPos >= 0 && adjustedPos < currentList.size) {
                             val newsToDelete = currentList[adjustedPos]
                             scope.launch {
-                                newsToDelete?.id?.let { deletePostFn(it) }
+                                newsToDelete?.id?.let { voicesRepository.deletePost(it, teamName) }
                                 withContext(Dispatchers.Main) {
                                     val newList = currentList.toMutableList().apply { removeAt(adjustedPos) }
                                     submitListSafely(newList)
@@ -487,12 +476,12 @@ class VoicesAdapter(
         viewHolder.job?.cancel()
         viewHolder.job = scope.launch {
             try {
-                val replyCount = news?.id?.let { getReplyCountFn(it) } ?: 0
+                val replies = voicesRepository.getReplies(news?.id)
                 withContext(Dispatchers.Main) {
                     with(viewHolder.binding) {
-                        btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
+                        btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replies.size)
                         btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-                        val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
+                        val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
                         btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
                     }
                 }
@@ -580,7 +569,7 @@ class VoicesAdapter(
 
                      if (newsId != null && userId != null) {
                          scope.launch {
-                             val result = shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
+                             val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                              withContext(Dispatchers.Main) {
                                  if (result.isSuccess) {
                                      Utilities.toast(context, context.getString(R.string.shared_to_community))
@@ -706,7 +695,7 @@ class VoicesAdapter(
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         scope.launch {
-            val library = getLibraryResourceFn(resourceId)
+            val library = voicesRepository.getLibraryResource(resourceId)
             withContext(Dispatchers.Main) {
                 val basePath = context.getExternalFilesDir(null)
                 if (library != null && basePath != null) {
@@ -733,7 +722,7 @@ class VoicesAdapter(
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         scope.launch {
-            val library = getLibraryResourceFn(resourceId)
+            val library = voicesRepository.getLibraryResource(resourceId)
             withContext(Dispatchers.Main) {
                 val basePath = context.getExternalFilesDir(null)
                 if (library != null && basePath != null) {

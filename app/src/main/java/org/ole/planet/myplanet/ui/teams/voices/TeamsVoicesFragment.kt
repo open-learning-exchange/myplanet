@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
@@ -174,26 +173,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
-            val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
             val adapterNews = activity?.let {
-                VoicesAdapter(
-                    context = it,
-                    currentUser = user,
-                    parentNews = null,
-                    teamName = getEffectiveTeamName(),
-                    teamId = teamId,
-                    userSessionManager = userSessionManager,
-                    scope = viewLifecycleOwner.lifecycleScope,
-                    isTeamLeaderFn = { teamsRepository.isTeamLeader(teamId, user?._id) },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, getEffectiveTeamName()) },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                    },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                    labelManager = labelManager
-                )
+                VoicesAdapter(it, user, null, getEffectiveTeamName(), teamId, userSessionManager, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setListener(this)

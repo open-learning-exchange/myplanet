@@ -1,0 +1,38 @@
+Reusing configuration cache.
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preLiteDebugBuild UP-TO-DATE
+> Task :app:dataBindingTriggerLiteDebug UP-TO-DATE
+> Task :app:generateLiteDebugResources UP-TO-DATE
+> Task :app:generateLiteDebugBuildConfig UP-TO-DATE
+> Task :app:packageLiteDebugResources UP-TO-DATE
+> Task :app:processLiteDebugNavigationResources UP-TO-DATE
+> Task :app:mergeLiteDebugResources UP-TO-DATE
+> Task :app:parseLiteDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsLiteDebug UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesLiteDebug UP-TO-DATE
+> Task :app:generateLiteDebugRFile UP-TO-DATE
+> Task :app:kspLiteDebugKotlin
+Could not load entry 8bcf1aec6b6bccdea48ae5bedc2d355a from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+e: [ksp] java.lang.IllegalStateException: Storage for [/app/app/build/kspCaches/liteDebug/symbolLookups/lookups.tab] is already registered
+
+> Task :app:kspLiteDebugKotlin FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:kspLiteDebugKotlin'.
+> A failure occurred while executing com.google.devtools.ksp.gradle.KspAAWorkerAction
+   > Storage for [/app/app/build/kspCaches/liteDebug/symbolLookups/lookups.tab] is already registered
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 51s
+12 actionable tasks: 1 executed, 11 up-to-date
+Configuration cache entry reused.
+The remote build cache was disabled during the build due to errors.

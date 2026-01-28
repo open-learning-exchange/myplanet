@@ -692,23 +692,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
-            if (::adapterCourses.isInitialized) {
-                lifecycleScope.launch {
-                    val map = ratingsRepository.getCourseRatings(model?.id)
-                    val progressMap = progressRepository.getCourseProgress(model?.id)
-                    val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
-                        .filterIsInstance<RealmMyCourse>()
-                        .filter { !it.courseTitle.isNullOrBlank() }
-                    val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                        copiedList.forEachIndexed { index, course ->
-                            course.isMyCourse = managedCourseList[index].isMyCourse
-                        }
-                    }
-                    val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-                    adapterCourses.updateData(sortedCourseList, map, progressMap)
-                }
-            } else {
-                recyclerView.adapter = getAdapter()
+            lifecycleScope.launch {
+                loadDataAsync()
             }
         }
     }

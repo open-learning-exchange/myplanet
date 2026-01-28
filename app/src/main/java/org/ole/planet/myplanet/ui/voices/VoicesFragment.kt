@@ -205,25 +205,7 @@ class VoicesFragment : BaseVoicesFragment() {
             } finally {
                 Trace.endSection()
             }
-            val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
-            adapterNews = VoicesAdapter(
-                context = requireActivity(),
-                currentUser = user,
-                parentNews = null,
-                teamName = "",
-                teamId = null,
-                userSessionManager = userSessionManager,
-                scope = viewLifecycleOwner.lifecycleScope,
-                isTeamLeaderFn = { false },
-                getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                },
-                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                labelManager = labelManager
-            )
+            adapterNews = VoicesAdapter(requireActivity(), user, null, "", null, userSessionManager, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)

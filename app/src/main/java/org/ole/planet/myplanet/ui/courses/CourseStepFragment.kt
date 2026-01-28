@@ -215,7 +215,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
-        if (!isAdded || !::step.isInitialized) return
+        if (!isAdded) return
         lifecycleScope.launch {
             try {
                 if (visible) {

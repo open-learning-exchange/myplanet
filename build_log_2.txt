@@ -1,0 +1,17 @@
+Starting a Gradle Daemon (subsequent builds will be faster)
+Reusing configuration cache.
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+> Task :app:kspDefaultDebugKotlin

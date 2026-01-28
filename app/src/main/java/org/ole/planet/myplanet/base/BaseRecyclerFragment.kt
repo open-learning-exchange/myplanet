@@ -236,9 +236,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
+    private fun checkAndAddToList(realm: io.realm.Realm, course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
         for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
+            val count = realm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
                 .equalTo("linkId", course?.courseId).count()
             if (count > 0 && !courses.contains(course)) {
                 course?.let { courses.add(it) }
@@ -246,12 +246,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        if (s.isEmpty()) return mRealm.where(c).findAll()
+    private fun <LI : RealmModel> getData(realm: io.realm.Realm, s: String, c: Class<LI>): List<LI> {
+        if (s.isEmpty()) return realm.where(c).findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = mRealm.where(c).findAll()
+        val data: RealmResults<LI> = realm.where(c).findAll()
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<LI>()
         val containsQuery = mutableListOf<LI>()
@@ -275,9 +275,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+    fun filterLibraryByTag(realm: io.realm.Realm, s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         val normalizedSearchTerm = normalizeText(s)
-        var list = getData(s, RealmMyLibrary::class.java)
+        var list = getData(realm, s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
         } else {
@@ -287,7 +287,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val libraries = if (tags.isNotEmpty()) {
             val filteredLibraries = mutableListOf<RealmMyLibrary>()
             for (library in list) {
-                filter(tags, library, filteredLibraries)
+                filter(realm, tags, library, filteredLibraries)
             }
             filteredLibraries
         } else {
@@ -302,11 +302,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    fun filterCourseByTag(realm: io.realm.Realm, s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
+            return applyCourseFilter(filterRealmMyCourseList(getList(realm, RealmMyCourse::class.java)))
         }
-        var list = getData(s, RealmMyCourse::class.java)
+        var list = getData(realm, s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
             coursesRepository.getMyCourses(model?.id, list)
         } else {
@@ -317,7 +317,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
         val courses = RealmList<RealmMyCourse>()
         list.forEach { course ->
-            checkAndAddToList(course, courses, tags)
+            checkAndAddToList(realm, course, courses, tags)
         }
         return applyCourseFilter(courses)
     }
@@ -326,9 +326,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return items.filterIsInstance<RealmMyCourse>()
     }
 
-    private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
+    private fun filter(realm: io.realm.Realm, tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
         for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
+            val count = realm.where(RealmTag::class.java).equalTo("db", "resources")
                 .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
             if (count > 0 && !libraries.contains(library)) {
                 library?.let { libraries.add(it) }
