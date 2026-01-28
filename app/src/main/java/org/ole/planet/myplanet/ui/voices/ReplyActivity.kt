@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
@@ -99,7 +100,25 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = VoicesAdapter(this@ReplyActivity, user, news, "", null, userSessionManager, lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+                newsAdapter = VoicesAdapter(
+                    context = this@ReplyActivity,
+                    currentUser = user,
+                    parentNews = news,
+                    teamName = "",
+                    teamId = null,
+                    userSessionManager = userSessionManager,
+                    scope = lifecycleScope,
+                    isTeamLeaderFn = { false },
+                    getUserFn = { userId -> userRepository.getUserById(userId) },
+                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    },
+                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    labelManager = labelManager
+                )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))

@@ -125,8 +125,8 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = resourcesRepository.getLibraryListForUser(
-                        settings.getString("userId", "--")
+                    val list = resourcesRepository.getDownloadSuggestionList(
+                        profileDbHandler.userModel?.id
                     )
                     showDownloadDialog(list)
                 } finally {
@@ -184,13 +184,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        val userId = profileDbHandler.userModel?.id
-        val librariesForDialog = if (userId.isNullOrBlank()) {
-            dbMyLibrary
-        } else {
-            val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
-            if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
-        }
+        val librariesForDialog = dbMyLibrary
 
         if (librariesForDialog.isEmpty()) {
             return
