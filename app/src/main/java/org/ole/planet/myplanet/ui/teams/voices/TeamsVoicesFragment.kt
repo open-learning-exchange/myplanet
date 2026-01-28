@@ -43,11 +43,14 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
+        llImage = binding.llImages
+        llVideo = binding.llVideos
         binding.addMessage.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
                 binding.etMessage.setText("")
                 binding.tlMessage.error = null
                 clearImages()
+                clearVideos()
                 View.GONE
             } else {
                 View.VISIBLE
@@ -63,6 +66,12 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             llImage = binding.llImages
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
+        }
+
+        binding.addNewsVideo.setOnClickListener {
+            llVideo = binding.llVideos
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
+            openVideoLauncher.launch(openFolderIntent)
         }
 
         binding.btnSubmit.setOnClickListener {
@@ -82,14 +91,16 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
             user?.let { userModel ->
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val success = voicesRepository.createTeamNews(map, userModel, imageList)
+                    val success = voicesRepository.createTeamNews(map, userModel, imageList, videoList)
                     if (success) {
                         binding.rvDiscussion.post {
                             binding.rvDiscussion.smoothScrollToPosition(0)
                         }
                         binding.etMessage.text?.clear()
                         imageList.clear()
+                        videoList.clear()
                         llImage?.removeAllViews()
+                        llVideo?.removeAllViews()
                         binding.llAddNews.visibility = View.GONE
                         binding.tlMessage.error = null
                         binding.addMessage.text = getString(R.string.add_message)
@@ -163,6 +174,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun clearVideos() {
+        videoList.clear()
+        llVideo?.removeAllViews()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

@@ -42,6 +42,8 @@ open class RealmNews : RealmObject() {
     var parentCode: String? = null
     var imageUrls: RealmList<String>? = null
     var images: String? = null
+    var videoUrls: RealmList<String>? = null
+    var videos: String? = null
     var labels: RealmList<String>? = null
     var viewIn: String? = null
     var newsId: String? = null
@@ -61,6 +63,9 @@ open class RealmNews : RealmObject() {
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
+
+    val videosArray: JsonArray
+        get() = if (videos == null) JsonArray() else JsonUtils.gson.fromJson(videos, JsonArray::class.java)
 
     val labelsArray: JsonArray
         get() {
@@ -87,6 +92,9 @@ open class RealmNews : RealmObject() {
         get() {
             var ms = message
             for (ob in imagesArray) {
+                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
+            }
+            for (ob in videosArray) {
                 ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
             }
             return ms
@@ -150,6 +158,7 @@ open class RealmNews : RealmObject() {
             news?.userName = JsonUtils.getString("name", user)
             news?.time = JsonUtils.getLong("time", doc)
             val images = JsonUtils.getJsonArray("images", doc)
+            val videos = JsonUtils.getJsonArray("videos", doc)
             val message = JsonUtils.getString("message", doc)
             news?.message = message
             val links = extractLinks(message)
@@ -159,6 +168,7 @@ open class RealmNews : RealmObject() {
                 concatenatedLinks.add(concatenatedLink)
             }
             news?.images = JsonUtils.gson.toJson(images)
+            news?.videos = JsonUtils.gson.toJson(videos)
             val labels = JsonUtils.getJsonArray("labels", doc)
             news?.viewIn = JsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
             news?.setLabels(labels)
@@ -196,6 +206,7 @@ open class RealmNews : RealmObject() {
             `object`.addProperty("replyTo", news.replyTo)
             `object`.addProperty("parentCode", news.parentCode)
             `object`.add("images", news.imagesArray)
+            `object`.add("videos", news.videosArray)
             `object`.add("labels", news.labelsArray)
             `object`.add("user", JsonUtils.gson.fromJson(news.user, JsonObject::class.java))
             val newsObject = JsonObject()
@@ -224,7 +235,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, videoUrls: RealmList<String>? = null, isReply: Boolean = false): RealmNews {
             val shouldManageTransaction = !mRealm.isInTransaction
             if (shouldManageTransaction) {
                 mRealm.beginTransaction()
@@ -261,6 +272,11 @@ open class RealmNews : RealmObject() {
                 news.imageUrls = RealmList()
             }
             imageUrls?.forEach { news.imageUrls?.add(it) }
+
+            if (news.videoUrls == null) {
+                news.videoUrls = RealmList()
+            }
+            videoUrls?.forEach { news.videoUrls?.add(it) }
 
             if (map.containsKey("news")) {
                 val newsObj = map["news"]

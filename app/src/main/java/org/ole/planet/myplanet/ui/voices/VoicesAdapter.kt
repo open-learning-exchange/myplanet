@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
@@ -53,6 +54,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
+import org.ole.planet.myplanet.ui.viewer.VideoViewerActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -98,6 +100,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: RealmList<String>? = null
+    private var videoList: RealmList<String>? = null
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
@@ -132,6 +135,10 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
+    }
+
+    fun setVideoList(videoList: RealmList<String>?) {
+        this.videoList = videoList
     }
 
     fun addItem(news: RealmNews?) {
@@ -185,6 +192,7 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                 setMessageAndDate(viewHolder, news, sharedTeamName)
                 configureEditDeleteButtons(viewHolder, news)
                 loadImage(viewHolder.binding, news)
+                loadVideo(viewHolder.binding, news)
                 showReplyButton(viewHolder, news, position)
                 val canManageLabels = canAddLabel(news)
                 labelManager?.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
@@ -241,6 +249,9 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
             imgNews.visibility = View.GONE
             llNewsImages.visibility = View.GONE
             llNewsImages.removeAllViews()
+            flSingleVideo.visibility = View.GONE
+            llNewsVideos.visibility = View.GONE
+            llNewsVideos.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
         }
@@ -754,6 +765,206 @@ class VoicesAdapter(var context: Context, private var currentUser: RealmUserMode
                 }
             }
         }
+    }
+
+    private fun loadVideo(binding: RowNewsBinding, news: RealmNews?) {
+        binding.flSingleVideo.visibility = View.GONE
+        binding.llNewsVideos.visibility = View.GONE
+        binding.llNewsVideos.removeAllViews()
+
+        val videoUrls = news?.videoUrls
+        if (!videoUrls.isNullOrEmpty()) {
+            try {
+                if (videoUrls.size == 1) {
+                    val vidObject = JsonUtils.gson.fromJson(videoUrls[0], JsonObject::class.java)
+                    val path = JsonUtils.getString("videoUrl", vidObject)
+                    loadSingleVideo(binding, path)
+                } else {
+                    binding.llNewsVideos.visibility = View.VISIBLE
+                    for (videoUrl in videoUrls) {
+                        val vidObject = JsonUtils.gson.fromJson(videoUrl, JsonObject::class.java)
+                        val path = JsonUtils.getString("videoUrl", vidObject)
+                        addVideoToContainer(binding, path)
+                    }
+                }
+                return
+            } catch (_: Exception) {
+            }
+        }
+
+        news?.videosArray?.let { videosArray ->
+            if (videosArray.size() > 0) {
+                if (videosArray.size() == 1) {
+                    val ob = videosArray[0]?.asJsonObject
+                    val resourceId = JsonUtils.getString("resourceId", ob)
+                    loadLibraryVideo(binding, resourceId)
+                } else {
+                    binding.llNewsVideos.visibility = View.VISIBLE
+                    for (i in 0 until videosArray.size()) {
+                        val ob = videosArray[i]?.asJsonObject
+                        val resourceId = JsonUtils.getString("resourceId", ob)
+                        addLibraryVideoToContainer(binding, resourceId)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadSingleVideo(binding: RowNewsBinding, path: String?) {
+        if (path == null) return
+        val file = File(path)
+
+        Glide.with(binding.imgVideoThumb.context)
+            .asBitmap()
+            .load(file)
+            .frame(1000000) // 1 second in microseconds
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(binding.imgVideoThumb)
+
+        binding.flSingleVideo.visibility = View.VISIBLE
+        binding.flSingleVideo.setOnClickListener {
+            playVideo(it.context, path)
+        }
+    }
+
+    private fun addVideoToContainer(binding: RowNewsBinding, path: String?) {
+        if (path == null) return
+        val file = File(path)
+
+        val frameLayout = android.widget.FrameLayout(context)
+        val size = (100 * context.resources.displayMetrics.density).toInt()
+        val margin = (4 * context.resources.displayMetrics.density).toInt()
+        val params = ViewGroup.MarginLayoutParams(size, size)
+        params.setMargins(margin, margin, margin, margin)
+        frameLayout.layoutParams = params
+
+        val thumbnailView = ImageView(context)
+        thumbnailView.layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        thumbnailView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+        Glide.with(context)
+            .asBitmap()
+            .load(file)
+            .frame(1000000)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(thumbnailView)
+
+        val playIcon = ImageView(context)
+        val iconSize = (32 * context.resources.displayMetrics.density).toInt()
+        val iconParams = android.widget.FrameLayout.LayoutParams(iconSize, iconSize)
+        iconParams.gravity = android.view.Gravity.CENTER
+        playIcon.layoutParams = iconParams
+        playIcon.setImageResource(R.drawable.ic_play)
+        playIcon.setBackgroundResource(R.drawable.circle_background)
+        val padding = (8 * context.resources.displayMetrics.density).toInt()
+        playIcon.setPadding(padding, padding, padding, padding)
+        playIcon.setColorFilter(android.graphics.Color.WHITE)
+
+        frameLayout.addView(thumbnailView)
+        frameLayout.addView(playIcon)
+
+        frameLayout.setOnClickListener {
+            playVideo(context, path)
+        }
+
+        binding.llNewsVideos.addView(frameLayout)
+    }
+
+    private fun loadLibraryVideo(binding: RowNewsBinding, resourceId: String?) {
+        if (resourceId == null) return
+        scope.launch {
+            val library = voicesRepository.getLibraryResource(resourceId)
+            withContext(Dispatchers.Main) {
+                val basePath = context.getExternalFilesDir(null)
+                if (library != null && basePath != null) {
+                    val videoFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+
+                    Glide.with(binding.imgVideoThumb.context)
+                        .asBitmap()
+                        .load(videoFile)
+                        .frame(1000000)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .placeholder(R.drawable.ic_loading)
+                        .error(R.drawable.ic_loading)
+                        .into(binding.imgVideoThumb)
+
+                    binding.flSingleVideo.visibility = View.VISIBLE
+                    binding.flSingleVideo.setOnClickListener {
+                        playVideo(it.context, videoFile.absolutePath)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun addLibraryVideoToContainer(binding: RowNewsBinding, resourceId: String?) {
+        if (resourceId == null) return
+        scope.launch {
+            val library = voicesRepository.getLibraryResource(resourceId)
+            withContext(Dispatchers.Main) {
+                val basePath = context.getExternalFilesDir(null)
+                if (library != null && basePath != null) {
+                    val videoFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+
+                    val frameLayout = android.widget.FrameLayout(context)
+                    val size = (100 * context.resources.displayMetrics.density).toInt()
+                    val margin = (4 * context.resources.displayMetrics.density).toInt()
+                    val params = ViewGroup.MarginLayoutParams(size, size)
+                    params.setMargins(margin, margin, margin, margin)
+                    frameLayout.layoutParams = params
+
+                    val thumbnailView = ImageView(context)
+                    thumbnailView.layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                    thumbnailView.scaleType = ImageView.ScaleType.CENTER_CROP
+
+                    Glide.with(context)
+                        .asBitmap()
+                        .load(videoFile)
+                        .frame(1000000)
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .placeholder(R.drawable.ic_loading)
+                        .error(R.drawable.ic_loading)
+                        .into(thumbnailView)
+
+                    val playIcon = ImageView(context)
+                    val iconSize = (32 * context.resources.displayMetrics.density).toInt()
+                    val iconParams = android.widget.FrameLayout.LayoutParams(iconSize, iconSize)
+                    iconParams.gravity = android.view.Gravity.CENTER
+                    playIcon.layoutParams = iconParams
+                    playIcon.setImageResource(R.drawable.ic_play)
+                    playIcon.setBackgroundResource(R.drawable.circle_background)
+                    val padding = (8 * context.resources.displayMetrics.density).toInt()
+                    playIcon.setPadding(padding, padding, padding, padding)
+                    playIcon.setColorFilter(android.graphics.Color.WHITE)
+
+                    frameLayout.addView(thumbnailView)
+                    frameLayout.addView(playIcon)
+
+                    frameLayout.setOnClickListener {
+                        playVideo(context, videoFile.absolutePath)
+                    }
+
+                    binding.llNewsVideos.addView(frameLayout)
+                }
+            }
+        }
+    }
+
+    private fun playVideo(context: Context, videoPath: String) {
+        val intent = Intent(context, VideoViewerActivity::class.java)
+        intent.putExtra("videoType", "offline")
+        intent.putExtra("videoURL", videoPath)
+        context.startActivity(intent)
     }
 
     private fun showZoomableImage(context: Context, imageUrl: String) {

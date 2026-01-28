@@ -201,7 +201,7 @@ object VoicesActions {
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
         map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, true) }
+        currentUser?.let { createNews(map, realm, it, imageList, null, true) }
         if (shouldCommit) realm.commitTransaction()
     }
 
