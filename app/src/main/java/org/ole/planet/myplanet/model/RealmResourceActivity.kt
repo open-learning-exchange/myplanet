@@ -44,7 +44,7 @@ open class RealmResourceActivity : RealmObject() {
             if (!realm.isInTransaction) {
                 realm.beginTransaction()
             }
-            val user = realm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
+            val user = realm.where(RealmUser::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
                 ?: return
             if (user.id?.startsWith("guest") == true) {
                 return

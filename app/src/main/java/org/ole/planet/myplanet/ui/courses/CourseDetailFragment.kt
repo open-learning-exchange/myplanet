@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
@@ -28,7 +28,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentCourseDetailBinding? = null
     private val binding get() = _binding!!
     var courses: RealmMyCourse? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var id: String? = null
     @Inject
     lateinit var ratingsRepository: RatingsRepository

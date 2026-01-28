@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
@@ -36,7 +36,7 @@ class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityAddResourceBinding
-    var userModel: RealmUserModel? = null
+    var userModel: RealmUser? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null

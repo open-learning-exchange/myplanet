@@ -10,7 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 class FeedbackRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -54,7 +54,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override suspend fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
+    override suspend fun getFeedback(userModel: RealmUser?): Flow<List<RealmFeedback>> =
         queryListFlow(RealmFeedback::class.java) {
             if (userModel?.isManager() == true) {
                 sort("openTime", Sort.DESCENDING)

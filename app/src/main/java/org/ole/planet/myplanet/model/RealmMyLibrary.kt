@@ -241,7 +241,7 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(personal: RealmMyLibrary, user: RealmUserModel?): JsonObject {
+        fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
                 addProperty("uploadDate", Date().time)

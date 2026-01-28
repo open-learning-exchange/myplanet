@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.annotations.SerializedName
 
-data class ChatModel(
+data class ChatResponse(
     @SerializedName("message") var message: String? = null,
     @SerializedName("error") var error: String? = null,
     @SerializedName("status") var status: String? = null,

@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -296,7 +296,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel?) {
+    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
         this.settings = settings ?: appPreferences
         settings.edit {
             putString("userId", user?.id)

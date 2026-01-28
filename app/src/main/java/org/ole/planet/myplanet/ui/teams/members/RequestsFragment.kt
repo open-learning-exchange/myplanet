@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
@@ -25,7 +25,7 @@ class RequestsFragment : BaseMemberFragment() {
     lateinit var userSessionManager: UserSessionManager
 
     private val viewModel: RequestsViewModel by viewModels()
-    private lateinit var currentUser: RealmUserModel
+    private lateinit var currentUser: RealmUser
     private var onMemberChangeListener: OnMemberChangeListener? = null
     fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
         this.onMemberChangeListener = listener
@@ -33,7 +33,7 @@ class RequestsFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userSessionManager.userModel ?: RealmUserModel()
+        currentUser = userSessionManager.userModel ?: RealmUser()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -66,7 +66,7 @@ class RequestsFragment : BaseMemberFragment() {
         llImage?.removeAllViews()
     }
 
-    override val list: List<RealmUserModel>
+    override val list: List<RealmUser>
         get() = emptyList()
 
     override val adapter: RecyclerView.Adapter<*> by lazy {

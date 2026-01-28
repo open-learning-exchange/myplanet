@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -60,7 +60,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
-    var model: RealmUserModel? = null
+    var model: RealmUser? = null
     protected lateinit var mRealm: Realm
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -125,8 +125,8 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = resourcesRepository.getLibraryListForUser(
-                        settings.getString("userId", "--")
+                    val list = resourcesRepository.getDownloadSuggestionList(
+                        profileDbHandler.userModel?.id
                     )
                     showDownloadDialog(list)
                 } finally {
@@ -184,13 +184,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        val userId = profileDbHandler.userModel?.id
-        val librariesForDialog = if (userId.isNullOrBlank()) {
-            dbMyLibrary
-        } else {
-            val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
-            if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
-        }
+        val librariesForDialog = dbMyLibrary
 
         if (librariesForDialog.isEmpty()) {
             return

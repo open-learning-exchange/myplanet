@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -50,7 +50,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var teamList: List<RealmMyTeam> = emptyList()
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
@@ -315,7 +315,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         team?.let { createTeamAlert(it) }
     }
 
-    override fun onLeaveTeam(team: TeamDetails, user: RealmUserModel?) {
+    override fun onLeaveTeam(team: TeamDetails, user: RealmUser?) {
         AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
@@ -325,7 +325,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
             .show()
     }
 
-    override fun onRequestToJoin(team: TeamDetails, user: RealmUserModel?) {
+    override fun onRequestToJoin(team: TeamDetails, user: RealmUser?) {
         viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
     }
 

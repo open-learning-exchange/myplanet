@@ -1,61 +1,59 @@
 package org.ole.planet.myplanet.ui.health
 
-import android.app.Activity
 import android.text.TextUtils
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.TextView
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.databinding.ItemUserBinding
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class HealthUsersAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
-    private class ViewHolder {
-        var tvName: TextView? = null
-        var joined: TextView? = null
-        var image: ImageView? = null
-    }
+class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = null) :
+    ListAdapter<RealmUser, HealthUsersAdapter.ViewHolder>(
+        DiffUtils.itemCallback<RealmUser>(
+            areItemsTheSame = { old, new -> old.id == new.id },
+            areContentsTheSame = { old, new ->
+                old.name == new.name &&
+                old.userImage == new.userImage &&
+                old.joinDate == new.joinDate
+            }
+        )
+    ) {
 
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val holder: ViewHolder
-        var convertViewVar = convertView
+    class ViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(user: RealmUser, clickListener: ((RealmUser) -> Unit)?) {
+            binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
+            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 
-        if (convertViewVar == null) {
-            convertViewVar = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
-            holder = ViewHolder()
-            holder.tvName = convertViewVar.findViewById(R.id.txt_name)
-            holder.joined = convertViewVar.findViewById(R.id.txt_joined)
-            holder.image = convertViewVar.findViewById(R.id.iv_user)
-            convertViewVar.tag = holder
-        } else {
-            holder = convertViewVar.tag as ViewHolder
-        }
-
-        val um = getItem(position)
-        holder.tvName?.text = context.getString(R.string.two_strings, um?.getFullName(), "(${um?.name})")
-        if (um != null) {
-            holder.joined?.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(um.joinDate))
-        }
-
-        if (!TextUtils.isEmpty(um?.userImage)) {
-            holder.image?.let {
-                Glide.with(it.context)
-                    .load(um?.userImage)
+            if (!TextUtils.isEmpty(user.userImage)) {
+                Glide.with(binding.ivUser.context)
+                    .load(user.userImage)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
                     .circleCrop()
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
-                    .into(it)
+                    .into(binding.ivUser)
+            } else {
+                binding.ivUser.setImageResource(R.drawable.profile)
             }
-        } else {
-            holder.image?.setImageResource(R.drawable.profile)
-        }
 
-        return convertViewVar!!
+            binding.root.setOnClickListener {
+                clickListener?.invoke(user)
+            }
+        }
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        holder.bind(getItem(position), clickListener)
     }
 }
