@@ -325,13 +325,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             return
         }
         lifecycleScope.launch {
-            val teams = databaseService.withRealmAsync { realm ->
-                realm.where(RealmMyTeam::class.java)
-                    .isEmpty("teamId")
-                    .equalTo("status", "active")
-                    .findAll()
-                    ?.let { realm.copyFromRealm(it) }
-            }
+            val teams = teamsRepository.getAllActiveTeams()
             cachedTeams = teams
             setupTeamDropdown(teams)
         }
