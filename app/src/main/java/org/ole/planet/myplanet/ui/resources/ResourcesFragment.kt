@@ -585,10 +585,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
         customProgressDialog = null
 
-        if (::realtimeSyncHelper.isInitialized) {
-            realtimeSyncHelper.cleanup()
-        }
-
         _binding = null
         super.onDestroyView()
     }
