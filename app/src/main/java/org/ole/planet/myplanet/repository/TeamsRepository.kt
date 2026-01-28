@@ -5,11 +5,11 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.Transaction
 
 data class JoinedMemberData(
-    val user: RealmUserModel,
+    val user: RealmUser,
     val visitCount: Long,
     val lastVisitDate: Long?,
     val offlineVisits: String,
@@ -53,7 +53,7 @@ interface TeamsRepository {
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun removeMember(teamId: String, userId: String)
-    suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
+    suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUser?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
@@ -77,7 +77,7 @@ interface TeamsRepository {
         teamType: String?,
     )
 
-    suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUserModel): Result<String>
+    suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String>
     suspend fun updateTeam(
         teamId: String,
         name: String,
@@ -121,11 +121,11 @@ interface TeamsRepository {
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
-    suspend fun getJoinedMembers(teamId: String): List<RealmUserModel>
+    suspend fun getJoinedMembers(teamId: String): List<RealmUser>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
-    suspend fun getAssignee(userId: String): RealmUserModel?
-    suspend fun getRequestedMembers(teamId: String): List<RealmUserModel>
+    suspend fun getAssignee(userId: String): RealmUser?
+    suspend fun getRequestedMembers(teamId: String): List<RealmUser>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
     suspend fun createEnterprise(
         name: String,
@@ -133,9 +133,9 @@ interface TeamsRepository {
         services: String,
         rules: String,
         isPublic: Boolean,
-        user: RealmUserModel,
+        user: RealmUser,
     ): Result<String>
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
-    suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUserModel?
+    suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
 }

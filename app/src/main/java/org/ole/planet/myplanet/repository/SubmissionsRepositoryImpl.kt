@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -269,7 +269,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 .equalTo("id", examId)
                 .findFirst()
 
-            val user = realm.where(RealmUserModel::class.java)
+            val user = realm.where(RealmUser::class.java)
                 .equalTo("id", submission.userId)
                 .findFirst()
 

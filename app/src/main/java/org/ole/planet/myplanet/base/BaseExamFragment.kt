@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
@@ -62,7 +62,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     private var stepNumber = 0
     var questions: List<RealmExamQuestion>? = null
     var ans = ""
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var sub: RealmSubmission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false

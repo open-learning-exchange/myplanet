@@ -67,7 +67,7 @@ open class RealmTeamTask : RealmObject() {
             `object`.addProperty("description", task.description)
             `object`.addProperty("completed", task.completed)
             `object`.addProperty("completedTime", task.completedTime)
-            val user = realm.where(RealmUserModel::class.java).equalTo("id", task.assignee).findFirst()
+            val user = realm.where(RealmUser::class.java).equalTo("id", task.assignee).findFirst()
             if (user != null) `object`.add("assignee", user.serialize())
             else `object`.addProperty("assignee", "")
             `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))

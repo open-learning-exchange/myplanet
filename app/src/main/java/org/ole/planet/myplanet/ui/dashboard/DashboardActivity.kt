@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -100,7 +100,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null

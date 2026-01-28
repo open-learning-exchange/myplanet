@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 class EventsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -22,7 +22,7 @@ class EventsRepositoryImpl @Inject constructor(
         return findByField(RealmMeetup::class.java, "meetupId", meetupId)
     }
 
-    override suspend fun getJoinedMembers(meetupId: String): List<RealmUserModel> {
+    override suspend fun getJoinedMembers(meetupId: String): List<RealmUser> {
         if (meetupId.isBlank()) {
             return emptyList()
         }
@@ -37,7 +37,7 @@ class EventsRepositoryImpl @Inject constructor(
             if (memberIds.isEmpty()) {
                 emptyList()
             } else {
-                val users = realm.where(RealmUserModel::class.java)
+                val users = realm.where(RealmUser::class.java)
                     .`in`("id", memberIds.toTypedArray())
                     .findAll()
                 realm.copyFromRealm(users)

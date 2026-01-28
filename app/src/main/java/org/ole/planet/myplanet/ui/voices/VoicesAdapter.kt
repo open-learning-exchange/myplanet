@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -63,14 +63,14 @@ import org.ole.planet.myplanet.utils.makeExpandable
 
 class VoicesAdapter(
     var context: Context,
-    private var currentUser: RealmUserModel?,
+    private var currentUser: RealmUser?,
     private val parentNews: RealmNews?,
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userSessionManager: UserSessionManager,
     private val scope: CoroutineScope,
     private val isTeamLeaderFn: suspend () -> Boolean,
-    private val getUserFn: suspend (String) -> RealmUserModel?,
+    private val getUserFn: suspend (String) -> RealmUser?,
     private val getReplyCountFn: suspend (String) -> Int,
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
@@ -114,14 +114,14 @@ class VoicesAdapter(
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private val profileDbHandler = userSessionManager
     lateinit var settings: SharedPreferences
-    private val userCache = mutableMapOf<String, RealmUserModel?>()
+    private val userCache = mutableMapOf<String, RealmUser?>()
     private val fetchingUserIds = mutableSetOf<String>()
-    private val leadersList: List<RealmUserModel> by lazy {
+    private val leadersList: List<RealmUser> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
-        RealmUserModel.parseLeadersJson(raw)
+        RealmUser.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
 
@@ -257,7 +257,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun configureUser(holder: VoicesViewHolder, news: RealmNews): RealmUserModel? {
+    private fun configureUser(holder: VoicesViewHolder, news: RealmNews): RealmUser? {
         val userId = news.userId
         if (userId.isNullOrEmpty()) return null
 
@@ -403,7 +403,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun getCurrentLeader(userModel: RealmUserModel?, news: RealmNews): RealmUserModel? {
+    private fun getCurrentLeader(userModel: RealmUser?, news: RealmNews): RealmUser? {
         if (userModel == null) {
             for (leader in leadersList) {
                 if (leader.name == news.userName) {
@@ -428,7 +428,7 @@ class VoicesAdapter(
         submitList(list, commitCallback)
     }
 
-    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
+    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUser?, currentLeader: RealmUser?) {
         if (!fromLogin) {
             holder.binding.imgUser.setOnClickListener {
                 val model = userModel ?: currentLeader

@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -51,7 +51,7 @@ class UploadToShelfService @Inject constructor(
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val userModels = dbService.withRealm { realm ->
-                    realm.where(RealmUserModel::class.java)
+                    realm.where(RealmUser::class.java)
                         .isEmpty("_id").or().equalTo("isUpdated", true)
                         .findAll()
                         .take(100)
@@ -94,7 +94,7 @@ class UploadToShelfService @Inject constructor(
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val userModel = dbService.withRealm { realm ->
-                    realm.where(RealmUserModel::class.java)
+                    realm.where(RealmUser::class.java)
                         .equalTo("name", userName)
                         .findFirst()
                         ?.let { realm.copyFromRealm(it) }
@@ -125,7 +125,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun checkIfUserExists(apiInterface: ApiInterface?, header: String, model: RealmUserModel): Boolean {
+    private suspend fun checkIfUserExists(apiInterface: ApiInterface?, header: String, model: RealmUser): Boolean {
         try {
             val res = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
             val exists = res?.body() != null
@@ -136,7 +136,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun uploadNewUser(apiInterface: ApiInterface?, model: RealmUserModel) {
+    private suspend fun uploadNewUser(apiInterface: ApiInterface?, model: RealmUser) {
         try {
             val obj = model.serialize()
             val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
@@ -149,7 +149,7 @@ class UploadToShelfService @Inject constructor(
                 
                 // Persist _id and _rev to database
                 dbService.executeTransactionAsync { realm ->
-                    val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                    val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
                     if (managedModel != null) {
                         managedModel._id = id
                         managedModel._rev = rev
@@ -165,7 +165,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun processUserAfterCreation(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
+    private suspend fun processUserAfterCreation(apiInterface: ApiInterface?, model: RealmUser, obj: JsonObject) {
         try {
             val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -187,7 +187,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun updateExistingUser(apiInterface: ApiInterface?, header: String, model: RealmUserModel) {
+    private suspend fun updateExistingUser(apiInterface: ApiInterface?, header: String, model: RealmUser) {
         try {
             val latestDocResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
@@ -207,7 +207,7 @@ class UploadToShelfService @Inject constructor(
                 if (updateResponse.isSuccessful) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
                     dbService.executeTransactionAsync { realm ->
-                        val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                        val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
                         managedModel?._rev = updatedRev
                         managedModel?.isUpdated = false
                     }
@@ -218,7 +218,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun replacedUrl(model: RealmUserModel): String {
+    private fun replacedUrl(model: RealmUser): String {
         val url = UrlUtils.getUrl()
         val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
         val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
@@ -227,14 +227,14 @@ class UploadToShelfService @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    private fun updateHealthData(realm: Realm, model: RealmUserModel) {
+    private fun updateHealthData(realm: Realm, model: RealmUser) {
         val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
         for (p in list) {
             p.userId = model._id
         }
     }
 
-    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject) {
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUser, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -278,7 +278,7 @@ class UploadToShelfService @Inject constructor(
             changeUserSecurity(model, obj)
 
             dbService.executeTransactionAsync { realm ->
-                val managedModel = realm.where(RealmUserModel::class.java).equalTo("id", model.id).findFirst()
+                val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
                 managedModel?.key = keyString
                 managedModel?.iv = iv
             }
@@ -367,7 +367,7 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client?.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             val unmanagedUsers = dbService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll().let {
+                realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().let {
                     realm.copyFromRealm(it)
                 }
             }
@@ -415,7 +415,7 @@ class UploadToShelfService @Inject constructor(
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = dbService.withRealm { realm ->
-                    realm.where(RealmUserModel::class.java)
+                    realm.where(RealmUser::class.java)
                         .equalTo("name", userName)
                         .isNotEmpty("_id")
                         .findFirst()
@@ -475,7 +475,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     companion object {
-        private suspend fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
+        private suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
