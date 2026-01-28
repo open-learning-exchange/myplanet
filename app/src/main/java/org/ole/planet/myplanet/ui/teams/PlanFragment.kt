@@ -59,7 +59,6 @@ class PlanFragment : BaseTeamFragment() {
     }
 
     private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
-        val isMyTeam = RealmMyTeam.isTeamLeader(currentTeam._id, user?.id, mRealm)
         isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         binding.btnAddPlan.text = if (isEnterprise) {
@@ -68,12 +67,15 @@ class PlanFragment : BaseTeamFragment() {
             getString(R.string.edit_plan)
         }
 
-        binding.btnAddPlan.isVisible = isMyTeam
-        binding.btnAddPlan.isEnabled = isMyTeam
+        viewLifecycleOwner.lifecycleScope.launch {
+            val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id ?: "", user?._id)
+            binding.btnAddPlan.isVisible = isMyTeam
+            binding.btnAddPlan.isEnabled = isMyTeam
 
-        binding.btnAddPlan.setOnClickListener {
-            if (isMyTeam) {
-                editTeam()
+            binding.btnAddPlan.setOnClickListener {
+                if (isMyTeam) {
+                    editTeam()
+                }
             }
         }
     }
