@@ -39,6 +39,12 @@ class CoursesRepositoryImpl @Inject constructor(
         return myCourses
     }
 
+    override suspend fun getMyCourses(userId: String): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+        }
+    }
+
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
         return queryListFlow(RealmMyCourse::class.java) {
             equalTo("userId", userId)
