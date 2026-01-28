@@ -45,6 +45,17 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java)
+    }
+
+    override suspend fun getUserCourses(userId: String?): List<RealmMyCourse> {
+        if (userId.isNullOrBlank()) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+        }
+    }
+
     override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java)
@@ -317,5 +328,28 @@ class CoursesRepositoryImpl @Inject constructor(
         return count(RealmCertification::class.java) {
             contains("courseIds", courseId)
         } > 0
+    }
+
+    override suspend fun deleteCourseProgress(courseId: String) {
+        if (courseId.isBlank()) return
+        executeTransaction { realm ->
+            realm.where(org.ole.planet.myplanet.model.RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+                .deleteAllFromRealm()
+
+            val examList = realm.where(RealmStepExam::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+
+            for (exam in examList) {
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", exam.id)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
     }
 }

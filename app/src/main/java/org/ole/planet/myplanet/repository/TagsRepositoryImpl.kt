@@ -43,6 +43,10 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
+    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
+        return getLinkedTagsBulk("courses", courseIds)
+    }
+
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
         if (linkIds.isEmpty()) {
             return emptyMap()

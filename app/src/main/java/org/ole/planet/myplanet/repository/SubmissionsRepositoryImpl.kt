@@ -43,6 +43,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun getAllSurveys(): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
+        }
+    }
+
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
 
