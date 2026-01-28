@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.data.api
 import com.google.gson.JsonObject
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
 import retrofit2.Response
@@ -55,7 +55,7 @@ interface ApiInterface {
     suspend fun isPlanetAvailable(@Url serverUrl: String?): Response<ResponseBody>
 
     @POST
-    suspend fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Response<ChatModel>
+    suspend fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Response<ChatResponse>
 
     @GET
     suspend fun checkAiProviders(@Url url: String?): Response<ResponseBody>

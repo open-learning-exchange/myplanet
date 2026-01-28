@@ -56,8 +56,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
     lateinit var surveysRepository: SurveysRepository
 
     data class AnswerData(
