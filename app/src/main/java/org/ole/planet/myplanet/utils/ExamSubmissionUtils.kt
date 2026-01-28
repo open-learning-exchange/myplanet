@@ -4,13 +4,14 @@ import io.realm.Realm
 import io.realm.RealmList
 import java.util.Date
 import java.util.UUID
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmSubmission
 
 object ExamSubmissionUtils {
-    fun saveAnswer(
-        realm: Realm, submission: RealmSubmission?, question: RealmExamQuestion,
+    suspend fun saveAnswer(
+        databaseService: DatabaseService, submission: RealmSubmission?, question: RealmExamQuestion,
         ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean,
         type: String, index: Int, total: Int, isExplicitSubmission: Boolean = false
     ): Boolean {
@@ -21,7 +22,7 @@ object ExamSubmissionUtils {
         }
 
         val questionId = question.id
-        realm.executeTransactionAsync({ r ->
+        databaseService.executeTransactionAsync { r ->
             val realmSubmission = if (submissionId != null) {
                 r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
             } else {
@@ -47,11 +48,7 @@ object ExamSubmissionUtils {
 
                 updateSubmissionStatus(realmSubmission, index, total, type, isExplicitSubmission)
             }
-        }, {
-            // Success
-        }, { _ ->
-            // Error
-        })
+        }
 
         val result = if (type == "exam") {
             ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
