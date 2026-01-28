@@ -114,10 +114,27 @@
                             android:layout_gravity="center"
                             android:text="@string/add_image"
                             android:theme="@style/PrimaryButton" />
+                        <Button
+                            android:id="@+id/add_news_video"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:text="@string/add_video"
+                            android:theme="@style/PrimaryButton" />
                     </LinearLayout>
 
                     <com.google.android.flexbox.FlexboxLayout
                         android:id="@+id/ll_images"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:alignContent="flex_start"
+                        app:alignItems="flex_start"
+                        app:flexWrap="wrap"
+                        app:justifyContent="flex_start" />
+
+                    <com.google.android.flexbox.FlexboxLayout
+                        android:id="@+id/ll_videos"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
