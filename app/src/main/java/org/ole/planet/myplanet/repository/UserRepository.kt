@@ -64,6 +64,7 @@ interface UserRepository {
     ): HealthRecord?
 
     fun getUserModel(): RealmUserModel?
+    fun getCurrentUser(): RealmUserModel?
     suspend fun getUserModelSuspending(): RealmUserModel?
     suspend fun getUserProfile(): RealmUserModel?
     suspend fun getUserImageUrl(): String?
