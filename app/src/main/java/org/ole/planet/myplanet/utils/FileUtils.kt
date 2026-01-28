@@ -12,6 +12,7 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.format.Formatter
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
@@ -308,5 +309,24 @@ object FileUtils {
     }
     fun nameWithoutExtension(fileName: String?): String? {
         return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
+    }
+
+    @JvmStatic
+    fun openPdf(context: Context, file: File) {
+        try {
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.provider",
+                file
+            )
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            android.widget.Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
+        }
     }
 }

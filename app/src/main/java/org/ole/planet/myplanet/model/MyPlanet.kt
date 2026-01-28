@@ -29,7 +29,7 @@ class MyPlanet : Serializable {
 
     companion object {
         @JvmStatic
-        fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
+        fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
@@ -44,7 +44,7 @@ class MyPlanet : Serializable {
         }
 
         @JvmStatic
-        fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
+        fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)

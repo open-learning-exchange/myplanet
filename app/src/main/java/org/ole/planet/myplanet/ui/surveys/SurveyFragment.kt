@@ -14,10 +14,8 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -28,19 +26,19 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: SurveyAdapter
+    private lateinit var adapter: SurveysAdapter
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private var currentIsTeamShareAllowed: Boolean = false
@@ -78,7 +76,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
         val userProfileModel = profileDbHandler.userModel
-        adapter = SurveyAdapter(
+        adapter = SurveysAdapter(
             requireActivity(),
             userProfileModel?.id,
             isTeam,
@@ -356,9 +354,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncHelper.isInitialized) {
-            realtimeSyncHelper.cleanup()
-        }
         loadSurveysJob?.cancel()
         loadSurveysJob = null
         currentSurveys = emptyList()

@@ -4,7 +4,7 @@ import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 interface VoicesRepository {
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
@@ -12,8 +12,8 @@ interface VoicesRepository {
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
     suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
-    suspend fun createNews(map: HashMap<String?, String>, user: RealmUserModel?, imageList: io.realm.RealmList<String>?): RealmNews
-    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUserModel, imageList: io.realm.RealmList<String>?): Boolean
+    suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?): RealmNews
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: io.realm.RealmList<String>?): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)

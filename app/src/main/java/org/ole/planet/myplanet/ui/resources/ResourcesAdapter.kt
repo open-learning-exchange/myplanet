@@ -16,6 +16,7 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
+import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
@@ -25,22 +26,27 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.Utilities
-import java.util.Locale
 
 class ResourcesAdapter(
     private val context: Context,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val resourcesRepository: ResourcesRepository,
-    private val userModel: RealmUserModel?,
+    private val userModel: RealmUser?,
     private var tagsMap: Map<String, List<RealmTag>>,
     private var openedResourceIds: Set<String>
-) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnDiffRefreshListener {
+) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(
+    DiffUtils.itemCallback(
+        { oldItem, newItem -> oldItem.id == newItem.id },
+        { oldItem, newItem -> oldItem._rev == newItem._rev && oldItem.uploadDate == newItem.uploadDate }
+    )
+), OnDiffRefreshListener {
 
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelectedListener? = null
@@ -54,16 +60,6 @@ class ResourcesAdapter(
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
-
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmMyLibrary>() {
-            override fun areItemsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
-                return oldItem._rev == newItem._rev && oldItem.uploadDate == newItem.uploadDate
-            }
-        }
     }
 
     init {

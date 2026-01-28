@@ -7,10 +7,9 @@ import com.google.gson.JsonObject
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -20,7 +19,7 @@ import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 
 class ChallengeManager(
     private val activity: DashboardActivity,
-    private val user: RealmUserModel?,
+    private val user: RealmUser?,
     private val settings: SharedPreferences,
     private val editor: SharedPreferences.Editor,
     private val viewModel: DashboardViewModel,

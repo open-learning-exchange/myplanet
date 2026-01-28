@@ -12,7 +12,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
@@ -39,9 +41,10 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -51,7 +54,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -70,7 +72,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
     private var tagsMap: Map<String, List<RealmTag>> = emptyMap()
-    var userModel: RealmUserModel ?= null
+    var userModel: RealmUser ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -241,9 +243,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userModel?.id != null) {
             lifecycleScope.launch {
-                resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
-                    if (::adapterLibrary.isInitialized) {
-                        adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                        }
                     }
                 }
             }
@@ -580,10 +584,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             customProgressDialog?.dismiss()
         }
         customProgressDialog = null
-
-        if (::realtimeSyncHelper.isInitialized) {
-            realtimeSyncHelper.cleanup()
-        }
 
         _binding = null
         super.onDestroyView()

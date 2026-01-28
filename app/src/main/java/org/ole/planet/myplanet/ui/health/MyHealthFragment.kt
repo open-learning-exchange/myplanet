@@ -16,14 +16,14 @@ import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ListView
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Sort
@@ -42,9 +42,10 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -52,7 +53,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -73,9 +73,9 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    var userModel: RealmUserModel? = null
-    lateinit var userModelList: List<RealmUserModel>
-    lateinit var adapter: UserSelectionAdapter
+    var userModel: RealmUser? = null
+    lateinit var userModelList: List<RealmUser>
+    lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -196,7 +196,7 @@ class MyHealthFragment : Fragment() {
 
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
-        adapter = UserSelectionAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
+        adapter = HealthUsersAdapter()
         setupInitialData()
         setupButtons()
     }
@@ -207,7 +207,7 @@ class MyHealthFragment : Fragment() {
         getHealthRecords(userId)
     }
 
-    private fun getCurrentUserProfileCopy(): RealmUserModel? {
+    private fun getCurrentUserProfileCopy(): RealmUser? {
         return userSessionManager.getUserModelCopy()
     }
 
@@ -272,23 +272,21 @@ class MyHealthFragment : Fragment() {
             val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter.clear()
-                adapter.addAll(userModelList)
-                adapter.notifyDataSetChanged()
+                adapter = HealthUsersAdapter { selected ->
+                    userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                    getHealthRecords(userId)
+                    dialog?.dismiss()
+                }
+                adapter.submitList(userModelList)
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
+                    binding.list.layoutManager = LinearLayoutManager(requireContext())
                     binding.list.adapter = adapter
                     setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
-                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
-                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                        getHealthRecords(userId)
-                        dialog?.dismiss()
-                    }
                     sortList(binding.spnSort, binding.list)
                     dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                         .setTitle(getString(R.string.select_health_member)).setView(binding.root)
@@ -299,7 +297,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
+    private fun sortList(spnSort: AppCompatSpinner, rv: RecyclerView) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
@@ -314,16 +312,14 @@ class MyHealthFragment : Fragment() {
                     val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     if (isAdded) {
                         userModelList = sortedList
-                        adapter.clear()
-                        adapter.addAll(userModelList)
-                        adapter.notifyDataSetChanged()
+                        adapter.submitList(userModelList)
                     }
                 }
             }
         }
     }
 
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -334,7 +330,7 @@ class MyHealthFragment : Fragment() {
                     val loadingJob = launch(Dispatchers.Main) {
                         delay(100)
                         alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
-                        lv.visibility = View.GONE
+                        rv.visibility = View.GONE
                     }
 
                     val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
@@ -342,15 +338,16 @@ class MyHealthFragment : Fragment() {
                     loadingJob.cancel()
                     if (isAdded) {
                         alertHealthListBinding?.searchProgress?.visibility = View.GONE
-                        lv.visibility = View.VISIBLE
-                        val adapter = UserSelectionAdapter(
-                            requireActivity(),
-                            android.R.layout.simple_list_item_1,
-                            userModelList
-                        )
-                        lv.adapter = adapter
+                        rv.visibility = View.VISIBLE
+                        val searchAdapter = HealthUsersAdapter { selected ->
+                            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                            getHealthRecords(userId)
+                            dialog?.dismiss()
+                        }
+                        searchAdapter.submitList(userModelList)
+                        rv.adapter = searchAdapter
                         btnAddMember.visibility =
-                            if (adapter.count == 0) View.VISIBLE else View.GONE
+                            if (userModelList.isEmpty()) View.VISIBLE else View.GONE
                     }
                 }
             }

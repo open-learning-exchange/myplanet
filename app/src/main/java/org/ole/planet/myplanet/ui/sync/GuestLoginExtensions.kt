@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
@@ -58,7 +58,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                 val error = AuthUtils.validateUsername(username, userRepository)
                 if (error == null) {
                     databaseService.withRealm { loginRealm ->
-                        val existingUser = loginRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+                        val existingUser = loginRealm.where(RealmUser::class.java).equalTo("name", username).findFirst()
                         dialog.dismiss()
                         if (existingUser != null) {
                             when {
@@ -66,7 +66,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                                 existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
                             }
                         } else {
-                            val model = RealmUserModel.createGuestUser(username, loginRealm, settings)?.let { loginRealm.copyFromRealm(it) }
+                            val model = RealmUser.createGuestUser(username, loginRealm, settings)?.let { loginRealm.copyFromRealm(it) }
                             if (model == null) {
                                 toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                             } else {

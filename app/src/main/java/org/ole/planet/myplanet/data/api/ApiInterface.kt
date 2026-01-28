@@ -3,10 +3,9 @@ package org.ole.planet.myplanet.data.api
 import com.google.gson.JsonObject
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
-import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -23,31 +22,22 @@ interface ApiInterface {
     suspend fun downloadFile(@Header("Authorization") header: String?, @Url fileUrl: String?): Response<ResponseBody>
 
     @GET
-    fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Call<DocumentResponse>
+    suspend fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Response<DocumentResponse>
 
     @GET
-    fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
+    suspend fun getJsonObject(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
 
     @POST
-    fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
+    suspend fun findDocs(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @POST
-    fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
-
-    @POST
-    suspend fun postDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
+    suspend fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @PUT
-    fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
+    suspend fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Response<JsonObject>
 
     @PUT
-    fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
-
-    @PUT
-    suspend fun putDocSuspend(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
-
-    @GET
-    suspend fun getJsonObjectSuspended(@Header("Authorization") header: String?, @Url url: String?): Response<JsonObject>
+    suspend fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @GET
     suspend fun checkVersion(@Url serverUrl: String?): Response<MyPlanet>
@@ -56,22 +46,19 @@ interface ApiInterface {
     suspend fun getApkVersion(@Url url: String?): Response<ResponseBody>
 
     @GET
-    fun healthAccess(@Url url: String?): Call<ResponseBody>
+    suspend fun healthAccess(@Url url: String?): Response<ResponseBody>
 
     @GET
-    fun getChecksum(@Url url: String?): Call<ResponseBody>
+    suspend fun getChecksum(@Url url: String?): Response<ResponseBody>
 
     @GET
-    fun isPlanetAvailable(@Url serverUrl: String?): Call<ResponseBody>
-
-    @GET
-    suspend fun isPlanetAvailableSuspend(@Url serverUrl: String?): Response<ResponseBody>
+    suspend fun isPlanetAvailable(@Url serverUrl: String?): Response<ResponseBody>
 
     @POST
-    fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Call<ChatModel>
+    suspend fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Response<ChatResponse>
 
     @GET
-    fun checkAiProviders(@Url url: String?): Call<ResponseBody>
+    suspend fun checkAiProviders(@Url url: String?): Response<ResponseBody>
 
     @GET
     suspend fun getConfiguration(@Url url: String?): Response<JsonObject>

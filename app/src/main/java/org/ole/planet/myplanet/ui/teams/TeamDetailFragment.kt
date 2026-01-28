@@ -19,19 +19,20 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -77,11 +77,11 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     private var pageConfigs: List<TeamPageConfig> = emptyList()
     private var loadTeamJob: Job? = null
 
-    private fun getCurrentUser(): RealmUserModel? {
+    private fun getCurrentUser(): RealmUser? {
         return userSessionManager.userModel
     }
 
-    private fun detachCurrentUser(): RealmUserModel? {
+    private fun detachCurrentUser(): RealmUser? {
         return userSessionManager.getUserModelCopy()
     }
 
@@ -257,7 +257,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?, hasPendingRequest: Boolean) {
+    private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUser?, hasPendingRequest: Boolean) {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
 
@@ -326,7 +326,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         )
     }
 
-    private fun setupNonMyTeamButtons(user: RealmUserModel?, hasPendingRequest: Boolean) {
+    private fun setupNonMyTeamButtons(user: RealmUser?, hasPendingRequest: Boolean) {
         binding.btnAddDoc.isEnabled = false
         binding.btnAddDoc.visibility = View.GONE
         binding.btnLeave.isEnabled = true
@@ -362,7 +362,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    private fun setupMyTeamButtons(user: RealmUserModel?) {
+    private fun setupMyTeamButtons(user: RealmUser?) {
         binding.btnAddDoc.isEnabled = true
         binding.btnAddDoc.visibility = View.VISIBLE
         binding.btnLeave.isEnabled = true

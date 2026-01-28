@@ -14,8 +14,8 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UploadManager
@@ -62,9 +62,10 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences,
         gson: Gson,
         uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
-        personalsRepository: PersonalsRepository
+        personalsRepository: PersonalsRepository,
+        userRepository: org.ole.planet.myplanet.repository.UserRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository)
     }
 
     @Provides

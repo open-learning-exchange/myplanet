@@ -9,13 +9,13 @@ import java.io.IOException
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.coroutineContext
 import kotlin.reflect.KClass
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.coroutineContext
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -149,9 +149,9 @@ class UploadCoordinator @Inject constructor(
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
-                    apiInterface.postDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                    apiInterface.postDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 } else {
-                    apiInterface.putDocSuspend(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                    apiInterface.putDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 }
 
                 if (response.isSuccessful && response.body() != null) {

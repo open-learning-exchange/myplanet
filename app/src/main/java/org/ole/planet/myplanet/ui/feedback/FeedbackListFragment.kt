@@ -21,17 +21,17 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 
 @AndroidEntryPoint
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {

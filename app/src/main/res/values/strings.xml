@@ -576,7 +576,6 @@
     <string name="added_to_my_library">added to myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
-    <string name="planet_not_available">Planet not available</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
     <string name="removed_from_mylibrary">Removed from myLibrary</string>
@@ -704,12 +703,10 @@
     <string name="please_enter_server_url_first">Please enter server url first.</string>
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
-    <string name="planet_server_not_reachable">Planet server not reachable.</string>
     <string name="select_language">select language</string>
     <string name="thank_you">Thank You!</string>
     <string name="please_wait">Please wait…</string>
     <string name="update_later">Update Later</string>
-    <string name="checking_version">Checking version…</string>
     <string name="downloading">"Downloading… "</string>
     <string name="pin_is_required">Pin is required.</string>
     <string name="invalid_url">Invalid Url</string>
@@ -1154,7 +1151,6 @@
     <string name="filter_by_label">filter by label</string>
     <string name="is_available">%1$s is available. Tap to continue learning</string>
     <string name="failed_to_add_please_retry">Failed to add. Please retry</string>
-    <string name="failed_to_mark_as_read">Failed to mark as read. Please retry</string>
     <string name="failed_to_remove_resource">Failed to remove resource. Please retry</string>
     <string name="failed_to_adopt_survey">Failed to adopt survey. Please retry</string>
     <string name="failed_to_save_chat">Failed to save chat. Please retry.</string>

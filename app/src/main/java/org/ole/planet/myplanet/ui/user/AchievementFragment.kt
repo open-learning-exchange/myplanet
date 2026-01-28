@@ -27,8 +27,9 @@ import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -36,7 +37,6 @@ import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.SharedPrefManager
 
 private data class AchievementData(
     val goals: String = "",
@@ -51,7 +51,7 @@ private data class AchievementData(
 class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null

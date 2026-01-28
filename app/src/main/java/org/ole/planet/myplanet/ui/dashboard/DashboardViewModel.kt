@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -36,7 +36,7 @@ data class DashboardUiState(
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
-    val users: List<RealmUserModel> = emptyList(),
+    val users: List<RealmUser> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
 )

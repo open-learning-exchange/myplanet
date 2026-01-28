@@ -4,9 +4,7 @@ import androidx.lifecycle.ViewModel
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
 

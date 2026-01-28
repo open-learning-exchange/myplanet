@@ -8,16 +8,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.JoinedMemberData
 
 class MembersFragment : BaseMemberFragment() {
@@ -48,7 +45,7 @@ class MembersFragment : BaseMemberFragment() {
     private val joinedMembers: List<JoinedMemberData>
         get() = cachedJoinedMembers ?: emptyList()
 
-    override val list: List<RealmUserModel>
+    override val list: List<RealmUser>
         get() = joinedMembers.map { it.user }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

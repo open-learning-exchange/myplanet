@@ -17,19 +17,19 @@ import org.ole.planet.myplanet.callback.OnTeamActionsListener
 import org.ole.planet.myplanet.callback.OnTeamEditListener
 import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class TeamsAdapter(
     private val context: Context,
     private val fragmentManager: FragmentManager,
-    private val currentUser: RealmUserModel?,
+    private val currentUser: RealmUser?,
     private val sharedPrefManager: SharedPrefManager
 ) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
     private var type: String? = ""
@@ -57,7 +57,7 @@ class TeamsAdapter(
 
     override fun onBindViewHolder(holder: TeamsViewHolder, position: Int) {
         val team = getItem(position)
-        val user: RealmUserModel? = currentUser
+        val user: RealmUser? = currentUser
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate ?: 0)
@@ -110,7 +110,7 @@ class TeamsAdapter(
         isTeamLeader: Boolean,
         hasPendingRequest: Boolean,
         team: TeamDetails,
-        user: RealmUserModel?,
+        user: RealmUser?,
     ) {
         if (isMyTeam) {
             name.setTypeface(null, Typeface.BOLD)
@@ -164,7 +164,7 @@ class TeamsAdapter(
         }
     }
 
-    private fun handleJoinLeaveClick(team: TeamDetails, user: RealmUserModel?) {
+    private fun handleJoinLeaveClick(team: TeamDetails, user: RealmUser?) {
         val teamStatus = team.teamStatus ?: return
         when {
             teamStatus.isLeader -> teamListener?.onEditTeam(team)
@@ -175,7 +175,7 @@ class TeamsAdapter(
         }
     }
 
-    private fun requestToJoin(team: TeamDetails, user: RealmUserModel?) {
+    private fun requestToJoin(team: TeamDetails, user: RealmUser?) {
         teamActionsListener?.onRequestToJoin(team, user)
 
         val teamId = team._id ?: return

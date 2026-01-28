@@ -6,6 +6,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utils.NetworkUtils.isWifiConnected
 

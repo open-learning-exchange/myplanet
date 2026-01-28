@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.base
+package org.ole.planet.myplanet.base
 
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
@@ -12,12 +12,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var teamId: String = ""
         set(value) {
             if (field != value) {

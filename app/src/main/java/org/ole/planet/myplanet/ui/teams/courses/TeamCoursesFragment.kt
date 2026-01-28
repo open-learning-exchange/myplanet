@@ -5,10 +5,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
+import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.base.BaseTeamFragment
 
 class TeamCoursesFragment : BaseTeamFragment() {
     private var _binding: FragmentTeamCourseBinding? = null

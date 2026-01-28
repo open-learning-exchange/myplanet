@@ -27,16 +27,15 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.base.BaseDashboardFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
@@ -49,7 +48,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
 
@@ -386,12 +385,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun setColor(courseId: String?, star: ImageView) {
-        val isRealmReady = isRealmInitialized()
-
-        if (isRealmReady && RealmCertification.isCourseCertified(mRealm, courseId)) {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-        } else {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (courseId != null && coursesRepository.isCourseCertified(courseId)) {
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+            } else {
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+            }
         }
     }
 

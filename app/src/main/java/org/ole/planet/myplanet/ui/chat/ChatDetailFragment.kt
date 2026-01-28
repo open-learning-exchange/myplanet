@@ -43,21 +43,19 @@ import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
 
 @AndroidEntryPoint
@@ -72,7 +70,7 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
@@ -330,14 +328,13 @@ class ChatDetailFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            chatApiService.fetchAiProviders { providers ->
-                sharedViewModel.setAiProvidersLoading(false)
-                if (providers == null || providers.values.all { !it }) {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                } else {
-                    sharedViewModel.setAiProviders(providers)
-                }
+            val providers = chatApiService.fetchAiProviders()
+            sharedViewModel.setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                sharedViewModel.setAiProvidersError(true)
+                sharedViewModel.setAiProviders(null)
+            } else {
+                sharedViewModel.setAiProviders(providers)
             }
         }
     }
@@ -516,19 +513,16 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            chatApiService.sendChatRequest(content, object : Callback<ChatModel> {
-                override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                    handleResponse(response, query, id)
-                }
-
-                override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                    handleFailure(t.message, query, id)
-                }
-            })
+            try {
+                val response = chatApiService.sendChatRequest(content)
+                handleResponse(response, query, id)
+            } catch (t: Exception) {
+                handleFailure(t.message, query, id)
+            }
         }
     }
 
-    private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
+    private fun handleResponse(response: Response<ChatResponse>, query: String, id: String?) {
         val responseBody = response.body()
         if (response.isSuccessful && responseBody != null) {
             if (responseBody.status == "Success") {
@@ -545,7 +539,7 @@ class ChatDetailFragment : Fragment() {
         enableUI()
     }
 
-    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatModel, query: String, id: String?) {
+    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
         mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
         id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
@@ -564,7 +558,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
+    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatResponse) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
@@ -580,7 +574,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
+    private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatResponse): JsonObject =
         JsonObject().apply {
             val id = responseBody.couchDBResponse?.id
             val rev = responseBody.couchDBResponse?.rev

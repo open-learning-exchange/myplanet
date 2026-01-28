@@ -11,10 +11,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -23,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
@@ -59,7 +57,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
     private lateinit var stepSurvey: List<RealmStepExam>
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var stepNumber = 0
     private var saveInProgress: Job? = null
     private var loadDataJob: Job? = null
@@ -217,7 +215,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
-        if (!isAdded) return
+        if (!isAdded || !::step.isInitialized) return
         lifecycleScope.launch {
             try {
                 if (visible) {

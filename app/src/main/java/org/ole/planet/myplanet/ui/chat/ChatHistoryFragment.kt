@@ -19,9 +19,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.HashMap
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -35,18 +33,18 @@ import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -56,7 +54,7 @@ class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
     private lateinit var sharedViewModel: ChatViewModel
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -308,7 +306,7 @@ class ChatHistoryFragment : Fragment() {
         }
     }
 
-    private suspend fun loadCurrentUser(userId: String?): RealmUserModel? {
+    private suspend fun loadCurrentUser(userId: String?): RealmUser? {
         if (userId.isNullOrEmpty()) {
             return null
         }
@@ -356,14 +354,13 @@ class ChatHistoryFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            chatApiService.fetchAiProviders { providers ->
-                sharedViewModel.setAiProvidersLoading(false)
-                if (providers == null || providers.values.all { !it }) {
-                    sharedViewModel.setAiProvidersError(true)
-                    sharedViewModel.setAiProviders(null)
-                } else {
-                    sharedViewModel.setAiProviders(providers)
-                }
+            val providers = chatApiService.fetchAiProviders()
+            sharedViewModel.setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                sharedViewModel.setAiProvidersError(true)
+                sharedViewModel.setAiProviders(null)
+            } else {
+                sharedViewModel.setAiProviders(providers)
             }
         }
     }

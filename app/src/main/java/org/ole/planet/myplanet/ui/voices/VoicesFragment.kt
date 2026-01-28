@@ -22,13 +22,15 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.base.BaseVoicesFragment
+import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
@@ -36,14 +38,13 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.NavigationHelper
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -204,7 +205,25 @@ class VoicesFragment : BaseVoicesFragment() {
             } finally {
                 Trace.endSection()
             }
-            adapterNews = VoicesAdapter(requireActivity(), user, null, "", null, userSessionManager, viewLifecycleOwner.lifecycleScope, userRepository, voicesRepository, teamsRepository)
+            val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+            adapterNews = VoicesAdapter(
+                context = requireActivity(),
+                currentUser = user,
+                parentNews = null,
+                teamName = "",
+                teamId = null,
+                userSessionManager = userSessionManager,
+                scope = viewLifecycleOwner.lifecycleScope,
+                isTeamLeaderFn = { false },
+                getUserFn = { userId -> userRepository.getUserById(userId) },
+                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
+                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                },
+                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                labelManager = labelManager
+            )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)

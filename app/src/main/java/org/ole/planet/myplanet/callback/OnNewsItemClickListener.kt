@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.callback
 import android.view.ViewGroup
 import io.realm.RealmList
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 
 interface OnNewsItemClickListener {
     fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean)
@@ -11,6 +11,6 @@ interface OnNewsItemClickListener {
     fun onNewsItemClick(news: RealmNews?)
     fun clearImages()
     fun onDataChanged()
-    fun onMemberSelected(userModel: RealmUserModel?)
+    fun onMemberSelected(userModel: RealmUser?)
     fun getCurrentImageList(): RealmList<String>?
 }

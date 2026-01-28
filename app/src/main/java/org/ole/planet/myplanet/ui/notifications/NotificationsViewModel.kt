@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard.notifications
+package org.ole.planet.myplanet.ui.notifications
 
 import android.content.Context
 import androidx.lifecycle.ViewModel

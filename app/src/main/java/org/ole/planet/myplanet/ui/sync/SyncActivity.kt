@@ -7,9 +7,7 @@ import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
@@ -53,18 +51,19 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
@@ -85,7 +84,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.ServerConfigUtils
-import org.ole.planet.myplanet.utils.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -320,7 +318,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailableSuspend(url)
+            val response = apiInterface.isPlanetAvailable(url)
             val code = response.code()
 
             if (response.isSuccessful) {
@@ -494,7 +492,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
                 val hasUser = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
+                    realm.where(RealmUser::class.java).findAll().isNotEmpty()
                 }
                 if (hasUser) {
                     break
@@ -864,17 +862,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-
-    inner class MyTextWatcher(var view: View?) : TextWatcher {
-        override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-        override fun onTextChanged(s: CharSequence, i: Int, i1: Int, i2: Int) {
-            if (view?.id == R.id.input_server_url) {
-                positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
-            }
-        }
-        override fun afterTextChanged(editable: Editable) {}
     }
 
     override fun onDestroy() {

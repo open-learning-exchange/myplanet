@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.utils
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
+import org.ole.planet.myplanet.callback.OnItemMoveListener
 
 class ItemReorderHelper(private val mAdapter: OnItemMoveListener) :
     ItemTouchHelper.Callback() {

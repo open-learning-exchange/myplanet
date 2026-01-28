@@ -34,9 +34,9 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -557,7 +557,7 @@ class SyncManager constructor(
             logger.startProcess("resource_get_total_count")
             val countApiStartTime = System.currentTimeMillis()
             ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0").execute()
+                apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0")
             }?.let { response ->
                 response.body()?.let { body ->
                     if (body.has("total_rows")) {
@@ -585,7 +585,7 @@ class SyncManager constructor(
                     val batchApiStartTime = System.currentTimeMillis()
                     var response: JsonObject? = null
                     ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+                        apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
                     }?.let {
                         response = it.body()
                     }
@@ -761,7 +761,7 @@ class SyncManager constructor(
         }
 
         val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
+            apiInterface.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/_all_docs")
         }?.body()?.rows ?: return emptyList()
 
         coroutineScope {
@@ -791,7 +791,7 @@ class SyncManager constructor(
         }
 
         val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
+            apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
         }?.body()
 
         response?.let { responseBody ->
@@ -916,7 +916,7 @@ class SyncManager constructor(
                     apiInterface.getJsonObject(
                         UrlUtils.header,
                         "${UrlUtils.getUrl()}/shelf/$shelfId"
-                    ).execute()
+                    )
                 }?.let {
                     doc = it.body()
                 }
@@ -985,7 +985,7 @@ class SyncManager constructor(
                 val apiStartTime = System.currentTimeMillis()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
-                    apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
+                    apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
                 }?.let {
                     response = it.body()
                 }
