@@ -1179,5 +1179,13 @@
     <string name="team_surveys">टोली सर्वेक्षणहरू</string>
     <string name="enterprise_created">उद्यम सिर्जना गरियो</string>
     <string name="image_already_added">यो तस्बिर पहिले नै थपिएको छ</string>
+    <string name="debug_retry_queue">पुनः प्रयास सूची (डिबग)</string>
+    <string name="debug_retry_queue_summary">असफल अपलोड पुनः प्रयासहरू हेर्नुहोस् र व्यवस्थापन गर्नुहोस्</string>
+    <string name="retry_queue_status">पुनः प्रयास सूचीको स्थिति</string>
+    <string name="pending_retries">बाँकी पुनः प्रयासहरू: %d</string>
+    <string name="trigger_retry_now">अहिले पुनः प्रयास गर्नुहोस्</string>
+    <string name="clear_retry_queue">सूची खाली गर्नुहोस्</string>
+    <string name="retry_triggered">पुनः प्रयास सुरु भयो</string>
+    <string name="retry_queue_cleared">पुनः प्रयास सूची खाली गरियो</string>
 
 </resources>
