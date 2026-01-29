@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utils
+package org.ole.planet.myplanet.ui.components
 
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -8,7 +8,7 @@ import androidx.fragment.app.FragmentManager
  * Use [replaceFragment] instead of direct fragment transactions to ensure
  * consistent navigation behavior across the app.
  */
-object NavigationHelper {
+object FragmentNavigator {
     /**
      * Replaces a fragment in the specified container.
      *
