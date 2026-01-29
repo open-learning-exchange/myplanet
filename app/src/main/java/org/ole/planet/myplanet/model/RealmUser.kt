@@ -209,8 +209,13 @@ open class RealmUser : RealmObject() {
             val rolesArray = JsonArray()
             rolesArray.add("guest")
             `object`.add("roles", rolesArray)
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            return populateUsersTable(`object`, mRealm, settings)
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) mRealm.beginTransaction()
+            val user = populateUsersTable(`object`, mRealm, settings)
+            if (startedTransaction && mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
+            return user
         }
 
         @JvmStatic

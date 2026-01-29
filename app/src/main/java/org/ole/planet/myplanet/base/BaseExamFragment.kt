@@ -20,9 +20,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
-import io.realm.Realm
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -54,7 +52,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
-    lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
@@ -77,7 +74,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")
@@ -93,7 +89,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (TextUtils.isEmpty(stepId)) {
             id = requireArguments().getString("id")
             if (isMySurvey) {
-                sub = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                sub = databaseService.withRealm { realm ->
+                    realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }
                 id = if (sub?.parentId?.contains("@") == true) {
                     sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
                 } else {
@@ -110,10 +109,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun initExam() {
-        exam = if (!TextUtils.isEmpty(stepId)) {
-            mRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
-        } else {
-            mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+        exam = databaseService.withRealm { realm ->
+            if (!TextUtils.isEmpty(stepId)) {
+                realm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            } else {
+                realm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            }
         }
     }
 
@@ -159,13 +162,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        val progress = mRealm.where(RealmCourseProgress::class.java)
-            .equalTo("courseId", exam?.courseId)
-            .equalTo("stepNum", stepNumber).findFirst()
-        if (progress != null) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            progress.passed = sub?.status == "graded"
-            mRealm.commitTransaction()
+        databaseService.withRealm { realm ->
+            val progress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", exam?.courseId)
+                .equalTo("stepNum", stepNumber).findFirst()
+            if (progress != null) {
+                realm.executeTransaction {
+                    progress.passed = sub?.status == "graded"
+                }
+            }
         }
     }
 
@@ -173,9 +178,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (!isMySurvey && exam?.isFromNation != true) {
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            databaseService.withRealm { realm ->
+                realm.executeTransaction {
+                    val managedSub = realm.where(RealmSubmission::class.java).equalTo("id", sub?.id).findFirst()
+                    managedSub?.status = "complete"
+                }
+            }
             sub?.status = "complete"
-            mRealm.commitTransaction()
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             navigateToSurveyList(requireActivity())
         }
@@ -235,9 +244,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         CameraUtils.release()
         super.onDestroy()
     }
