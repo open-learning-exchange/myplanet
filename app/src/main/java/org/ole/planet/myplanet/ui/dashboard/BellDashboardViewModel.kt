@@ -7,7 +7,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -44,7 +43,7 @@ class BellDashboardViewModel @Inject constructor(
             android.util.Log.d("BadgeConditions", "========== LOADING BADGES (WEB MATCHING MODE) ==========")
             android.util.Log.d("BadgeConditions", "Starting badge load for userId: $userId")
 
-            val myCourses = coursesRepository.getMyCoursesFlow(userId).first()
+            val myCourses = coursesRepository.getMyCourses(userId)
             android.util.Log.d("BadgeConditions", "Total user courses found: ${myCourses.size}")
 
             // Get all progress records for this user
