@@ -89,7 +89,7 @@ myplanet/
 | `repository/` | Repository pattern implementations | 18 repositories with Interface + Impl pairs |
 | `service/` | Background services | sync/SyncManager.kt, UploadManager.kt, AutoSyncWorker |
 | `ui/` | User interface components | 28 feature packages (courses, resources, teams, chat, etc.) |
-| `utilities/` | Helper functions | NetworkUtils, ImageUtils, DialogUtils, FileUploadService |
+| `utilities/` | Helper functions | NetworkUtils, ImageUtils, DialogUtils, FileUploader |
 
 ### Critical Files to Understand
 
