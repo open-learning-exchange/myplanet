@@ -155,6 +155,8 @@
     <string name="record_video">Record Video</string>
     <string name="select_gallery">Select From Gallery</string>
     <string name="add_resource">Add Resource:</string>
+    <string name="create_new_resource">Create New</string>
+    <string name="private_resource">Private resource (only visible to this team)</string>
     <string name="reply">Reply</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>

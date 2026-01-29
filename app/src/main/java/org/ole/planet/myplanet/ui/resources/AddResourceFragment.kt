@@ -61,6 +61,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
+    private var teamId: String? = null
     @Inject
     lateinit var personalsRepository: PersonalsRepository
     @Inject
@@ -69,6 +70,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
             type = requireArguments().getInt("type", 0)
+            teamId = requireArguments().getString("teamId")
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
@@ -257,10 +259,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         }
     }
 
-
     private fun addResource(path: String?) {
         if (type == 0) {
-            startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
+            startActivity(Intent(activity, AddResourceActivity::class.java)
+                .putExtra("resource_local_url", path)
+                .putExtra("teamId", teamId))
         } else {
             val userModel = userSessionManager.userModel ?: return
             showAlert(requireContext(), path, personalsRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
