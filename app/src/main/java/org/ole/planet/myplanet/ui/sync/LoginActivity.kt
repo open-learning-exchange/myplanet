@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.user.UserProfileAdapter
+import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -64,7 +64,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var nameWatcher2: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
-    private var mAdapter: UserProfileAdapter? = null
+    private var mAdapter: UsersAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
@@ -467,7 +467,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             }
 
             if (mAdapter == null) {
-                mAdapter = UserProfileAdapter(this@LoginActivity)
+                mAdapter = UsersAdapter(this@LoginActivity)
                 binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
                 binding.recyclerView.adapter = mAdapter
             }
