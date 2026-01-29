@@ -1187,5 +1187,7 @@
     <string name="clear_retry_queue">Clear Queue</string>
     <string name="retry_triggered">Retry triggered</string>
     <string name="retry_queue_cleared">Retry queue cleared</string>
+    <string name="passwords_do_not_match">Passwords do not match</string>
+    <string name="email_invalid_format">Please enter a valid email address</string>
 
 </resources>
