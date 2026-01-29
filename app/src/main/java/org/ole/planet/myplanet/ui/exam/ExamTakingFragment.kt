@@ -87,14 +87,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             )
             sub = submissions.firstOrNull()
             val courseId = exam?.courseId
-            isCertified = isCourseCertified(mRealm, courseId)
+            isCertified = databaseService.withRealm { realm -> isCourseCertified(realm, courseId) }
 
             if ((questions?.size ?: 0) > 0) {
                 if (type == "exam") {
                     clearAllExistingAnswers {
-                        createSubmission()
-                        startExam(questions?.get(currentIndex))
-                        updateNavButtons()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            createSubmission()
+                            startExam(questions?.get(currentIndex))
+                            updateNavButtons()
+                        }
                     }
                 } else {
                     createSubmission()
@@ -111,11 +113,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
-            goToPreviousQuestion()
+            lifecycleScope.launch {
+                updateAnsDb()
+                goToPreviousQuestion()
+            }
         }
         binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
-            goToNextQuestion()
+            lifecycleScope.launch {
+                updateAnsDb()
+                goToNextQuestion()
+            }
         }
 
 
@@ -170,7 +178,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 answerData.singleAnswer = binding.etAnswer.text.toString()
             }
         }
-        updateAnsDb()
     }
 
     private fun goToPreviousQuestion() {
@@ -232,33 +239,34 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
+    private suspend fun createSubmission() {
+        val newSub = databaseService.withRealmAsync { realm ->
+            var detachedSub: RealmSubmission? = null
+            realm.executeTransaction { r ->
+                val managedSub = createSubmission(null, r)
+                setParentId(managedSub)
+                setParentJson(managedSub)
+                managedSub.userId = user?.id
+                managedSub.status = "pending"
+                managedSub.type = type
+                managedSub.startTime = Date().time
+                managedSub.lastUpdateTime = Date().time
+                if (managedSub.answers == null) {
+                    managedSub.answers = RealmList()
+                }
 
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
+                if (isTeam && teamId != null) {
+                    addTeamInformation(r, managedSub)
+                }
+                detachedSub = r.copyFromRealm(managedSub)
             }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
+            detachedSub
         }
+        sub = newSub
+        currentIndex = 0
     }
 
-    private fun setParentId() {
+    private fun setParentId(sub: RealmSubmission?) {
         sub?.parentId = when {
             !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
                 "${exam?.id}@${exam?.courseId}"
@@ -274,7 +282,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun setParentJson() {
+    private fun setParentJson(sub: RealmSubmission?) {
         try {
             val parentJsonString = JSONObject().apply {
                 put("_id", exam?.id ?: id)
@@ -291,7 +299,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun addTeamInformation(realm: Realm) {
+    private fun addTeamInformation(realm: Realm, sub: RealmSubmission?) {
         val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
             .equalTo("_id", teamId)
             .findFirst()
@@ -577,15 +585,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     return
                 }
 
-                val cont = updateAnsDb()
-                if (this.type == "exam" && !cont) {
-                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                    return
-                }
+                lifecycleScope.launch {
+                    val cont = updateAnsDb()
+                    if (this@ExamTakingFragment.type == "exam" && !cont) {
+                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                        return@launch
+                    }
 
-                capturePhoto()
-                hideSoftKeyboard(requireActivity())
-                checkAnsAndContinue(cont)
+                    capturePhoto()
+                    hideSoftKeyboard(requireActivity())
+                    checkAnsAndContinue(cont)
+                }
             }
         }
     }
@@ -601,7 +611,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
 
-    private fun updateAnsDb(): Boolean {
+    private suspend fun updateAnsDb(): Boolean {
         val questionsSize = questions?.size ?: 0
         if (currentIndex !in 0..<questionsSize) return true
 
@@ -611,15 +621,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         } else {
             null
         }
-        
+
         if (sub == null) {
-            sub = mRealm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .findAll().lastOrNull()
+            sub = databaseService.withRealm { realm ->
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("status", "pending")
+                    .findAll().lastOrNull()?.let { realm.copyFromRealm(it) }
+            }
         }
 
         val result = ExamSubmissionUtils.saveAnswer(
-            mRealm, sub, currentQuestion, ans, listAns, otherText,
+            databaseService, sub, currentQuestion, ans, listAns, otherText,
             binding.etAnswer.isVisible, type ?: "exam", currentIndex,
             questions?.size ?: 0, isExplicitSubmission
         )
@@ -731,6 +743,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+        lifecycleScope.launch {
+            withContext(kotlinx.coroutines.NonCancellable) {
+                updateAnsDb()
+            }
+        }
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null
