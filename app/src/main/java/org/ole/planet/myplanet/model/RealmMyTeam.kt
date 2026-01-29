@@ -330,8 +330,20 @@ open class RealmMyTeam : RealmObject() {
     }
 
     private fun removeTeam(team: RealmMyTeam, mRealm: Realm) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        team.deleteFromRealm()
-        mRealm.commitTransaction()
+        val startedTransaction = !mRealm.isInTransaction
+        if (startedTransaction) {
+            mRealm.beginTransaction()
+        }
+        try {
+            team.deleteFromRealm()
+            if (startedTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (startedTransaction && mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
+        }
     }
 }

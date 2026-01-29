@@ -89,10 +89,22 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
         user = mRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
         if (user != null && (user?.key == null || user?.iv == null)) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            user?.key = generateKey()
-            user?.iv = generateIv()
-            mRealm.commitTransaction()
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
+                mRealm.beginTransaction()
+            }
+            try {
+                user?.key = generateKey()
+                user?.iv = generateIv()
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
             health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
@@ -234,64 +246,88 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
     private fun initHealth() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        health = RealmMyHealth()
-        val profile = RealmMyHealthProfile()
-        health?.lastExamination = Date().time
-        health?.userKey = generateKey()
-        health?.profile = profile
-        mRealm.commitTransaction()
+        val startedTransaction = !mRealm.isInTransaction
+        if (startedTransaction) {
+            mRealm.beginTransaction()
+        }
+        try {
+            health = RealmMyHealth()
+            val profile = RealmMyHealthProfile()
+            health?.lastExamination = Date().time
+            health?.userKey = generateKey()
+            health?.profile = profile
+            if (startedTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (startedTransaction && mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
+        }
     }
 
     private fun saveData() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        createPojo()
-        if (examination == null) {
-            val userId = generateIv()
-            examination = mRealm.createObject(RealmHealthExamination::class.java, userId)
-            examination?.userId = userId
+        val startedTransaction = !mRealm.isInTransaction
+        if (startedTransaction) {
+            mRealm.beginTransaction()
         }
-        examination?.profileId = health?.userKey
-        examination?.creatorId = health?.userKey
-        examination?.gender = user?.gender
-        examination?.age = user?.dob?.let { getAge(it) }!!
-        examination?.isSelfExamination = currentUser?._id == pojo?._id
-        examination?.date = Date().time
-        examination?.planetCode = user?.planetCode
-        val sign = RealmExamination()
-        sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
-        sign.createdBy = currentUser?._id
-        examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
-        examination?.setTemperature(getFloat("${binding.etTemperature.text}".trim { it <= ' ' }))
-        examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
-        examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
-        examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
-        otherConditions
-        examination?.conditions = JsonUtils.gson.toJson(mapConditions)
-        examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
-        sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
-        sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
-        sign.xrays = "${binding.etXray.text}".trim { it <= ' ' }
-        examination?.vision = "${binding.etVision.text}".trim { it <= ' ' }
-        sign.treatments = "${binding.etTreatments.text}".trim { it <= ' ' }
-        sign.referrals = "${binding.etReferrals.text}".trim { it <= ' ' }
-        sign.notes = "${binding.etObservation.text}".trim { it <= ' ' }
-        sign.diagnosis = "${binding.etDiag.text}".trim { it <= ' ' }
-        sign.medications = "${binding.etMedications.text}".trim { it <= ' ' }
-        examination?.date = Date().time
-        examination?.isUpdated = true
-        examination?.isHasInfo = hasInfo
-        pojo?.isUpdated = true
         try {
-            val key = user?.key ?: generateKey().also { user?.key = it }
-            val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
+            createPojo()
+            if (examination == null) {
+                val odUserId = generateIv()
+                examination = mRealm.createObject(RealmHealthExamination::class.java, odUserId)
+                examination?.userId = odUserId
+            }
+            examination?.profileId = health?.userKey
+            examination?.creatorId = health?.userKey
+            examination?.gender = user?.gender
+            examination?.age = user?.dob?.let { getAge(it) }!!
+            examination?.isSelfExamination = currentUser?._id == pojo?._id
+            examination?.date = Date().time
+            examination?.planetCode = user?.planetCode
+            val sign = RealmExamination()
+            sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
+            sign.createdBy = currentUser?._id
+            examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
+            examination?.setTemperature(getFloat("${binding.etTemperature.text}".trim { it <= ' ' }))
+            examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
+            examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
+            examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
+            otherConditions
+            examination?.conditions = JsonUtils.gson.toJson(mapConditions)
+            examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
+            sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
+            sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
+            sign.xrays = "${binding.etXray.text}".trim { it <= ' ' }
+            examination?.vision = "${binding.etVision.text}".trim { it <= ' ' }
+            sign.treatments = "${binding.etTreatments.text}".trim { it <= ' ' }
+            sign.referrals = "${binding.etReferrals.text}".trim { it <= ' ' }
+            sign.notes = "${binding.etObservation.text}".trim { it <= ' ' }
+            sign.diagnosis = "${binding.etDiag.text}".trim { it <= ' ' }
+            sign.medications = "${binding.etMedications.text}".trim { it <= ' ' }
+            examination?.date = Date().time
+            examination?.isUpdated = true
+            examination?.isHasInfo = hasInfo
+            pojo?.isUpdated = true
+            try {
+                val key = user?.key ?: generateKey().also { user?.key = it }
+                val iv = user?.iv ?: generateIv().also { user?.iv = it }
+                examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            if (startedTransaction) {
+                mRealm.commitTransaction()
+            }
+            Utilities.toast(this, getString(R.string.added_successfully))
+            super.finish()
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (startedTransaction && mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
         }
-        mRealm.commitTransaction()
-        Utilities.toast(this, getString(R.string.added_successfully))
-        super.finish()
     }
 
     private fun scrollToView(view: View) {

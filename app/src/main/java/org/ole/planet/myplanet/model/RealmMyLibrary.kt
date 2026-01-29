@@ -286,11 +286,21 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            resource?.setUserId(userId)
-            mRealm.commitTransaction()
+            try {
+                resource?.setUserId(userId)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
