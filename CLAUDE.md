@@ -259,7 +259,7 @@ interface AutoSyncEntryPoint {
 **Services:**
 - `SyncManager` - Manual synchronization
 - `UploadManager` - File upload coordination
-- `AudioRecorderHelper` - Audio recording helper
+- `AudioRecorderService` - Audio recording
 - `BroadcastService` - Service broadcasting
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/service/`
