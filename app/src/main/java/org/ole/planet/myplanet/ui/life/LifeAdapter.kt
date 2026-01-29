@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.ui.components.NavigationHelper
+import org.ole.planet.myplanet.utils.NavigationHelper
 
 class LifeAdapter(
     private val context: Context,

@@ -51,7 +51,7 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.ui.components.NavigationHelper
+import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint

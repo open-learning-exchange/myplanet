@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.ui.components.NavigationHelper
+import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class TeamsAdapter(

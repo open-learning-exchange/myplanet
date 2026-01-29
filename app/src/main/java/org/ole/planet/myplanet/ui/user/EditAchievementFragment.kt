@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.ui.components.NavigationHelper
+import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
