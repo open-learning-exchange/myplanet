@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.services
+package org.ole.planet.myplanet.ui.dashboard
 
 import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
@@ -16,8 +16,6 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 
 class ChallengeManager(
     private val activity: DashboardActivity,
