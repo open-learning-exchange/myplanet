@@ -381,18 +381,26 @@ abstract class BaseResourceFragment : Fragment() {
 
     suspend fun removeFromShelf(`object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
-            val myObject = resourcesRepository.getResourceByResourceId(`object`.resourceId)
-            if (myObject != null) {
-                model?.id?.let {
-                    resourcesRepository.updateUserLibrary(myObject.resourceId, it, false)
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+            val resourceId = `object`.resourceId
+            if (resourceId != null) {
+                val myObject = resourcesRepository.getResourceByResourceId(resourceId)
+                if (myObject != null) {
+                    val myResourceId = myObject.resourceId
+                    model?.id?.let {
+                        if (myResourceId != null) {
+                            resourcesRepository.updateUserLibrary(myResourceId, it, false)
+                            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                        }
+                    }
                 }
             }
         } else {
             val courseId = (`object` as RealmMyCourse).courseId
             model?.id?.let {
-                coursesRepository.leaveCourse(courseId, it)
-                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                if (courseId != null) {
+                    coursesRepository.leaveCourse(courseId, it)
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                }
             }
         }
     }

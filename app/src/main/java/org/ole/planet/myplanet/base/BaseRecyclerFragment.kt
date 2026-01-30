@@ -201,7 +201,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             selectedItems?.forEach { item ->
                 val `object` = item as RealmObject
                 if (deleteProgress && `object` is RealmMyCourse) {
-                    coursesRepository.deleteCourseProgress(`object`.courseId)
+                    `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
                 }
                 removeFromShelf(`object`)
             }
