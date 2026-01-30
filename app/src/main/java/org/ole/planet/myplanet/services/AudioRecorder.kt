@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.utils.Utilities
 
-class AudioRecorderService {
+class AudioRecorder {
     private var outputFile: String? = null
     private var myAudioRecorder: MediaRecorder? = null
     private var audioRecordListener: OnAudioRecordListener? = null
@@ -41,7 +41,7 @@ class AudioRecorderService {
         audioRecordListener?.onError("Recording stopped")
     }
 
-    fun setAudioRecordListener(audioRecordListener: OnAudioRecordListener): AudioRecorderService {
+    fun setAudioRecordListener(audioRecordListener: OnAudioRecordListener): AudioRecorder {
         this.audioRecordListener = audioRecordListener
         return this
     }
