@@ -1090,7 +1090,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUpdatedTeams(): List<Pair<String?, JsonObject>> {
-        return withRealm { realm ->
+        return withRealm(true) { realm ->
             val teams = realm.where(RealmMyTeam::class.java)
                 .equalTo("updated", true)
                 .findAll()
