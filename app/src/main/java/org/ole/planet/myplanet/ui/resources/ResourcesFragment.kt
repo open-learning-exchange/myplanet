@@ -231,7 +231,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         setupGuestUserRestrictions()
 
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
         changeButtonStatus()
@@ -239,7 +238,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-        checkList()
+        if (::adapterLibrary.isInitialized) {
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            checkList()
+        }
 
         if (userModel?.id != null) {
             lifecycleScope.launch {
