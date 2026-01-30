@@ -110,6 +110,10 @@ class UserRepositoryImpl @Inject constructor(
             .toSortedMap()
     }
 
+    override suspend fun save(user: RealmUser) {
+        super.save(user)
+    }
+
     override suspend fun saveUser(
         jsonDoc: JsonObject?,
         settings: SharedPreferences,
