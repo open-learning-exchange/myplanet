@@ -1088,4 +1088,28 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getUpdatedTeams(): List<Pair<String?, JsonObject>> {
+        return withRealm { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .equalTo("updated", true)
+                .findAll()
+
+            teams.map { team ->
+                val copiedTeam = realm.copyFromRealm(team)
+                Pair(copiedTeam._id, RealmMyTeam.serialize(copiedTeam))
+            }
+        }
+    }
+
+    override suspend fun markTeamUploaded(teamId: String, rev: String) {
+        executeTransaction { transactionRealm ->
+            transactionRealm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()?.let { team ->
+                    team._rev = rev
+                    team.updated = false
+                }
+        }
+    }
 }

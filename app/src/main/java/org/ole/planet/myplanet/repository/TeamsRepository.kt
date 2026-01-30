@@ -138,4 +138,6 @@ interface TeamsRepository {
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
+    suspend fun getUpdatedTeams(): List<Pair<String?, JsonObject>>
+    suspend fun markTeamUploaded(teamId: String, rev: String)
 }

@@ -11,6 +11,7 @@ import java.io.File
 import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
@@ -64,7 +65,8 @@ class UploadManager @Inject constructor(
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val teamsRepository: Provider<TeamsRepository>
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
@@ -424,43 +426,22 @@ class UploadManager @Inject constructor(
     suspend fun uploadTeams() {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        data class TeamData(
-            val teamId: String?,
-            val serialized: JsonObject
-        )
-
-        val teamsToUpload = databaseService.withRealm { realm ->
-            val teams = realm.where(RealmMyTeam::class.java)
-                .equalTo("updated", true).findAll()
-
-            teams.map { team ->
-                val copiedTeam = realm.copyFromRealm(team)
-                TeamData(
-                    teamId = copiedTeam._id,
-                    serialized = RealmMyTeam.serialize(copiedTeam)
-                )
-            }
-        }
+        val teamsToUpload = teamsRepository.get().getUpdatedTeams()
 
         withContext(Dispatchers.IO) {
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { teamData ->
+                batch.forEach { (teamId, serialized) ->
                     try {
                         val `object` = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/teams", teamData.serialized
+                            "${UrlUtils.getUrl()}/teams", serialized
                         ).body()
 
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
 
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmMyTeam::class.java)
-                                    .equalTo("_id", teamData.teamId)
-                                    .findFirst()?.let { team ->
-                                        team._rev = rev
-                                        team.updated = false
-                                    }
+                            if (teamId != null) {
+                                teamsRepository.get().markTeamUploaded(teamId, rev)
                             }
                         }
                     } catch (e: IOException) {
