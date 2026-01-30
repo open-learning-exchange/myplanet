@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -49,6 +50,7 @@ class DataService constructor(
     @ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
+    private val communityRepository: CommunityRepository,
 ) {
     constructor(context: Context) : this(
         context,
@@ -72,6 +74,10 @@ class DataService constructor(
             context.applicationContext,
             AutoSyncEntryPoint::class.java
         ).uploadToShelfService(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            RepositoryEntryPoint::class.java
+        ).communityRepository(),
     )
 
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -289,24 +295,23 @@ class DataService constructor(
 
                 val transactionResult = runCatching {
                     withContext(Dispatchers.IO) {
-                        databaseService.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
+                        val communities = mutableListOf<RealmCommunity>()
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                            val id = JsonUtils.getString("_id", jsonDoc)
+                            val community = RealmCommunity()
+                            community.id = id
+                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                community.weight = 0
                             }
+                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                            community.name = JsonUtils.getString("name", jsonDoc)
+                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                            communities.add(community)
                         }
+                        communityRepository.addCommunities(communities)
                     }
                 }
 
