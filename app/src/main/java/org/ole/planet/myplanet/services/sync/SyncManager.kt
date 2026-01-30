@@ -45,9 +45,9 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -66,6 +66,7 @@ class SyncManager constructor(
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
+    private val teamsRepository: TeamsRepository,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
     private var isSyncing = false
@@ -1023,7 +1024,7 @@ class SyncManager constructor(
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx)
                                             "meetups" -> insert(realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx)
-                                            "teams" -> insertMyTeams(doc, realmTx)
+                                            "teams" -> teamsRepository.insertTeam(realmTx, doc)
                                         }
                                         processedCount++
                                     } catch (e: Exception) {

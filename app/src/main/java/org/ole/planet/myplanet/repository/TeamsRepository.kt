@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.utils.JsonUtils
 
 data class JoinedMemberData(
     val user: RealmUser,
@@ -138,4 +142,61 @@ interface TeamsRepository {
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
+
+    suspend fun insertTeams(docs: JsonArray)
+    suspend fun getTeamsByTeamId(teamId: String, userId: String): List<RealmMyTeam>
+    suspend fun getTeamsByUserId(userId: String): List<RealmMyTeam>
+    suspend fun getTeamCreator(teamId: String): String
+    suspend fun getResourceIdsByUser(userId: String): List<String>
+    fun insertTeam(realm: Realm, doc: JsonObject)
+
+    companion object {
+        fun serialize(team: RealmMyTeam): JsonObject {
+            val `object` = JsonObject()
+
+            JsonUtils.addString(`object`, "_id", team._id)
+            JsonUtils.addString(`object`, "_rev", team._rev)
+            `object`.addProperty("name", team.name)
+            `object`.addProperty("userId", team.userId)
+            if (team.docType != "report" && team.docType != "request") {
+                `object`.addProperty("limit", team.limit)
+                `object`.addProperty("amount", team.amount)
+                `object`.addProperty("date", team.date)
+                `object`.addProperty("public", team.isPublic)
+                `object`.addProperty("isLeader", team.isLeader)
+            }
+            if (team.docType != "request") {
+                `object`.addProperty("createdDate", team.createdDate)
+                `object`.addProperty("description", team.description)
+                `object`.addProperty("beginningBalance", team.beginningBalance)
+                `object`.addProperty("sales", team.sales)
+                `object`.addProperty("otherIncome", team.otherIncome)
+                `object`.addProperty("wages", team.wages)
+                `object`.addProperty("otherExpenses", team.otherExpenses)
+                `object`.addProperty("startDate", team.startDate)
+                `object`.addProperty("endDate", team.endDate)
+                `object`.addProperty("updatedDate", team.updatedDate)
+            }
+            JsonUtils.addString(`object`, "teamId", team.teamId)
+            `object`.addProperty("teamType", team.teamType)
+            `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
+            `object`.addProperty("docType", team.docType)
+            `object`.addProperty("status", team.status)
+            `object`.addProperty("userPlanetCode", team.userPlanetCode)
+            `object`.addProperty("parentCode", team.parentCode)
+            `object`.addProperty("type", team.type)
+            `object`.addProperty("route", team.route)
+            `object`.addProperty("sourcePlanet", team.sourcePlanet)
+            `object`.addProperty("services", team.services)
+            `object`.addProperty("createdBy", team.createdBy)
+            `object`.addProperty("resourceId", team.resourceId)
+            `object`.addProperty("rules", team.rules)
+
+            if (team.teamType == "debit" || team.teamType == "credit") {
+                `object`.addProperty("type", team.teamType)
+            }
+
+            return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+        }
+    }
 }

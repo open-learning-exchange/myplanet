@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
@@ -437,7 +438,7 @@ class UploadManager @Inject constructor(
                 val copiedTeam = realm.copyFromRealm(team)
                 TeamData(
                     teamId = copiedTeam._id,
-                    serialized = RealmMyTeam.serialize(copiedTeam)
+                    serialized = TeamsRepository.serialize(copiedTeam)
                 )
             }
         }

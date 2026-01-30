@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
+    private val teamsRepository: TeamsRepository,
     @ApplicationContext private val context: Context
 ) {
     suspend fun authenticate(): Boolean {
@@ -273,6 +275,10 @@ class TransactionSyncManager @Inject constructor(
 
             "tablet_users" -> {
                 populateUsersTable(jsonDoc, mRealm, settings)
+            }
+
+            "teams" -> {
+                teamsRepository.insertTeam(mRealm, jsonDoc)
             }
 
             else -> {
