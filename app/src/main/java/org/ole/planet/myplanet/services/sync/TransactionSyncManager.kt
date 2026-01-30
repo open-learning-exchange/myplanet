@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
+    private val userRepository: UserRepository,
     @ApplicationContext private val context: Context
 ) {
     suspend fun authenticate(): Boolean {
@@ -61,9 +63,7 @@ class TransactionSyncManager @Inject constructor(
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val users = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
-                }
+                val users = userRepository.getAllUsersWithIds()
 
                 users.forEach { userModel ->
                     syncHealthData(userModel, header)
@@ -94,11 +94,7 @@ class TransactionSyncManager @Inject constructor(
                     val iv = getString("iv", jsonDoc)
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
-                        databaseService.executeTransactionAsync { realm ->
-                            val managedUser = realm.where(RealmUser::class.java).equalTo("id", userModel.id).findFirst()
-                            managedUser?.key = key
-                            managedUser?.iv = iv
-                        }
+                        userModel.id?.let { userRepository.updateUserLastSync(it, key, iv) }
                     }
                 }
             }
@@ -121,9 +117,7 @@ class TransactionSyncManager @Inject constructor(
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val userModel = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
-                }
+                val userModel = id?.let { userRepository.getUserById(it) }
 
                 if (userModel != null) {
                     syncHealthData(userModel, header)

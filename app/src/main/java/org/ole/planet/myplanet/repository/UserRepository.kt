@@ -15,6 +15,7 @@ interface UserRepository {
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
+    suspend fun getAllUsersWithIds(): List<RealmUser>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
     suspend fun getMonthlyLoginCounts(
         userId: String,
@@ -22,6 +23,7 @@ interface UserRepository {
         endMillis: Long,
     ): Map<Int, Int>
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
+    suspend fun updateUserLastSync(userId: String, key: String, iv: String)
     suspend fun updateSecurityData(
         name: String,
         userId: String?,

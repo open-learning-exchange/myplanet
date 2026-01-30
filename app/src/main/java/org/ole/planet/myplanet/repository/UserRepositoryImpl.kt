@@ -64,6 +64,12 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUser::class.java)
     }
 
+    override suspend fun getAllUsersWithIds(): List<RealmUser> {
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
+        }
+    }
+
     override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
         return queryList(RealmUser::class.java) {
             sort(fieldName, sortOrder)
@@ -128,6 +134,16 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             managedUser?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun updateUserLastSync(userId: String, key: String, iv: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val managedUser = it.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+                managedUser?.key = key
+                managedUser?.iv = iv
+            }
         }
     }
 
