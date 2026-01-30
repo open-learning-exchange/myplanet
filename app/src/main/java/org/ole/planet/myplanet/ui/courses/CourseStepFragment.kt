@@ -40,13 +40,6 @@ private data class CourseStepData(
     val userHasCourse: Boolean
 )
 
-private data class IntermediateStepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>
-)
-
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     @Inject
@@ -97,33 +90,16 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        val intermediateData = databaseService.withRealmAsync { realm ->
-            val step = realm.where(RealmCourseStep::class.java)
-                .equalTo("id", stepId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }!!
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            IntermediateStepData(step, resources, stepExams, stepSurvey)
-        }
-        val userHasCourse = coursesRepository.isMyCourse(user?.id, intermediateData.step.courseId)
+        val step = coursesRepository.getCourseStepById(stepId!!)!!
+        val resources = coursesRepository.getStepResources(stepId!!)
+        val stepExams = coursesRepository.getStepExams(stepId!!, "courses")
+        val stepSurvey = coursesRepository.getStepExams(stepId!!, "surveys")
+        val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
         return CourseStepData(
-            step = intermediateData.step,
-            resources = intermediateData.resources,
-            stepExams = intermediateData.stepExams,
-            stepSurvey = intermediateData.stepSurvey,
+            step = step,
+            resources = resources,
+            stepExams = stepExams,
+            stepSurvey = stepSurvey,
             userHasCourse = userHasCourse
         )
     }

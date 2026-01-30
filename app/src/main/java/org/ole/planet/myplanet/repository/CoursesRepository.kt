@@ -5,6 +5,7 @@ import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmStepExam
 
 interface CoursesRepository {
     fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse>
@@ -17,6 +18,9 @@ interface CoursesRepository {
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep>
+    suspend fun getCourseStepById(stepId: String): RealmCourseStep?
+    suspend fun getStepResources(stepId: String): List<RealmMyLibrary>
+    suspend fun getStepExams(stepId: String, type: String): List<RealmStepExam>
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
     suspend fun joinCourse(courseId: String, userId: String)
     suspend fun leaveCourse(courseId: String, userId: String)

@@ -104,6 +104,28 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseStepById(stepId: String): RealmCourseStep? {
+        return withRealm { realm ->
+            val step = realm.where(RealmCourseStep::class.java)
+                .equalTo("id", stepId)
+                .findFirst()
+            step?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getStepResources(stepId: String): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("stepId", stepId)
+        }
+    }
+
+    override suspend fun getStepExams(stepId: String, type: String): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("stepId", stepId)
+            equalTo("type", type)
+        }
+    }
+
     override suspend fun markCourseAdded(courseId: String, userId: String?): Boolean {
         if (courseId.isBlank()) {
             return false
