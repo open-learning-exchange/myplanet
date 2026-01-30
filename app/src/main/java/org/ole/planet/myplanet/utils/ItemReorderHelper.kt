@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnItemMoveListener
 
-class ItemReorderHelper(private val mAdapter: OnItemMoveListener) :
+class ItemReorderHelper(private val moveListener: OnItemMoveListener) :
     ItemTouchHelper.Callback() {
     override fun isLongPressDragEnabled(): Boolean {
         return true
@@ -35,7 +35,7 @@ class ItemReorderHelper(private val mAdapter: OnItemMoveListener) :
         }
 
         // Notify the adapter of the move
-        mAdapter.onItemMove(source.bindingAdapterPosition, target.bindingAdapterPosition)
+        moveListener.onItemMove(source.bindingAdapterPosition, target.bindingAdapterPosition)
         return true
     }
 
