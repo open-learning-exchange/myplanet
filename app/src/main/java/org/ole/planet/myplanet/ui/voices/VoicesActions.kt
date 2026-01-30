@@ -31,8 +31,6 @@ import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 
 object VoicesActions {
-    private val imagesToRemove = mutableSetOf<String>()
-
     data class EditDialogComponents(
         val view: View,
         val editText: EditText,
@@ -52,8 +50,7 @@ object VoicesActions {
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup) {
-        imagesToRemove.clear()
+    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         imageLayout.removeAllViews()
 
         val imageUrls = news?.imageUrls
@@ -63,7 +60,7 @@ object VoicesActions {
                     val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
-                        addImageWithRemoveIcon(context, path, imageLayout)
+                        addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }
                 } catch (_: Exception) {
                 }
@@ -71,7 +68,7 @@ object VoicesActions {
         }
     }
 
-    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: ViewGroup) {
+    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         val frameLayout = FrameLayout(context).apply {
             layoutParams = ViewGroup.MarginLayoutParams(
                 dpToPx(context, 100),
@@ -136,7 +133,9 @@ object VoicesActions {
         currentUser: RealmUser?,
         imageList: RealmList<String>?,
         listener: OnNewsItemClickListener?,
-        scope: CoroutineScope
+        scope: CoroutineScope,
+        imagesToRemove: MutableSet<String>,
+        onSuccess: () -> Unit
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -145,20 +144,27 @@ object VoicesActions {
         }
         val imagesToRemoveCopy = imagesToRemove.toSet()
         scope.launch {
-            if (isEdit) {
-                news?.id?.let {
-                    repository.editPost(it, s, imagesToRemoveCopy, imageList)
+            try {
+                if (isEdit) {
+                    news?.id?.let {
+                        repository.editPost(it, s, imagesToRemoveCopy, imageList)
+                    }
+                } else {
+                    if (news != null && currentUser != null) {
+                        repository.postReply(s, news, currentUser, imageList)
+                    }
                 }
-            } else {
-                if (news != null && currentUser != null) {
-                    repository.postReply(s, news, currentUser, imageList)
+                withContext(Dispatchers.Main) {
+                    imagesToRemove.clear()
+                    dialog.dismiss()
+                    listener?.clearImages()
+                    listener?.onDataChanged()
+                    onSuccess()
                 }
-            }
-            withContext(Dispatchers.Main) {
-                imagesToRemove.clear()
-                dialog.dismiss()
-                listener?.clearImages()
-                listener?.onDataChanged()
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    org.ole.planet.myplanet.utils.Utilities.toast(dialog.context, "An error occurred: ${e.message}")
+                }
             }
         }
     }
@@ -179,13 +185,14 @@ object VoicesActions {
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
         val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
+        val imagesToRemove = mutableSetOf<String>()
 
         scope.launch {
             val news = id?.let { repository.getNewsById(it) }
             withContext(Dispatchers.Main) {
                 if (isEdit) {
                     components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-                    loadExistingImages(context, news, components.imageLayout)
+                    loadExistingImages(context, news, components.imageLayout, imagesToRemove)
                 }
                 val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
                     .setView(components.view)
@@ -195,8 +202,9 @@ object VoicesActions {
                 dialog.show()
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     val currentImageList = listener?.getCurrentImageList()
-                    handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, scope)
-                    updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
+                    handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, scope, imagesToRemove) {
+                        updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
+                    }
                 }
             }
         }
