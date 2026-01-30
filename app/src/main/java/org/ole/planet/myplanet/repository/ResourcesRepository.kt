@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Sort
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 
 interface ResourcesRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
+    suspend fun getPublicLibraries(orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary>

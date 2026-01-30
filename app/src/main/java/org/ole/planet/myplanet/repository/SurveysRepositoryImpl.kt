@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
 import org.json.JSONException
@@ -27,6 +28,15 @@ class SurveysRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
+    override suspend fun getSurveys(orderBy: String?, sort: Sort): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
+            if (!orderBy.isNullOrEmpty()) {
+                sort(orderBy, sort)
+            }
+        }
+    }
+
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
             equalTo("examId", examId)

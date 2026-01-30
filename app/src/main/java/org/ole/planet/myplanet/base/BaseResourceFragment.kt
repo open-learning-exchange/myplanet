@@ -73,6 +73,8 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var coursesRepository: CoursesRepository
     @Inject
+    lateinit var surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository
+    @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var databaseService: DatabaseService
