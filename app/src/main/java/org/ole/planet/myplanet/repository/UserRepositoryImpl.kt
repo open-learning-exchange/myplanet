@@ -374,7 +374,8 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mh == null) return@withRealm null
 
-        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val detachedMh = realm.copyFromRealm(mh)
+        val json = AndroidDecrypter.decrypt(detachedMh.data, currentUser.key, currentUser.iv)
         val mm = if (TextUtils.isEmpty(json)) {
             null
         } else {
@@ -390,7 +391,7 @@ class UserRepositoryImpl @Inject constructor(
         val healths = realm.where(RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
-            return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())
+            return@withRealm HealthRecord(detachedMh, mm, emptyList(), emptyMap())
         }
 
         val userIds = list.mapNotNull {
@@ -405,7 +406,7 @@ class UserRepositoryImpl @Inject constructor(
             val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
-        HealthRecord(mh, mm, list, userMap)
+        HealthRecord(detachedMh, mm, list, userMap)
     }
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
