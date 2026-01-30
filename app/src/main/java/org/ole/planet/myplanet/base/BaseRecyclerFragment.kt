@@ -198,7 +198,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     fun deleteSelected(deleteProgress: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            selectedItems?.forEach { item ->
+            val itemsToDelete = selectedItems?.toList() ?: emptyList()
+            itemsToDelete.forEach { item ->
                 val `object` = item as RealmObject
                 if (deleteProgress && `object` is RealmMyCourse) {
                     `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
