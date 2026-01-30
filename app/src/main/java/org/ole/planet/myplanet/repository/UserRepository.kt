@@ -73,4 +73,5 @@ interface UserRepository {
     suspend fun cleanupDuplicateUsers()
     fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
+    suspend fun hasAnyUser(): Boolean
 }

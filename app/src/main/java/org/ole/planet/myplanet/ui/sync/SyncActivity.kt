@@ -491,10 +491,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             var attempt = 0
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
-                val hasUser = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmUser::class.java).findAll().isNotEmpty()
-                }
-                if (hasUser) {
+                if (userRepository.hasAnyUser()) {
                     break
                 }
                 attempt++

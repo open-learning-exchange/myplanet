@@ -575,4 +575,10 @@ class UserRepositoryImpl @Inject constructor(
     override fun hasAtLeastOneUser(): Boolean {
         return databaseService.withRealm { realm -> !realm.isEmpty }
     }
+
+    override suspend fun hasAnyUser(): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java).count() > 0
+        }
+    }
 }
