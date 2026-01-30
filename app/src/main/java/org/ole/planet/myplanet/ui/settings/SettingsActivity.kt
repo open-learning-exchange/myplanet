@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.services.retry.RetryQueue
@@ -76,7 +76,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        NavigationHelper.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
+        FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
     }
 

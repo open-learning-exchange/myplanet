@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -134,7 +134,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             setListeners()
             checkSurveyCompletion()
             binding.backButton.setOnClickListener {
-                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }
@@ -386,7 +386,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.finishStep.isEnabled = true
             binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.finishStep.setOnClickListener {
-                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }

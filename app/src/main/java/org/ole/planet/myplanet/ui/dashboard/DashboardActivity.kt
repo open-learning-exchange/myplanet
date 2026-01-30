@@ -92,7 +92,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -396,7 +396,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     result?.closeDrawer()
                 } else {
                     if (supportFragmentManager.backStackEntryCount > 1) {
-                        NavigationHelper.popBackStack(supportFragmentManager)
+                        FragmentNavigator.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
