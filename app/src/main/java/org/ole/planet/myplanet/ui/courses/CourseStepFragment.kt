@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -31,21 +32,6 @@ import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-
-private data class CourseStepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>,
-    val userHasCourse: Boolean
-)
-
-private data class IntermediateStepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>
-)
 
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
@@ -97,35 +83,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        val intermediateData = databaseService.withRealmAsync { realm ->
-            val step = realm.where(RealmCourseStep::class.java)
-                .equalTo("id", stepId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }!!
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            IntermediateStepData(step, resources, stepExams, stepSurvey)
-        }
-        val userHasCourse = coursesRepository.isMyCourse(user?.id, intermediateData.step.courseId)
-        return CourseStepData(
-            step = intermediateData.step,
-            resources = intermediateData.resources,
-            stepExams = intermediateData.stepExams,
-            stepSurvey = intermediateData.stepSurvey,
-            userHasCourse = userHasCourse
-        )
+        return coursesRepository.getCourseStepData(stepId!!, user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
