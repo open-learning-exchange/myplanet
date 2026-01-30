@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
 
+    private lateinit var tvFragmentInfo: TextView
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText

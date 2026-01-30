@@ -237,8 +237,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         changeButtonStatus()
         additionalSetup()
 
-        tvFragmentInfo = binding.tvFragmentInfo
-        if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
+        if (isMyCourseLib) binding.tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
 
         if (userModel?.id != null) {
