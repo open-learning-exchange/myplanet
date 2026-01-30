@@ -63,9 +63,10 @@ object ServiceModule {
         gson: Gson,
         uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
         personalsRepository: PersonalsRepository,
-        userRepository: org.ole.planet.myplanet.repository.UserRepository
+        userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, teamsRepository)
     }
 
     @Provides
