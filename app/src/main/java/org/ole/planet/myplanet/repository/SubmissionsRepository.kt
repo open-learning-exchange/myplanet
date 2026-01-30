@@ -43,4 +43,5 @@ interface SubmissionsRepository {
     suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: org.ole.planet.myplanet.model.RealmStepExam?, type: String?, teamId: String?): RealmSubmission?
     suspend fun saveExamAnswer(submission: RealmSubmission?, question: org.ole.planet.myplanet.model.RealmExamQuestion, ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean, type: String, index: Int, total: Int, isExplicitSubmission: Boolean): Boolean
     suspend fun getLastPendingSubmission(userId: String?): RealmSubmission?
+    suspend fun updateSubmissionStatus(submissionId: String?, status: String)
 }

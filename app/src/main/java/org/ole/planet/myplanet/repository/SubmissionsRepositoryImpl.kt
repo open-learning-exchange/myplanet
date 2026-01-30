@@ -645,4 +645,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 .findAll().lastOrNull()?.let { realm.copyFromRealm(it) }
         }
     }
+
+    override suspend fun updateSubmissionStatus(submissionId: String?, status: String) {
+        if (submissionId.isNullOrEmpty()) return
+        update(RealmSubmission::class.java, "id", submissionId) { submission ->
+            submission.status = status
+        }
+    }
 }
