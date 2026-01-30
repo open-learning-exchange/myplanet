@@ -90,10 +90,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var broadcastJob: Job? = null
 
     protected fun requireRealmInstance(): Realm {
-        if (!isRealmInitialized()) {
-            mRealm = databaseService.realmInstance
-        }
-        return mRealm
+        throw UnsupportedOperationException("Use repositories instead of direct Realm access. Migration in progress.")
     }
 
     protected fun isRealmInitialized(): Boolean {
@@ -368,7 +365,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
@@ -383,19 +379,21 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
+    suspend fun removeFromShelf(`object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
-            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
-            } }
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+            val myObject = resourcesRepository.getResourceByResourceId(`object`.resourceId)
+            if (myObject != null) {
+                model?.id?.let {
+                    resourcesRepository.updateUserLibrary(myObject.resourceId, it, false)
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                }
+            }
         } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            val courseId = (`object` as RealmMyCourse).courseId
+            model?.id?.let {
+                coursesRepository.leaveCourse(courseId, it)
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            }
         }
     }
 

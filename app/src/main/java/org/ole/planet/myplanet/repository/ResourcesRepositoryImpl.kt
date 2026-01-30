@@ -40,6 +40,10 @@ class ResourcesRepositoryImpl @Inject constructor(
             ?: findByField(RealmMyLibrary::class.java, "_id", resourceId)
     }
 
+    override suspend fun getResourceByResourceId(resourceId: String): RealmMyLibrary? {
+        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
+    }
+
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary> {
         if (ids.isEmpty()) return emptyList()
 
