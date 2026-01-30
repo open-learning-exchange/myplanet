@@ -65,7 +65,7 @@ class UploadManager @Inject constructor(
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository
-) : FileUploadService() {
+) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(UploadConfigs.NewsActivities)

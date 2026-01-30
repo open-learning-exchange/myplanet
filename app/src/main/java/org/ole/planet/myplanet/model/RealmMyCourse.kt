@@ -236,11 +236,21 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            insertMyCourses("", myCoursesDoc, mRealm)
-            mRealm.commitTransaction()
+            try {
+                insertMyCourses("", myCoursesDoc, mRealm)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
@@ -250,11 +260,21 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            course?.setUserId(id)
-            mRealm.commitTransaction()
+            try {
+                course?.setUserId(id)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic

@@ -207,28 +207,40 @@ object VoicesActions {
 
     private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
         if (s.isEmpty()) return
-        if (!realm.isInTransaction) realm.beginTransaction()
-
-        if (imagesToRemove.isNotEmpty()) {
-            news?.imageUrls?.let { imageUrls ->
-                val updatedUrls = imageUrls.filter { imageUrlJson ->
-                    try {
-                        val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
-                        val path = JsonUtils.getString("imageUrl", imgObject)
-                        !imagesToRemove.contains(path)
-                    } catch (_: Exception) {
-                        true
-                    }
-                }
-                news.imageUrls?.clear()
-                news.imageUrls?.addAll(updatedUrls)
-            }
-            imagesToRemove.clear()
+        val startedTransaction = !realm.isInTransaction
+        if (startedTransaction) {
+            realm.beginTransaction()
         }
 
-        imageList?.forEach { news?.imageUrls?.add(it) }
-        news?.updateMessage(s)
-        realm.commitTransaction()
+        try {
+            if (imagesToRemove.isNotEmpty()) {
+                news?.imageUrls?.let { imageUrls ->
+                    val updatedUrls = imageUrls.filter { imageUrlJson ->
+                        try {
+                            val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                            val path = JsonUtils.getString("imageUrl", imgObject)
+                            !imagesToRemove.contains(path)
+                        } catch (_: Exception) {
+                            true
+                        }
+                    }
+                    news.imageUrls?.clear()
+                    news.imageUrls?.addAll(updatedUrls)
+                }
+                imagesToRemove.clear()
+            }
+
+            imageList?.forEach { news?.imageUrls?.add(it) }
+            news?.updateMessage(s)
+            if (startedTransaction) {
+                realm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (startedTransaction && realm.isInTransaction) {
+                realm.cancelTransaction()
+            }
+            throw e
+        }
     }
 
     suspend fun showMemberDetails(
