@@ -62,7 +62,7 @@ import retrofit2.Response
 class ChatDetailFragment : Fragment() {
     private var _binding: FragmentChatDetailBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mAdapter: ChatAdapter
+    private lateinit var chatAdapter: ChatAdapter
     private lateinit var sharedViewModel: ChatViewModel
     private lateinit var messageTextWatcher: TextWatcher
     private var _id: String = ""
@@ -127,17 +127,17 @@ class ChatDetailFragment : Fragment() {
             isUserLoaded = true
             refreshInputState()
         }
-        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
+        chatAdapter = ChatAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
         binding.recyclerGchat.apply {
-            adapter = mAdapter
+            adapter = chatAdapter
             layoutManager = LinearLayoutManager(requireContext())
             isNestedScrollingEnabled = true
             setHasFixedSize(true)
         }
         newsId = arguments?.getString("newsId")
-        if (mAdapter.itemCount > 0) {
-            binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
-            binding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
+        if (chatAdapter.itemCount > 0) {
+            binding.recyclerGchat.scrollToPosition(chatAdapter.itemCount - 1)
+            binding.recyclerGchat.smoothScrollToPosition(chatAdapter.itemCount - 1)
         }
     }
 
@@ -150,7 +150,7 @@ class ChatDetailFragment : Fragment() {
                 binding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
             } else {
                 val message = "${binding.editGchatMessage.text}".replace("\n", " ")
-                mAdapter.addQuery(message)
+                chatAdapter.addQuery(message)
                 when {
                     _id.isNotEmpty() -> {
                         viewLifecycleOwner.lifecycleScope.launch {
@@ -217,9 +217,9 @@ class ChatDetailFragment : Fragment() {
                     }
                     list
                 }
-                mAdapter.submitList(messages) {
+                chatAdapter.submitList(messages) {
                     binding.recyclerGchat.post {
-                        binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                        binding.recyclerGchat.scrollToPosition(chatAdapter.itemCount - 1)
                     }
                 }
             } catch (e: Exception) {
@@ -270,7 +270,7 @@ class ChatDetailFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.selectedChatHistory.collect { conversations ->
-                        mAdapter.clearData()
+                        chatAdapter.clearData()
                         binding.editGchatMessage.text.clear()
                         binding.textGchatIndicator.visibility = View.GONE
                         if (!conversations.isNullOrEmpty()) {
@@ -279,9 +279,9 @@ class ChatDetailFragment : Fragment() {
                                 conversation.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
                                 conversation.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
                             }
-                            mAdapter.submitList(messages) {
+                            chatAdapter.submitList(messages) {
                                 binding.recyclerGchat.post {
-                                    binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                                    binding.recyclerGchat.scrollToPosition(chatAdapter.itemCount - 1)
                                 }
                             }
                         }
@@ -395,8 +395,8 @@ class ChatDetailFragment : Fragment() {
         }
 
         currentID = ""
-        mAdapter.lastAnimatedPosition = -1
-        mAdapter.animatedMessages.clear()
+        chatAdapter.lastAnimatedPosition = -1
+        chatAdapter.animatedMessages.clear()
 
         updateButtonStyles(selectedButton, aiTableRow, context)
 
@@ -422,7 +422,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun clearConversation() {
-        mAdapter.clearData()
+        chatAdapter.clearData()
         _id = ""
         _rev = ""
         currentID = ""
@@ -540,7 +540,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
-        mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
+        chatAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
         id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
     }
@@ -631,8 +631,8 @@ class ChatDetailFragment : Fragment() {
 
     private fun clearChatDetail() {
         if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
-            if (::mAdapter.isInitialized) {
-                mAdapter.clearData()
+            if (::chatAdapter.isInitialized) {
+                chatAdapter.clearData()
                 _id = ""
                 _rev = ""
             }
