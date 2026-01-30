@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 class LifeAdapter(
     private val context: Context,
-    private val mDragStartListener: OnStartDragListener,
+    private val dragStartListener: OnStartDragListener,
     private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
     private val reorderCallback: (List<RealmMyLife>) -> Unit
 ) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
@@ -60,7 +60,7 @@ class LifeAdapter(
             holder.dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
                 holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    mDragStartListener.onStartDrag(holder)
+                    dragStartListener.onStartDrag(holder)
                 }
                 false
             }
