@@ -711,7 +711,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     adapterCourses.updateData(sortedCourseList, map, progressMap)
                 }
             } else {
-                recyclerView.adapter = getAdapter()
+                lifecycleScope.launch {
+                    recyclerView.adapter = getAdapter()
+                }
             }
         }
     }

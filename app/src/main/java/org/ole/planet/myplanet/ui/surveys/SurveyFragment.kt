@@ -52,8 +52,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""

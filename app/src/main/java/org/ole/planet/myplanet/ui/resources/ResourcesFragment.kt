@@ -207,7 +207,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
