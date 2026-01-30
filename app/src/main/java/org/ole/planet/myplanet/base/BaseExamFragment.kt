@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -156,7 +156,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    NavigationHelper.popBackStack(parentFragmentManager)
+                    FragmentNavigator.popBackStack(parentFragmentManager)
                 }.setCancelable(false).show()
         }
     }
@@ -193,7 +193,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     companion object {
         fun navigateToSurveyList(activity: FragmentActivity) {
             val surveyListFragment = SurveyFragment()
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
                 surveyListFragment

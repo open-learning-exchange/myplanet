@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -247,7 +247,7 @@ class VoicesFragment : BaseVoicesFragment() {
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
 
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 parentFragmentManager,
                 R.id.fragment_container,
                 chatDetailFragment,

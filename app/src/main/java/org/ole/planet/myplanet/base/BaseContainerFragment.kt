@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -336,7 +336,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     open fun handleBackPressed() {
-        NavigationHelper.popBackStack(parentFragmentManager)
+        FragmentNavigator.popBackStack(parentFragmentManager)
     }
 
     override fun onPause() {

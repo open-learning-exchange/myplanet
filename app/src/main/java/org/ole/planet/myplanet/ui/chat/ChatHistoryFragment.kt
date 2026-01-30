@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -110,7 +110,7 @@ class ChatHistoryFragment : Fragment() {
             sharedViewModel.clearChatState()
             if (resources.getBoolean(R.bool.isLargeScreen)) {
                 val chatHistoryFragment = ChatHistoryFragment()
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     chatHistoryFragment,
@@ -119,7 +119,7 @@ class ChatHistoryFragment : Fragment() {
                 )
             } else {
                 val chatDetailFragment = ChatDetailFragment()
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     chatDetailFragment,
