@@ -184,14 +184,13 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
+        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?, resourceIds: List<String>): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
+            return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, resourceIds)
         }
 
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
-            val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
-            return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
+        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, resourceIds: List<String>): List<RealmMyLibrary> {
+            return libs.filter { it.userId?.contains(userId) == true || it.resourceId in resourceIds }
         }
 
         @JvmStatic

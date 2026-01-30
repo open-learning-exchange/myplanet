@@ -1088,4 +1088,61 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getResourceIdsByUser(userId: String): List<String> {
+        return withRealm { realm ->
+            val memberships = realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .findAll()
+            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+            if (teamIds.isEmpty()) {
+                emptyList()
+            } else {
+                realm.where(RealmMyTeam::class.java)
+                    .`in`("teamId", teamIds)
+                    .equalTo("docType", "resourceLink")
+                    .findAll()
+                    .mapNotNull { it.resourceId }
+            }
+        }
+    }
+
+    override suspend fun getTeamUsers(teamId: String, docType: String): List<RealmUser> {
+        return withRealm { realm ->
+            val query = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+            if (docType.isNotEmpty()) {
+                query.equalTo("docType", docType)
+            }
+            val teamMembers = query.findAll().mapNotNull { it.userId }
+
+            if (teamMembers.isEmpty()) {
+                emptyList()
+            } else {
+                val users = realm.where(RealmUser::class.java)
+                    .`in`("id", teamMembers.toTypedArray())
+                    .findAll()
+                realm.copyFromRealm(users)
+            }
+        }
+    }
+
+    override suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam> {
+        return withRealm { realm ->
+            val memberships = realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .findAll()
+            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+            if (teamIds.isEmpty()) {
+                emptyList()
+            } else {
+                val teams = realm.where(RealmMyTeam::class.java)
+                    .`in`("_id", teamIds)
+                    .notEqualTo("status", "archived")
+                    .findAll()
+                realm.copyFromRealm(teams)
+            }
+        }
+    }
 }

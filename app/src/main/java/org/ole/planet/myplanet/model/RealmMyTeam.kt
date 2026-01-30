@@ -163,6 +163,7 @@ open class RealmMyTeam : RealmObject() {
             return ids
         }
 
+        @Deprecated("Use TeamsRepository.getResourceIdsByUser instead")
         @JvmStatic
         fun getResourceIdsByUser(userId: String?, realm: Realm): MutableList<String> {
             val list = realm.where(RealmMyTeam::class.java)
@@ -199,11 +200,13 @@ open class RealmMyTeam : RealmObject() {
             insertMyTeams(doc, mRealm)
         }
 
+        @Deprecated("Use TeamsRepository.getRequestedMembers instead")
         @JvmStatic
         fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
             return getUsers(teamId, realm, "request")
         }
 
+        @Deprecated("Use TeamsRepository.getJoinedMembers instead")
         @JvmStatic
         fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
             return getUsers(teamId, realm, "membership")
@@ -226,6 +229,7 @@ open class RealmMyTeam : RealmObject() {
             return team != null
         }
 
+        @Deprecated("Use TeamsRepository.getTeamUsers instead")
         @JvmStatic
         fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUser> {
             var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
@@ -292,6 +296,7 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
+        @Deprecated("Use TeamsRepository.getMyTeamsByUserId instead")
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {
             val userId = settings?.getString("userId", "--") ?: "--"
             val list = mRealm.where(RealmMyTeam::class.java)
