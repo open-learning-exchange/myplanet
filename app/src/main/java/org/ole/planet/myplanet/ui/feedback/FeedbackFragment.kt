@@ -30,9 +30,9 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private var model: RealmUser ?= null
     var user: String? = ""
 
-    private var mListener: OnFeedbackSubmittedListener? = null
+    private var feedbackSubmittedListener: OnFeedbackSubmittedListener? = null
     fun setOnFeedbackSubmittedListener(listener: OnFeedbackSubmittedListener?) {
-        mListener = listener
+        feedbackSubmittedListener = listener
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +89,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
             Utilities.toast(activity, getString(R.string.feedback_saved))
         }
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
-        mListener?.onFeedbackSubmitted()
+        feedbackSubmittedListener?.onFeedbackSubmitted()
         dismiss()
     }
 
