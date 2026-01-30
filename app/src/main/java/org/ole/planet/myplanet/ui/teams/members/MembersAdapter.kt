@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 class MembersAdapter(
     private val context: Context,
@@ -123,7 +123,7 @@ class MembersAdapter(
                 member.level.toString(),
                 member.userImage
             )
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
                 fragment,
