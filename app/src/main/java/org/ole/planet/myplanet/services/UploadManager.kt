@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
@@ -64,7 +65,8 @@ class UploadManager @Inject constructor(
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val teamsRepository: TeamsRepository
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
@@ -541,10 +543,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        val logs = databaseService.withRealm { realm ->
-            val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-            realm.copyFromRealm(results)
-        }
+        val logs = teamsRepository.getUnuploadedTeamLogs()
 
         logs.forEach { log ->
             try {
@@ -558,14 +557,8 @@ class UploadManager @Inject constructor(
                 if (`object` != null) {
                     val id = getString("id", `object`)
                     val rev = getString("rev", `object`)
-                    databaseService.executeTransactionAsync { realm ->
-                        val managedLog = realm.where(RealmTeamLog::class.java)
-                            .equalTo("time", log.time)
-                            .equalTo("user", log.user)
-                            .equalTo("type", log.type)
-                            .findFirst()
-                        managedLog?._id = id
-                        managedLog?._rev = rev
+                    log.time?.let { time ->
+                        teamsRepository.updateTeamLogRevision(time, log.user, log.type, id, rev)
                     }
                 }
             } catch (e: Exception) {

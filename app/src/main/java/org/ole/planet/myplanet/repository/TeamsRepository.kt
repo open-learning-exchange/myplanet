@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.Transaction
@@ -138,4 +139,6 @@ interface TeamsRepository {
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
+    suspend fun getUnuploadedTeamLogs(): List<RealmTeamLog>
+    suspend fun updateTeamLogRevision(time: Long, user: String?, type: String?, id: String, rev: String)
 }

@@ -11,6 +11,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -38,7 +39,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val userSessionManager: UserSessionManager,
-    private val uploadManager: UploadManager,
+    private val uploadManager: Provider<UploadManager>,
     private val gson: Gson,
     @AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
@@ -867,8 +868,8 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                uploadManager.uploadTeams()
-                uploadManager.uploadTeamActivities(apiInterface)
+                uploadManager.get().uploadTeams()
+                uploadManager.get().uploadTeamActivities(apiInterface)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -1086,6 +1087,31 @@ class TeamsRepositoryImpl @Inject constructor(
                     realm.copyFromRealm(it)
                 }
             }
+        }
+    }
+
+    override suspend fun getUnuploadedTeamLogs(): List<RealmTeamLog> {
+        return withRealm { realm ->
+            val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
+            realm.copyFromRealm(logs)
+        }
+    }
+
+    override suspend fun updateTeamLogRevision(
+        time: Long,
+        user: String?,
+        type: String?,
+        id: String,
+        rev: String
+    ) {
+        executeTransaction { realm ->
+            val managedLog = realm.where(RealmTeamLog::class.java)
+                .equalTo("time", time)
+                .equalTo("user", user)
+                .equalTo("type", type)
+                .findFirst()
+            managedLog?._id = id
+            managedLog?._rev = rev
         }
     }
 }
