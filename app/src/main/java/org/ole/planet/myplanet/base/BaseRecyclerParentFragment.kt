@@ -1,91 +1,36 @@
 package org.ole.planet.myplanet.base
 
 import com.google.gson.JsonArray
-import io.realm.RealmModel
 import io.realm.Sort
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.repository.SurveysRepository
 
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
     var isMyCourseLib: Boolean = false
 
     @Suppress("UNCHECKED_CAST")
-    fun getList(c: Class<*>): List<LI> {
+    suspend fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").findAll().toList() as List<LI>
+                surveysRepository.getSurveys(orderBy, sort) as List<LI>
             }
             isMyCourseLib -> {
-                getMyLibItems(c as Class<out RealmModel>)
-            }
-            c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
-            }
-            else -> {
-                val myLibItems = getMyLibItems(c as Class<out RealmModel>)
-                val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
-                    .isNotEmpty("courseTitle")
-                    .findAll()
-                    .toList()
-                val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
-
                 when (c) {
-                    RealmMyCourse::class.java -> {
-                        val combinedList = mutableListOf<RealmMyCourse>()
-                        (myLibItems as List<RealmMyCourse>).forEach { course ->
-                            course.isMyCourse = true
-                            combinedList.add(course)
-                        }
-                        ourCourseItems.forEach { course ->
-                            if (!combinedList.any { it.id == course.id }) {
-                                course.isMyCourse = false
-                                combinedList.add(course)
-                            }
-                        }
-                        combinedList as List<LI>
-                    }
-                    else -> {
-                        throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
-                    }
+                    RealmMyLibrary::class.java -> resourcesRepository.getMyLibItems(model?.id, orderBy, sort) as List<LI>
+                    RealmMyCourse::class.java -> coursesRepository.getMyCourseItems(model?.id, orderBy, sort) as List<LI>
+                    else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
                 }
             }
-        }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
-        return when {
-            c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").sort(orderBy ?: "", sort).findAll().toList() as List<LI>
-            }
-            isMyCourseLib -> {
-                getMyLibItems(c as Class<out RealmModel>, orderBy)
-            }
             c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
+                resourcesRepository.getPublicLibrary(model?.id, orderBy, sort) as List<LI>
             }
-            else -> {
-                val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
-                RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
-            }
-        }
-    }
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
-        val query = mRealm.where(c)
-        val realmResults = if (orderBy != null) {
-            query.sort(orderBy).findAll()
-        } else {
-            query.findAll()
-        }
-        val results: List<T> = realmResults.toList()
-        return when (c) {
-            RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getMyLibraryByUserId(model?.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
-            }
-            RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyCourseByUserId(model?.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
+            c == RealmMyCourse::class.java -> {
+                coursesRepository.getAllCourses(model?.id, orderBy, sort) as List<LI>
             }
             else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
         }

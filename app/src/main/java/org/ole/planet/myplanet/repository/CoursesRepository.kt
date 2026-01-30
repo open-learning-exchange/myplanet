@@ -39,4 +39,7 @@ interface CoursesRepository {
     suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData?
     suspend fun getCourseTitleById(courseId: String): String?
     suspend fun isCourseCertified(courseId: String): Boolean
+    suspend fun getPublicCourses(orderBy: String? = null, sort: io.realm.Sort = io.realm.Sort.ASCENDING): List<RealmMyCourse>
+    suspend fun getMyCourseItems(userId: String?, orderBy: String? = null, sort: io.realm.Sort = io.realm.Sort.ASCENDING): List<RealmMyCourse>
+    suspend fun getAllCourses(userId: String?, orderBy: String? = null, sort: io.realm.Sort = io.realm.Sort.ASCENDING): List<RealmMyCourse>
 }

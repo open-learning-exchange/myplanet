@@ -24,7 +24,8 @@ import org.ole.planet.myplanet.utils.FileUtils
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val teamsRepository: TeamsRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -318,5 +319,28 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         return allNeedingUpdate
+    }
+
+    override suspend fun getPublicLibrary(userId: String?, orderBy: String?, sort: Sort): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+            if (orderBy != null) {
+                sort(orderBy, sort)
+            }
+        }
+        return results.filter { it.userId?.contains(userId) == false }
+    }
+
+    override suspend fun getMyLibItems(userId: String?, orderBy: String?, sort: Sort): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            if (orderBy != null) {
+                sort(orderBy, sort)
+            }
+        }
+
+        if (userId.isNullOrBlank()) return emptyList()
+
+        val teamResourceIds = teamsRepository.getResourceIdsByUser(userId).toSet()
+        return results.filter { it.userId?.contains(userId) == true || it.resourceId in teamResourceIds }
     }
 }

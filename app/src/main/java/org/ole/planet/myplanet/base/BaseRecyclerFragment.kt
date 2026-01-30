@@ -51,7 +51,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,7 +113,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onRatingChanged() {
-        recyclerView.adapter = getAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
     }
 
     fun addToMyList() {
@@ -215,8 +217,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 throw e
             }
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val adapter = getAdapter()
+            recyclerView.adapter = adapter
+            showNoData(tvMessage, adapter.itemCount, "")
+        }
     }
 
     fun countSelected(): Int {
@@ -301,7 +306,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }

@@ -324,4 +324,59 @@ class CoursesRepositoryImpl @Inject constructor(
             contains("courseIds", courseId)
         } > 0
     }
+
+    override suspend fun getPublicCourses(orderBy: String?, sort: io.realm.Sort): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {
+            if (orderBy != null) {
+                sort(orderBy, sort)
+            }
+        }
+    }
+
+    override suspend fun getMyCourseItems(userId: String?, orderBy: String?, sort: io.realm.Sort): List<RealmMyCourse> {
+        val results = queryList(RealmMyCourse::class.java) {
+            if (orderBy != null) {
+                sort(orderBy, sort)
+            }
+        }
+
+        if (userId.isNullOrBlank()) return emptyList()
+        return results.filter { it.userId?.contains(userId) == true }
+    }
+
+    override suspend fun getAllCourses(userId: String?, orderBy: String?, sort: io.realm.Sort): List<RealmMyCourse> {
+        val myLibItems = getMyCourseItems(userId, orderBy, sort)
+        val allResults = queryList(RealmMyCourse::class.java) {
+            isNotEmpty("courseTitle")
+            if (orderBy != null) {
+                sort(orderBy, sort)
+            }
+        }
+
+        // Filter our courses: those NOT in myLibItems (based on userId check logic from RealmMyCourse.getOurCourse)
+        // RealmMyCourse.getOurCourse logic: !item.userId.contains(userId)
+        val ourCourseItems = if (userId.isNullOrBlank()) {
+             allResults
+        } else {
+             allResults.filter { it.userId?.contains(userId) == false }
+        }
+
+        val combinedList = mutableListOf<RealmMyCourse>()
+
+        // Add my courses marked as true
+        myLibItems.forEach { course ->
+            course.isMyCourse = true
+            combinedList.add(course)
+        }
+
+        // Add our courses marked as false, avoiding duplicates
+        ourCourseItems.forEach { course ->
+            if (!combinedList.any { it.id == course.id }) {
+                course.isMyCourse = false
+                combinedList.add(course)
+            }
+        }
+
+        return combinedList
+    }
 }

@@ -1088,4 +1088,19 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getResourceIdsByUser(userId: String): List<String> {
+        val memberships = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }
+        val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+
+        if (teamIds.isEmpty()) return emptyList()
+
+        return queryList(RealmMyTeam::class.java) {
+            `in`("teamId", teamIds)
+            equalTo("docType", "resourceLink")
+        }.mapNotNull { it.resourceId }
+    }
 }

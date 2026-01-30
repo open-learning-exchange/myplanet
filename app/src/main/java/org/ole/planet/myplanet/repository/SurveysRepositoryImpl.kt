@@ -344,4 +344,13 @@ class SurveysRepositoryImpl @Inject constructor(
                 .count().toInt()
         }
     }
+
+    override suspend fun getSurveys(orderBy: String?, sort: io.realm.Sort): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
+            if (orderBy != null) {
+                sort(orderBy, sort)
+            }
+        }
+    }
 }
