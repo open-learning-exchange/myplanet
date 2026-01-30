@@ -64,7 +64,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var nameWatcher2: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
-    private var mAdapter: UsersAdapter? = null
+    private var usersAdapter: UsersAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
@@ -466,12 +466,12 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 prefData.setSavedUsers(updatedUserList)
             }
 
-            if (mAdapter == null) {
-                mAdapter = UsersAdapter(this@LoginActivity)
+            if (usersAdapter == null) {
+                usersAdapter = UsersAdapter(this@LoginActivity)
                 binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
-                binding.recyclerView.adapter = mAdapter
+                binding.recyclerView.adapter = usersAdapter
             }
-            mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
+            usersAdapter?.submitList(prefData.getSavedUsers().toMutableList())
 
             binding.recyclerView.isNestedScrollingEnabled = true
             binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
