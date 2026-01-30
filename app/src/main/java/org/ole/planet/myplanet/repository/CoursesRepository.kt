@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -17,6 +18,7 @@ interface CoursesRepository {
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep>
+    suspend fun getCourseStepData(stepId: String): CourseStepData
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
     suspend fun joinCourse(courseId: String, userId: String)
     suspend fun leaveCourse(courseId: String, userId: String)

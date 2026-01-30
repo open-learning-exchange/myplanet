@@ -10,6 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -101,6 +102,35 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         return queryList(RealmCourseStep::class.java) {
             equalTo("courseId", courseId)
+        }
+    }
+
+    override suspend fun getCourseStepData(stepId: String): CourseStepData {
+        return withRealm { realm ->
+            val step = realm.where(RealmCourseStep::class.java)
+                .equalTo("id", stepId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+                ?: throw IllegalStateException("Step not found")
+
+            val resources = realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+
+            val stepExams = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "courses")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+
+            val stepSurvey = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "surveys")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+
+            CourseStepData(step, resources, stepExams, stepSurvey)
         }
     }
 
