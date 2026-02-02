@@ -41,6 +41,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.RealmConversation
@@ -75,7 +76,8 @@ class VoicesAdapter(
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
-    private val labelManager: VoicesLabelManager
+    private val labelManager: VoicesLabelManager,
+    private val databaseService: DatabaseService
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -357,6 +359,7 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     holder,
+                    databaseService
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -544,6 +547,7 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     viewHolder,
+                    databaseService
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {

@@ -20,6 +20,7 @@ import java.io.File
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -156,6 +157,7 @@ object VoicesActions {
         currentUser: RealmUser?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
+        databaseService: DatabaseService,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
@@ -164,7 +166,7 @@ object VoicesActions {
         val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
 
-        Realm.getDefaultInstance().use { realm ->
+        databaseService.withRealm { realm ->
             val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
             if (isEdit) {
                 components.editText.setText(context.getString(R.string.message_placeholder, news?.message))

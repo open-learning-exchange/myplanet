@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -39,6 +40,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var databaseService: DatabaseService
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 
@@ -192,7 +195,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                     },
                     getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                    labelManager = labelManager
+                    labelManager = labelManager,
+                    databaseService = databaseService
                 )
             }
             adapterNews?.sharedPrefManager = sharedPrefManager

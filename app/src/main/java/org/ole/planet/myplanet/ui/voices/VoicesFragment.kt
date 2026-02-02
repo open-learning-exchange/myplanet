@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -54,6 +55,8 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -222,7 +225,8 @@ class VoicesFragment : BaseVoicesFragment() {
                     voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                 },
                 getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                labelManager = labelManager
+                labelManager = labelManager,
+                databaseService = databaseService
             )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
