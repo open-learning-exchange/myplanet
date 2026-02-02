@@ -10,6 +10,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStepData
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -60,11 +62,14 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
+    override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
+        if (courseId.isBlank()) {
             return null
         }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            course?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
@@ -95,12 +100,24 @@ class CoursesRepositoryImpl @Inject constructor(
         }.toInt()
     }
 
-    override suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep> {
-        if (courseId.isNullOrEmpty()) {
+    override suspend fun getCourseSteps(courseId: String): List<RealmCourseStep> {
+        if (courseId.isBlank()) {
             return emptyList()
         }
-        return queryList(RealmCourseStep::class.java) {
-            equalTo("courseId", courseId)
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            val steps = course?.courseSteps
+            if (steps != null) realm.copyFromRealm(steps) else emptyList()
+        }
+    }
+
+    override suspend fun getCourseStepIds(courseId: String): Array<String?> {
+        if (courseId.isBlank()) {
+            return emptyArray()
+        }
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
         }
     }
 
@@ -323,5 +340,52 @@ class CoursesRepositoryImpl @Inject constructor(
         return count(RealmCertification::class.java) {
             contains("courseIds", courseId)
         } > 0
+    }
+
+    override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
+        val intermediate = withRealm { realm ->
+            val step = realm.where(RealmCourseStep::class.java)
+                .equalTo("id", stepId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+                ?: throw IllegalStateException("Step not found")
+            val resources = realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            val stepExams = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "courses")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            val stepSurvey = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "surveys")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            CourseStepData(step, resources, stepExams, stepSurvey, false)
+        }
+        val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
+        return intermediate.copy(userHasCourse = userHasCourse)
+    }
+
+    override suspend fun deleteCourseProgress(courseId: String) {
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+                .deleteAllFromRealm()
+            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+            for (exam in examList) {
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", exam.id)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
     }
 }

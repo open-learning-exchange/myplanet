@@ -48,9 +48,10 @@ object ServiceModule {
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, scope)
     }
 
     @Provides
@@ -73,9 +74,10 @@ object ServiceModule {
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences)
+        return UploadToShelfService(context, databaseService, preferences, resourcesRepository)
     }
 
     @Provides
