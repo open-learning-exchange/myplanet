@@ -399,4 +399,18 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getMyCourseIds(userId: String): JsonArray {
+        return withRealm { realm ->
+            val myCourses = realm.where(RealmMyCourse::class.java)
+                .equalTo("userId", userId)
+                .findAll()
+
+            val ids = JsonArray()
+            for (course in myCourses) {
+                ids.add(course.courseId)
+            }
+            ids
+        }
+    }
 }
