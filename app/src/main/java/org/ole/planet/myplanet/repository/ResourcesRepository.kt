@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
@@ -44,4 +45,7 @@ interface ResourcesRepository {
     suspend fun getOpenedResourceIds(userId: String): Set<String>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
     suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary>
+    suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
+    suspend fun removeDeletedResources(currentIds: List<String?>)
+    suspend fun getMyLibIds(userId: String): JsonArray
 }
