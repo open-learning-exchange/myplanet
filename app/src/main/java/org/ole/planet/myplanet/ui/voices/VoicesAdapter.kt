@@ -285,9 +285,13 @@ class VoicesAdapter(
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
                     withContext(Dispatchers.Main) {
+                        if (parentNews != null && parentNews.userId == userId) {
+                            notifyItemChanged(0)
+                        }
                         currentList.forEachIndexed { index, item ->
                             if (item?.userId == userId) {
-                                notifyItemChanged(index)
+                                val pos = if (parentNews != null) index + 1 else index
+                                notifyItemChanged(pos)
                             }
                         }
                     }
