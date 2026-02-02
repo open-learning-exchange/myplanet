@@ -583,6 +583,6 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun hasAtLeastOneUser(): Boolean {
-        return databaseService.withRealm { realm -> !realm.isEmpty }
+        return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
     }
 }
