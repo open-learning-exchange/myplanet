@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
@@ -49,6 +50,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
@@ -162,15 +165,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            val progress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", exam?.courseId)
-                .equalTo("stepNum", stepNumber).findFirst()
-            if (progress != null) {
-                realm.executeTransaction {
-                    progress.passed = sub?.status == "graded"
-                }
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            coursesRepository.updateCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
         }
     }
 
@@ -178,15 +174,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (!isMySurvey && exam?.isFromNation != true) {
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
-            databaseService.withRealm { realm ->
-                realm.executeTransaction {
-                    val managedSub = realm.where(RealmSubmission::class.java).equalTo("id", sub?.id).findFirst()
-                    managedSub?.status = "complete"
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                submissionsRepository.updateSubmissionStatus(sub?.id, "complete")
+                sub?.status = "complete"
+                Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+                navigateToSurveyList(requireActivity())
             }
-            sub?.status = "complete"
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            navigateToSurveyList(requireActivity())
         }
     }
 
