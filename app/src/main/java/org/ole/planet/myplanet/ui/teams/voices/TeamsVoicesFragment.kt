@@ -192,6 +192,12 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                     },
                     getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    editPostFn = { newsId, message, imageList, imagesToRemove ->
+                        voicesRepository.editPost(newsId, message, imageList, imagesToRemove)
+                    },
+                    createNewsFn = { map, user, imageList ->
+                        voicesRepository.createNews(map, user, imageList)
+                    },
                     labelManager = labelManager
                 )
             }
