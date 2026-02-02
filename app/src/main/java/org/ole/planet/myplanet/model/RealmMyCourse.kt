@@ -146,12 +146,14 @@ open class RealmMyCourse : RealmObject() {
             settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 
+        @Deprecated("Use CoursesRepository.getCourseSteps instead")
         fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
             val myCourse = mRealm.where<RealmMyCourse>().equalTo("id", courseId).findFirst()
             val courseSteps = myCourse?.courseSteps ?: emptyList()
             return courseSteps
         }
 
+        @Deprecated("Use CoursesRepository.getCourseStepIds instead")
         fun getCourseStepIds(mRealm: Realm, courseId: String?): Array<String?> {
             val course = mRealm.where<RealmMyCourse>().equalTo("courseId", courseId).findFirst()
             val stepIds = course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
@@ -230,6 +232,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
         fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
             return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         }

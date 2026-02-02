@@ -14,6 +14,8 @@ interface UserRepository {
     suspend fun getUserById(userId: String): RealmUser?
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
+    suspend fun findUserByName(name: String): RealmUser?
+    suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
     suspend fun getMonthlyLoginCounts(
