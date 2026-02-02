@@ -63,7 +63,7 @@ open class RealmMyLibrary : RealmObject() {
     var courseId: String? = null
     var stepId: String? = null
     var isPrivate: Boolean = false
-    var privateFor: String? = null  // Team ID if private resource
+    var privateFor: String? = null
     var attachments: RealmList<RealmAttachment>? = null
 
     fun serializeResource(): JsonObject {
@@ -213,7 +213,12 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val startTime = System.currentTimeMillis()
-            val ids = getIds(mRealm)
+            val syncedResources = mRealm.where(RealmMyLibrary::class.java)
+                .isNotNull("_rev")
+                .equalTo("isPrivate", false)
+                .findAll()
+            val ids = syncedResources.map { it.resourceId }.toTypedArray()
+
             val idsToDelete = ids.filterNot { it in newIds }
 
             if (idsToDelete.isEmpty()) {

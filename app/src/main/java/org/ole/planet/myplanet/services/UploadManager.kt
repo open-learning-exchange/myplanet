@@ -290,6 +290,7 @@ class UploadManager @Inject constructor(
             val user = userRepository.getCurrentUser()
 
             val resourcesToUpload = databaseService.withRealm { realm ->
+                realm.refresh()
                 val data = realm.where(RealmMyLibrary::class.java).isNull("_rev").findAll()
 
                 if (data.isEmpty()) {

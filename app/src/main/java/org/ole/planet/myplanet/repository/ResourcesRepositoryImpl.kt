@@ -34,7 +34,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "id", id)
+        return findByField(RealmMyLibrary::class.java, "id", id, true)
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {

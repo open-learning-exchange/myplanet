@@ -94,16 +94,27 @@ class AddResourceActivity : AppCompatActivity() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
         val id = UUID.randomUUID().toString()
+        val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
+
         val resource = RealmMyLibrary().apply {
             this.id = id
             this.title = title
             createResource(this, id)
-            setUserId(userModel?.id)
+            if (!isPrivateTeamResource) {
+                setUserId(userModel?.id)
+            }
         }
         lifecycleScope.launch {
             resourcesRepository.saveLibraryItem(resource)
-            resourcesRepository.markResourceAdded(userModel?.id, id)
-            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
+            if (!isPrivateTeamResource) {
+                resourcesRepository.markResourceAdded(userModel?.id, id)
+            }
+            val message = if (isPrivateTeamResource) {
+                getString(R.string.resource_added_to_team)
+            } else {
+                getString(R.string.added_to_my_library)
+            }
+            toast(this@AddResourceActivity, message)
             finish()
         }
     }
