@@ -354,4 +354,40 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun getDateFromTimestamp(timestamp: Long): String {
         return dateFormat.get()!!.format(java.util.Date(timestamp))
     }
+
+    override suspend fun editPost(newsId: String, message: String, imageList: io.realm.RealmList<String>?, imagesToRemove: Set<String>) {
+        if (message.isEmpty()) return
+        withRealm { realm ->
+            realm.executeTransaction { r ->
+                val news = r.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                if (news != null) {
+                    if (imagesToRemove.isNotEmpty()) {
+                        val imageUrls = news.imageUrls
+                        if (imageUrls != null) {
+                            val updatedUrls = imageUrls.filter { imageUrlJson ->
+                                try {
+                                    val imgObject = gson.fromJson(imageUrlJson, JsonObject::class.java)
+                                    val path = if (imgObject.has("imageUrl") && !imgObject.get("imageUrl").isJsonNull) {
+                                        imgObject.get("imageUrl").asString
+                                    } else {
+                                        ""
+                                    }
+                                    !imagesToRemove.contains(path)
+                                } catch (e: Exception) {
+                                    true
+                                }
+                            }
+                            imageUrls.clear()
+                            imageUrls.addAll(updatedUrls)
+                        }
+                    }
+
+                    if (imageList != null) {
+                        news.imageUrls?.addAll(imageList)
+                    }
+                    news.updateMessage(message)
+                }
+            }
+        }
+    }
 }

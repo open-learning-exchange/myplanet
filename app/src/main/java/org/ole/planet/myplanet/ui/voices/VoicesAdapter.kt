@@ -75,6 +75,8 @@ class VoicesAdapter(
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
+    private val editPostFn: suspend (String, String, RealmList<String>?, Set<String>) -> Unit,
+    private val createNewsFn: suspend (HashMap<String?, String>, RealmUser, RealmList<String>?) -> Any?,
     private val labelManager: VoicesLabelManager
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
@@ -352,14 +354,25 @@ class VoicesAdapter(
             holder.binding.imgEdit.setOnClickListener {
                 VoicesActions.showEditAlert(
                     context,
-                    news.id,
+                    news,
                     true,
                     currentUser,
                     listener,
                     holder,
-                ) { holder, updatedNews, position ->
-                    showReplyButton(holder, updatedNews, position)
-                    notifyItemChanged(position)
+                    { holder, updatedNews, position ->
+                        showReplyButton(holder, updatedNews, position)
+                        notifyItemChanged(position)
+                    }
+                ) { text, images, imagesToRemove ->
+                    if (news.id != null) {
+                        scope.launch {
+                            editPostFn(news.id!!, text, images, imagesToRemove)
+                            withContext(Dispatchers.Main) {
+                                listener?.clearImages()
+                                listener?.onDataChanged()
+                            }
+                        }
+                    }
                 }
             }
         } else {
@@ -539,12 +552,32 @@ class VoicesAdapter(
             viewHolder.binding.btnReply.setOnClickListener {
                 VoicesActions.showEditAlert(
                     context,
-                    finalNews?.id,
+                    finalNews,
                     false,
                     currentUser,
                     listener,
                     viewHolder,
-                ) { holder, news, i -> showReplyButton(holder, news, i) }
+                    { holder, news, i -> showReplyButton(holder, news, i) }
+                ) { text, images, _ ->
+                    scope.launch {
+                        val map = HashMap<String?, String>()
+                        map["message"] = text
+                        map["viewableBy"] = finalNews?.viewableBy ?: ""
+                        map["viewableId"] = finalNews?.viewableId ?: ""
+                        map["replyTo"] = finalNews?.id ?: ""
+                        map["messageType"] = finalNews?.messageType ?: ""
+                        map["messagePlanetCode"] = finalNews?.messagePlanetCode ?: ""
+                        map["viewIn"] = finalNews?.viewIn ?: ""
+
+                        currentUser?.let { user ->
+                            createNewsFn(map, user, images)
+                            withContext(Dispatchers.Main) {
+                                listener?.clearImages()
+                                listener?.onDataChanged()
+                            }
+                        }
+                    }
+                }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
