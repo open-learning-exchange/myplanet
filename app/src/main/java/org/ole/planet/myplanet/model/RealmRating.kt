@@ -30,6 +30,7 @@ open class RealmRating : RealmObject() {
 
     companion object {
         @JvmStatic
+        @Deprecated("Use RatingsRepository.getResourceRatings() or RatingsRepository.getCourseRatings() instead")
         fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
             val ratings = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
             val aggregated = aggregateRatings(ratings, userId)
@@ -41,6 +42,7 @@ open class RealmRating : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use RatingsRepository.getRatingsById() instead")
         fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
             val ratings = mRealm.where(RealmRating::class.java)
                 .equalTo("type", type)

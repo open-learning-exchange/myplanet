@@ -8,7 +8,6 @@ import javax.inject.Inject
 import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmUser
 
 class RatingsRepositoryImpl @Inject constructor(
@@ -17,13 +16,67 @@ class RatingsRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), RatingsRepository {
     override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
         return withRealmAsync { realm ->
-            getRatingsById(realm, type, resourceId, userId) as? JsonObject
+            val ratings = realm.where(RealmRating::class.java)
+                .equalTo("type", type)
+                .equalTo("item", resourceId)
+                .findAll()
+            val aggregated = aggregateRatings(ratings, userId)[resourceId]
+            aggregated?.toJson()
         }
     }
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
+        return getRatingsInternal("course", userId)
+    }
+
+    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
+        return getRatingsInternal("resource", userId)
+    }
+
+    private suspend fun getRatingsInternal(type: String, userId: String?): HashMap<String?, JsonObject> {
         return withRealmAsync { realm ->
-            RealmRating.getRatings(realm, "course", userId)
+            val ratings = realm.where(RealmRating::class.java).equalTo("type", type).findAll()
+            val aggregated = aggregateRatings(ratings, userId)
+            val map = HashMap<String?, JsonObject>()
+            for ((item, aggregation) in aggregated) {
+                map[item] = aggregation.toJson()
+            }
+            map
+        }
+    }
+
+    private fun aggregateRatings(
+        ratings: Iterable<RealmRating>,
+        userId: String?
+    ): Map<String?, RatingAggregation> {
+        val aggregationMap = LinkedHashMap<String?, RatingAggregation>()
+        for (rating in ratings) {
+            val item = rating.item
+            val aggregation = aggregationMap.getOrPut(item) { RatingAggregation() }
+            aggregation.totalRating += rating.rate
+            aggregation.totalCount += 1
+            if (userId != null && userId == rating.userId) {
+                aggregation.ratingByUser = rating.rate
+            }
+        }
+        return aggregationMap
+    }
+
+    private data class RatingAggregation(
+        var totalRating: Int = 0,
+        var totalCount: Int = 0,
+        var ratingByUser: Int? = null
+    ) {
+        fun toJson(): JsonObject {
+            val `object` = JsonObject()
+            if (ratingByUser != null) {
+                `object`.addProperty("ratingByUser", ratingByUser)
+            }
+            if (totalCount > 0) {
+                `object`.addProperty("averageRating", totalRating.toFloat() / totalCount)
+                `object`.addProperty("total", totalCount)
+            }
+            return `object`
         }
     }
 
