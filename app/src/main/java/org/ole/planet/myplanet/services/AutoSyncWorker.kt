@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
-import androidx.work.Worker
+import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
@@ -19,10 +19,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
-import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -33,27 +31,44 @@ import org.ole.planet.myplanet.utils.Utilities
 class AutoSyncWorker(
     private val context: Context,
     workerParams: WorkerParameters
-) : Worker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
+) : CoroutineWorker(context, workerParams), OnSyncListener, OnSuccessListener {
     private lateinit var preferences: SharedPreferences
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
+    private lateinit var configurationsRepository: ConfigurationsRepository
     private val workerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    override fun doWork(): Result {
+
+    override suspend fun doWork(): Result {
         if (isStopped) return Result.success()
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
         preferences = entryPoint.sharedPreferences()
         syncManager = entryPoint.syncManager()
         uploadManager = entryPoint.uploadManager()
         uploadToShelfService = entryPoint.uploadToShelfService()
+        configurationsRepository = entryPoint.configurationsRepository()
+
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
+
         if (currentTime - lastSync > syncInterval * 1000) {
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            DataService(context).checkVersion(this, preferences)
+
+            val checkResult = configurationsRepository.checkVersion(preferences)
+            when (checkResult) {
+                is ConfigurationsRepository.VersionCheckResult.UpdateAvailable -> {
+                    startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(checkResult.info?.localapkpath), null, workerScope)
+                }
+                is ConfigurationsRepository.VersionCheckResult.Error -> {
+                    handleSyncOrError(checkResult.msg, checkResult.blockSync)
+                }
+                is ConfigurationsRepository.VersionCheckResult.UpToDate -> {
+                    handleSyncOrError("Planet is up to date", false)
+                }
+            }
         }
         return Result.success()
     }
@@ -70,16 +85,12 @@ class AutoSyncWorker(
         }
     }
 
-    override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope)
-    }
-
-    override fun onCheckingVersion() {}
-    override fun onError(msg: String, blockSync: Boolean) {
+    private fun handleSyncOrError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                DataService(MainApplication.context).healthAccess {
+                workerScope.launch {
+                    configurationsRepository.healthAccess()
                     uploadToShelfService.uploadHealth()
                 }
             }
@@ -120,12 +131,6 @@ class AutoSyncWorker(
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
-    }
-
-    override fun onStopped() {
-        super.onStopped()
-        workerScope.cancel()
-        MainApplication.isSyncRunning = false
     }
 
     private fun isAppInForeground(context: Context): Boolean {

@@ -36,112 +36,118 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override fun checkHealth(listener: OnSuccessListener) {
         serviceScope.launch {
+            val result = healthAccess()
+            withContext(Dispatchers.Main) {
+                listener.onSuccess(result)
+            }
+        }
+    }
+
+    override suspend fun healthAccess(): String {
+        return withContext(Dispatchers.IO) {
             try {
                 val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
                 if (healthUrl.isBlank()) {
-                    withContext(Dispatchers.Main) { listener.onSuccess("") }
-                    return@launch
+                    return@withContext ""
                 }
 
                 try {
                     val response = apiInterface.healthAccess(healthUrl)
-                    withContext(Dispatchers.Main) {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
+                    when (response.code()) {
+                        200 -> context.getString(R.string.server_sync_successfully)
+                        401 -> "Unauthorized - Invalid credentials"
+                        404 -> "Server endpoint not found"
+                        500 -> "Server internal error"
+                        502 -> "Bad gateway - Server unavailable"
+                        503 -> "Service temporarily unavailable"
+                        504 -> "Gateway timeout"
+                        else -> "Server error: ${response.code()}"
                     }
                 } catch (t: Exception) {
                     t.printStackTrace()
-                    val errorMsg = when (t) {
+                    when (t) {
                         is java.net.UnknownHostException -> "Server not reachable"
                         is java.net.SocketTimeoutException -> "Connection timeout"
                         is java.net.ConnectException -> "Unable to connect to server"
                         is java.io.IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
-                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
+                "Health access initialization failed"
             }
         }
     }
 
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, settings: SharedPreferences) {
         serviceScope.launch {
-            val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
-            val currentTime = System.currentTimeMillis()
-            val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
-
-            if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
-                val cachedVersionDetail = preferences.getString("versionDetail", null)
-                val cachedApkVersion = preferences.getInt("cachedApkVersion", -1)
-
-                if (cachedVersionDetail != null && cachedApkVersion != -1) {
-                    try {
-                        val cachedInfo = JsonUtils.gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
-                        handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
-                        return@launch
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+            val result = checkVersion(settings)
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is ConfigurationsRepository.VersionCheckResult.UpdateAvailable -> {
+                        callback.onUpdateAvailable(result.info, result.cancelable)
                     }
-                }
-            }
-
-            try {
-                val planetInfo = fetchVersionInfo(settings)
-                if (planetInfo == null) {
-                    withContext(Dispatchers.Main) {
-                        callback.onError(context.getString(R.string.version_not_found), true)
+                    is ConfigurationsRepository.VersionCheckResult.Error -> {
+                        callback.onError(result.msg, result.blockSync)
                     }
-                    return@launch
-                }
-
-                preferences.edit {
-                    putLong("last_version_check_timestamp", System.currentTimeMillis())
-                    putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                    putString("versionDetail", JsonUtils.gson.toJson(planetInfo))
-                }
-
-                val rawApkVersion = fetchApkVersionString(settings)
-                val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
-                if (versionStr.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
+                    is ConfigurationsRepository.VersionCheckResult.UpToDate -> {
                         callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     }
-                    return@launch
-                }
-
-                val apkVersion = parseApkVersionString(versionStr)
-                    ?: run {
-                        withContext(Dispatchers.Main) {
-                            callback.onError(
-                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                                false
-                            )
-                        }
-                        return@launch
-                    }
-
-                preferences.edit {
-                    putInt("cachedApkVersion", apkVersion)
-                }
-
-                handleVersionEvaluation(planetInfo, apkVersion, callback)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    callback.onError(context.getString(R.string.connection_failed), true)
                 }
             }
+        }
+    }
+
+    override suspend fun checkVersion(settings: SharedPreferences): ConfigurationsRepository.VersionCheckResult {
+        val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
+        val currentTime = System.currentTimeMillis()
+        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
+
+        if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
+            val cachedVersionDetail = preferences.getString("versionDetail", null)
+            val cachedApkVersion = preferences.getInt("cachedApkVersion", -1)
+
+            if (cachedVersionDetail != null && cachedApkVersion != -1) {
+                try {
+                    val cachedInfo = JsonUtils.gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
+                    return evaluateVersion(cachedInfo, cachedApkVersion)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
+        try {
+            val planetInfo = fetchVersionInfo(settings)
+                ?: return ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.version_not_found), true)
+
+            preferences.edit {
+                putLong("last_version_check_timestamp", System.currentTimeMillis())
+                putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
+                putString("versionDetail", JsonUtils.gson.toJson(planetInfo))
+            }
+
+            val rawApkVersion = fetchApkVersionString(settings)
+            val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
+            if (versionStr.isNullOrEmpty()) {
+                return ConfigurationsRepository.VersionCheckResult.UpToDate
+            }
+
+            val apkVersion = parseApkVersionString(versionStr)
+                ?: return ConfigurationsRepository.VersionCheckResult.Error(
+                    context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                    false
+                )
+
+            preferences.edit {
+                putInt("cachedApkVersion", apkVersion)
+            }
+
+            return evaluateVersion(planetInfo, apkVersion)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.connection_failed), true)
         }
     }
 
@@ -232,36 +238,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return cleaned.toIntOrNull()
     }
 
-    private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
+    private fun evaluateVersion(info: MyPlanet, apkVersion: Int): ConfigurationsRepository.VersionCheckResult {
         val currentVersion = VersionUtils.getVersionCode(context)
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, false)
-                }
-            }
-            return
+            return ConfigurationsRepository.VersionCheckResult.UpdateAvailable(info, false)
         }
         if (apkVersion > currentVersion) {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-                }
-            }
-            return
+            return ConfigurationsRepository.VersionCheckResult.UpdateAvailable(info, currentVersion >= info.minapkcode)
         }
         if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, true)
-                }
-            }
+             return ConfigurationsRepository.VersionCheckResult.UpdateAvailable(info, true)
         } else {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                }
-            }
+             return ConfigurationsRepository.VersionCheckResult.UpToDate
         }
     }
 
