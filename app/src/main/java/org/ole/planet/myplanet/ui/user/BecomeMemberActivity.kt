@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -137,24 +136,38 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun addMember(info: MemberInfo) {
-        val obj = buildMemberJson(info)
+        val userJson = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
-            }
-        }, object : OnSecurityDataListener {
+        val securityListener = object : OnSecurityDataListener {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()
                     autoLoginNewMember(info.username, info.password)
                 }
             }
-        })
+        }
+
+        lifecycleScope.launch {
+            val result = userRepository.becomeMember(userJson)
+            withContext(Dispatchers.Main) {
+                result.onSuccess { message ->
+                    Utilities.toast(this@BecomeMemberActivity, message)
+                    if (message == getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        Utilities.toast(MainApplication.context, message)
+                        securityListener.onSecurityDataUpdated()
+                    } else {
+                        startUpload("becomeMember", info.username, securityListener)
+                    }
+                }.onFailure { e ->
+                    Utilities.toast(this@BecomeMemberActivity, e.message ?: "")
+                    securityListener.onSecurityDataUpdated()
+                }
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

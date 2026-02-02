@@ -265,8 +265,8 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
-        val userName = obj["name"]?.asString ?: "unknown"
+    override suspend fun becomeMember(userJson: JsonObject): Result<String> {
+        val userName = userJson["name"]?.asString ?: "unknown"
 
         val isAvailable = withContext(Dispatchers.IO) {
             try {
@@ -287,43 +287,43 @@ class UserRepositoryImpl @Inject constructor(
                 }
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
-                    Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                    Result.failure(Exception(context.getString(R.string.unable_to_create_user_user_already_exists)))
                 } else {
                     val createResponse = withContext(Dispatchers.IO) {
-                        apiInterface.putDoc(null, "application/json", userUrl, obj)
+                        apiInterface.putDoc(null, "application/json", userUrl, userJson)
                     }
 
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
                         val id = createResponse.body()?.get("id")?.asString ?: ""
 
                         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-                            uploadToShelf(obj)
+                            uploadToShelf(userJson)
                         }
 
-                        val result = saveUserToDb(id, obj)
+                        val result = saveUserToDb(id, userJson)
                         if (result.isSuccess) {
-                            Pair(true, context.getString(R.string.user_created_successfully))
+                            Result.success(context.getString(R.string.user_created_successfully))
                         } else {
-                            Pair(false, context.getString(R.string.unable_to_save_user_please_sync))
+                            Result.failure(Exception(context.getString(R.string.unable_to_save_user_please_sync)))
                         }
                     } else {
-                        Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                        Result.failure(Exception(context.getString(R.string.unable_to_create_user_user_already_exists)))
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                Result.failure(Exception(context.getString(R.string.unable_to_create_user_user_already_exists)))
             }
         } else {
             val existingUser = getUserByName(userName)
             if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
-                return Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                return Result.failure(Exception(context.getString(R.string.unable_to_create_user_user_already_exists)))
+            } else {
+                val keyString = AndroidDecrypter.generateKey()
+                val iv = AndroidDecrypter.generateIv()
+                saveUser(userJson, settings, keyString, iv)
+                return Result.success(context.getString(R.string.not_connect_to_planet_created_user_offline))
             }
-
-            val keyString = AndroidDecrypter.generateKey()
-            val iv = AndroidDecrypter.generateIv()
-            saveUser(obj, settings, keyString, iv)
-            return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
 

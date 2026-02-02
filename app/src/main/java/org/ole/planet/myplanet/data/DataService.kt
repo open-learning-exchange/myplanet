@@ -15,7 +15,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -252,30 +251,6 @@ class DataService constructor(
         }
     }
 
-    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: OnSecurityDataListener? = null) {
-        serviceScope.launch {
-            val result = userRepository.becomeMember(obj)
-            withContext(Dispatchers.Main) {
-                if (result.first) {
-                    if (context is ProcessUserDataActivity) {
-                        val userName = obj["name"].asString
-                        context.startUpload("becomeMember", userName, securityCallback)
-                    }
-
-                    if (result.second == context.getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        Utilities.toast(MainApplication.context, result.second)
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-
-                    callback.onSuccess(result.second)
-                } else {
-                    callback.onSuccess(result.second)
-                    securityCallback?.onSecurityDataUpdated()
-                }
-            }
-        }
-    }
-
     suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
             val response = withContext(Dispatchers.IO) {
@@ -415,10 +390,6 @@ class DataService constructor(
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
         fun onCheckingVersion()
         fun onError(msg: String, blockSync: Boolean)
-    }
-
-    interface CreateUserCallback {
-        fun onSuccess(message: String)
     }
 
     interface PlanetAvailableListener {
