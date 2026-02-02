@@ -10,6 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -338,5 +339,25 @@ class CoursesRepositoryImpl @Inject constructor(
         return count(RealmCertification::class.java) {
             contains("courseIds", courseId)
         } > 0
+    }
+
+    override suspend fun deleteCourseProgress(courseId: String) {
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+                .deleteAllFromRealm()
+            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java)
+                .equalTo("courseId", courseId)
+                .findAll()
+            for (exam in examList) {
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", exam.id)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
     }
 }
