@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
@@ -63,6 +64,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
+    @Inject
+    lateinit var lifeRepository: LifeRepository
 
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -267,11 +270,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val user = profileDbHandler.userModel
-
-        val dbMylife = databaseService.withRealmAsync { realmInstance ->
-            val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realmInstance, settings)
-            rawMylife.filter { it.isVisible }.map { realmInstance.copyFromRealm(it) }
-        }
+        val userId = settings?.getString("userId", "--")
+        val dbMylife = lifeRepository.getVisibleMyLifeByUserId(userId)
 
         for ((itemCnt, items) in dbMylife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
@@ -286,23 +286,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     }
 
     private suspend fun setUpMyLife(userId: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-            }
-        }
+        val myLifeListBase = getMyLifeListBase(userId)
+        lifeRepository.seedMyLifeIfNeeded(userId, myLifeListBase)
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
