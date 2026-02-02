@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -40,5 +41,6 @@ interface CoursesRepository {
     suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData?
     suspend fun getCourseTitleById(courseId: String): String?
     suspend fun isCourseCertified(courseId: String): Boolean
+    suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun deleteCourseProgress(courseId: String)
 }
