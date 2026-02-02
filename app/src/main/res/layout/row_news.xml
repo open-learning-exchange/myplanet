@@ -155,9 +155,19 @@
                 android:text="@string/reply"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
-                app:layout_constraintEnd_toStartOf="@+id/btn_show_reply"
+                app:layout_constraintEnd_toStartOf="@+id/btn_like"
                 app:layout_constraintHorizontal_chainStyle="spread_inside"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+            <Button
+                android:id="@+id/btn_like"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="Like"
+                android:textColor="@color/daynight_textColor"
+                android:theme="@style/PrimaryFlatButton"
+                app:layout_constraintEnd_toStartOf="@+id/btn_show_reply"
+                app:layout_constraintStart_toEndOf="@+id/btn_reply"
                 app:layout_constraintTop_toTopOf="parent" />
             <Button
                 android:id="@+id/btn_show_reply"
@@ -172,7 +182,7 @@
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
-                app:layout_constraintStart_toEndOf="@+id/btn_reply"
+                app:layout_constraintStart_toEndOf="@+id/btn_like"
                 app:layout_constraintTop_toTopOf="parent" />
             <Button
                 android:id="@+id/btn_add_label"

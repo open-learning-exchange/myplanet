@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
+import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
@@ -54,7 +55,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var newsAdapter: VoicesAdapter
     var user: RealmUser? = null
 
-    private val viewModel: ReplyViewModel by viewModels()
+    private val viewModel: NewsViewModel by viewModels()
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -109,14 +110,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     teamId = null,
                     userSessionManager = userSessionManager,
                     scope = lifecycleScope,
-                    isTeamLeaderFn = { false },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                    },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    viewModel = viewModel,
                     labelManager = labelManager
                 )
                 newsAdapter.sharedPrefManager = sharedPrefManager

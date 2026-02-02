@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -24,6 +25,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
+import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -39,6 +41,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+
+    private val viewModel: NewsViewModel by viewModels()
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 
@@ -173,6 +177,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
+        // Ensure team leader check is performed
+        val effectiveTeamId = getEffectiveTeamId()
+        viewModel.checkTeamLeader(effectiveTeamId)
+
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
             val adapterNews = activity?.let {
@@ -184,14 +192,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamId = teamId,
                     userSessionManager = userSessionManager,
                     scope = viewLifecycleOwner.lifecycleScope,
-                    isTeamLeaderFn = { teamsRepository.isTeamLeader(teamId, user?._id) },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, getEffectiveTeamName()) },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                    },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    viewModel = viewModel,
                     labelManager = labelManager
                 )
             }

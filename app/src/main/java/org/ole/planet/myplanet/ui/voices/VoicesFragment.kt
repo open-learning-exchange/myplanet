@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -54,6 +55,8 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    private val viewModel: NewsViewModel by viewModels()
+
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -106,6 +109,8 @@ class VoicesFragment : BaseVoicesFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewModel.checkTeamLeader(null)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
@@ -214,14 +219,7 @@ class VoicesFragment : BaseVoicesFragment() {
                 teamId = null,
                 userSessionManager = userSessionManager,
                 scope = viewLifecycleOwner.lifecycleScope,
-                isTeamLeaderFn = { false },
-                getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                },
-                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                viewModel = viewModel,
                 labelManager = labelManager
             )
             adapterNews?.sharedPrefManager = sharedPrefManager
