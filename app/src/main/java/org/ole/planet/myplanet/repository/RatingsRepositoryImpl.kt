@@ -33,6 +33,7 @@ class RatingsRepositoryImpl @Inject constructor(
         return getRatingsInternal("resource", userId)
     }
 
+    // Helper method to aggregate ratings based on type and optional userId
     private suspend fun getRatingsInternal(type: String, userId: String?): HashMap<String?, JsonObject> {
         return withRealmAsync { realm ->
             val ratings = realm.where(RealmRating::class.java).equalTo("type", type).findAll()
