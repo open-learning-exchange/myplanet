@@ -132,7 +132,8 @@ object VoicesActions {
         realm: Realm,
         currentUser: RealmUser?,
         imageList: RealmList<String>?,
-        listener: OnNewsItemClickListener?
+        listener: OnNewsItemClickListener?,
+        postReplyFn: (String, String, String?, RealmList<String>?) -> Unit
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -142,7 +143,7 @@ object VoicesActions {
         if (isEdit) {
             editPost(realm, s, news, imageList)
         } else {
-            postReply(realm, s, news, currentUser, imageList)
+            postReplyFn(s, news?.id ?: "", currentUser?.id, imageList)
         }
         dialog.dismiss()
         listener?.clearImages()
@@ -156,6 +157,7 @@ object VoicesActions {
         currentUser: RealmUser?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
+        postReplyFn: (String, String, String?, RealmList<String>?) -> Unit,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
@@ -178,31 +180,10 @@ object VoicesActions {
             dialog.show()
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val currentImageList = listener?.getCurrentImageList()
-                handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
+                handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener, postReplyFn)
                 updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
             }
         }
-    }
-
-    private fun postReply(
-        realm: Realm,
-        s: String?,
-        news: RealmNews?,
-        currentUser: RealmUser?,
-        imageList: RealmList<String>?
-    ) {
-        val shouldCommit = !realm.isInTransaction
-        if (shouldCommit) realm.beginTransaction()
-        val map = HashMap<String?, String>()
-        map["message"] = s ?: ""
-        map["viewableBy"] = news?.viewableBy ?: ""
-        map["viewableId"] = news?.viewableId ?: ""
-        map["replyTo"] = news?.id ?: ""
-        map["messageType"] = news?.messageType ?: ""
-        map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-        map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, true) }
-        if (shouldCommit) realm.commitTransaction()
     }
 
     private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {

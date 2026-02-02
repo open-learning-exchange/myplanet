@@ -75,7 +75,8 @@ class VoicesAdapter(
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
-    private val labelManager: VoicesLabelManager
+    private val labelManager: VoicesLabelManager,
+    private val postReplyFn: (String, String, String?, RealmList<String>?) -> Unit
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -357,6 +358,7 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     holder,
+                    postReplyFn
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -544,6 +546,7 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     viewHolder,
+                    postReplyFn
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {

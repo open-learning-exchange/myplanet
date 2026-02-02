@@ -354,4 +354,22 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun getDateFromTimestamp(timestamp: Long): String {
         return dateFormat.get()!!.format(java.util.Date(timestamp))
     }
+
+    override suspend fun postReply(message: String, parentNewsId: String, userId: String?, imageList: io.realm.RealmList<String>?) {
+        executeTransaction { realm ->
+            val user = userId?.let { realm.where(RealmUser::class.java).equalTo("id", it).findFirst() }
+            val news = realm.where(RealmNews::class.java).equalTo("id", parentNewsId).findFirst()
+
+            val map = HashMap<String?, String>()
+            map["message"] = message
+            map["viewableBy"] = news?.viewableBy ?: ""
+            map["viewableId"] = news?.viewableId ?: ""
+            map["replyTo"] = news?.id ?: ""
+            map["messageType"] = news?.messageType ?: ""
+            map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
+            map["viewIn"] = news?.viewIn ?: ""
+
+            RealmNews.createNews(map, realm, user, imageList, true)
+        }
+    }
 }

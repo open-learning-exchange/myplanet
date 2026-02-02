@@ -222,7 +222,12 @@ class VoicesFragment : BaseVoicesFragment() {
                     voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                 },
                 getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                labelManager = labelManager
+                labelManager = labelManager,
+                postReplyFn = { message, parentId, userId, imageList ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        voicesRepository.postReply(message, parentId, userId, imageList)
+                    }
+                }
             )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
