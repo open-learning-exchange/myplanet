@@ -19,8 +19,10 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import java.io.File
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -372,5 +374,28 @@ class ResourcesRepositoryImpl @Inject constructor(
         val jsonArray = JsonArray()
         libs.forEach { jsonArray.add(it.id) }
         return jsonArray
+    }
+
+    override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {
+        val resource = getLibraryItemByResourceId(resourceId) ?: return ResourceUrlsResponse.ResourceNotFound
+        if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments
+
+        val urls = resource.attachments?.mapNotNull { attachment ->
+            attachment.name?.let { name ->
+                val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
+                val lastSlashIndex = name.lastIndexOf('/')
+                if (lastSlashIndex > 0) {
+                    val dirPath = name.substring(0, lastSlashIndex)
+                    File(baseDir, dirPath).mkdirs()
+                }
+                UrlUtils.getUrl(resourceId, name)
+            }
+        }
+
+        return if (!urls.isNullOrEmpty()) {
+            ResourceUrlsResponse.Success(urls)
+        } else {
+            ResourceUrlsResponse.Error
+        }
     }
 }
