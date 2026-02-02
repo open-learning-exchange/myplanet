@@ -76,37 +76,43 @@ class VoicesAdapter(
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
     private val labelManager: VoicesLabelManager
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
-    DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem ->
-            if (oldItem === newItem) return@itemCallback true
-            if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(DIFF_CALLBACK) {
 
-            try {
-                val oId = oldItem.takeIf { it.isValid }?.id
-                val nId = newItem.takeIf { it.isValid }?.id
-                oId != null && oId == nId
-            } catch (e: Exception) {
-                false
+    companion object {
+        /**
+         * DiffUtil callback for RealmNews items.
+         * Using this pattern to keep the adapter constructor clean and consistent.
+         */
+        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmNews?>(
+            areItemsTheSame = { oldItem, newItem ->
+                if (oldItem === newItem) return@itemCallback true
+                if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+
+                try {
+                    val oId = oldItem.takeIf { it.isValid }?.id
+                    val nId = newItem.takeIf { it.isValid }?.id
+                    oId != null && oId == nId
+                } catch (e: Exception) {
+                    false
+                }
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                if (oldItem === newItem) return@itemCallback true
+                if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+
+                try {
+                    if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
+
+                    oldItem.id == newItem.id && oldItem.time == newItem.time &&
+                            oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
+                            oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
+                            oldItem.sharedBy == newItem.sharedBy
+                } catch (e: Exception) {
+                    false
+                }
             }
-        },
-        areContentsTheSame = { oldItem, newItem ->
-            if (oldItem === newItem) return@itemCallback true
-            if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
-
-            try {
-                if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
-
-                oldItem.id == newItem.id && oldItem.time == newItem.time &&
-                        oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
-                        oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy
-            } catch (e: Exception) {
-                false
-            }
-        }
-    )
-) {
+        )
+    }
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager

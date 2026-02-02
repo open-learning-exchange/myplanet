@@ -3,15 +3,15 @@ package org.ole.planet.myplanet.utils
 import androidx.recyclerview.widget.DiffUtil as RecyclerDiffUtil
 
 object DiffUtils {
-    fun <T : Any> itemCallback(
+    fun <T> itemCallback(
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
         areContentsTheSame: (oldItem: T, newItem: T) -> Boolean,
         getChangePayload: ((oldItem: T, newItem: T) -> Any?)? = null
     ): RecyclerDiffUtil.ItemCallback<T> {
         return object : RecyclerDiffUtil.ItemCallback<T>() {
-            override fun areItemsTheSame(oldItem: T, newItem: T) = areItemsTheSame(oldItem, newItem)
-            override fun areContentsTheSame(oldItem: T, newItem: T) = areContentsTheSame(oldItem, newItem)
-            override fun getChangePayload(oldItem: T, newItem: T): Any? {
+            override fun areItemsTheSame(oldItem: T & Any, newItem: T & Any) = areItemsTheSame(oldItem, newItem)
+            override fun areContentsTheSame(oldItem: T & Any, newItem: T & Any) = areContentsTheSame(oldItem, newItem)
+            override fun getChangePayload(oldItem: T & Any, newItem: T & Any): Any? {
                 return getChangePayload?.invoke(oldItem, newItem)
             }
         }
