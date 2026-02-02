@@ -62,6 +62,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.DatabaseRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -141,6 +142,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
+
+    @Inject
+    lateinit var databaseRepository: DatabaseRepository
 
     @Inject
     open lateinit var resourcesRepository: ResourcesRepository
@@ -247,7 +251,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         customProgressDialog.setText(getString(R.string.clearing_data))
                         customProgressDialog.show()
 
-                        clearRealmDb()
+                        databaseRepository.clearAll()
                         prefData.setManualConfig(config)
                         clearSharedPref()
 
@@ -812,7 +816,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
         } else {
             lifecycleScope.launch(Dispatchers.IO) {
-                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+                databaseRepository.clearAll()
             }
         }
         builder.setCancelable(cancelable)
@@ -872,15 +876,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         lateinit var cal_last_Sync: Calendar
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
-
-        suspend fun clearRealmDb() {
-            val databaseService = (context.applicationContext as MainApplication).databaseService
-            databaseService.withRealmAsync { realm ->
-                realm.executeTransaction { transactionRealm ->
-                    transactionRealm.deleteAll()
-                }
-            }
-        }
 
         suspend fun clearSharedPref() {
             withContext(Dispatchers.IO) {

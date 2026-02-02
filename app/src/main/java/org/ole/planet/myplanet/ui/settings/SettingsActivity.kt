@@ -36,12 +36,12 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.DatabaseRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -102,8 +102,10 @@ class SettingsActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         @Inject
         lateinit var profileDbHandler: UserSessionManager
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
+        @Inject
+        lateinit var databaseRepository: DatabaseRepository
+        @Inject
+        lateinit var resourcesRepository: ResourcesRepository
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -275,7 +277,7 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             lifecycleScope.launch(Dispatchers.IO) {
-                                clearRealmDb()
+                                databaseRepository.clearAll()
                                 clearSharedPref()
                                 withContext(Dispatchers.Main) {
                                     restartApp()
