@@ -42,6 +42,12 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getNewsById(newsId: String): RealmNews? {
+        return withRealm(ensureLatest = true) { realm ->
+            realm.findCopyByField(RealmNews::class.java, "id", newsId)
+        }
+    }
+
     override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
         val allNews = queryList(RealmNews::class.java) {
             isEmpty("replyTo")
@@ -57,10 +63,16 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?): RealmNews {
+    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?, isReply: Boolean): RealmNews {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, imageList)
+            val managedNews = createNews(map, realm, user, imageList, isReply)
             realm.copyFromRealm(managedNews)
+        }
+    }
+
+    override suspend fun updateNews(news: RealmNews) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.copyToRealmOrUpdate(news)
         }
     }
 

@@ -75,7 +75,8 @@ class VoicesAdapter(
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
-    private val labelManager: VoicesLabelManager
+    private val labelManager: VoicesLabelManager,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -350,16 +351,20 @@ class VoicesAdapter(
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
-                    news.id,
-                    true,
-                    currentUser,
-                    listener,
-                    holder,
-                ) { holder, updatedNews, position ->
-                    showReplyButton(holder, updatedNews, position)
-                    notifyItemChanged(position)
+                scope.launch {
+                    VoicesActions.showEditAlert(
+                        context,
+                        news.id,
+                        true,
+                        currentUser,
+                        listener,
+                        holder,
+                        voicesRepository,
+                        scope
+                    ) { holder, updatedNews, position ->
+                        showReplyButton(holder, updatedNews, position)
+                        notifyItemChanged(position)
+                    }
                 }
             }
         } else {
@@ -537,14 +542,18 @@ class VoicesAdapter(
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
-                    finalNews?.id,
-                    false,
-                    currentUser,
-                    listener,
-                    viewHolder,
-                ) { holder, news, i -> showReplyButton(holder, news, i) }
+                scope.launch {
+                    VoicesActions.showEditAlert(
+                        context,
+                        finalNews?.id,
+                        false,
+                        currentUser,
+                        listener,
+                        viewHolder,
+                        voicesRepository,
+                        scope
+                    ) { holder, news, i -> showReplyButton(holder, news, i) }
+                }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
