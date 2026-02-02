@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -395,10 +394,13 @@ abstract class BaseResourceFragment : Fragment() {
             } }
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            val courseId = (`object` as RealmMyCourse).courseId
+            if (courseId != null && model?.id != null) {
+                lifecycleScope.launch {
+                    coursesRepository.leaveCourse(courseId, model?.id!!)
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                }
+            }
         }
     }
 

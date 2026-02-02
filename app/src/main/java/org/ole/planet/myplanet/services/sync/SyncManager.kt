@@ -41,12 +41,12 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -67,6 +67,7 @@ class SyncManager constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
+    private val coursesRepository: CoursesRepository,
     @ApplicationScope private val syncScope: CoroutineScope
 ) {
     private var isSyncing = false
@@ -894,7 +895,7 @@ class SyncManager constructor(
             val processDuration = System.currentTimeMillis() - processStartTime
             logger.endProcess("library_process_shelves", processedItems)
 
-            saveConcatenatedLinksToPrefs()
+            coursesRepository.saveConcatenatedLinks()
             logger.endProcess("library_sync_main", processedItems)
 
             val totalDuration = System.currentTimeMillis() - librarySyncStartTime
@@ -1015,20 +1016,24 @@ class SyncManager constructor(
                     val realmStartTime = System.currentTimeMillis()
                     // Batch insert documents in chunks to reduce transaction overhead
                     val chunkSize = 50  // Increased from processing one batch at a time
-                    documentsToProcess.chunked(chunkSize).forEach { chunk ->
-                        safeRealmOperation { realm ->
-                            realm.executeTransaction { realmTx ->
-                                chunk.forEach { doc ->
-                                    try {
-                                        when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx)
-                                            "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx)
-                                            "teams" -> insertMyTeams(doc, realmTx)
+                    if (shelfData.type == "courses") {
+                        coursesRepository.createCourses(documentsToProcess, shelfId)
+                        processedCount += documentsToProcess.size
+                    } else {
+                        documentsToProcess.chunked(chunkSize).forEach { chunk ->
+                            safeRealmOperation { realm ->
+                                realm.executeTransaction { realmTx ->
+                                    chunk.forEach { doc ->
+                                        try {
+                                            when (shelfData.type) {
+                                                "resources" -> insertMyLibrary(shelfId, doc, realmTx)
+                                                "meetups" -> insert(realmTx, doc)
+                                                "teams" -> insertMyTeams(doc, realmTx)
+                                            }
+                                            processedCount++
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
                                         }
-                                        processedCount++
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
                                     }
                                 }
                             }

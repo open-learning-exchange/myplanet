@@ -71,6 +71,7 @@ open class RealmMyCourse : RealmObject() {
         private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.createCourses instead")
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
             context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val id = JsonUtils.getString("_id", myCoursesDoc)
@@ -125,6 +126,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.saveConcatenatedLinks instead")
         fun saveConcatenatedLinksToPrefs() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
@@ -238,6 +240,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.createCourses instead")
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
@@ -257,11 +260,13 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getCourseById instead")
         fun getMyCourse(mRealm: Realm, id: String?): RealmMyCourse? {
             return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.enrollUserInCourse instead")
         fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
@@ -44,4 +45,7 @@ interface CoursesRepository {
     suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun deleteCourseProgress(courseId: String)
+    suspend fun enrollUserInCourse(courseId: String, userId: String)
+    suspend fun createCourses(courseDocs: List<JsonObject>, userId: String?)
+    suspend fun saveConcatenatedLinks()
 }

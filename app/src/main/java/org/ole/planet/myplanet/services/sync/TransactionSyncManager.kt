@@ -17,9 +17,9 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
+    private val coursesRepository: CoursesRepository,
     @ApplicationContext private val context: Context
 ) {
     suspend fun authenticate(): Boolean {
@@ -188,16 +189,20 @@ class TransactionSyncManager @Inject constructor(
                     arr.size()
                 )
 
-                // Use async transaction to avoid blocking (ANR-safe)
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { mRealm: Realm ->
-                        val insertStartTime = System.currentTimeMillis()
-
-                        if (table == "chat_history") {
-                            insertToChat(arr, mRealm)
+                if (table == "courses") {
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
                         }
-                        insertDocs(arr, mRealm, table)
-
+                    }
+                    if (docs.isNotEmpty()) {
+                        val insertStartTime = System.currentTimeMillis()
+                        coursesRepository.createCourses(docs, null)
+                        coursesRepository.saveConcatenatedLinks()
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
@@ -205,6 +210,26 @@ class TransactionSyncManager @Inject constructor(
                             insertDuration,
                             arr.size()
                         )
+                    }
+                } else {
+                    // Use async transaction to avoid blocking (ANR-safe)
+                    databaseService.withRealm { realm ->
+                        realm.executeTransactionAsync { mRealm: Realm ->
+                            val insertStartTime = System.currentTimeMillis()
+
+                            if (table == "chat_history") {
+                                insertToChat(arr, mRealm)
+                            }
+                            insertDocs(arr, mRealm, table)
+
+                            val insertDuration = System.currentTimeMillis() - insertStartTime
+                            org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                                "insert_batch",
+                                table,
+                                insertDuration,
+                                arr.size()
+                            )
+                        }
                     }
                 }
 
@@ -279,7 +304,6 @@ class TransactionSyncManager @Inject constructor(
                 callMethod(mRealm, jsonDoc, table)
             }
         }
-        saveConcatenatedLinksToPrefs()
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
