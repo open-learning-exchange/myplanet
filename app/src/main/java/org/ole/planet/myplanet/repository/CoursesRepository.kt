@@ -44,4 +44,5 @@ interface CoursesRepository {
     suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun deleteCourseProgress(courseId: String)
+    suspend fun getAllCourses(userId: String): List<RealmMyCourse>
 }

@@ -399,4 +399,22 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getAllCourses(userId: String): List<RealmMyCourse> {
+        return withRealm(true) { realm ->
+            val allCourses = realm.where(RealmMyCourse::class.java)
+                .isNotEmpty("courseTitle")
+                .findAll()
+            val detachedCourses = realm.copyFromRealm(allCourses)
+            val validCourses = detachedCourses.filter { !it.courseTitle.isNullOrBlank() }
+            validCourses.forEach { course ->
+                course.isMyCourse = if (userId.isNotBlank()) {
+                    course.userId?.contains(userId) == true
+                } else {
+                    false
+                }
+            }
+            validCourses
+        }
+    }
 }
