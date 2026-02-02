@@ -145,60 +145,45 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun checkServerAvailability(callback: ConfigurationsRepository.PlanetAvailableListener?) {
+    override suspend fun isPlanetAvailable(): Boolean {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
-                    callback?.isAvailable()
-                } else {
-                    callback?.notAvailable()
-                }
-                return
+                return available
             }
         }
 
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        withContext(Dispatchers.IO) {
+            val primaryReachable = isServerReachable(mapping.primaryUrl)
+            val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
+            if (!primaryReachable && alternativeReachable) {
+                mapping.alternativeUrl?.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = preferences.edit()
 
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
+                    serverUrlMapper.updateUrlPreferences(
+                        editor,
+                        uri,
+                        alternativeUrl,
+                        mapping.primaryUrl,
+                        preferences
+                    )
                 }
             }
+        }
 
-            try {
-                val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
-                val isAvailable = callback != null && response.code() == 200
-                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                withContext(Dispatchers.Main) {
-                    if (isAvailable) {
-                        callback.isAvailable()
-                    } else {
-                        callback?.notAvailable()
-                    }
-                }
-            } catch (e: Exception) {
-                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                withContext(Dispatchers.Main) {
-                    callback?.notAvailable()
-                }
-            }
+        return try {
+            val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
+            val isAvailable = response.code() == 200
+            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+            isAvailable
+        } catch (e: Exception) {
+            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+            false
         }
     }
 
