@@ -117,7 +117,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                     },
                     getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                    labelManager = labelManager
+                    labelManager = labelManager,
+                    postReplyFn = { message, parentId, userId, imageList ->
+                        lifecycleScope.launch {
+                            voicesRepository.postReply(message, parentId, userId, imageList)
+                        }
+                    }
                 )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
