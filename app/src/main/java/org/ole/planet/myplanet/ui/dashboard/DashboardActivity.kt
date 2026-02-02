@@ -64,6 +64,7 @@ import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
@@ -124,6 +125,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
     }
@@ -508,12 +511,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = databaseService.withRealmAsync { realm ->
-                realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                    .findFirst()?.let {
-                        realm.copyFromRealm(it)
-                    }
-            }
+            val currentStepExam = surveysRepository.getSurvey(surveyId)
             SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }

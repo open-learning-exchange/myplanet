@@ -87,9 +87,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var tagsRepository: TagsRepository
-
-    @Inject
     lateinit var progressRepository: ProgressRepository
 
     @Inject

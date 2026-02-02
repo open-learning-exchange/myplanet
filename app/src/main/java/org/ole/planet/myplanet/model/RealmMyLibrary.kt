@@ -184,11 +184,13 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
+        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
             return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
         }
 
+        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
             val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
             return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
@@ -209,6 +211,7 @@ open class RealmMyLibrary : RealmObject() {
             return list.map { it.resourceId }.toTypedArray()
         }
 
+        @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val startTime = System.currentTimeMillis()
@@ -398,6 +401,7 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
+        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
         @JvmStatic
         fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
             val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
