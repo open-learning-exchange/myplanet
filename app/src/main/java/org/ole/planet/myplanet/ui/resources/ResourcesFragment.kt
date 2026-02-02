@@ -197,9 +197,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     adapterLibrary.setLibraryList(mRealm.copyFromRealm(filteredLibraryList))
                     adapterLibrary.setRatingMap(map!!)
                     adapterLibrary.setTagsMap(tagsMap)
+                    checkList()
+                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 }
-                checkList()
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -217,6 +217,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return adapterLibrary
     }
 
+    override fun onAdapterSet() {
+        super.onAdapterSet()
+        if (::adapterLibrary.isInitialized) {
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            changeButtonStatus()
+            checkList()
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
@@ -231,15 +240,21 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         setupGuestUserRestrictions()
 
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        if (::adapterLibrary.isInitialized) {
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        }
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
-        changeButtonStatus()
+        if (::adapterLibrary.isInitialized) {
+            changeButtonStatus()
+        }
         additionalSetup()
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-        checkList()
+        if (::adapterLibrary.isInitialized) {
+            checkList()
+        }
 
         if (userModel?.id != null) {
             lifecycleScope.launch {

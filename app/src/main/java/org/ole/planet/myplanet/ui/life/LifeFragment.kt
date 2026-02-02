@@ -71,14 +71,25 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return lifeAdapter
     }
 
+    override fun onAdapterSet() {
+        super.onAdapterSet()
+        if (::lifeAdapter.isInitialized) {
+            val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+            mItemTouchHelper = ItemTouchHelper(callback)
+            mItemTouchHelper?.attachToRecyclerView(recyclerView)
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         refreshList()
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        mItemTouchHelper = ItemTouchHelper(callback)
-        mItemTouchHelper?.attachToRecyclerView(recyclerView)
+        if (::lifeAdapter.isInitialized) {
+            val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+            mItemTouchHelper = ItemTouchHelper(callback)
+            mItemTouchHelper?.attachToRecyclerView(recyclerView)
+        }
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }

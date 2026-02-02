@@ -252,6 +252,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return adapterCourses
     }
 
+    override fun onAdapterSet() {
+        super.onAdapterSet()
+        if (::adapterCourses.isInitialized) {
+            checkList()
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         userModel = userSessionManager.userModel
@@ -262,7 +270,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupButtonVisibility()
         setupEventListeners()
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        if (::adapterCourses.isInitialized) {
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -464,7 +474,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
-        if (adapterCourses.currentList.isEmpty()) {
+        if (!::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
