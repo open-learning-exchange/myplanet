@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
