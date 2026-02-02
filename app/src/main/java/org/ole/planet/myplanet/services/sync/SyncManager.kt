@@ -178,8 +178,8 @@ class SyncManager constructor(
 
             initializeSync()
 
-            // Phase 1: Sync non-library tables in parallel
-            // Note: teams and meetups base tables are synced here, then augmented by library sync
+            // Phase 1: Sync non-library tables in parallel (including courses)
+            // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
             coroutineScope {
                 val syncJobs = listOf(
                     async {
@@ -266,28 +266,27 @@ class SyncManager constructor(
                         logger.startProcess("meetups_sync")
                         transactionSyncManager.syncDb("meetups")
                         logger.endProcess("meetups_sync")
+                    },
+                    async {
+                        logger.startProcess("courses_sync")
+                        transactionSyncManager.syncDb("courses")
+                        logger.endProcess("courses_sync")
                     }
                 )
                 syncJobs.awaitAll()
             }
 
-            // Phase 2: Sync courses base table
-            Log.d("SyncPerf", "  ▶ Starting courses base table sync")
-            logger.startProcess("courses_sync")
-            transactionSyncManager.syncDb("courses")
-            logger.endProcess("courses_sync")
+            // Phase 2: Sync resources base table (must run before library to establish base records)
+            logger.startProcess("resource_sync")
+            resourceTransactionSync()
+            logger.endProcess("resource_sync")
 
             // Phase 3: Sync library (augments courses, resources, teams, meetups with shelf data)
             logger.startProcess("library_sync")
             myLibraryTransactionSync()
             logger.endProcess("library_sync")
 
-            // Phase 4: Sync resources base table
-            logger.startProcess("resource_sync")
-            resourceTransactionSync()
-            logger.endProcess("resource_sync")
-
-            // Phase 5: Admin and finalization
+            // Phase 4: Admin and finalization
             logger.startProcess("admin_sync")
             LoginSyncManager.instance.syncAdmin()
             logger.endProcess("admin_sync")
@@ -570,7 +569,7 @@ class SyncManager constructor(
             logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
             logger.endProcess("resource_get_total_count")
 
-            val batchSize = 50
+            val batchSize = 100
             var skip = 0
             var batchCount = 0
 
@@ -873,7 +872,7 @@ class SyncManager constructor(
             val processStartTime = System.currentTimeMillis()
 
             coroutineScope {
-                val semaphore = Semaphore(3)
+                val semaphore = Semaphore(6)
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
                     async(Dispatchers.IO) {
                         semaphore.withPermit {
@@ -969,7 +968,7 @@ class SyncManager constructor(
 
             if (validIds.isEmpty()) return 0
 
-            val batchSize = 25
+            val batchSize = 50
             val totalBatches = (validIds.size + batchSize - 1) / batchSize
 
             for (i in 0 until validIds.size step batchSize) {
