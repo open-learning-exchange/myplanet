@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
@@ -318,5 +319,58 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         return allNeedingUpdate
+    }
+
+    override suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary> {
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }
+
+        val resourceIdsFromTeams = if (teamIds.isNotEmpty()) {
+            queryList(RealmMyTeam::class.java) {
+                `in`("teamId", teamIds.toTypedArray())
+                equalTo("docType", "resourceLink")
+            }.mapNotNull { it.resourceId }
+        } else {
+            emptyList()
+        }
+
+        return queryList(RealmMyLibrary::class.java) {
+            beginGroup()
+            equalTo("userId", userId)
+            if (resourceIdsFromTeams.isNotEmpty()) {
+                or()
+                `in`("resourceId", resourceIdsFromTeams.toTypedArray())
+            }
+            endGroup()
+        }
+    }
+
+    override suspend fun removeDeletedResources(currentIds: List<String?>) {
+        val validCurrentIds = currentIds.filterNotNull().toSet()
+        executeTransaction { realm ->
+            val allResources = realm.where(RealmMyLibrary::class.java).findAll()
+            val idsToDelete = allResources.mapNotNull { it.resourceId }.filter { it !in validCurrentIds }
+
+            if (idsToDelete.isNotEmpty()) {
+                val chunkSize = 1000
+                idsToDelete.chunked(chunkSize).forEach { chunk ->
+                    realm.where(RealmMyLibrary::class.java)
+                        .`in`("resourceId", chunk.toTypedArray())
+                        .findAll()
+                        .deleteAllFromRealm()
+                }
+            }
+        }
+    }
+
+    override suspend fun getMyLibIds(userId: String): JsonArray {
+        val libs = queryList(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+        }
+        val jsonArray = JsonArray()
+        libs.forEach { jsonArray.add(it.id) }
+        return jsonArray
     }
 }
