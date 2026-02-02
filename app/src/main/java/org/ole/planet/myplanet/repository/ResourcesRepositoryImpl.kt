@@ -373,4 +373,17 @@ class ResourcesRepositoryImpl @Inject constructor(
         libs.forEach { jsonArray.add(it.id) }
         return jsonArray
     }
+
+    override suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>> {
+        val languages = libraries.mapNotNull { it.language }.filter { it.isNotBlank() }.toSet()
+        val mediums = libraries.mapNotNull { it.mediaType }.filter { it.isNotBlank() }.toSet()
+        val subjects = libraries.flatMap { it.subject ?: emptyList() }.toSet()
+        val levels = libraries.flatMap { it.level ?: emptyList() }.toSet()
+        return mapOf(
+            "languages" to languages,
+            "mediums" to mediums,
+            "subjects" to subjects,
+            "levels" to levels
+        )
+    }
 }
