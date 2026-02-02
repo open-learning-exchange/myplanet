@@ -158,6 +158,10 @@ class DashboardViewModel @Inject constructor(
         return resourcesRepository.getLibraryForSelectedUser(userId)
     }
 
+    suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+        return resourcesRepository.getLibraryListForUser(userId)
+    }
+
     fun loadUsers() {
         viewModelScope.launch {
             val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
