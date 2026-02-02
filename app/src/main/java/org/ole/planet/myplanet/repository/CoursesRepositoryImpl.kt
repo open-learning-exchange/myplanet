@@ -399,4 +399,8 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
+        leaveCourse(courseId, userId)
+    }
 }

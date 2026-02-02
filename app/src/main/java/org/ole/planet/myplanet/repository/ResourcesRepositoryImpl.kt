@@ -373,4 +373,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         libs.forEach { jsonArray.add(it.id) }
         return jsonArray
     }
+
+    override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
+        updateUserLibrary(resourceId, userId, false)
+    }
 }
