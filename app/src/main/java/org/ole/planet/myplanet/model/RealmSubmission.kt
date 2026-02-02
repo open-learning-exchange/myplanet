@@ -225,25 +225,6 @@ open class RealmSubmission : RealmObject() {
             return submission
         }
 
-        @JvmStatic
-        fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
-            val exams = HashMap<String?, RealmStepExam>()
-            for (sub in submissions ?: emptyList()){
-                var id = sub.parentId
-                if (checkParentId(sub.parentId)) {
-                    id = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
-                }
-                val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-                if (survey != null) {
-                    exams[sub.parentId] = survey
-                }
-            }
-            return exams
-        }
-
-        private fun checkParentId(parentId: String?): Boolean {
-            return parentId != null && parentId.contains("@")
-        }
 
         @JvmStatic
         fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context): JsonObject {
