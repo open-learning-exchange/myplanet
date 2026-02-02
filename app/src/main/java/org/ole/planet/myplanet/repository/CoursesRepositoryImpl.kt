@@ -61,11 +61,14 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
+    override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
+        if (courseId.isBlank()) {
             return null
         }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            course?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
@@ -96,12 +99,24 @@ class CoursesRepositoryImpl @Inject constructor(
         }.toInt()
     }
 
-    override suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep> {
-        if (courseId.isNullOrEmpty()) {
+    override suspend fun getCourseSteps(courseId: String): List<RealmCourseStep> {
+        if (courseId.isBlank()) {
             return emptyList()
         }
-        return queryList(RealmCourseStep::class.java) {
-            equalTo("courseId", courseId)
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            val steps = course?.courseSteps
+            if (steps != null) realm.copyFromRealm(steps) else emptyList()
+        }
+    }
+
+    override suspend fun getCourseStepIds(courseId: String): Array<String?> {
+        if (courseId.isBlank()) {
+            return emptyArray()
+        }
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
         }
     }
 
