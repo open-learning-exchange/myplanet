@@ -184,65 +184,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
-        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
-            val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
-        }
-
-        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
-            val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
-            return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
-        }
-
-        @JvmStatic
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            return libs.filter { it.userId?.contains(userId) == true }
-        }
-
-        @JvmStatic
-        fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            return libs.filter { it.userId?.contains(userId) == false }
-        }
-
-        private fun getIds(mRealm: Realm): Array<String?> {
-            val list = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return list.map { it.resourceId }.toTypedArray()
-        }
-
-        @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
-        @JvmStatic
-        fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
-            val startTime = System.currentTimeMillis()
-            val ids = getIds(mRealm)
-            val idsToDelete = ids.filterNot { it in newIds }
-
-            if (idsToDelete.isEmpty()) {
-                Log.d("PerformanceTest", "removeDeletedResource: No resources to delete")
-                return
-            }
-
-            Log.d("PerformanceTest", "removeDeletedResource: Starting batch delete of ${idsToDelete.size} resources")
-
-            // Single transaction for all deletes - massive performance improvement
-            val deleteStartTime = System.currentTimeMillis()
-            mRealm.executeTransaction { realm ->
-                idsToDelete.forEach { id ->
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceId", id)
-                        .findAll()
-                        .deleteAllFromRealm()
-                }
-            }
-            val deleteEndTime = System.currentTimeMillis()
-
-            val totalTime = deleteEndTime - startTime
-            val transactionTime = deleteEndTime - deleteStartTime
-            Log.d("PerformanceTest", "removeDeletedResource: Completed in ${totalTime}ms (transaction: ${transactionTime}ms) for ${idsToDelete.size} items")
-            Log.d("PerformanceTest", "removeDeletedResource: Average ${totalTime / idsToDelete.size.coerceAtLeast(1)}ms per item")
-        }
-
         @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
@@ -401,13 +342,6 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
-        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
-        @JvmStatic
-        fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
-            val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
-            return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
-            }
-        }
         @JvmStatic
         fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.level ?: emptyList() }.toSet()

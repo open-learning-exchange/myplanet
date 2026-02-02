@@ -373,4 +373,10 @@ class ResourcesRepositoryImpl @Inject constructor(
         libs.forEach { jsonArray.add(it.id) }
         return jsonArray
     }
+
+    override suspend fun getPublicLibraryItems(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+    }
 }

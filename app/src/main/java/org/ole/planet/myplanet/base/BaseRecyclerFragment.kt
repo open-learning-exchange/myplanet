@@ -24,8 +24,6 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
@@ -51,7 +49,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -113,7 +111,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onRatingChanged() {
-        recyclerView.adapter = getAdapter()
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
     }
 
     fun addToMyList() {
@@ -271,13 +271,19 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+    suspend fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         val normalizedSearchTerm = normalizeText(s)
-        var list = getData(s, RealmMyLibrary::class.java)
-        list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model?.id, list)
-        } else {
-            getOurLibrary(model?.id, list)
+        var list = getList(RealmMyLibrary::class.java) as List<RealmMyLibrary>
+
+        if (s.isNotEmpty()) {
+            val queryParts = s.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val normalizedQuery = normalizeText(s)
+            list = list.filter { item ->
+                val title = item.title?.let { normalizeText(it) } ?: ""
+                title.startsWith(normalizedQuery, ignoreCase = true) ||
+                        normalizedQueryParts.all { title.contains(it, ignoreCase = true) }
+            }
         }
 
         val libraries = if (tags.isNotEmpty()) {

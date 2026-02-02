@@ -191,7 +191,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 tagsMap = tagsRepository.getTagsForResources(resourceIds)
 
                 if (::adapterLibrary.isInitialized) {
-                    adapterLibrary.setLibraryList(mRealm.copyFromRealm(filteredLibraryList))
+                    adapterLibrary.setLibraryList(filteredLibraryList)
                     adapterLibrary.setRatingMap(map!!)
                     adapterLibrary.setTagsMap(tagsMap)
                 }
@@ -204,11 +204,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(libraryList))
+        adapterLibrary.setLibraryList(libraryList)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -304,12 +304,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                val filteredList = applyFilter(filterLibraryByTag(etSearch.text.toString().trim(), searchTags))
-                val resourceIds = filteredList.mapNotNull { it?.id }
                 lifecycleScope.launch {
+                    val filteredList = applyFilter(filterLibraryByTag(etSearch.text.toString().trim(), searchTags))
+                    val resourceIds = filteredList.mapNotNull { it?.id }
                     tagsMap = tagsRepository.getTagsForResources(resourceIds)
                     adapterLibrary.setTagsMap(tagsMap)
-                    adapterLibrary.setLibraryList(mRealm.copyFromRealm(filteredList)) {
+                    adapterLibrary.setLibraryList(filteredList) {
                         recyclerView.scrollToPosition(0)
                     }
                     showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -451,10 +451,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             mediums.clear()
             subjects.clear()
             languages.clear()
-            adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag("", searchTags)))) {
-                recyclerView.scrollToPosition(0)
+            lifecycleScope.launch {
+                adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag("", searchTags))) {
+                    recyclerView.scrollToPosition(0)
+                }
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
     }
 
@@ -471,11 +473,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         chipCloud.setDeleteListener(this)
         if (!searchTags.any { it.name == realmTag.name }) searchTags.add(realmTag)
         chipCloud.addChips(searchTags)
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))) {
-            recyclerView.scrollToPosition(0)
+        lifecycleScope.launch {
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
+                recyclerView.scrollToPosition(0)
+            }
+            showTagText(searchTags, tvSelected)
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
-        showTagText(searchTags, tvSelected)
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -484,19 +488,23 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), li)))) {
-            recyclerView.scrollToPosition(0)
+        lifecycleScope.launch {
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), li))) {
+                recyclerView.scrollToPosition(0)
+            }
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))) {
-                recyclerView.scrollToPosition(0)
+            lifecycleScope.launch {
+                adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
+                    recyclerView.scrollToPosition(0)
+                }
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         } else {
             for (tag in list ?: emptyList()) {
                 onTagClicked(tag)
@@ -517,10 +525,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))) {
-            recyclerView.scrollToPosition(0)
+        lifecycleScope.launch {
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags))) {
+                recyclerView.scrollToPosition(0)
+            }
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
@@ -528,10 +538,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags)))) {
-            recyclerView.scrollToPosition(0)
+        lifecycleScope.launch {
+            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags))) {
+                recyclerView.scrollToPosition(0)
+            }
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     override fun getData(): Map<String, Set<String>> {
