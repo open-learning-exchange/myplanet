@@ -40,8 +40,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var databaseService: DatabaseService
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 
