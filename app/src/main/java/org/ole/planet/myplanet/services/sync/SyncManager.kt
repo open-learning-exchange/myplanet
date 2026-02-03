@@ -178,7 +178,7 @@ class SyncManager constructor(
 
             initializeSync()
 
-            // Phase 1: Sync non-library tables in parallel (including courses)
+            // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
             coroutineScope {
                 val syncJobs = listOf(
