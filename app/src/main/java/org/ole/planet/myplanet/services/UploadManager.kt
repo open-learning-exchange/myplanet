@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -284,6 +285,9 @@ class UploadManager @Inject constructor(
         try {
             data class ResourceData(
                 val libraryId: String?,
+                val title: String?,
+                val isPrivate: Boolean,
+                val privateFor: String?,
                 val serialized: JsonObject
             )
 
@@ -300,6 +304,9 @@ class UploadManager @Inject constructor(
                         val copiedLibrary = realm.copyFromRealm(library)
                         ResourceData(
                             libraryId = copiedLibrary.id,
+                            title = copiedLibrary.title,
+                            isPrivate = copiedLibrary.isPrivate,
+                            privateFor = copiedLibrary.privateFor,
                             serialized = RealmMyLibrary.serialize(copiedLibrary, user)
                         )
                     }
@@ -331,6 +338,23 @@ class UploadManager @Inject constructor(
                                             sub._rev = rev
                                             sub._id = id
                                         }
+
+                                    if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
+                                        val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                                            ?: pref.getString("planetCode", "") ?: ""
+                                        val teamResource = transactionRealm.createObject(
+                                            RealmMyTeam::class.java,
+                                            UUID.randomUUID().toString()
+                                        )
+                                        teamResource.teamId = resourceData.privateFor
+                                        teamResource.title = resourceData.title
+                                        teamResource.resourceId = id
+                                        teamResource.docType = "resourceLink"
+                                        teamResource.updated = true
+                                        teamResource.teamType = "local"
+                                        teamResource.teamPlanetCode = planetCode
+                                        teamResource.sourcePlanet = planetCode
+                                    }
                                 }
 
                                 listener?.let {
