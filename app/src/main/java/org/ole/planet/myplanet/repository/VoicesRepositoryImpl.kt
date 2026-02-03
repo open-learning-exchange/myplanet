@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -327,6 +328,63 @@ class VoicesRepositoryImpl @Inject constructor(
             results.filter { isCommunitySection(it) }
                 .map { getDateFromTimestamp(it.time) }
                 .distinct()
+        }
+    }
+
+    override suspend fun getNewsById(id: String): RealmNews? {
+        return withRealm { realm ->
+            realm.findCopyByField(RealmNews::class.java, "id", id)
+        }
+    }
+
+    override suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: io.realm.RealmList<String>?) {
+        val userId = currentUser.id
+        val viewableBy = news.viewableBy
+        val viewableId = news.viewableId
+        val newsId = news.id
+        val messageType = news.messageType
+        val messagePlanetCode = news.messagePlanetCode
+        val viewIn = news.viewIn
+
+        executeTransaction { realm ->
+            val transactionUser = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val map = HashMap<String?, String>()
+            map["message"] = message
+            map["viewableBy"] = viewableBy ?: ""
+            map["viewableId"] = viewableId ?: ""
+            map["replyTo"] = newsId ?: ""
+            map["messageType"] = messageType ?: ""
+            map["messagePlanetCode"] = messagePlanetCode ?: ""
+            map["viewIn"] = viewIn ?: ""
+            createNews(map, realm, transactionUser, imageList, true)
+        }
+    }
+
+    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: io.realm.RealmList<String>?) {
+        if (message.isEmpty()) return
+        executeTransaction { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            if (news != null) {
+                if (imagesToRemove.isNotEmpty()) {
+                    val imageUrls = news.imageUrls
+                    if (imageUrls != null) {
+                        val updatedUrls = imageUrls.filter { imageUrlJson ->
+                            try {
+                                val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                                val path = JsonUtils.getString("imageUrl", imgObject)
+                                !imagesToRemove.contains(path)
+                            } catch (_: Exception) {
+                                true
+                            }
+                        }
+                        news.imageUrls?.clear()
+                        news.imageUrls?.addAll(updatedUrls)
+                    }
+                }
+
+                newImages?.forEach { news.imageUrls?.add(it) }
+                news.updateMessage(message)
+            }
         }
     }
 
