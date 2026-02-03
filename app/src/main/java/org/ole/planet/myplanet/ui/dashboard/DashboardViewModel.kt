@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,10 +15,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
@@ -30,9 +35,13 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NotificationConfig
+import org.ole.planet.myplanet.utils.NotificationUtils
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
+    val newNotifications: List<NotificationConfig> = emptyList(),
     val library: List<RealmMyLibrary> = emptyList(),
     val courses: List<RealmMyCourse> = emptyList(),
     val teams: List<RealmMyTeam> = emptyList(),
@@ -43,6 +52,7 @@ data class DashboardUiState(
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
+    private val application: Application,
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
@@ -60,6 +70,7 @@ class DashboardViewModel @Inject constructor(
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
     }
+
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -172,5 +183,101 @@ class DashboardViewModel @Inject constructor(
             submissionsRepository.getPendingSurveysFlow(userId).map {},
             teamsRepository.getTasksFlow(userId).map {}
         )
+    }
+
+    suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(Dispatchers.IO) {
+        var unreadCount = 0
+        val newNotifications = mutableListOf<NotificationConfig>()
+
+        try {
+            updateResourceNotification(userId)
+
+            val taskData = teamsRepository.getTaskNotifications(userId)
+            val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
+
+            val pendingSurveys = submissionsRepository.getPendingSurveys(userId)
+            val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+            val storageRatio = FileUtils.totalAvailableMemoryRatio(application).toInt()
+            val joinRequestTemplate = application.getString(R.string.user_requested_to_join_team)
+
+            val realmNotifications = notificationsRepository.checkAndCreateNotifications(
+                userId,
+                taskData,
+                joinRequestData,
+                joinRequestTemplate,
+                storageRatio,
+                surveyTitles
+            )
+
+            val createdNotifications = realmNotifications.mapNotNull {
+                createNotificationConfigFromDatabase(it)
+            }
+            newNotifications.addAll(createdNotifications)
+
+            unreadCount = getUnreadNotificationsSize(userId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        val groupedNotifications = newNotifications.groupBy { it.type }
+        val finalNotifications = mutableListOf<NotificationConfig>()
+
+        groupedNotifications.forEach { (type, notifications) ->
+            when {
+                notifications.size == 1 -> {
+                    finalNotifications.add(notifications.first())
+                }
+                notifications.size > 1 -> {
+                    val summaryConfig = NotificationUtils.createSummaryNotification(type, notifications.size)
+                    finalNotifications.add(summaryConfig)
+                }
+            }
+        }
+
+        _uiState.update {
+            it.copy(
+                unreadNotifications = unreadCount,
+                newNotifications = finalNotifications
+            )
+        }
+    }
+
+    fun clearNewNotifications() {
+        _uiState.update { it.copy(newNotifications = emptyList()) }
+    }
+
+    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationConfig? {
+        return when (dbNotification.type.lowercase()) {
+            "survey" -> NotificationUtils.createSurveyNotification(
+                dbNotification.id,
+                dbNotification.message
+            ).copy(
+                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
+            )
+            "task" -> {
+                val parts = dbNotification.message.split(" ")
+                val taskTitle = parts.dropLast(3).joinToString(" ")
+                val deadline = parts.takeLast(3).joinToString(" ")
+                NotificationUtils.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
+                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
+                )
+            }
+            "resource" -> NotificationUtils.createResourceNotification(
+                dbNotification.id,
+                dbNotification.message.toIntOrNull() ?: 0
+            )
+            "storage" -> {
+                val storageValue = dbNotification.message.replace("%", "").toIntOrNull() ?: 0
+                NotificationUtils.createStorageWarningNotification(storageValue, dbNotification.id)
+            }
+            "join_request" -> NotificationUtils.createJoinRequestNotification(
+                dbNotification.id,
+                "New Request",
+                dbNotification.message
+            ).copy(
+                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
+            )
+            else -> null
+        }
     }
 }

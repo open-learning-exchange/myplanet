@@ -91,7 +91,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            steps = coursesRepository.getCourseSteps(courseId)
+            steps = coursesRepository.getCourseSteps(courseId!!)
 
             if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                 try {
