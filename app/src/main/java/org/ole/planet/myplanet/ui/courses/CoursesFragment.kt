@@ -181,9 +181,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         lifecycleScope.launch {
             try {
-                val map = ratingsRepository.getCourseRatings(model?.id)
-                val progressMap = progressRepository.getCourseProgress(model?.id)
-                val allCourses = coursesRepository.getAllCourses(model?.id ?: "")
+                val map = ratingsRepository.getCourseRatings(userModel?.id)
+                val progressMap = progressRepository.getCourseProgress(userModel?.id)
+                val allCourses = coursesRepository.getAllCourses(userModel?.id ?: "")
                 val sortedCourseList = if (isMyCourseLib) {
                     allCourses.filter { it.isMyCourse }
                 } else {
@@ -685,9 +685,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
                 lifecycleScope.launch {
-                    val map = ratingsRepository.getCourseRatings(model?.id)
-                    val progressMap = progressRepository.getCourseProgress(model?.id)
-                    val allCourses = coursesRepository.getAllCourses(model?.id ?: "")
+                    val map = ratingsRepository.getCourseRatings(userModel?.id)
+                    val progressMap = progressRepository.getCourseProgress(userModel?.id)
+                    val allCourses = coursesRepository.getAllCourses(userModel?.id ?: "")
                     val sortedCourseList = if (isMyCourseLib) {
                         allCourses.filter { it.isMyCourse }
                     } else {
