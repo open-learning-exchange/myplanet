@@ -120,6 +120,7 @@ class DataService constructor(
         }
     }
 
+    @Deprecated("Use ConfigurationsRepository.checkCheckSum instead")
     suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
         try {
             val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))

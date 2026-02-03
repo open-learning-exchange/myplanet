@@ -58,8 +58,6 @@ open class RealmApkLog : RealmObject() {
             `object`.addProperty("userId", log.userId)
             `object`.addProperty("version", log.version)
             `object`.addProperty("createdOn", log.createdOn)
-            `object`.addProperty("androidId", log.createdOn)
-            `object`.addProperty("createdOn", log.createdOn)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))

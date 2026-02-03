@@ -8,6 +8,8 @@ interface ConfigurationsRepository {
     fun checkHealth(listener: OnSuccessListener)
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences)
     suspend fun isPlanetAvailable(): Boolean
+    fun checkServerAvailability(callback: PlanetAvailableListener?)
+    suspend fun checkCheckSum(path: String): Boolean
 
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
