@@ -19,7 +19,7 @@ interface CoursesRepository {
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
     suspend fun getCourseExamCount(courseId: String?): Int
     suspend fun getCourseSteps(courseId: String): List<RealmCourseStep>
-    suspend fun getCourseStepIds(courseId: String): Array<String?>
+    suspend fun getCourseStepIds(courseId: String): List<String?>
     suspend fun markCourseAdded(courseId: String, userId: String?): Boolean
     suspend fun joinCourse(courseId: String, userId: String)
     suspend fun leaveCourse(courseId: String, userId: String)
@@ -46,4 +46,5 @@ interface CoursesRepository {
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun deleteCourseProgress(courseId: String)
     suspend fun getMyCourseIds(userId: String): JsonArray
+    suspend fun removeCourseFromShelf(courseId: String, userId: String)
 }

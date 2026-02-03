@@ -64,9 +64,10 @@ object ServiceModule {
         gson: Gson,
         uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
         personalsRepository: PersonalsRepository,
-        userRepository: org.ole.planet.myplanet.repository.UserRepository
+        userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository)
     }
 
     @Provides
@@ -87,8 +88,8 @@ object ServiceModule {
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
         @ApplicationContext context: Context,
-        @ApplicationScope scope: CoroutineScope
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context)
+        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository)
     }
 }
