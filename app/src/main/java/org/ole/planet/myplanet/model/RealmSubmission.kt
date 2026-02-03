@@ -207,16 +207,6 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use SubmissionsRepository.isStepCompleted instead")
-        fun isStepCompleted(realm: Realm, id: String?, userId: String?): Boolean {
-            val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
-            return exam.id?.let {
-                realm.where(RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it).notEqualTo("status", "pending").findFirst()
-            } != null
-        }
-
-        @JvmStatic
         fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
             var submission = sub
             if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
