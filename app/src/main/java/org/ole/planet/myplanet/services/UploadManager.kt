@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -64,7 +65,8 @@ class UploadManager @Inject constructor(
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val chatRepository: ChatRepository
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
@@ -645,7 +647,7 @@ class UploadManager @Inject constructor(
                         }
 
                         // Serialize news with updated message and images
-                        val newsJson = RealmNews.serializeNews(news)
+                        val newsJson = chatRepository.serializeNews(news)
                         newsJson.addProperty("message", messageWithImages)
                         newsJson.add("images", imagesArray)
 

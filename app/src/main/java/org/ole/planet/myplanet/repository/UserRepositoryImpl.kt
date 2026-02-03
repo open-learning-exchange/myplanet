@@ -60,6 +60,16 @@ class UserRepositoryImpl @Inject constructor(
         return findByField(RealmUser::class.java, "name", name)
     }
 
+    override suspend fun findUserByName(name: String): RealmUser? {
+        return findByField(RealmUser::class.java, "name", name, true)
+    }
+
+    override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
+        return withRealm { realm ->
+            RealmUser.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
+        }
+    }
+
     override suspend fun getAllUsers(): List<RealmUser> {
         return queryList(RealmUser::class.java)
     }
@@ -573,6 +583,6 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun hasAtLeastOneUser(): Boolean {
-        return databaseService.withRealm { realm -> !realm.isEmpty }
+        return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
     }
 }

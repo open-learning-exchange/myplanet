@@ -10,8 +10,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< fix-realm-apk-log-duplicates-17978107553925365817
         versionCode = 4541
         versionName = "0.45.41"
+=======
+        versionCode = 4540
+        versionName = "0.45.40"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }

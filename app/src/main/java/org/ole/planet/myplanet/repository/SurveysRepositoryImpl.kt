@@ -344,4 +344,16 @@ class SurveysRepositoryImpl @Inject constructor(
                 .count().toInt()
         }
     }
+
+    override suspend fun getSurvey(id: String): RealmStepExam? {
+        return withRealm { realm ->
+            realm.where(RealmStepExam::class.java)
+                .equalTo("id", id)
+                .or()
+                .equalTo("name", id)
+                .findFirst()?.let {
+                    realm.copyFromRealm(it)
+                }
+        }
+    }
 }

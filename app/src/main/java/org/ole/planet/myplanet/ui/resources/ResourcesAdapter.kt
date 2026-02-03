@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -60,6 +59,7 @@ class ResourcesAdapter(
         private const val TAGS_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val SELECTION_PAYLOAD = "payload_selection"
+        private const val OPENED_RESOURCE_PAYLOAD = "payload_opened_resource"
     }
 
     init {
@@ -192,6 +192,15 @@ class ResourcesAdapter(
                 holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
                 handled = true
             }
+            if (payloads.contains(OPENED_RESOURCE_PAYLOAD)) {
+                val isResourceOpened = openedResourceIds.contains(library.id)
+                if (library.isResourceOffline() || isResourceOpened) {
+                    holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
+                } else {
+                    holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
+                }
+                handled = true
+            }
             if (!handled) {
                 super.onBindViewHolder(holder, position, payloads)
             }
@@ -206,8 +215,15 @@ class ResourcesAdapter(
     }
 
     fun setOpenedResourceIds(openedResourceIds: Set<String>) {
+        val oldOpenedResourceIds = this.openedResourceIds
         this.openedResourceIds = openedResourceIds
-        notifyDataSetChanged()
+        currentList.forEachIndexed { index, library ->
+            val wasOpened = oldOpenedResourceIds.contains(library.id)
+            val isOpened = openedResourceIds.contains(library.id)
+            if (wasOpened != isOpened) {
+                notifyItemChanged(index, OPENED_RESOURCE_PAYLOAD)
+            }
+        }
     }
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {
