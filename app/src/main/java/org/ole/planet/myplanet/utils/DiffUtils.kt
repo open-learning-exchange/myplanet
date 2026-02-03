@@ -6,9 +6,6 @@ object DiffUtils {
     /**
      * Creates a DiffUtil.ItemCallback for use with ListAdapter.
      *
-     * To support nullable types, T can be nullable.
-     * When using with nullable types, ensure areItemsTheSame and areContentsTheSame handle nulls correctly.
-     *
      * Recommended pattern:
      * companion object {
      *     val DIFF_CALLBACK = DiffUtils.itemCallback<MyType>(
@@ -17,7 +14,7 @@ object DiffUtils {
      *     )
      * }
      */
-    fun <T> itemCallback(
+    fun <T : Any> itemCallback(
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
         areContentsTheSame: (oldItem: T, newItem: T) -> Boolean,
         getChangePayload: ((oldItem: T, newItem: T) -> Any?)? = null
