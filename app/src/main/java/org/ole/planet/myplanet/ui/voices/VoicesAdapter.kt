@@ -78,10 +78,7 @@ class VoicesAdapter(
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
-    @Suppress("UNCHECKED_CAST")
-    (DIFF_CALLBACK as androidx.recyclerview.widget.DiffUtil.ItemCallback<RealmNews?>)
-) {
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(DIFF_CALLBACK) {
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -778,8 +775,11 @@ class VoicesAdapter(
     }
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmNews>(
+        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmNews?>(
             areItemsTheSame = { oldItem, newItem ->
+                if (oldItem === newItem) return@itemCallback true
+                if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+
                 try {
                     val oId = oldItem.takeIf { it.isValid }?.id
                     val nId = newItem.takeIf { it.isValid }?.id
@@ -789,6 +789,9 @@ class VoicesAdapter(
                 }
             },
             areContentsTheSame = { oldItem, newItem ->
+                if (oldItem === newItem) return@itemCallback true
+                if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+
                 try {
                     if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
 

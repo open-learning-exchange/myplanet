@@ -14,18 +14,25 @@ object DiffUtils {
      *     )
      * }
      */
-    fun <T : Any> itemCallback(
+    @Suppress("UNCHECKED_CAST")
+    fun <T> itemCallback(
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
         areContentsTheSame: (oldItem: T, newItem: T) -> Boolean,
         getChangePayload: ((oldItem: T, newItem: T) -> Any?)? = null
     ): RecyclerDiffUtil.ItemCallback<T> {
-        return object : RecyclerDiffUtil.ItemCallback<T>() {
-            override fun areItemsTheSame(oldItem: T, newItem: T) = areItemsTheSame(oldItem, newItem)
-            override fun areContentsTheSame(oldItem: T, newItem: T) = areContentsTheSame(oldItem, newItem)
-            override fun getChangePayload(oldItem: T, newItem: T): Any? {
-                return getChangePayload?.invoke(oldItem, newItem)
+        return object : RecyclerDiffUtil.ItemCallback<Any?>() {
+            override fun areItemsTheSame(oldItem: Any?, newItem: Any?): Boolean {
+                return areItemsTheSame(oldItem as T, newItem as T)
             }
-        }
+
+            override fun areContentsTheSame(oldItem: Any?, newItem: Any?): Boolean {
+                return areContentsTheSame(oldItem as T, newItem as T)
+            }
+
+            override fun getChangePayload(oldItem: Any?, newItem: Any?): Any? {
+                return getChangePayload?.invoke(oldItem as T, newItem as T)
+            }
+        } as RecyclerDiffUtil.ItemCallback<T>
     }
 
     fun <T> calculateDiff(
