@@ -262,7 +262,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupButtonVisibility()
         setupEventListeners()
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        if (::adapterCourses.isInitialized) {
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -464,6 +466,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
+        if (!::adapterCourses.isInitialized) return
         if (adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
@@ -609,9 +612,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
 
-        val allSelected = adapterCourses.areAllSelected()
-        updateCheckBoxState(allSelected)
-        selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
+        if (::adapterCourses.isInitialized) {
+            val allSelected = adapterCourses.areAllSelected()
+            updateCheckBoxState(allSelected)
+            selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
+        }
     }
 
     override fun onTagSelected(tag: RealmTag) {
