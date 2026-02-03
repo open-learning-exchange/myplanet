@@ -461,7 +461,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun checkList() {
         if (adapterCourses.currentList.isEmpty()) {
-            selectAll.visibility = View.GONE
+            if (::selectAll.isInitialized) selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
@@ -472,7 +472,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             etSearch.visibility = View.VISIBLE
             requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
             val allMyCourses = adapterCourses.currentList.all { it.isMyCourse }
-            if (userModel?.isGuest() == false) {
+            if (userModel?.isGuest() == false && ::selectAll.isInitialized) {
                 selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
             }
         }
