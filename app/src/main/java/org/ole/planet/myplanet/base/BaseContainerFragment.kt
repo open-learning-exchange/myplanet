@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallP
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.repository.ResourceUrlsResponse
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
@@ -169,35 +170,27 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resource = items.resourceId?.let { resourcesRepository.getLibraryItemByResourceId(it) }
-            val downloadUrls = resource?.attachments
-                ?.mapNotNull { attachment ->
-                    attachment.name?.let { name ->
-                        createAttachmentDir(items.resourceId, name)
-                        UrlUtils.getUrl("${items.resourceId}", name)
-                    }
-                }
-                ?.toCollection(ArrayList()) ?: arrayListOf()
-
-            if (downloadUrls.isNotEmpty()) {
-                startDownloadWithAutoOpen(downloadUrls, items)
-            } else {
-                val errorMessage = when {
-                    resource == null -> getString(R.string.resource_not_found_in_database)
-                    resource.attachments.isNullOrEmpty() -> getString(R.string.resource_has_no_attachments)
-                    else -> getString(R.string.unable_to_download_resource)
-                }
-                Utilities.toast(activity, errorMessage)
+            val resourceId = items.resourceId
+            if (resourceId == null) {
+                Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
+                return@launch
             }
-        }
-    }
 
-    private fun createAttachmentDir(resourceId: String?, name: String) {
-        val baseDir = File(context?.getExternalFilesDir(null), "ole/$resourceId")
-        val lastSlashIndex = name.lastIndexOf('/')
-        if (lastSlashIndex > 0) {
-            val dirPath = name.substring(0, lastSlashIndex)
-            File(baseDir, dirPath).mkdirs()
+            val result = resourcesRepository.getHtmlResourceDownloadUrls(resourceId)
+            when (result) {
+                is ResourceUrlsResponse.Success -> {
+                    startDownloadWithAutoOpen(ArrayList(result.urls), items)
+                }
+                is ResourceUrlsResponse.ResourceNotFound -> {
+                    Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
+                }
+                is ResourceUrlsResponse.NoAttachments -> {
+                    Utilities.toast(activity, getString(R.string.resource_has_no_attachments))
+                }
+                is ResourceUrlsResponse.Error -> {
+                    Utilities.toast(activity, getString(R.string.unable_to_download_resource))
+                }
+            }
         }
     }
 
