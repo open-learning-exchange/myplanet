@@ -10,8 +10,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< 11071-optimize-syncmanager-full-sync-phase-structure-and-batch-processing
         versionCode = 4535
         versionName = "0.45.35"
+=======
+        versionCode = 4533
+        versionName = "0.45.33"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
