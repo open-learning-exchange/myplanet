@@ -1,8 +1,8 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'com.google.devtools.ksp'
-apply plugin: 'dagger.hilt.android.plugin'
+plugins {
+    id 'com.android.application'
+    id 'com.google.devtools.ksp'
+    id 'com.google.dagger.hilt.android'
+}
 apply plugin: 'realm-android'
 android {
     compileSdk = 36
@@ -61,10 +61,6 @@ android {
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
     }
 
     lintOptions {
@@ -179,7 +175,7 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
     implementation(libs.hilt.work)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     implementation(libs.media3.common)
@@ -199,8 +195,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.gson)
     implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
-    kapt(libs.kotlin.metadata.jvm)
+    ksp(libs.hilt.android.compiler)
     implementation(libs.toggle.button.group)
     implementation(libs.materialdrawer) { transitive = true }
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
@@ -221,8 +216,4 @@ dependencies {
 }
 realm {
     syncEnabled = true
-}
-kapt {
-    correctErrorTypes = true
-    useBuildCache = true
 }
