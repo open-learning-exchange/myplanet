@@ -19,7 +19,7 @@
     <string name="hint_name">Nombre</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
-    <string name="loading">Cargando...</string>
+    <string name="loading">Cargando…</string>
     <string name="select_team">seleccionar equipo</string>
     <string name="btn_sync_save">Guardar</string>
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
@@ -328,7 +328,6 @@
     <string name="members">Miembros</string>
     <string name="tasks">Tareas</string>
     <string name="join_requests">Solicitudes de unión</string>
-    <string name="add_image">Agregar imagen</string>
     <string name="clear_data">Borrar datos</string>
     <string name="reset_app">Restablecer aplicación</string>
     <string name="freeup_space">Liberar espacio en disco</string>
@@ -1179,5 +1178,9 @@
     <string name="team_surveys">Encuestas del equipo</string>
     <string name="enterprise_created">Empresa Creada</string>
     <string name="image_already_added">Esta imagen ya ha sido añadida</string>
+    <string name="add_media">Agregar multimedia</string>
+    <string name="video_already_added">Video ya agregado</string>
+    <string name="please_select_video">Por favor seleccione un archivo de video</string>
+    <string name="please_select_image_or_video">Por favor seleccione un archivo de imagen o video</string>
 
 </resources>

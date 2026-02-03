@@ -72,18 +72,11 @@
                             android:text="@string/button_submit"
                             android:theme="@style/PrimaryButton" />
                         <Button
-                            android:id="@+id/add_news_image"
+                            android:id="@+id/add_news_media"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
-                            android:text="@string/add_image"
-                            android:theme="@style/PrimaryButton" />
-                        <Button
-                            android:id="@+id/add_news_video"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:text="@string/add_video"
+                            android:text="@string/add_media"
                             android:theme="@style/PrimaryButton" />
                     </LinearLayout>
 

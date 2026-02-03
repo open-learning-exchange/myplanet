@@ -328,10 +328,6 @@
     <string name="members">Members</string>
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
-    <string name="add_image">Add Image</string>
-    <string name="add_video">Add Video</string>
-    <string name="video_already_added">Video already added</string>
-    <string name="please_select_video">Please select a video file</string>
     <string name="clear_data">clear data</string>
     <string name="reset_app">reset app</string>
     <string name="freeup_space">free-up disk space</string>
@@ -1182,5 +1178,9 @@
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
     <string name="image_already_added">This image has already been added</string>
+    <string name="add_media">Add Media</string>
+    <string name="video_already_added">Video already added</string>
+    <string name="please_select_video">Please select a video file</string>
+    <string name="please_select_image_or_video">Please select an image or video file</string>
 
 </resources>

@@ -159,16 +159,11 @@ class VoicesFragment : BaseVoicesFragment() {
             }
         }
 
-        binding.addNewsImage.setOnClickListener {
+        binding.addNewsMedia.setOnClickListener {
             llImage = binding.llImages
-            val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
-        }
-
-        binding.addNewsVideo.setOnClickListener {
             llVideo = binding.llVideos
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openVideoLauncher.launch(openFolderIntent)
+            openMediaLauncher.launch(openFolderIntent)
         }
     }
 

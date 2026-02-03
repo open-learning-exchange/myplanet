@@ -19,7 +19,7 @@
     <string name="hint_name">प्रयोगकर्तानाम</string>
     <string name="btn_back">पछाडी जाउ</string>
     <string name="btn_sign_in">साइन इन गर्नुहोस्</string>
-    <string name="loading">लोड हुँदैछ...</string>
+    <string name="loading">लोड हुँदैछ…</string>
     <string name="select_team">टोली चयन गर्नुहोस्</string>
     <string name="btn_sync_save">सुरक्षित गर्नुहोस्</string>
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
@@ -328,7 +328,6 @@
     <string name="members">सदस्यहरू</string>
     <string name="tasks">कार्यहरू</string>
     <string name="join_requests">सम्मिलित गर्न अनुरोधहरू</string>
-    <string name="add_image">तस्वीर थप्नुहोस्</string>
     <string name="clear_data">डाटा हटाउनुहोस्</string>
     <string name="reset_app">अनुप्रयोग रिसेट गर्नुहोस्</string>
     <string name="freeup_space">डिस्क स्थान खाली पार्नुहोस्</string>
@@ -1179,5 +1178,9 @@
     <string name="team_surveys">टोली सर्वेक्षणहरू</string>
     <string name="enterprise_created">उद्यम सिर्जना गरियो</string>
     <string name="image_already_added">यो तस्बिर पहिले नै थपिएको छ</string>
+    <string name="add_media">मिडिया थप्नुहोस्</string>
+    <string name="video_already_added">भिडियो पहिले नै थपिएको छ</string>
+    <string name="please_select_video">कृपया भिडियो फाइल चयन गर्नुहोस्</string>
+    <string name="please_select_image_or_video">कृपया छवि वा भिडियो फाइल चयन गर्नुहोस्</string>
 
 </resources>

@@ -56,6 +56,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     protected var adapterNews: VoicesAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     lateinit var openVideoLauncher: ActivityResultLauncher<Intent>
+    lateinit var openMediaLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +90,21 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
                 } else {
                     val uri = data?.data
                     processVideoUri(uri, result.resultCode)
+                }
+            }
+        }
+        openMediaLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data = result.data
+                val clipData = data?.clipData
+                if (clipData != null) {
+                    for (i in 0 until clipData.itemCount) {
+                        val uri = clipData.getItemAt(i).uri
+                        processMediaUri(uri, result.resultCode)
+                    }
+                } else {
+                    val uri = data?.data
+                    processMediaUri(uri, result.resultCode)
                 }
             }
         }
@@ -265,6 +281,27 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             } catch (e: Exception) {
                 false
             }
+        }
+    }
+
+    private fun processMediaUri(uri: Uri?, resultCode: Int) {
+        if (uri == null) return
+
+        var path: String? = getRealPathFromURI(requireActivity(), uri)
+        if (TextUtils.isEmpty(path)) {
+            path = FileUtils.getPathFromURI(requireActivity(), uri)
+        }
+
+        if (path.isNullOrEmpty()) return
+
+        val extension = path.substringAfterLast('.', "").lowercase()
+        val videoExtensions = listOf("mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "3gp")
+        val imageExtensions = listOf("jpg", "jpeg", "png", "gif", "bmp", "webp")
+
+        when {
+            extension in videoExtensions -> processVideoUri(uri, resultCode)
+            extension in imageExtensions -> processImageUri(uri, resultCode)
+            else -> Toast.makeText(requireContext(), R.string.please_select_image_or_video, Toast.LENGTH_SHORT).show()
         }
     }
 }
