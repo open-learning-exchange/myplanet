@@ -228,15 +228,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         setupGuestUserRestrictions()
 
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
-        changeButtonStatus()
         additionalSetup()
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-        checkList()
 
         if (userModel?.id != null) {
             lifecycleScope.launch {
@@ -252,6 +249,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
+    }
+
+    override fun onAdapterSet() {
+        super.onAdapterSet()
+        if (::adapterLibrary.isInitialized) {
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            changeButtonStatus()
+            checkList()
+        }
     }
 
     private fun initializeViews() {

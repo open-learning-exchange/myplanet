@@ -252,7 +252,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupButtonVisibility()
         setupEventListeners()
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -398,7 +397,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         setupSpinners()
         setupSelectAll()
-        checkList()
+    }
+
+    override fun onAdapterSet() {
+        super.onAdapterSet()
+        if (::adapterCourses.isInitialized) {
+            checkList()
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
     }
 
     private fun setupSpinners() {
