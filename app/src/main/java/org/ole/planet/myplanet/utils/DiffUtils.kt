@@ -20,19 +20,19 @@ object DiffUtils {
         areContentsTheSame: (oldItem: T, newItem: T) -> Boolean,
         getChangePayload: ((oldItem: T, newItem: T) -> Any?)? = null
     ): RecyclerDiffUtil.ItemCallback<T> {
-        return object : RecyclerDiffUtil.ItemCallback<Any?>() {
-            override fun areItemsTheSame(oldItem: Any?, newItem: Any?): Boolean {
+        return object : NullableItemCallback<T>() {
+            override fun areItemsTheSameNullable(oldItem: T?, newItem: T?): Boolean {
                 return areItemsTheSame(oldItem as T, newItem as T)
             }
 
-            override fun areContentsTheSame(oldItem: Any?, newItem: Any?): Boolean {
+            override fun areContentsTheSameNullable(oldItem: T?, newItem: T?): Boolean {
                 return areContentsTheSame(oldItem as T, newItem as T)
             }
 
-            override fun getChangePayload(oldItem: Any?, newItem: Any?): Any? {
+            override fun getChangePayloadNullable(oldItem: T?, newItem: T?): Any? {
                 return getChangePayload?.invoke(oldItem as T, newItem as T)
             }
-        } as RecyclerDiffUtil.ItemCallback<T>
+        }
     }
 
     fun <T> calculateDiff(

@@ -78,7 +78,7 @@ class VoicesAdapter(
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(DIFF_CALLBACK) {
+) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(VoicesAdapter.DIFF_CALLBACK) {
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
