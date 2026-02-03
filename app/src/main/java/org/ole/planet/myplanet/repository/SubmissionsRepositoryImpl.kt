@@ -652,4 +652,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             submission.status = status
         }
     }
+
+    override suspend fun getExamByStepId(stepId: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "stepId", stepId)
+    }
+
+    override suspend fun getExamById(id: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "id", id)
+    }
 }
