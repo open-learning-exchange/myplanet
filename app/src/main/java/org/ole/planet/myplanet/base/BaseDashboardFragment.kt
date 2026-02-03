@@ -359,7 +359,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = settings?.getString("userId", "--")
-            val libraryList = resourcesRepository.getLibraryListForUser(userId)
+            val libraryList = viewModel.getLibraryListForUser(userId)
             showDownloadDialog(libraryList)
         }
     }

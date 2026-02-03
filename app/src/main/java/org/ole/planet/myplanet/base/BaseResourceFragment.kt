@@ -27,11 +27,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.PlanetAvailableListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -40,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -75,6 +77,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var tagsRepository: TagsRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -201,38 +205,28 @@ abstract class BaseResourceFragment : Fragment() {
                 .setTitle(R.string.download_suggestion)
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
-                            override fun isAvailable() {
-                                lifecycleScope.launch {
-                                    lv?.selectedItemsList?.let {
-                                        addToLibrary(librariesForDialog, it)
-                                        val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
-                                        if (resourcesRepository.downloadResources(selectedLibraries.filterNotNull())) {
-                                            showProgressDialog()
-                                        }
-                                    }
+                        if (configurationsRepository.isPlanetAvailable()) {
+                            lv?.selectedItemsList?.let {
+                                addToLibrary(librariesForDialog, it)
+                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
+                                if (resourcesRepository.downloadResources(selectedLibraries.filterNotNull())) {
+                                    showProgressDialog()
                                 }
                             }
-                            override fun notAvailable() {
-                                showNotConnectedToast()
-                            }
-                        })
+                        } else {
+                            showNotConnectedToast()
+                        }
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
-                            override fun isAvailable() {
-                                lifecycleScope.launch {
-                                    addAllToLibrary(librariesForDialog)
-                                    if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
-                                        showProgressDialog()
-                                    }
-                                }
+                        if (configurationsRepository.isPlanetAvailable()) {
+                            addAllToLibrary(librariesForDialog)
+                            if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
+                                showProgressDialog()
                             }
-                            override fun notAvailable() {
-                                showNotConnectedToast()
-                            }
-                        })
+                        } else {
+                            showNotConnectedToast()
+                        }
                     }
                 }.setNegativeButton(R.string.txt_cancel, null)
             downloadSuggestionDialog?.dismiss()
@@ -481,15 +475,18 @@ abstract class BaseResourceFragment : Fragment() {
         var auth = ""
 
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                RepositoryEntryPoint::class.java
+            )
+            val configurationsRepository = entryPoint.configurationsRepository()
+            MainApplication.applicationScope.launch {
+                if (configurationsRepository.isPlanetAvailable()) {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)
                     }
                 }
-
-                override fun notAvailable() {}
-            })
+            }
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
