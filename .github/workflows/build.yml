@@ -15,6 +15,8 @@ jobs:
   build:
     name: myPlanet build
     runs-on: ubuntu-24.04
+    env:
+      CACHE_VERSION: v1
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +35,12 @@ jobs:
           ls -al "$file" "$lite"
           diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
           cp "$lite" "$file"
+
+      - name: Cache Android SDK Components
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/build-cache
+          key: ${{ runner.os }}-android-${{ env.CACHE_VERSION }}-${{ hashFiles('**/*.gradle*', 'gradle/libs.versions.toml') }}
 
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
