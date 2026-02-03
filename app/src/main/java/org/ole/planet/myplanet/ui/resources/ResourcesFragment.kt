@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -84,9 +84,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var syncManager: SyncManager
-
-    @Inject
-    lateinit var tagsRepository: TagsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -634,7 +631,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
                 fragment.arguments = args
             }
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 parentFragmentManager,
                 R.id.fragment_container,
                 fragment,

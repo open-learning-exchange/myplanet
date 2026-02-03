@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
@@ -141,7 +141,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         val handler = profileDbHandler
         lifecycleScope.launch {
             val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return@launch
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,
                 fragment,

@@ -1182,5 +1182,13 @@
     <string name="video_already_added">Video already added</string>
     <string name="please_select_video">Please select a video file</string>
     <string name="please_select_image_or_video">Please select an image or video file</string>
+    <string name="debug_retry_queue">Retry Queue (Debug)</string>
+    <string name="debug_retry_queue_summary">View and manage failed upload retries</string>
+    <string name="retry_queue_status">Retry Queue Status</string>
+    <string name="pending_retries">Pending retries: %d</string>
+    <string name="trigger_retry_now">Retry Now</string>
+    <string name="clear_retry_queue">Clear Queue</string>
+    <string name="retry_triggered">Retry triggered</string>
+    <string name="retry_queue_cleared">Retry queue cleared</string>
 
 </resources>

@@ -24,4 +24,7 @@ interface VoicesRepository {
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
     suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
+    suspend fun getNewsById(id: String): RealmNews?
+    suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: io.realm.RealmList<String>?)
+    suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: io.realm.RealmList<String>?)
 }

@@ -17,28 +17,21 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.RealmList
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
-import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utils.ExamSubmissionUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
@@ -87,17 +80,27 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             )
             sub = submissions.firstOrNull()
             val courseId = exam?.courseId
-            isCertified = isCourseCertified(mRealm, courseId)
+            isCertified = if (!courseId.isNullOrEmpty()) {
+                coursesRepository.isCourseCertified(courseId)
+            } else {
+                false
+            }
 
             if ((questions?.size ?: 0) > 0) {
                 if (type == "exam") {
                     clearAllExistingAnswers {
-                        createSubmission()
-                        startExam(questions?.get(currentIndex))
-                        updateNavButtons()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            sub = submissionsRepository.createExamSubmission(
+                                user?.id, user?.dob, user?.gender, exam, type, if (isTeam) teamId else null
+                            )
+                            startExam(questions?.get(currentIndex))
+                            updateNavButtons()
+                        }
                     }
                 } else {
-                    createSubmission()
+                    sub = submissionsRepository.createExamSubmission(
+                        user?.id, user?.dob, user?.gender, exam, type, if (isTeam) teamId else null
+                    )
                     startExam(questions?.get(currentIndex))
                     updateNavButtons()
                 }
@@ -111,11 +114,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
-            goToPreviousQuestion()
+            lifecycleScope.launch {
+                updateAnsDb()
+                goToPreviousQuestion()
+            }
         }
         binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
-            goToNextQuestion()
+            lifecycleScope.launch {
+                updateAnsDb()
+                goToNextQuestion()
+            }
         }
 
 
@@ -170,7 +179,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 answerData.singleAnswer = binding.etAnswer.text.toString()
             }
         }
-        updateAnsDb()
     }
 
     private fun goToPreviousQuestion() {
@@ -229,96 +237,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 ans.isNotEmpty() || answerData?.singleAnswer?.isNotEmpty() == true
             }
             else -> false
-        }
-    }
-
-    private fun createSubmission() {
-        mRealm.beginTransaction()
-        try {
-            sub = createSubmission(null, mRealm)
-            setParentId()
-            setParentJson()
-            sub?.userId = user?.id
-            sub?.status = "pending"
-            sub?.type = type
-            sub?.startTime = Date().time
-            sub?.lastUpdateTime = Date().time
-            if (sub?.answers == null) {
-                sub?.answers = RealmList()
-            }
-
-            currentIndex = 0
-            if (isTeam && teamId != null) {
-                addTeamInformation(mRealm)
-            }
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
-    }
-
-    private fun setParentId() {
-        sub?.parentId = when {
-            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "${exam?.id}@${exam?.courseId}"
-            } else {
-                exam?.id
-            }
-            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
-            else -> sub?.parentId
-        }
-    }
-
-    private fun setParentJson() {
-        try {
-            val parentJsonString = JSONObject().apply {
-                put("_id", exam?.id ?: id)
-                put("name", exam?.name ?: "")
-                put("courseId", exam?.courseId ?: "")
-                put("sourcePlanet", exam?.sourcePlanet ?: "")
-                put("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                put("noOfQuestions", exam?.noOfQuestions ?: 0)
-                put("isFromNation", exam?.isFromNation ?: false)
-            }.toString()
-            sub?.parent = parentJsonString
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun addTeamInformation(realm: Realm) {
-        val team = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
-            .equalTo("_id", teamId)
-            .findFirst()
-
-        if (team != null) {
-            val teamRef = realm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-            teamRef._id = team._id
-            teamRef.name = team.name
-            teamRef.type = team.type ?: "team"
-            sub?.teamObject = teamRef
-        }
-
-        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-        membershipDoc.teamId = teamId
-        sub?.membershipDoc = membershipDoc
-
-        val userModel = userSessionManager.userModel
-        try {
-            val userJson = JSONObject()
-            userJson.put("age", userModel?.dob ?: "")
-            userJson.put("gender", userModel?.gender ?: "")
-            val membershipJson = JSONObject()
-            membershipJson.put("teamId", teamId)
-            userJson.put("membershipDoc", membershipJson)
-            sub?.user = userJson.toString()
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -577,15 +495,17 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     return
                 }
 
-                val cont = updateAnsDb()
-                if (this.type == "exam" && !cont) {
-                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                    return
-                }
+                lifecycleScope.launch {
+                    val cont = updateAnsDb()
+                    if (this@ExamTakingFragment.type == "exam" && !cont) {
+                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                        return@launch
+                    }
 
-                capturePhoto()
-                hideSoftKeyboard(requireActivity())
-                checkAnsAndContinue(cont)
+                    capturePhoto()
+                    hideSoftKeyboard(requireActivity())
+                    checkAnsAndContinue(cont)
+                }
             }
         }
     }
@@ -601,7 +521,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
 
-    private fun updateAnsDb(): Boolean {
+    private suspend fun updateAnsDb(): Boolean {
         val questionsSize = questions?.size ?: 0
         if (currentIndex !in 0..<questionsSize) return true
 
@@ -611,15 +531,13 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         } else {
             null
         }
-        
+
         if (sub == null) {
-            sub = mRealm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .findAll().lastOrNull()
+            sub = submissionsRepository.getLastPendingSubmission(user?.id)
         }
 
-        val result = ExamSubmissionUtils.saveAnswer(
-            mRealm, sub, currentQuestion, ans, listAns, otherText,
+        val result = submissionsRepository.saveExamAnswer(
+            sub, currentQuestion, ans, listAns, otherText,
             binding.etAnswer.isVisible, type ?: "exam", currentIndex,
             questions?.size ?: 0, isExplicitSubmission
         )
@@ -731,6 +649,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
+        lifecycleScope.launch {
+            withContext(kotlinx.coroutines.NonCancellable) {
+                updateAnsDb()
+            }
+        }
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
         _binding = null

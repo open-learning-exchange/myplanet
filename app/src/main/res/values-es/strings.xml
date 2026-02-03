@@ -1182,5 +1182,13 @@
     <string name="video_already_added">Video ya agregado</string>
     <string name="please_select_video">Por favor seleccione un archivo de video</string>
     <string name="please_select_image_or_video">Por favor seleccione un archivo de imagen o video</string>
+    <string name="debug_retry_queue">Cola de reintentos (Depuración)</string>
+    <string name="debug_retry_queue_summary">Ver y gestionar reintentos de carga fallidos</string>
+    <string name="retry_queue_status">Estado de la cola de reintentos</string>
+    <string name="pending_retries">Reintentos pendientes: %d</string>
+    <string name="trigger_retry_now">Reintentar ahora</string>
+    <string name="clear_retry_queue">Vaciar cola</string>
+    <string name="retry_triggered">Reintento iniciado</string>
+    <string name="retry_queue_cleared">Cola de reintentos vaciada</string>
 
 </resources>

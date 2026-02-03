@@ -14,22 +14,23 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 
 object VoicesActions {
-    private val imagesToRemove = mutableSetOf<String>()
-
     data class EditDialogComponents(
         val view: View,
         val editText: EditText,
@@ -49,8 +50,7 @@ object VoicesActions {
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup) {
-        imagesToRemove.clear()
+    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         imageLayout.removeAllViews()
 
         val imageUrls = news?.imageUrls
@@ -60,7 +60,7 @@ object VoicesActions {
                     val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
                     val path = JsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
-                        addImageWithRemoveIcon(context, path, imageLayout)
+                        addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }
                 } catch (_: Exception) {
                 }
@@ -68,7 +68,7 @@ object VoicesActions {
         }
     }
 
-    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: ViewGroup) {
+    private fun addImageWithRemoveIcon(context: Context, imagePath: String, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         val frameLayout = FrameLayout(context).apply {
             layoutParams = ViewGroup.MarginLayoutParams(
                 dpToPx(context, 100),
@@ -129,24 +129,44 @@ object VoicesActions {
         isEdit: Boolean,
         components: EditDialogComponents,
         news: RealmNews?,
-        realm: Realm,
+        repository: VoicesRepository,
         currentUser: RealmUser?,
         imageList: RealmList<String>?,
-        listener: OnNewsItemClickListener?
+        listener: OnNewsItemClickListener?,
+        scope: CoroutineScope,
+        imagesToRemove: MutableSet<String>,
+        onSuccess: () -> Unit
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
             components.inputLayout.error = dialog.context.getString(R.string.please_enter_message)
             return
         }
-        if (isEdit) {
-            editPost(realm, s, news, imageList)
-        } else {
-            postReply(realm, s, news, currentUser, imageList)
+        val imagesToRemoveCopy = imagesToRemove.toSet()
+        scope.launch {
+            try {
+                if (isEdit) {
+                    news?.id?.let {
+                        repository.editPost(it, s, imagesToRemoveCopy, imageList)
+                    }
+                } else {
+                    if (news != null && currentUser != null) {
+                        repository.postReply(s, news, currentUser, imageList)
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    imagesToRemove.clear()
+                    dialog.dismiss()
+                    listener?.clearImages()
+                    listener?.onDataChanged()
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    org.ole.planet.myplanet.utils.Utilities.toast(dialog.context, "An error occurred: ${e.message}")
+                }
+            }
         }
-        dialog.dismiss()
-        listener?.clearImages()
-        listener?.onDataChanged()
     }
 
     fun showEditAlert(
@@ -156,6 +176,8 @@ object VoicesActions {
         currentUser: RealmUser?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
+        repository: VoicesRepository,
+        scope: CoroutineScope,
         updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
@@ -163,72 +185,29 @@ object VoicesActions {
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
         val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
+        val imagesToRemove = mutableSetOf<String>()
 
-        Realm.getDefaultInstance().use { realm ->
-            val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-            if (isEdit) {
-                components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-                loadExistingImages(context, news, components.imageLayout)
-            }
-            val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-                .setView(components.view)
-                .setPositiveButton(R.string.button_submit, null)
-                .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
-                .create()
-            dialog.show()
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val currentImageList = listener?.getCurrentImageList()
-                handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, currentImageList, listener)
-                updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
-            }
-        }
-    }
-
-    private fun postReply(
-        realm: Realm,
-        s: String?,
-        news: RealmNews?,
-        currentUser: RealmUser?,
-        imageList: RealmList<String>?
-    ) {
-        val shouldCommit = !realm.isInTransaction
-        if (shouldCommit) realm.beginTransaction()
-        val map = HashMap<String?, String>()
-        map["message"] = s ?: ""
-        map["viewableBy"] = news?.viewableBy ?: ""
-        map["viewableId"] = news?.viewableId ?: ""
-        map["replyTo"] = news?.id ?: ""
-        map["messageType"] = news?.messageType ?: ""
-        map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-        map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, null, true) }
-        if (shouldCommit) realm.commitTransaction()
-    }
-
-    private fun editPost(realm: Realm, s: String, news: RealmNews?, imageList: RealmList<String>?) {
-        if (s.isEmpty()) return
-        if (!realm.isInTransaction) realm.beginTransaction()
-
-        if (imagesToRemove.isNotEmpty()) {
-            news?.imageUrls?.let { imageUrls ->
-                val updatedUrls = imageUrls.filter { imageUrlJson ->
-                    try {
-                        val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
-                        val path = JsonUtils.getString("imageUrl", imgObject)
-                        !imagesToRemove.contains(path)
-                    } catch (_: Exception) {
-                        true
+        scope.launch {
+            val news = id?.let { repository.getNewsById(it) }
+            withContext(Dispatchers.Main) {
+                if (isEdit) {
+                    components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
+                    loadExistingImages(context, news, components.imageLayout, imagesToRemove)
+                }
+                val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
+                    .setView(components.view)
+                    .setPositiveButton(R.string.button_submit, null)
+                    .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+                    .create()
+                dialog.show()
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val currentImageList = listener?.getCurrentImageList()
+                    handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, scope, imagesToRemove) {
+                        updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
                     }
                 }
-                news.imageUrls?.clear()
-                news.imageUrls?.addAll(updatedUrls)
             }
-            imagesToRemove.clear()
         }
-
-        imageList?.forEach { news?.imageUrls?.add(it) }
-        news?.updateMessage(s)
-        realm.commitTransaction()
     }
 
     suspend fun showMemberDetails(

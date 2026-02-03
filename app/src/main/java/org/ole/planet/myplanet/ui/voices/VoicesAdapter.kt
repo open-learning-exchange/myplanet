@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -77,7 +78,8 @@ class VoicesAdapter(
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
-    private val labelManager: VoicesLabelManager
+    private val labelManager: VoicesLabelManager,
+    private val voicesRepository: VoicesRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -368,6 +370,8 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     holder,
+                    voicesRepository,
+                    scope
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -555,6 +559,8 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     viewHolder,
+                    voicesRepository,
+                    scope
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {

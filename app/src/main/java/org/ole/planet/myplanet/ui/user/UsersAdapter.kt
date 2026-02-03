@@ -12,9 +12,9 @@ import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class UserProfileAdapter(
+class UsersAdapter(
     private val onItemClickListener: OnUserProfileClickListener
-) : ListAdapter<User, UserProfileAdapter.ViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<User, UsersAdapter.ViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)

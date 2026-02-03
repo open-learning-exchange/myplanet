@@ -1182,5 +1182,13 @@
     <string name="video_already_added">Fiidiyowga horeba ayaa lagu daray</string>
     <string name="please_select_video">Fadlan dooro faylka fiidiyow</string>
     <string name="please_select_image_or_video">Fadlan dooro sawir ama faylka fiidiyow</string>
+    <string name="debug_retry_queue">Safka Dib-u-Isku-Dayga (Debug)</string>
+    <string name="debug_retry_queue_summary">Eeg oo maamul isku-dayada gelinta ee fashilmay</string>
+    <string name="retry_queue_status">Xaaladda Safka Dib-u-Isku-Dayga</string>
+    <string name="pending_retries">Isku-dayo sugaya: %d</string>
+    <string name="trigger_retry_now">Isku Day Hadda</string>
+    <string name="clear_retry_queue">Nadiifi Safka</string>
+    <string name="retry_triggered">Isku-day ayaa la bilaabay</string>
+    <string name="retry_queue_cleared">Safka dib-u-isku-dayga waa la nadiifiyay</string>
 
 </resources>

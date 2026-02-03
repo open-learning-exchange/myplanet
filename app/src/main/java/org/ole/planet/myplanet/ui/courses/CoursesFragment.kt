@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -85,9 +85,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
-
-    @Inject
-    lateinit var tagsRepository: TagsRepository
 
     @Inject
     lateinit var progressRepository: ProgressRepository
@@ -354,7 +351,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         }
                     }
 
-                    NavigationHelper.replaceFragment(
+                    FragmentNavigator.replaceFragment(
                         parentFragmentManager,
                         R.id.fragment_container,
                         progressFragment,
@@ -685,7 +682,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 args.putString("courseLib", courseLib)
                 args.putSerializable("resources", resources?.let { ArrayList(it) })
                 fragment.arguments = args
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     fragment,
@@ -693,7 +690,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     allowStateLoss = true
                 )
             } else {
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     fragment,
