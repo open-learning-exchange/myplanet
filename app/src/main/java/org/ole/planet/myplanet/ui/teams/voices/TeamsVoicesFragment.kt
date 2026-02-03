@@ -192,7 +192,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                     },
                     getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                    labelManager = labelManager
+                    labelManager = labelManager,
+                    voicesRepository = voicesRepository
                 )
             }
             adapterNews?.sharedPrefManager = sharedPrefManager
