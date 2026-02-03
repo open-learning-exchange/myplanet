@@ -38,7 +38,7 @@ Resource shrinking removes unused resources from the final APK, which can signif
 
 ### Implement build performance optimization with configuration cache
 
-Gradle configuration cache can significantly speed up builds by caching the result of the configuration phase. The current gradle.properties enables it but warnings suggest it may not be fully utilized.
+Gradle configuration cache can significantly speed up builds by caching the result of the configuration phase. The current gradle.properties enables it (org.gradle.configuration-cache=true), but build logs show "Consider enabling configuration cache" messages indicating it may not be fully utilized or could benefit from additional optimization.
 
 :codex-file-citation[codex-file-citation]{line_range_start=19 line_range_end=19 path=gradle.properties git_url="https://github.com/open-learning-exchange/myplanet/blob/master/gradle.properties#L19-L19"}
 
