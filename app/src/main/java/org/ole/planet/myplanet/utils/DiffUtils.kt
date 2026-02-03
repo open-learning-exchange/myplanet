@@ -3,7 +3,21 @@ package org.ole.planet.myplanet.utils
 import androidx.recyclerview.widget.DiffUtil as RecyclerDiffUtil
 
 object DiffUtils {
-    fun <T : Any> itemCallback(
+    /**
+     * Creates a DiffUtil.ItemCallback for use with ListAdapter.
+     *
+     * To support nullable types, T can be nullable.
+     * When using with nullable types, ensure areItemsTheSame and areContentsTheSame handle nulls correctly.
+     *
+     * Recommended pattern:
+     * companion object {
+     *     val DIFF_CALLBACK = DiffUtils.itemCallback<MyType>(
+     *         areItemsTheSame = { old, new -> ... },
+     *         areContentsTheSame = { old, new -> ... }
+     *     )
+     * }
+     */
+    fun <T> itemCallback(
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
         areContentsTheSame: (oldItem: T, newItem: T) -> Boolean,
         getChangePayload: ((oldItem: T, newItem: T) -> Any?)? = null
