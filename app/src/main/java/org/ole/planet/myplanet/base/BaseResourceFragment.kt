@@ -35,9 +35,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
@@ -381,18 +379,25 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun removeFromShelf(`object`: RealmObject) {
-        if (`object` is RealmMyLibrary) {
-            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
-            } }
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-        } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+        val userId = profileDbHandler.userModel?.id ?: model?.id
+        if (userId.isNullOrEmpty()) {
+            return
+        }
+
+        lifecycleScope.launch {
+            if (`object` is RealmMyLibrary) {
+                val resourceId = `object`.resourceId
+                if (resourceId != null) {
+                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                }
+            } else {
+                val courseId = (`object` as RealmMyCourse).courseId
+                if (courseId != null) {
+                    coursesRepository.removeCourseFromShelf(courseId, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                }
+            }
         }
     }
 

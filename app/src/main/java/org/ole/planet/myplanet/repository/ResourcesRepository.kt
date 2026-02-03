@@ -48,6 +48,7 @@ interface ResourcesRepository {
     suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
     suspend fun removeDeletedResources(currentIds: List<String?>)
     suspend fun getMyLibIds(userId: String): JsonArray
+    suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
 }
 
