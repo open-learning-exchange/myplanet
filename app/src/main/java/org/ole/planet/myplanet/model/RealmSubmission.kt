@@ -113,13 +113,6 @@ open class RealmSubmission : RealmObject() {
 
                 if (submission.has("answers")) {
                     val answersArray = submission.get("answers").asJsonArray
-                    for (i in 0 until answersArray.size()) {
-                        val answer = answersArray[i].asJsonObject
-                    }
-                }
-
-                if (submission.has("answers")) {
-                    val answersArray = submission.get("answers").asJsonArray
                     sub?.answers = RealmList<RealmAnswer>()
 
                     for (i in 0 until answersArray.size()) {
