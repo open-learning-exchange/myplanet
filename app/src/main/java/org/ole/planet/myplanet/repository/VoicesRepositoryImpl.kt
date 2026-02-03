@@ -356,7 +356,7 @@ class VoicesRepositoryImpl @Inject constructor(
             map["messageType"] = messageType ?: ""
             map["messagePlanetCode"] = messagePlanetCode ?: ""
             map["viewIn"] = viewIn ?: ""
-            createNews(map, realm, transactionUser, imageList, true)
+            createNews(map, realm, transactionUser, imageList, null, true)
         }
     }
 
