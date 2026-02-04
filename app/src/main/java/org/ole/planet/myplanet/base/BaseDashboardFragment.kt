@@ -341,7 +341,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
 
-        val userId = settings?.getString("userId", "--")
+        val userId = settings.getString("userId", "--")
         viewModel.loadUserContent(userId)
         observeUiState()
 
@@ -358,7 +358,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = settings?.getString("userId", "--")
+            val userId = settings.getString("userId", "--")
             val libraryList = viewModel.getLibraryListForUser(userId)
             showDownloadDialog(libraryList)
         }
@@ -415,9 +415,9 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { transactionSyncManager.syncAllHealthData(it, this) }
+            transactionSyncManager.syncAllHealthData(settings, this)
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(it, this, profileDbHandler) }
+            transactionSyncManager.syncKeyIv(settings, this, profileDbHandler)
         }
     }
 
