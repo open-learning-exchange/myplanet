@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
@@ -121,6 +120,7 @@ class DataService constructor(
         }
     }
 
+    @Deprecated("Use ConfigurationsRepository.checkCheckSum instead")
     suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
         try {
             val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))
@@ -189,64 +189,6 @@ class DataService constructor(
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
-                }
-            }
-        }
-    }
-
-    @Deprecated("Use ConfigurationsRepository.checkServerAvailability instead")
-    fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        val updateUrl = "${preferences.getString("serverURL", "")}"
-        serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
-                    callback?.isAvailable()
-                } else {
-                    callback?.notAvailable()
-                }
-                return
-            }
-        }
-
-        val serverUrlMapper = ServerUrlMapper()
-        val mapping = serverUrlMapper.processUrl(updateUrl)
-
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
-
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
-                }
-            }
-
-            try {
-                val response = retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
-                val isAvailable = callback != null && response.code() == 200
-                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                withContext(Dispatchers.Main) {
-                    if (isAvailable) {
-                        callback.isAvailable()
-                    } else {
-                        callback?.notAvailable()
-                    }
-                }
-            } catch (e: Exception) {
-                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                withContext(Dispatchers.Main) {
-                    callback?.notAvailable()
                 }
             }
         }
@@ -419,11 +361,6 @@ class DataService constructor(
 
     interface CreateUserCallback {
         fun onSuccess(message: String)
-    }
-
-    interface PlanetAvailableListener {
-        fun isAvailable()
-        fun notAvailable()
     }
 
     interface ConfigurationIdListener {

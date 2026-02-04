@@ -22,7 +22,9 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -38,10 +40,13 @@ class AutoSyncWorker(
     private lateinit var syncManager: SyncManager
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
+    private lateinit var configurationsRepository: ConfigurationsRepository
     private val workerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     override fun doWork(): Result {
         if (isStopped) return Result.success()
         val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
+        val repositoryEntryPoint = EntryPointAccessors.fromApplication(context, RepositoryEntryPoint::class.java)
+        configurationsRepository = repositoryEntryPoint.configurationsRepository()
         preferences = entryPoint.sharedPreferences()
         syncManager = entryPoint.syncManager()
         uploadManager = entryPoint.uploadManager()
@@ -71,7 +76,7 @@ class AutoSyncWorker(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope)
+        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
     }
 
     override fun onCheckingVersion() {}
