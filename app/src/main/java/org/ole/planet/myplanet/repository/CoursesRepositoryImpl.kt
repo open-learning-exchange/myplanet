@@ -107,17 +107,17 @@ class CoursesRepositoryImpl @Inject constructor(
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val steps = course?.courseSteps
-            if (steps != null) realm.copyFromRealm(steps) else emptyList()
+            if (steps != null) java.util.Collections.unmodifiableList(realm.copyFromRealm(steps)) else emptyList()
         }
     }
 
-    override suspend fun getCourseStepIds(courseId: String): Array<String?> {
+    override suspend fun getCourseStepIds(courseId: String): List<String?> {
         if (courseId.isBlank()) {
-            return emptyArray()
+            return emptyList()
         }
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
+            course?.courseSteps?.map { it.id } ?: emptyList()
         }
     }
 
@@ -398,5 +398,23 @@ class CoursesRepositoryImpl @Inject constructor(
                     .deleteAllFromRealm()
             }
         }
+    }
+
+    override suspend fun getMyCourseIds(userId: String): JsonArray {
+        return withRealm { realm ->
+            val myCourses = realm.where(RealmMyCourse::class.java)
+                .equalTo("userId", userId)
+                .findAll()
+
+            val ids = JsonArray()
+            for (course in myCourses) {
+                ids.add(course.courseId)
+            }
+            ids
+        }
+    }
+
+    override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
+        leaveCourse(courseId, userId)
     }
 }
