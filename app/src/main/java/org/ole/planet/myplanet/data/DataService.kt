@@ -45,7 +45,7 @@ class DataService constructor(
     private val context: Context,
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,
-    @ApplicationScope private val serviceScope: CoroutineScope,
+    @param:ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
 ) {
