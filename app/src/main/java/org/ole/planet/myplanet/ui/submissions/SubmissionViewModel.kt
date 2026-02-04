@@ -42,7 +42,7 @@ class SubmissionViewModel @Inject constructor(
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
-        HashMap(submissionsRepository.getExamMapForSubmissions(subs))
+        HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
     private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams) { subs, type, query, examMap ->
