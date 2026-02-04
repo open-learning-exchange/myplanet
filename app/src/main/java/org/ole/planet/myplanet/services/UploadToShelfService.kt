@@ -25,9 +25,9 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
@@ -43,7 +43,8 @@ class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val coursesRepository: CoursesRepository
 ) {
     lateinit var mRealm: Realm
 
@@ -386,8 +387,9 @@ class UploadToShelfService @Inject constructor(
                     try {
                         val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                        val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
                         val shelfData = dbService.withRealm { backgroundRealm ->
-                            getShelfData(backgroundRealm, model.id, jsonDoc, myLibs)
+                            getShelfData(backgroundRealm, model.id, jsonDoc, myLibs, myCourseIds)
                         }
                         shelfData.addProperty("_rev", getString("_rev", jsonDoc))
                         apiInterface.putDoc(
@@ -429,8 +431,9 @@ class UploadToShelfService @Inject constructor(
                         val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
                         val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl)?.body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                        val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
                         val shelfObject = dbService.withRealm { realm ->
-                            getShelfData(realm, model.id, jsonDoc, myLibs)
+                            getShelfData(realm, model.id, jsonDoc, myLibs, myCourseIds)
                         }
                         shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
@@ -450,13 +453,12 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray): JsonObject {
-        val myCourses = getMyCourseIds(realm, userId)
+    private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
         val myMeetups = getMyMeetUpIds(realm, userId)
         val removedResources = listOf(*removedIds(realm, "resources", userId))
         val removedCourses = listOf(*removedIds(realm, "courses", userId))
         val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCourseIds = mergeJsonArray(myCourses, getJsonArray("courseIds", jsonDoc), removedCourses)
+        val mergedCourseIds = mergeJsonArray(myCourseIds, getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
         `object`.addProperty("_id", sharedPreferences.getString("userId", ""))
         `object`.add("meetupIds", mergeJsonArray(myMeetups, getJsonArray("meetupIds", jsonDoc), removedResources))

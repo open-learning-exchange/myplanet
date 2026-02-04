@@ -118,7 +118,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getExamMapForSubmissions(
+    override suspend fun getExamMap(
         submissions: List<RealmSubmission>
     ): Map<String?, RealmStepExam> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }.distinct()
@@ -651,5 +651,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         update(RealmSubmission::class.java, "id", submissionId) { submission ->
             submission.status = status
         }
+    }
+
+    override suspend fun getExamByStepId(stepId: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "stepId", stepId)
+    }
+
+    override suspend fun getExamById(id: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "id", id)
     }
 }
