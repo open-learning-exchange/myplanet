@@ -15,7 +15,7 @@ interface SubmissionsRepository {
     suspend fun getSubmissionById(id: String): RealmSubmission?
     suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission>
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
-    suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
+    suspend fun getExamMap(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
     suspend fun getExamQuestionCount(stepId: String): Int
     suspend fun hasSubmission(
         stepExamId: String?,
@@ -44,4 +44,6 @@ interface SubmissionsRepository {
     suspend fun saveExamAnswer(submission: RealmSubmission?, question: org.ole.planet.myplanet.model.RealmExamQuestion, ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean, type: String, index: Int, total: Int, isExplicitSubmission: Boolean): Boolean
     suspend fun getLastPendingSubmission(userId: String?): RealmSubmission?
     suspend fun updateSubmissionStatus(submissionId: String?, status: String)
+    suspend fun getExamByStepId(stepId: String): RealmStepExam?
+    suspend fun getExamById(id: String): RealmStepExam?
 }
