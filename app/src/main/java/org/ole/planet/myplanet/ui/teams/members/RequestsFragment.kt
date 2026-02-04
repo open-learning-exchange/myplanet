@@ -38,7 +38,7 @@ class RequestsFragment : BaseMemberFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        teamId?.let { viewModel.fetchMembers(it) }
+        viewModel.fetchMembers(teamId)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch {
