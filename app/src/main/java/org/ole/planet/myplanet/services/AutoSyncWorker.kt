@@ -6,23 +6,22 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
-import androidx.work.Worker
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.util.Date
 import java.util.concurrent.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
-import org.ole.planet.myplanet.di.RepositoryEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -32,31 +31,28 @@ import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
-class AutoSyncWorker(
-    private val context: Context,
-    workerParams: WorkerParameters
-) : Worker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
-    private lateinit var preferences: SharedPreferences
-    private lateinit var syncManager: SyncManager
-    private lateinit var uploadManager: UploadManager
-    private lateinit var uploadToShelfService: UploadToShelfService
-    private lateinit var configurationsRepository: ConfigurationsRepository
-    private val workerScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    override fun doWork(): Result {
+@HiltWorker
+class AutoSyncWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    @AppPreferences private val preferences: SharedPreferences,
+    private val syncManager: SyncManager,
+    private val uploadManager: UploadManager,
+    private val uploadToShelfService: UploadToShelfService,
+    private val configurationsRepository: ConfigurationsRepository
+) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
+
+    override suspend fun doWork(): Result {
         if (isStopped) return Result.success()
-        val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
-        val repositoryEntryPoint = EntryPointAccessors.fromApplication(context, RepositoryEntryPoint::class.java)
-        configurationsRepository = repositoryEntryPoint.configurationsRepository()
-        preferences = entryPoint.sharedPreferences()
-        syncManager = entryPoint.syncManager()
-        uploadManager = entryPoint.uploadManager()
-        uploadToShelfService = entryPoint.uploadToShelfService()
+
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
             if (isAppInForeground(context)) {
-                Utilities.toast(context, "Syncing started...")
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(context, "Syncing started...")
+                }
             }
             DataService(context).checkVersion(this, preferences)
         }
@@ -76,10 +72,13 @@ class AutoSyncWorker(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
+        MainApplication.applicationScope.let { scope ->
+            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, scope, configurationsRepository)
+        }
     }
 
     override fun onCheckingVersion() {}
+
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
             syncManager.start(this, "upload")
@@ -90,32 +89,34 @@ class AutoSyncWorker(
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                workerScope.launch {
-                    try {
-                        uploadManager.uploadExamResult(this@AutoSyncWorker)
-                        uploadManager.uploadFeedback()
-                        uploadManager.uploadAchievement()
-                        uploadManager.uploadResourceActivities("")
-                        uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                        uploadManager.uploadCourseActivities()
-                        uploadManager.uploadSearchActivity()
-                        uploadManager.uploadRating()
-                        uploadManager.uploadResource(this@AutoSyncWorker)
-                        uploadManager.uploadNews()
-                        uploadManager.uploadTeams()
-                        uploadManager.uploadTeamTask()
-                        uploadManager.uploadMeetups()
-                        uploadManager.uploadAdoptedSurveys()
-                        uploadManager.uploadCrashLog()
-                        uploadManager.uploadSubmissions()
-                        uploadManager.uploadActivities(null)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Log.e("AutoSyncWorker", "error: ${e.message}")
-                        onSyncFailed(e.message)
-                    } finally {
-                        MainApplication.isSyncRunning = false
+                MainApplication.applicationScope.let { scope ->
+                    scope.launch {
+                        try {
+                            uploadManager.uploadExamResult(this@AutoSyncWorker)
+                            uploadManager.uploadFeedback()
+                            uploadManager.uploadAchievement()
+                            uploadManager.uploadResourceActivities("")
+                            uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                            uploadManager.uploadCourseActivities()
+                            uploadManager.uploadSearchActivity()
+                            uploadManager.uploadRating()
+                            uploadManager.uploadResource(this@AutoSyncWorker)
+                            uploadManager.uploadNews()
+                            uploadManager.uploadTeams()
+                            uploadManager.uploadTeamTask()
+                            uploadManager.uploadMeetups()
+                            uploadManager.uploadAdoptedSurveys()
+                            uploadManager.uploadCrashLog()
+                            uploadManager.uploadSubmissions()
+                            uploadManager.uploadActivities(null)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.e("AutoSyncWorker", "error: ${e.message}")
+                            onSyncFailed(e.message)
+                        } finally {
+                            MainApplication.isSyncRunning = false
+                        }
                     }
                 }
             }
@@ -125,12 +126,6 @@ class AutoSyncWorker(
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
-    }
-
-    override fun onStopped() {
-        super.onStopped()
-        workerScope.cancel()
-        MainApplication.isSyncRunning = false
     }
 
     private fun isAppInForeground(context: Context): Boolean {
