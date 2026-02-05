@@ -25,9 +25,9 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
@@ -43,12 +43,13 @@ class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val coursesRepository: CoursesRepository
 ) {
     lateinit var mRealm: Realm
 
     fun uploadUserData(listener: OnSuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val userModels = dbService.withRealm { realm ->
@@ -91,7 +92,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     fun uploadSingleUserData(userName: String?, listener: OnSuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val userModel = dbService.withRealm { realm ->
@@ -126,9 +127,9 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun checkIfUserExists(apiInterface: ApiInterface?, header: String, model: RealmUser): Boolean {
+    private suspend fun checkIfUserExists(apiInterface: ApiInterface, header: String, model: RealmUser): Boolean {
         try {
-            val res = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
             val exists = res?.body() != null
             return exists
         } catch (e: Exception) {
@@ -137,10 +138,10 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun uploadNewUser(apiInterface: ApiInterface?, model: RealmUser) {
+    private suspend fun uploadNewUser(apiInterface: ApiInterface, model: RealmUser) {
         try {
             val obj = model.serialize()
-            val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
 
             if (createResponse?.isSuccessful == true) {
                 val id = createResponse.body()?.get("id")?.asString
@@ -166,11 +167,11 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun processUserAfterCreation(apiInterface: ApiInterface?, model: RealmUser, obj: JsonObject) {
+    private suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
         try {
             val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-            val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
+            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse?.isSuccessful == true) {
                 model.password_scheme = getString("password_scheme", fetchDataResponse.body())
@@ -188,9 +189,9 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private suspend fun updateExistingUser(apiInterface: ApiInterface?, header: String, model: RealmUser) {
+    private suspend fun updateExistingUser(apiInterface: ApiInterface, header: String, model: RealmUser) {
         try {
-            val latestDocResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
             if (latestDocResponse?.isSuccessful == true) {
                 val latestRev = latestDocResponse.body()?.get("_rev")?.asString
@@ -235,7 +236,7 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUser, obj: JsonObject) {
+    suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -259,7 +260,7 @@ class UploadToShelfService @Inject constructor(
         
         withContext(Dispatchers.IO) {
             try {
-                apiInterface?.putDoc(header, "application/json", dbUrl, JsonObject())
+                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject())
             } catch (e: Exception) {
                 null
             }
@@ -271,7 +272,7 @@ class UploadToShelfService @Inject constructor(
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
             }
         }
 
@@ -289,7 +290,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     fun uploadHealth() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             val myHealths = dbService.withRealm { realm ->
                 realm.where(RealmHealthExamination::class.java)
@@ -301,7 +302,7 @@ class UploadToShelfService @Inject constructor(
 
             myHealths.forEach { pojo ->
                 try {
-                    val res = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
+                    val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
 
                     if (res?.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
@@ -319,7 +320,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     fun uploadSingleUserHealth(userId: String?, listener: OnSuccessListener?) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 if (userId.isNullOrEmpty()) return@launch
@@ -334,7 +335,7 @@ class UploadToShelfService @Inject constructor(
 
                 myHealths.forEach { pojo ->
                     try {
-                        val res = apiInterface?.postDoc(
+                        val res = apiInterface.postDoc(
                             UrlUtils.header,
                             "application/json",
                             "${UrlUtils.getUrl()}/health",
@@ -365,7 +366,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun uploadToShelf(listener: OnSuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             val unmanagedUsers = dbService.withRealm { realm ->
                 realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().let {
@@ -384,13 +385,14 @@ class UploadToShelfService @Inject constructor(
                 unmanagedUsers.forEach { model ->
                     if (model.id?.startsWith("guest") == true) return@forEach
                     try {
-                        val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.body()
+                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                        val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
                         val shelfData = dbService.withRealm { backgroundRealm ->
-                            getShelfData(backgroundRealm, model.id, jsonDoc, myLibs)
+                            getShelfData(backgroundRealm, model.id, jsonDoc, myLibs, myCourseIds)
                         }
                         shelfData.addProperty("_rev", getString("_rev", jsonDoc))
-                        apiInterface?.putDoc(
+                        apiInterface.putDoc(
                             UrlUtils.header,
                             "application/json",
                             "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}",
@@ -413,7 +415,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 val model = dbService.withRealm { realm ->
@@ -427,15 +429,16 @@ class UploadToShelfService @Inject constructor(
                 if (model != null) {
                     if (model.id?.startsWith("guest") != true) {
                         val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                        val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, shelfUrl)?.body()
+                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl)?.body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                        val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
                         val shelfObject = dbService.withRealm { realm ->
-                            getShelfData(realm, model.id, jsonDoc, myLibs)
+                            getShelfData(realm, model.id, jsonDoc, myLibs, myCourseIds)
                         }
                         shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
                         val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
-                        apiInterface?.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
+                        apiInterface.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
                     }
                 }
                 withContext(Dispatchers.Main) {
@@ -450,13 +453,12 @@ class UploadToShelfService @Inject constructor(
         }
     }
 
-    private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray): JsonObject {
-        val myCourses = getMyCourseIds(realm, userId)
+    private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
         val myMeetups = getMyMeetUpIds(realm, userId)
         val removedResources = listOf(*removedIds(realm, "resources", userId))
         val removedCourses = listOf(*removedIds(realm, "courses", userId))
         val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCourseIds = mergeJsonArray(myCourses, getJsonArray("courseIds", jsonDoc), removedCourses)
+        val mergedCourseIds = mergeJsonArray(myCourseIds, getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
         `object`.addProperty("_id", sharedPreferences.getString("userId", ""))
         `object`.add("meetupIds", mergeJsonArray(myMeetups, getJsonArray("meetupIds", jsonDoc), removedResources))
@@ -480,9 +482,9 @@ class UploadToShelfService @Inject constructor(
         private suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
-            val apiInterface = client?.create(ApiInterface::class.java)
+            val apiInterface = client.create(ApiInterface::class.java)
             try {
-                val response = apiInterface?.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
+                val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
                 if (response?.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")

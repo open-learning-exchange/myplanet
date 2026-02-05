@@ -376,6 +376,10 @@ class ResourcesRepositoryImpl @Inject constructor(
         return jsonArray
     }
 
+    override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
+        updateUserLibrary(resourceId, userId, false)
+    }
+
     override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {
         val resource = getLibraryItemByResourceId(resourceId) ?: return ResourceUrlsResponse.ResourceNotFound
         if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments

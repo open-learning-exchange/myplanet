@@ -424,14 +424,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             .show()
     }
 
-    private fun updateConfiguration(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-    }
-
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(newBase))
     }

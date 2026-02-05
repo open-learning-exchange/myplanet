@@ -147,7 +147,7 @@ myplanet/
 - `kotlin-android`
 - `kotlin-kapt` (Annotation processing)
 - `com.google.devtools.ksp` (Symbol processing)
-- `dagger.hilt.android.plugin`
+- `com.google.dagger.hilt.android`
 - `realm-android`
 
 **Compiler Settings:**
