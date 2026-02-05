@@ -33,10 +33,10 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val uploadToShelfService: UploadToShelfService,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->

@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
-    @AppPreferences private val preferences: SharedPreferences,
+    @param:AppPreferences private val preferences: SharedPreferences,
     private val syncManager: SyncManager,
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService,

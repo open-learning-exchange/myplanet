@@ -1,0 +1,96 @@
+Reusing configuration cache.
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDefaultDebug UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+
+> Task :app:kspDefaultDebugKotlin
+Could not load entry 5c656f6f2c32d224265700e67d45a546 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:kaptGenerateStubsDefaultDebugKotlin
+
+> Task :app:kaptDefaultDebugKotlin
+Note: Processing class RealmCommunity
+Note: Processing class RealmSubmission
+Note: Processing class RealmTeamTask
+Note: Processing class RealmMeetup
+Note: Processing class RealmSearchActivity
+Note: Processing class RealmNewsLog
+Note: Processing class RealmStepExam
+Note: Processing class RealmMyTeam
+Note: Processing class RealmHealthExamination
+Note: Processing class RealmCourseActivity
+Note: Processing class RealmRemovedLog
+Note: Processing class RealmOfflineActivity
+Note: Processing class RealmExamQuestion
+Note: Processing class RealmUserChallengeActions
+Note: Processing class RealmFeedback
+Note: Processing class RealmCourseStep
+Note: Processing class RealmCertification
+Note: Processing class RealmApkLog
+Note: Processing class RealmRating
+Note: Processing class RealmUser
+Note: Processing class RealmDictionary
+Note: Processing class RealmMembershipDoc
+Note: Processing class RealmMyLibrary
+Note: Processing class RealmCourseProgress
+Note: Processing class RealmResourceActivity
+Note: Processing class RealmRetryOperation
+Note: Processing class RealmSubmitPhotos
+Note: Processing class RealmTeamReference
+Note: Processing class RealmTeamLog
+Note: Processing class RealmNotification
+Note: Processing class RealmMyPersonal
+Note: Processing class RealmTag
+Note: Processing class RealmTeamNotification
+Note: Processing class RealmNews
+Note: Processing class RealmMyLife
+Note: Processing class RealmChatHistory
+Note: Processing class RealmConversation
+Note: Processing class RealmMyCourse
+Note: Processing class RealmAttachment
+Note: Processing class RealmAnswer
+Note: Processing class RealmAchievement
+Note: Creating DefaultRealmModule
+
+> Task :app:compileDefaultDebugKotlin
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:167:39 Unnecessary safe call on a non-null receiver of type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:262:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:470:47 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:471:29 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:474:39 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:474:90 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/AutoSyncWorker.kt:57:34 'fun checkVersion(callback: DataService.CheckVersionCallback, settings: SharedPreferences): Unit' is deprecated. Use ConfigurationsRepository.checkVersion instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/AutoSyncWorker.kt:86:54 'fun healthAccess(listener: OnSuccessListener): Unit' is deprecated. Use ConfigurationsRepository.checkHealth instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt:531:36 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImpl.kt:167:39 Unnecessary safe call on a non-null receiver of type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:262:26 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:470:47 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:471:29 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:474:39 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt:474:90 Unnecessary safe call on a non-null receiver of type 'RealmMyHealth'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/AutoSyncWorker.kt:57:34 'fun checkVersion(callback: DataService.CheckVersionCallback, settings: SharedPreferences): Unit' is deprecated. Use ConfigurationsRepository.checkVersion instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/AutoSyncWorker.kt:86:54 'fun healthAccess(listener: OnSuccessListener): Unit' is deprecated. Use ConfigurationsRepository.checkHealth instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt:531:36 'val connectionInfo: WifiInfo!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt:229:106 Unnecessary safe call on a non-null receiver of type 'UserSessionManager'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt:246:37 Unnecessary safe call on a non-null receiver of type 'UserSessionManager'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt:492:31 The corresponding parameter in the supertype 'OnTagClickListener' is named 'tag'. This may cause problems when calling this function with named arguments.
+
+> Task :app:compileDefaultDebugJavaWithJavac
+> Task :app:compileDefaultDebugSources
+
+BUILD SUCCESSFUL in 1m 13s
+17 actionable tasks: 5 executed, 12 up-to-date
+Configuration cache entry reused.
+The remote build cache was disabled during the build due to errors.

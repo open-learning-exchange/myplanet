@@ -30,10 +30,10 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class ConfigurationsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
-    @ApplicationScope private val serviceScope: CoroutineScope,
-    @AppPreferences private val preferences: SharedPreferences
+    @param:ApplicationScope private val serviceScope: CoroutineScope,
+    @param:AppPreferences private val preferences: SharedPreferences
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 

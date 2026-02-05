@@ -58,10 +58,10 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 
 @Singleton
 class UploadManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
-    @AppPreferences private val pref: SharedPreferences,
+    @param:AppPreferences private val pref: SharedPreferences,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
