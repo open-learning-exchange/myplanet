@@ -92,6 +92,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version = "1.10.0" }
+realm-kotlin-extensions = { module = "io.realm:realm-android-kotlin-extensions", version.ref = "realmGradlePlugin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
