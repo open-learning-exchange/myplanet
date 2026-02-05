@@ -39,7 +39,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         user = profileDbHandler?.userModel
-        teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
+        teamId = requireArguments().getString("id", "")
 
         loadTeamDetails()
     }

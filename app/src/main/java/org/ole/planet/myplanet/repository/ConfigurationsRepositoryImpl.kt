@@ -164,7 +164,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
             if (!primaryReachable && alternativeReachable) {
-                mapping.alternativeUrl?.let { alternativeUrl ->
+                mapping.alternativeUrl!!.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = preferences.edit()
 

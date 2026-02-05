@@ -467,11 +467,11 @@ class UserRepositoryImpl @Inject constructor(
                 if (myHealth == null) {
                     myHealth = RealmMyHealth()
                 }
-                if (TextUtils.isEmpty(myHealth?.userKey)) {
-                    myHealth?.userKey = AndroidDecrypter.generateKey()
+                if (TextUtils.isEmpty(myHealth.userKey)) {
+                    myHealth.userKey = AndroidDecrypter.generateKey()
                 }
 
-                val profile = myHealth?.profile ?: RealmMyHealthProfile().also { myHealth?.profile = it }
+                val profile = myHealth.profile ?: RealmMyHealthProfile().also { myHealth.profile = it }
 
                 profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
                 val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
