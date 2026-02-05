@@ -41,7 +41,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var subjectLevel = ""
     lateinit var recyclerView: RecyclerView
     lateinit var tvMessage: TextView
-    lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null

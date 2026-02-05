@@ -267,7 +267,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+        if (!isMyCourseLib) requireView().findViewById<TextView>(R.id.tv_fragment_info).setText(R.string.our_courses)
         additionalSetup()
         setupMyProgressButton()
 
@@ -406,7 +406,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnSubject = requireView().findViewById(R.id.spn_subject)
         tvMessage = requireView().findViewById(R.id.tv_message)
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
-        tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
 
         setupSpinners()
         setupSelectAll()

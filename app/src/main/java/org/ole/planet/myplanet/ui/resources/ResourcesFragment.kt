@@ -263,8 +263,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         setupUI(binding.myLibraryParentLayout, requireActivity())
         additionalSetup()
 
-        tvFragmentInfo = binding.tvFragmentInfo
-        if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
+        if (isMyCourseLib) binding.tvFragmentInfo.setText(R.string.txt_myLibrary)
 
         if (userModel?.id != null) {
             lifecycleScope.launch {
