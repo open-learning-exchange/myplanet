@@ -104,7 +104,7 @@ class RealmConnectionPool(
     }
     
     private fun createNewConnection(): PooledRealm {
-        val realm = databaseService.realmInstance
+        val realm = databaseService.createManagedRealmInstance()
         return PooledRealm(
             realm = realm,
             createdAt = System.currentTimeMillis(),
