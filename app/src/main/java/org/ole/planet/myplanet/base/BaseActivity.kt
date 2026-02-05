@@ -39,15 +39,11 @@ abstract class BaseActivity : SyncActivity() {
 
     private fun updateConfigurationIfNeeded() {
         val currentLanguage = LocaleUtils.getLanguage(this)
-        val newConfig = resources.configuration
-        val newLocale = Locale(currentLanguage)
+        val configuration = resources.configuration
+        val currentLocale = configuration.locales.get(0)
 
-        if (newConfig.locale != newLocale) {
-            Locale.setDefault(newLocale)
-            newConfig.setLocale(newLocale)
-            newConfig.setLayoutDirection(newLocale)
-            resources.updateConfiguration(newConfig, resources.displayMetrics)
-            supportActionBar?.title = title
+        if (currentLocale.language != currentLanguage) {
+            recreate()
         }
     }
 

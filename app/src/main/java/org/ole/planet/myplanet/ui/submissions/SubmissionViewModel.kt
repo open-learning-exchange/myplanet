@@ -42,7 +42,7 @@ class SubmissionViewModel @Inject constructor(
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
-        HashMap(submissionsRepository.getExamMapForSubmissions(subs))
+        HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
     private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams) { subs, type, query, examMap ->
@@ -52,7 +52,7 @@ class SubmissionViewModel @Inject constructor(
                 it.userId == userId && it.type == "survey" && it.status != "pending"
             }
             else -> subs.filter { it.userId == userId && it.type != "survey" }
-        }.sortedByDescending { it.lastUpdateTime ?: 0 }
+        }.sortedByDescending { it.lastUpdateTime }
 
         if (query.isNotEmpty()) {
             val examIds = examMap.filter { (_, exam) ->
@@ -64,7 +64,7 @@ class SubmissionViewModel @Inject constructor(
         val groupedSubmissions = filtered.groupBy { it.parentId }
 
         val uniqueSubmissions = groupedSubmissions
-            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
+            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
             .values
             .filterNotNull()
             .map { sub ->
@@ -72,11 +72,11 @@ class SubmissionViewModel @Inject constructor(
                 val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
                 SubmissionViewData(sub, name ?: fallback ?: "")
             }
-            .sortedByDescending { it.submission.lastUpdateTime ?: 0 }
+            .sortedByDescending { it.submission.lastUpdateTime }
 
         val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
             .mapKeys { entry ->
-                groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime ?: 0 }?.id
+                groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime }?.id
             }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
