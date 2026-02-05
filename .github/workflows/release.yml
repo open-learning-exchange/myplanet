@@ -15,6 +15,7 @@ jobs:
       matrix:
         build: [default, lite]
     env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6g -XX:+UseParallelGC -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
       OUTPUTS: |
         .apk
         .apk.sha256
@@ -43,6 +44,9 @@ jobs:
           cache-disabled: false
           cache-read-only: false
           cache-write-only: false
+
+      - name: Check memory
+        run: free -m
 
       - name: set release version
         run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
