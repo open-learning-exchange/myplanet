@@ -11,6 +11,8 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration as WorkManagerConfiguration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -58,7 +60,10 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
     @Inject
     lateinit var databaseServiceProvider: Provider<DatabaseService>
     val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
@@ -75,6 +80,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+
+    override val workManagerConfiguration: WorkManagerConfiguration
+        get() = WorkManagerConfiguration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
