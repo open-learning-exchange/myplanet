@@ -58,17 +58,17 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?): RealmNews {
+    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?, videoList: io.realm.RealmList<String>?): RealmNews {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, imageList)
+            val managedNews = createNews(map, realm, user, imageList, videoList)
             realm.copyFromRealm(managedNews)
         }
     }
 
-    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: io.realm.RealmList<String>?): Boolean {
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: io.realm.RealmList<String>?, videoList: io.realm.RealmList<String>?): Boolean {
         return try {
             databaseService.executeTransactionAsync { realm ->
-                RealmNews.createNews(newsData, realm, user, imageList)
+                RealmNews.createNews(newsData, realm, user, imageList, videoList)
             }
             true
         } catch (e: Exception) {
@@ -356,7 +356,7 @@ class VoicesRepositoryImpl @Inject constructor(
             map["messageType"] = messageType ?: ""
             map["messagePlanetCode"] = messagePlanetCode ?: ""
             map["viewIn"] = viewIn ?: ""
-            createNews(map, realm, transactionUser, imageList, true)
+            createNews(map, realm, transactionUser, imageList, null, true)
         }
     }
 

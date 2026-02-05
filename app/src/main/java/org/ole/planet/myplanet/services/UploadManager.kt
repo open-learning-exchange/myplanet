@@ -184,6 +184,24 @@ class UploadManager @Inject constructor(
         return `object`
     }
 
+    private fun createVideo(user: RealmUser?, vidObject: JsonObject?): JsonObject {
+        val `object` = JsonObject()
+        `object`.addProperty("title", getString("fileName", vidObject))
+        `object`.addProperty("createdDate", Date().time)
+        `object`.addProperty("filename", getString("fileName", vidObject))
+        `object`.addProperty("private", true)
+        user?._id?.let { `object`.addProperty("addedBy", it) }
+        user?.parentCode?.let { `object`.addProperty("resideOn", it) }
+        user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
+        val object1 = JsonObject()
+        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+        `object`.add("privateFor", object1)
+        `object`.addProperty("mediaType", "video")
+        return `object`
+    }
+
     suspend fun uploadAchievement() {
         databaseService.executeTransactionAsync { transactionRealm ->
             val list: List<RealmAchievement> = transactionRealm.where(RealmAchievement::class.java).findAll()
@@ -604,7 +622,8 @@ class UploadManager @Inject constructor(
                     try {
                         // Upload images first and collect metadata
                         val imagesArray = com.google.gson.JsonArray()
-                        var messageWithImages = news.message ?: ""
+                        val videosArray = com.google.gson.JsonArray()
+                        var messageWithMedia = news.message ?: ""
 
                         news.imageUrls?.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
@@ -643,13 +662,55 @@ class UploadManager @Inject constructor(
                             imagesArray.add(resourceObject)
 
                             // Append markdown to message
-                            messageWithImages += "\n$markdown"
+                            messageWithMedia += "\n$markdown"
                         }
 
-                        // Serialize news with updated message and images
+                        // Upload videos and collect metadata
+                        news.videoUrls?.forEach { videoUrl ->
+                            val vidObject = gson.fromJson(videoUrl, JsonObject::class.java)
+
+                            // Create video resource document
+                            val videoDoc = createVideo(user, vidObject)
+                            val videoResponse = apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/resources",
+                                videoDoc
+                            ).body()
+
+                            val resourceId = getString("id", videoResponse)
+                            val resourceRev = getString("rev", videoResponse)
+
+                            // Upload video file as attachment
+                            val videoFile = File(getString("videoUrl", vidObject))
+                            val fileName = FileUtils.getFileNameFromUrl(getString("videoUrl", vidObject))
+                            val mimeType = videoFile.toURI().toURL().openConnection().contentType ?: "video/mp4"
+                            val fileBody = FileUtils.fullyReadFileToBytes(videoFile)
+                                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+
+                            apiInterface.uploadResource(
+                                getHeaderMap(mimeType, resourceRev),
+                                "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
+                                fileBody
+                            )
+
+                            // Build video metadata and markdown
+                            val resourceObject = JsonObject()
+                            resourceObject.addProperty("resourceId", resourceId)
+                            resourceObject.addProperty("filename", fileName)
+                            val markdown = "![](resources/$resourceId/$fileName)"
+                            resourceObject.addProperty("markdown", markdown)
+                            videosArray.add(resourceObject)
+
+                            // Append markdown to message
+                            messageWithMedia += "\n$markdown"
+                        }
+
+                        // Serialize news with updated message, images, and videos
                         val newsJson = chatRepository.serializeNews(news)
-                        newsJson.addProperty("message", messageWithImages)
+                        newsJson.addProperty("message", messageWithMedia)
                         newsJson.add("images", imagesArray)
+                        newsJson.add("videos", videosArray)
 
                         // Upload news document (POST or PUT)
                         val newsResponse = if (TextUtils.isEmpty(news._id)) {
@@ -675,9 +736,11 @@ class UploadManager @Inject constructor(
                                     .equalTo("id", news.id)
                                     .findFirst()?.let { managedNews ->
                                         managedNews.imageUrls?.clear()
+                                        managedNews.videoUrls?.clear()
                                         managedNews._id = getString("id", newsResponse.body())
                                         managedNews._rev = getString("rev", newsResponse.body())
                                         managedNews.images = gson.toJson(imagesArray)
+                                        managedNews.videos = gson.toJson(videosArray)
                                     }
                             }
                         }

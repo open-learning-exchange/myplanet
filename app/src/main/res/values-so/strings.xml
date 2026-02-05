@@ -20,7 +20,7 @@
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync_save">Keyd</string>
-    <string name="loading">Soo dejinta...</string>
+    <string name="loading">Soo dejinta…</string>
     <string name="select_team">xulo koox</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
@@ -328,7 +328,6 @@
     <string name="members">Xubinayaasha</string>
     <string name="tasks">Hawlgalaha</string>
     <string name="join_requests">Su\'aasha xubinaha</string>
-    <string name="add_image">Kudar Sawir</string>
     <string name="clear_data">Tirtir Data</string>
     <string name="reset_app">Isku day App-ka</string>
     <string name="freeup_space">Bac Wadatid xogta diiskaga</string>
@@ -1179,6 +1178,10 @@
     <string name="team_surveys">Sahaminta kooxda</string>
     <string name="enterprise_created">Ganacsi La Sameeyay</string>
     <string name="image_already_added">Sawirkan horay ayaa loo daray</string>
+    <string name="add_media">Ku dar Warbaahinta</string>
+    <string name="video_already_added">Fiidiyowga horeba ayaa lagu daray</string>
+    <string name="please_select_video">Fadlan dooro faylka fiidiyow</string>
+    <string name="please_select_image_or_video">Fadlan dooro sawir ama faylka fiidiyow</string>
     <string name="debug_retry_queue">Safka Dib-u-Isku-Dayga (Debug)</string>
     <string name="debug_retry_queue_summary">Eeg oo maamul isku-dayada gelinta ee fashilmay</string>
     <string name="retry_queue_status">Xaaladda Safka Dib-u-Isku-Dayga</string>

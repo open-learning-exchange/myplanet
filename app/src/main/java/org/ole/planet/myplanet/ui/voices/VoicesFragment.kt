@@ -66,6 +66,7 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
+        llVideo = binding.llVideos
         user = userSessionManager.getUserModelCopy()
         setupUI(binding.voicesFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
@@ -143,10 +144,12 @@ class VoicesFragment : BaseVoicesFragment() {
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
             viewLifecycleOwner.lifecycleScope.launch {
-                val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
+                val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList, videoList) }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     imageList.clear()
+                    videoList.clear()
                     llImage?.removeAllViews()
+                    llVideo?.removeAllViews()
                     adapterNews?.addItem(n)
                     labelFilteredList = applyLabelFilter(filteredNewsList)
                     searchFilteredList = applySearchFilter(labelFilteredList)
@@ -158,10 +161,11 @@ class VoicesFragment : BaseVoicesFragment() {
             }
         }
 
-        binding.addNewsImage.setOnClickListener {
+        binding.addNewsMedia.setOnClickListener {
             llImage = binding.llImages
+            llVideo = binding.llVideos
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
+            openMediaLauncher.launch(openFolderIntent)
         }
     }
 
@@ -262,6 +266,11 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun clearVideos() {
+        videoList.clear()
+        llVideo?.removeAllViews()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
