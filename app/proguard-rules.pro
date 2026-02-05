@@ -5,17 +5,40 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# General attributes
+-keepattributes SourceFile,LineNumberTable
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Realm
+-keep class io.realm.annotations.RealmModule
+-keep @io.realm.annotations.RealmModule class *
+-keep class io.realm.internal.Keep
+-keep @io.realm.internal.Keep class * { *; }
+-dontwarn javax.**
+-dontwarn io.realm.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Gson / Retrofit
+-keep class org.ole.planet.myplanet.model.** { *; }
+-keep class com.google.gson.** { *; }
+-keep interface com.google.gson.** { *; }
+-dontwarn com.google.gson.**
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+
+# Glide
+-keep public class * implements com.bumptech.glide.module.GlideModule
+-keep public class * extends com.bumptech.glide.module.AppGlideModule
+-keep public enum com.bumptech.glide.load.ImageHeaderParser$** {
+  **[] $VALUES;
+  public *;
+}
+
+# MPAndroidChart
+-keep class com.github.mikephil.charting.** { *; }
+
+# Markwon missing optional dependencies
+-dontwarn com.caverock.androidsvg.**
+-dontwarn org.commonmark.ext.gfm.strikethrough.**
