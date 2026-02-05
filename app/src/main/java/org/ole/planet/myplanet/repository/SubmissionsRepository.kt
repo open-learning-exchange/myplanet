@@ -15,7 +15,7 @@ interface SubmissionsRepository {
     suspend fun getSubmissionById(id: String): RealmSubmission?
     suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission>
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
-    suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
+    suspend fun getExamMap(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
     suspend fun getExamQuestionCount(stepId: String): Int
     suspend fun hasSubmission(
         stepExamId: String?,
