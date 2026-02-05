@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.LocaleList
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import java.util.Locale
@@ -21,12 +22,12 @@ object LocaleUtils {
     fun setLocale(context: Context, language: String): Context {
         persist(context, language)
 
-        val locale = Locale(language)
+        val locale = Locale.forLanguageTag(language)
         Locale.setDefault(locale)
 
         val res = context.resources
         val configuration = Configuration(res.configuration)
-        configuration.setLocale(locale)
+        configuration.setLocales(LocaleList(locale))
         configuration.setLayoutDirection(locale)
 
         return context.createConfigurationContext(configuration)

@@ -170,8 +170,8 @@ class VoicesFragment : BaseVoicesFragment() {
         if (defaultUserIdentifier.isNotEmpty() && defaultUserIdentifier != "@") {
             return defaultUserIdentifier
         }
-        val planetCode = settings?.getString("planetCode", "") ?: ""
-        val parentCode = settings?.getString("parentCode", "") ?: ""
+        val planetCode = settings.getString("planetCode", "") ?: ""
+        val parentCode = settings.getString("parentCode", "") ?: ""
         return "$planetCode@$parentCode"
     }
 
