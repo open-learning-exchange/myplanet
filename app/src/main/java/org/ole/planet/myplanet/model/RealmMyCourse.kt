@@ -268,6 +268,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
         fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
             val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
             val ids = JsonArray()
