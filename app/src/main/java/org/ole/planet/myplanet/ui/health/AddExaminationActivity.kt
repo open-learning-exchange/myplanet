@@ -80,6 +80,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         currentUser = userSessionManager.userModel
         mapConditions = HashMap()
         userId = intent.getStringExtra("userId")
+        if (TextUtils.isEmpty(userId)) {
+            Utilities.toast(this, "Invalid user ID")
+            finish()
+            return
+        }
 
         lifecycleScope.launch {
             pojo = healthRepository.getHealthProfile(userId!!)
@@ -126,15 +131,15 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
-            binding.etObservation.setText(JsonUtils.getString(getString(R.string.note_), encrypted))
-            binding.etDiag.setText(JsonUtils.getString(getString(R.string.diagnosis), encrypted))
-            binding.etTreatments.setText(JsonUtils.getString(getString(R.string.treatments), encrypted))
-            binding.etMedications.setText(JsonUtils.getString(getString(R.string.medications), encrypted))
-            binding.etImmunization.setText(JsonUtils.getString(getString(R.string.immunizations), encrypted))
-            binding.etAllergies.setText(JsonUtils.getString(getString(R.string.allergies), encrypted))
-            binding.etXray.setText(JsonUtils.getString(getString(R.string.xrays), encrypted))
-            binding.etLabtest.setText(JsonUtils.getString(getString(R.string.tests), encrypted))
-            binding.etReferrals.setText(JsonUtils.getString(getString(R.string.referrals), encrypted))
+            binding.etObservation.setText(JsonUtils.getString("notes", encrypted))
+            binding.etDiag.setText(JsonUtils.getString("diagnosis", encrypted))
+            binding.etTreatments.setText(JsonUtils.getString("treatments", encrypted))
+            binding.etMedications.setText(JsonUtils.getString("medications", encrypted))
+            binding.etImmunization.setText(JsonUtils.getString("immunizations", encrypted))
+            binding.etAllergies.setText(JsonUtils.getString("allergies", encrypted))
+            binding.etXray.setText(JsonUtils.getString("xrays", encrypted))
+            binding.etLabtest.setText(JsonUtils.getString("tests", encrypted))
+            binding.etReferrals.setText(JsonUtils.getString("referrals", encrypted))
         }
         showCheckbox(examination)
         showOtherDiagnosis()

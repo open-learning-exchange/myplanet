@@ -18,6 +18,7 @@ class HealthRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): RealmHealthExamination? {
         return findByField(RealmHealthExamination::class.java, "_id", userId)
+            ?: findByField(RealmHealthExamination::class.java, "userId", userId)
     }
 
     override suspend fun getExamination(id: String): RealmHealthExamination? {
