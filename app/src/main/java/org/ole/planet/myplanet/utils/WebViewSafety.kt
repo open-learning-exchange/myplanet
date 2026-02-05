@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.utils
 
-import java.net.URI
+import androidx.core.net.toUri
 
 object WebViewSafety {
 
@@ -11,7 +11,7 @@ object WebViewSafety {
         appDir: String
     ): Boolean {
         return try {
-            val uri = URI(url)
+            val uri = url.toUri()
             when {
                 // Allow HTTPS URLs
                 uri.scheme == "https" -> true
