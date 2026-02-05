@@ -9,9 +9,11 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -400,6 +402,22 @@ class ResourcesRepositoryImpl @Inject constructor(
             ResourceUrlsResponse.Success(urls)
         } else {
             ResourceUrlsResponse.Error
+        }
+    }
+
+    override suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>> {
+        return withContext(Dispatchers.Default) {
+            val languages = libraries.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet()
+            val mediums = libraries.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet()
+            val levels = libraries.flatMap { it.level ?: emptyList() }.toSet()
+            val subjects = libraries.flatMap { it.subject ?: emptyList() }.toSet()
+
+            mapOf(
+                "languages" to languages,
+                "mediums" to mediums,
+                "levels" to levels,
+                "subjects" to subjects
+            )
         }
     }
 }
