@@ -25,8 +25,8 @@ This document provides comprehensive guidance for AI assistants working on the m
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.42.56 (versionCode: 4256)
-- **Build System**: Gradle 8.14.2
+- **Current Version**: 0.45.27 (versionCode: 4527)
+- **Build System**: Gradle 9.3.1 with Android Gradle Plugin 9.0.0
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -54,11 +54,11 @@ myplanet/
 │   │   │   │   ├── callback/                # Event listeners and interfaces
 │   │   │   │   ├── data/                    # Data services and API
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Realm data models (53 classes)
+│   │   │   │   ├── model/                   # Realm data models (40 Realm classes, 66 total)
 │   │   │   │   ├── repository/              # Repository pattern implementations
-│   │   │   │   ├── service/                 # Background services and workers
+│   │   │   │   ├── services/                # Background services and workers
 │   │   │   │   ├── ui/                      # UI components (28 packages)
-│   │   │   │   └── utilities/               # Helper utilities
+│   │   │   │   └── utils/                   # Helper utilities
 │   │   │   ├── res/                         # Android resources
 │   │   │   │   ├── layout/                  # 169 layout files
 │   │   │   │   ├── values/                  # Strings, colors, styles
@@ -84,12 +84,12 @@ myplanet/
 | `base/` | Base classes for common functionality | BaseActivity, BaseRecyclerFragment, PermissionActivity |
 | `callback/` | Event listeners and interfaces | OnLibraryItemSelectedListener, SyncListener, TeamUpdateListener |
 | `data/` | Data access and API services | DataService.kt, DatabaseService.kt, ApiInterface, auth/ |
-| `di/` | Hilt dependency injection | NetworkModule, DatabaseModule, RepositoryModule |
-| `model/` | Realm database models | 53 models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
+| `di/` | Hilt dependency injection | NetworkModule, DatabaseModule, DataServiceModule, RepositoryModule |
+| `model/` | Realm database models | 40 Realm models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
 | `repository/` | Repository pattern implementations | 18 repositories with Interface + Impl pairs |
-| `service/` | Background services | sync/SyncManager.kt, UploadManager.kt, AutoSyncWorker |
+| `services/` | Background services | sync/SyncManager.kt, UploadManager.kt, AutoSyncWorker |
 | `ui/` | User interface components | 28 feature packages (courses, resources, teams, chat, etc.) |
-| `utilities/` | Helper functions | NetworkUtils, ImageUtils, DialogUtils, FileUploader |
+| `utils/` | Helper functions | NetworkUtils, ImageUtils, DialogUtils, FileUploader |
 
 ### Critical Files to Understand
 
@@ -104,15 +104,15 @@ myplanet/
    - Main data service for local database operations
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt`
 
-3. **`SyncManager.kt`** (~1080 lines)
+3. **`SyncManager.kt`** (~1060 lines)
    - Orchestrates data synchronization with server
-   - Location: `app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt`
+   - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-4. **`UploadManager.kt`** (~1330 lines)
+4. **`UploadManager.kt`** (~720 lines)
    - Handles upload operations
-   - Location: `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt`
+   - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-5. **`TeamsRepositoryImpl.kt`** (~915 lines)
+5. **`TeamsRepositoryImpl.kt`** (~1090 lines)
    - Team management functionality
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
 
@@ -124,18 +124,19 @@ myplanet/
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Language** | Kotlin | 2.2.21 | Primary development language |
-| **Build System** | Gradle | 8.14.2 | Build automation |
-| **DI Framework** | Dagger Hilt | 2.57.2 | Dependency injection |
+| **Language** | Kotlin | 2.3.0 | Primary development language |
+| **Build System** | Gradle | 9.3.1 | Build automation |
+| **Build Plugin** | Android Gradle Plugin | 9.0.0 | Android build tooling |
+| **DI Framework** | Dagger Hilt | 2.58 | Dependency injection |
 | **Database** | Realm | 10.19.0 | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
 | **JSON** | Gson | 2.13.2 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.10.2 | Asynchronous programming |
-| **Background Tasks** | AndroidX Work | 2.11.0 | Background job scheduling |
+| **Background Tasks** | AndroidX Work | 2.11.1 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.13.0 | UI components |
 | **Image Loading** | Glide | 5.0.5 | Image loading and caching |
-| **Media Playback** | Media3 (ExoPlayer) | 1.9.0 | Audio/video playback |
+| **Media Playback** | Media3 (ExoPlayer) | 1.9.1 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
 
@@ -146,13 +147,14 @@ myplanet/
 - `kotlin-android`
 - `kotlin-kapt` (Annotation processing)
 - `com.google.devtools.ksp` (Symbol processing)
-- `dagger.hilt.android.plugin`
-- `io.realm.kotlin`
+- `com.google.dagger.hilt.android`
+- `realm-android`
 
 **Compiler Settings:**
 - Java Compatibility: 17
 - Kotlin JVM Target: 17
 - View Binding: Enabled
+- Data Binding: Enabled
 - BuildConfig: Enabled
 
 ---
@@ -219,11 +221,17 @@ class CourseRepositoryImpl @Inject constructor(
 **Module Structure:**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
 - `DatabaseModule.kt` - Provides Realm instances
+- `DataServiceModule.kt` - Provides DataService
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
 
-**Entry Points for Workers:**
+**Entry Points for Workers (11 entry point files):**
+- `AutoSyncEntryPoint`, `ApiClientEntryPoint`, `ApiInterfaceEntryPoint`
+- `ApplicationScopeEntryPoint`, `BroadcastServiceEntryPoint`, `DatabaseServiceEntryPoint`
+- `RepositoryEntryPoint`, `RetryQueueEntryPoint`, `ServiceEntryPoint`
+- `TeamsRepositoryEntryPoint`, `WorkerDependenciesEntryPoint`
+
 ```kotlin
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -255,14 +263,29 @@ interface AutoSyncEntryPoint {
 - `ServerReachabilityWorker` - Server availability checking
 - `TaskNotificationWorker` - Task deadline notifications
 - `DownloadWorker` - Background file downloads
+- `FreeSpaceWorker` - Disk space monitoring
+- `StayOnlineWorker` - Keeps connection alive
+- `RetryQueueWorker` - Retries failed operations (`services/retry/`)
 
-**Services:**
-- `SyncManager` - Manual synchronization
+**Services and Managers:**
+- `SyncManager` - Manual synchronization (`services/sync/`)
 - `UploadManager` - File upload coordination
-- `AudioRecorderService` - Audio recording
+- `UploadCoordinator` - Upload orchestration (`services/upload/`)
+- `AudioRecorder` - Audio recording
 - `BroadcastService` - Service broadcasting
+- `ConfigurationManager` - Configuration management
+- `SharedPrefManager` - SharedPreferences management
+- `UserSessionManager` - User session handling
+- `ThemeManager` - App theming
+- `FileUploader` - File upload utilities
 
-**Location**: `app/src/main/java/org/ole/planet/myplanet/service/`
+**Sync Sub-package (`services/sync/`):**
+- `SyncManager`, `LoginSyncManager`, `TransactionSyncManager`
+- `ImprovedSyncManager`, `RealtimeSyncManager`
+- `AdaptiveBatchProcessor`, `StandardSyncStrategy`, `SyncStrategy`
+- `ThreadSafeRealmManager`, `RealmConnectionPool`, `ServerUrlMapper`
+
+**Location**: `app/src/main/java/org/ole/planet/myplanet/services/`
 
 ---
 
@@ -339,7 +362,7 @@ git push -u origin claude/feature-name-sessionid
 1. **Identify the Layer**
    - UI change? → `ui/` package
    - Data model? → `model/` package
-   - Business logic? → `repository/` or `service/`
+   - Business logic? → `repository/` or `services/`
    - Network API? → `data/ApiInterface.kt`
 
 2. **Create Necessary Components**
@@ -836,7 +859,7 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 1. **Create Worker**
    ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/service/MyWorker.kt
+   // app/src/main/java/org/ole/planet/myplanet/services/MyWorker.kt
    class MyWorker(
        context: Context,
        params: WorkerParameters
@@ -1018,7 +1041,7 @@ if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
 
 ### ProGuard/R8
 
-**Enable for release builds:**
+**Current state:** `minifyEnabled` is `false` for both debug and release builds. If enabling for release:
 ```gradle
 buildTypes {
     release {
@@ -1146,11 +1169,11 @@ git rebase --continue
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~420 |
-| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt` | ~450 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/service/sync/SyncManager.kt` | ~1080 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/service/UploadManager.kt` | ~1330 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~915 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~440 |
+| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt` | ~430 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1060 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~720 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1090 |
 | Build configuration | `app/build.gradle` | ~250 |
 | Dependency versions | `gradle/libs.versions.toml` | ~200 |
 
@@ -1206,6 +1229,6 @@ For questions or clarifications, refer to the Discord community or GitHub issues
 
 ---
 
-**Last Updated**: 2026-01-06
-**Version**: 0.42.56
+**Last Updated**: 2026-02-02
+**Version**: 0.45.27
 **Maintainer**: Open Learning Exchange

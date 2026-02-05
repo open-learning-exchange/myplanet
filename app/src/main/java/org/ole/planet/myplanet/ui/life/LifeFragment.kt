@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private lateinit var lifeAdapter: LifeAdapter
-    private var mItemTouchHelper: ItemTouchHelper? = null
+    private var itemTouchHelper: ItemTouchHelper? = null
     @Inject
     lateinit var lifeRepository: LifeRepository
     private var _binding: FragmentLifeBinding? = null
@@ -45,7 +45,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return view
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
                 myLife._id?.let { id ->
@@ -77,8 +77,8 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        mItemTouchHelper = ItemTouchHelper(callback)
-        mItemTouchHelper?.attachToRecyclerView(recyclerView)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper?.attachToRecyclerView(recyclerView)
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
@@ -87,7 +87,9 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = model?.id ?: profileDbHandler.userModel?.id
             val myLifeList = lifeRepository.getMyLifeByUserId(userId)
-            lifeAdapter.submitList(myLifeList)
+            if (::lifeAdapter.isInitialized) {
+                lifeAdapter.submitList(myLifeList)
+            }
         }
     }
 
@@ -97,6 +99,6 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {
-        viewHolder?.let { mItemTouchHelper?.startDrag(it) }
+        viewHolder?.let { itemTouchHelper?.startDrag(it) }
     }
 }

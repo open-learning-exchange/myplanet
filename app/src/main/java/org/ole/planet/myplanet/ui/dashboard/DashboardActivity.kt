@@ -56,7 +56,6 @@ import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -64,6 +63,7 @@ import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
@@ -124,6 +124,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
     }
@@ -228,6 +230,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dashboardViewModel.uiState.collect { state ->
                     updateNotificationBadge(state.unreadNotifications) {
                         openNotificationsList(user?.id ?: "")
+                    }
+                    if (state.newNotifications.isNotEmpty()) {
+                        state.newNotifications.forEach { notificationManager.showNotification(it) }
+                        dashboardViewModel.clearNewNotifications()
                     }
                 }
             }
@@ -508,12 +514,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = databaseService.withRealmAsync { realm ->
-                realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                    .findFirst()?.let {
-                        realm.copyFromRealm(it)
-                    }
-            }
+            val currentStepExam = surveysRepository.getSurvey(surveyId)
             SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
@@ -593,7 +594,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
                 lastNotificationCheckTime = currentTime
-                checkAndCreateNewNotifications()
+                lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id) }
             }
         }
     }
@@ -646,69 +647,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             notificationsShownThisSession = true
             lifecycleScope.launch {
                 delay(1000)
-                checkAndCreateNewNotifications()
-            }
-        }
-    }
-
-    private fun checkAndCreateNewNotifications() {
-        val userId = user?.id
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-
-            try {
-                dashboardViewModel.updateResourceNotification(userId)
-
-                val taskData = teamsRepository.getTaskNotifications(userId)
-                val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
-
-                val pendingSurveys = submissionsRepository.getPendingSurveys(userId)
-                val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                val storageRatio = FileUtils.totalAvailableMemoryRatio(this@DashboardActivity).toInt()
-                val joinRequestTemplate = getString(R.string.user_requested_to_join_team)
-
-                val realmNotifications = notificationsRepository.checkAndCreateNotifications(
-                    userId,
-                    taskData,
-                    joinRequestData,
-                    joinRequestTemplate,
-                    storageRatio,
-                    surveyTitles
-                )
-
-                val createdNotifications = realmNotifications.mapNotNull {
-                    createNotificationConfigFromDatabase(it)
-                }
-                newNotifications.addAll(createdNotifications)
-
-                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            withContext(Dispatchers.Main) {
-                try {
-                    onNotificationCountUpdated(unreadCount)
-
-                    val groupedNotifications = newNotifications.groupBy { it.type }
-                    
-                    groupedNotifications.forEach { (type, notifications) ->
-                        when {
-                            notifications.size == 1 -> {
-                                notificationManager.showNotification(notifications.first())
-                            }
-                            notifications.size > 1 -> {
-                                val summaryConfig = createSummaryNotification(type, notifications.size)
-                                notificationManager.showNotification(summaryConfig)
-                            }
-                        }
-                    }
-
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                dashboardViewModel.checkAndCreateNewNotifications(user?.id)
             }
         }
     }
@@ -722,97 +661,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
     }
-
-    private fun createSummaryNotification(type: String, count: Int): NotificationUtils.NotificationConfig {
-        val summaryId = "summary_${type}"
-        
-        return when (type) {
-            "survey" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📋 New Surveys Available",
-                message = "$count new surveys are waiting for you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "task" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "✅ New Tasks Assigned",
-                message = "$count new tasks have been assigned to you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "join_request" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "👥 Team Join Requests",
-                message = "$count new team join requests to review",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_SOCIAL
-            )
-            "resource" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📚 New Resources Available",
-                message = "$count new resources have been added",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_RECOMMENDATION
-            )
-            "storage" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "⚠️ Storage Warnings",
-                message = "$count storage warnings need attention",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_STATUS
-            )
-            else -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📱 App Notifications",
-                message = "$count new notifications",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_MESSAGE
-            )
-        }
-    }
-
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
-        return when (dbNotification.type.lowercase()) {
-            "survey" -> notificationManager.createSurveyNotification(
-                dbNotification.id, 
-                dbNotification.message
-            ).copy(
-                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
-            )
-            "task" -> {
-                val parts = dbNotification.message.split(" ")
-                val taskTitle = parts.dropLast(3).joinToString(" ")
-                val deadline = parts.takeLast(3).joinToString(" ")
-                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
-                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
-                )
-            }
-            "resource" -> notificationManager.createResourceNotification(
-                dbNotification.id,
-                dbNotification.message.toIntOrNull() ?: 0
-            )
-            "storage" -> {
-                val storageValue = dbNotification.message.replace("%", "").toIntOrNull() ?: 0
-                notificationManager.createStorageWarningNotification(storageValue, dbNotification.id)
-            }
-            "join_request" -> notificationManager.createJoinRequestNotification(
-                dbNotification.id,
-                "New Request",
-                dbNotification.message
-            ).copy(
-                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
-            )
-            else -> null
-        }
-    }
-
 
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
@@ -1227,7 +1075,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onNotificationPermissionGranted() {
         super.onNotificationPermissionGranted()
         if (notificationsShownThisSession) {
-            checkAndCreateNewNotifications()
+            lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id) }
         }
     }
 

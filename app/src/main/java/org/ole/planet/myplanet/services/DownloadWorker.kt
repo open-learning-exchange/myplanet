@@ -3,10 +3,12 @@ package org.ole.planet.myplanet.services
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,24 +18,22 @@ import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils
 
-class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val apiInterface: ApiInterface,
+    private val broadcastService: BroadcastService
+) : CoroutineWorker(context, workerParams) {
+
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-    private val apiInterface: ApiInterface by lazy {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
-    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -159,10 +159,8 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        val broadcastService = getBroadcastService(applicationContext)
         broadcastService.sendBroadcast(intent)
     }
-
 
     companion object {
         const val WORKER_NOTIFICATION_ID = 3

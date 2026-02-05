@@ -25,7 +25,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -33,6 +32,7 @@ import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
@@ -46,9 +46,9 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
@@ -80,18 +80,16 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             isMySurvey = requireArguments().getBoolean("isMySurvey")
             isTeam = requireArguments().getBoolean("isTeam", false)
             teamId = requireArguments().getString("teamId")
-            checkId()
             checkType()
         }
     }
 
-    private fun checkId() {
+    private suspend fun checkId() {
         if (TextUtils.isEmpty(stepId)) {
             id = requireArguments().getString("id")
             if (isMySurvey) {
-                sub = databaseService.withRealm { realm ->
-                    realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
-                        ?.let { realm.copyFromRealm(it) }
+                id?.let {
+                    sub = submissionsRepository.getSubmissionById(it)
                 }
                 id = if (sub?.parentId?.contains("@") == true) {
                     sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
@@ -108,15 +106,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    fun initExam() {
-        exam = databaseService.withRealm { realm ->
-            if (!TextUtils.isEmpty(stepId)) {
-                realm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
-                    ?.let { realm.copyFromRealm(it) }
-            } else {
-                realm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-                    ?.let { realm.copyFromRealm(it) }
-            }
+    suspend fun initExam() {
+        checkId()
+        exam = if (!TextUtils.isEmpty(stepId)) {
+            stepId?.let { submissionsRepository.getExamByStepId(it) }
+        } else {
+            id?.let { submissionsRepository.getExamById(it) }
         }
     }
 
@@ -162,15 +157,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            val progress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", exam?.courseId)
-                .equalTo("stepNum", stepNumber).findFirst()
-            if (progress != null) {
-                realm.executeTransaction {
-                    progress.passed = sub?.status == "graded"
-                }
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            coursesRepository.updateCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
         }
     }
 
@@ -178,15 +166,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (!isMySurvey && exam?.isFromNation != true) {
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
-            databaseService.withRealm { realm ->
-                realm.executeTransaction {
-                    val managedSub = realm.where(RealmSubmission::class.java).equalTo("id", sub?.id).findFirst()
-                    managedSub?.status = "complete"
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                submissionsRepository.updateSubmissionStatus(sub?.id, "complete")
+                sub?.status = "complete"
+                Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+                navigateToSurveyList(requireActivity())
             }
-            sub?.status = "complete"
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            navigateToSurveyList(requireActivity())
         }
     }
 

@@ -73,8 +73,6 @@ class WebViewActivity : AppCompatActivity() {
             // File access settings - only allow for local resources
             allowFileAccess = isLocalResource
             allowContentAccess = false
-            allowFileAccessFromFileURLs = false
-            allowUniversalAccessFromFileURLs = false
             
             // Safe settings
             domStorageEnabled = true
@@ -89,16 +87,12 @@ class WebViewActivity : AppCompatActivity() {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
-            
-            // Disable save password
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                setSavePassword(false)
-            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
                 when (nightModeFlags) {
                     android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                        @Suppress("DEPRECATION")
                         forceDark = WebSettings.FORCE_DARK_ON
                         activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
                         activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
@@ -106,6 +100,7 @@ class WebViewActivity : AppCompatActivity() {
                     }
 
                     android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                        @Suppress("DEPRECATION")
                         forceDark = WebSettings.FORCE_DARK_OFF
                         activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                         activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
