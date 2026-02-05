@@ -1,29 +1,29 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.util.Calendar
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
-class TaskNotificationWorker(appContext: Context, workerParams: WorkerParameters) :
-    CoroutineWorker(appContext, workerParams) {
+@HiltWorker
+class TaskNotificationWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val userSessionManager: UserSessionManager,
+    private val teamsRepository: TeamsRepository
+) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
         val current = Calendar.getInstance().timeInMillis
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-
-        val entryPoint = EntryPointAccessors.fromApplication(
-            applicationContext,
-            WorkerDependenciesEntryPoint::class.java
-        )
-        val userSessionManager = entryPoint.userSessionManager()
-        val teamsRepository = entryPoint.teamsRepository()
 
         val user = userSessionManager.userModel
         val userId = user?.id

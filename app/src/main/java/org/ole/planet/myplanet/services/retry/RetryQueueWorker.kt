@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
 import android.util.Log
+import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
@@ -13,19 +14,23 @@ import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import com.google.gson.JsonParser
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
-import org.ole.planet.myplanet.di.RetryQueueEntryPoint
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.utils.UrlUtils
 
-class RetryQueueWorker(
-    context: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class RetryQueueWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val retryQueue: RetryQueue,
+    private val apiInterface: ApiInterface
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -78,14 +83,6 @@ class RetryQueueWorker(
             return Result.success()
         }
 
-        val entryPoint = EntryPointAccessors.fromApplication(
-            applicationContext,
-            RetryQueueEntryPoint::class.java
-        )
-
-        val retryQueue = entryPoint.retryQueue()
-        val apiInterface = entryPoint.apiInterface()
-
         // Check if already processing
         if (retryQueue.isCurrentlyProcessing()) {
             Log.d(TAG, "Retry queue is already being processed, skipping")
@@ -117,7 +114,7 @@ class RetryQueueWorker(
                     }
 
                     batch.forEach { operation ->
-                        val success = processOperation(operation, apiInterface, retryQueue)
+                        val success = processOperation(operation)
                         if (success) successCount++ else failureCount++
                     }
                 }
@@ -139,15 +136,11 @@ class RetryQueueWorker(
         }
     }
 
-    private suspend fun processOperation(
-        operation: RealmRetryOperation,
-        apiInterface: org.ole.planet.myplanet.data.api.ApiInterface,
-        retryQueue: RetryQueue
-    ): Boolean {
+    private suspend fun processOperation(operation: RealmRetryOperation): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
             withTimeout(30_000L) {
-                processOperationInternal(operation, apiInterface, retryQueue)
+                processOperationInternal(operation)
             }
         } catch (e: TimeoutCancellationException) {
             Log.w(TAG, "Operation ${operation.id} timed out")
@@ -160,11 +153,7 @@ class RetryQueueWorker(
         }
     }
 
-    private suspend fun processOperationInternal(
-        operation: RealmRetryOperation,
-        apiInterface: org.ole.planet.myplanet.data.api.ApiInterface,
-        retryQueue: RetryQueue
-    ): Boolean {
+    private suspend fun processOperationInternal(operation: RealmRetryOperation): Boolean {
         return try {
             retryQueue.markInProgress(operation.id)
 
