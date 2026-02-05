@@ -1,0 +1,12 @@
+version: '3'
+services:
+  build-cache-node:
+    image: gradle/build-cache-node:latest
+    ports:
+      - "5071:5071"
+    volumes:
+      - build-cache-data:/data
+    restart: unless-stopped
+
+volumes:
+  build-cache-data:

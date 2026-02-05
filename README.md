@@ -9,6 +9,7 @@
 **myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created educational resources such as books, videos, and courses.
 
 - [Feature Highlights](#feature-highlights)
+- [Development](#development)
 - [About myPlanet](#about-myplanet)
 - [How To Use](#how-to-use)
 - [Contact](#contact)
@@ -20,6 +21,40 @@
 - **AI Chatbot**: Provides an AI-powered chatbot to assist users with navigating the app, finding resources, and answering questions.
 - **Teams and Enterprises**: Collaborate with other users, complete tasks and courses, and download resources to work on together.
 - **Multilingual Support**: Supports English, Arabic, Spanish, French, Nepali, and Somali
+
+## Development
+
+### Remote Build Cache
+
+This project supports using a remote Gradle build cache to speed up builds.
+
+**Configuration:**
+
+You can configure the remote cache using environment variables or `local.properties`.
+
+*   **Environment Variables** (Recommended for CI):
+    *   `GRADLE_BUILD_CACHE_URL`: URL of the remote cache (e.g., `http://localhost:5071/cache/`)
+    *   `GRADLE_BUILD_CACHE_USER`: Username for the cache
+    *   `GRADLE_BUILD_CACHE_PASSWORD`: Password for the cache
+    *   `GRADLE_BUILD_CACHE_PUSH`: Set to `true` to enable pushing to the cache (usually for master branch only), `false` for read-only.
+
+*   **`local.properties`** (For local development):
+    ```properties
+    gradle.buildCache.url=http://localhost:5071/cache/
+    gradle.buildCache.user=build
+    gradle.buildCache.pass=build
+    gradle.buildCache.push=true
+    ```
+
+**Local Cache Node:**
+
+For testing or local development, you can spin up a local cache node using Docker Compose:
+
+```bash
+docker-compose up -d
+```
+
+This starts a `gradle/build-cache-node` at `http://localhost:5071`. The default credentials are user: `build`, password: `build`.
 
 ## About myPlanet
 

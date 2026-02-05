@@ -15,6 +15,10 @@ jobs:
       matrix:
         build: [default, lite]
     env:
+      GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
+      GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
+      GRADLE_BUILD_CACHE_PASSWORD: ${{ secrets.GRADLE_BUILD_CACHE_PASSWORD }}
+      GRADLE_BUILD_CACHE_PUSH: true
       OUTPUTS: |
         .apk
         .apk.sha256
