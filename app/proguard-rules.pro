@@ -38,3 +38,7 @@
 
 # MPAndroidChart
 -keep class com.github.mikephil.charting.** { *; }
+
+# Markwon missing optional dependencies
+-dontwarn com.caverock.androidsvg.**
+-dontwarn org.commonmark.ext.gfm.strikethrough.**
