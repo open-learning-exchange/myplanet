@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -152,8 +153,8 @@ abstract class BaseResourceFragment : Fragment() {
                 .setNegativeButton(R.string.no) { _, _ ->
                     lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                         try {
-                            val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                            wifi.setWifiEnabled(false)
+                            val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
+                            startActivity(intent)
                         } finally {
                             pendingResult.finish()
                         }

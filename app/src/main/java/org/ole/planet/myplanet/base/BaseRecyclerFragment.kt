@@ -63,6 +63,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
             } else {
+                @Suppress("DEPRECATION")
                 it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
             }
         }

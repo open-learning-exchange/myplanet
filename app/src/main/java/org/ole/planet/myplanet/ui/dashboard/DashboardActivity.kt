@@ -678,8 +678,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
         val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
-        val actionView = MenuItemCompat.getActionView(menuItem)
-        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
+        val actionView = menuItem.actionView
+        val smsCountTxt = actionView?.findViewById<TextView>(R.id.notification_badge) ?: return
         smsCountTxt.text = "$count"
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)

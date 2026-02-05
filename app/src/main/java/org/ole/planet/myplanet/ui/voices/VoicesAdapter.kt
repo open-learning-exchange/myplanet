@@ -331,7 +331,7 @@ class VoicesAdapter(
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         val currentList = currentList.toMutableList()
-                        val pos = holder.adapterPosition
+                        val pos = holder.bindingAdapterPosition
                         val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
                         if (adjustedPos >= 0 && adjustedPos < currentList.size) {
                             val newsToDelete = currentList[adjustedPos]

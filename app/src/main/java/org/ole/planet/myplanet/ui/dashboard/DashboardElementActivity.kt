@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.PorterDuff
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.provider.Settings
@@ -171,25 +172,21 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     fun wifiStatusSwitch() {
         val resIcon = ContextCompat.getDrawable(this, R.drawable.goonline)
         val connManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val wifi = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+
+        val activeNetwork = connManager.activeNetwork
+        val caps = connManager.getNetworkCapabilities(activeNetwork)
+        val isConnected = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+
         val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
         startActivity(intent)
-        if (mWifi?.isConnected == true) {
-            wifi.isWifiEnabled = false
+
+        if (isConnected) {
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.green))
             }
             goOnline.icon = resIcon
-            Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show()
         } else {
-            wifi.isWifiEnabled = true
-            Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show()
-            lifecycleScope.launch {
-                delay(5000)
-                connectToWifi()
-            }
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.accent))
@@ -199,20 +196,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     private fun connectToWifi() {
-        val id = settings.getInt("LastWifiID", -1)
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val netId: Int
-        for (tmp in wifiManager.configuredNetworks) {
-            if (tmp.networkId > -1 && tmp.networkId == id) {
-                netId = tmp.networkId
-                wifiManager.enableNetwork(netId, true)
-                Toast.makeText(this, R.string.you_are_now_connected + netId, Toast.LENGTH_SHORT).show()
-                lifecycleScope.launch {
-                    broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
-                }
-                break
-            }
-        }
+        val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
+        startActivity(intent)
+        Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show()
     }
 
     fun logout() {
