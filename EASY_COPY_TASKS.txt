@@ -1,0 +1,185 @@
+================================================================================
+RELEASE BUILD WORKFLOW IMPROVEMENT TASKS
+Based on: https://github.com/open-learning-exchange/myplanet/actions/runs/21719796577/job/62645929847
+================================================================================
+
+TASK 1: Enable Gradle Configuration Cache
+------------------------------------------
+The build logs show a suggestion to enable configuration cache which can 
+significantly speed up build times by caching the result of the configuration 
+phase. This is particularly beneficial for CI/CD pipelines where builds run 
+frequently.
+
+Reference: gradle.properties line 19
+
+Steps:
+1. Verify configuration cache is enabled in gradle.properties (org.gradle.configuration-cache=true)
+2. Run local builds to identify any configuration cache compatibility issues
+3. Fix any incompatible build logic or plugins that prevent caching
+4. Add cache validation to CI workflow with --configuration-cache-problems=warn
+5. Monitor build time improvements and document the performance gains
+
+
+TASK 2: Increase Gradle JVM Heap Size for CI Builds
+----------------------------------------------------
+Build logs indicate cache misses and memory pressure warnings: "Performance 
+may suffer from in-memory cache misses. Increase max heap size of Gradle 
+build process to reduce cache misses." The current max heap is only 512MB 
+in the daemon config, but gradle.properties has 4GB.
+
+References: 
+- gradle.properties line 12
+- .github/workflows/release.yml lines 40-45
+
+Steps:
+1. Update gradle/actions/setup-gradle configuration to respect gradle.properties memory settings
+2. Set GRADLE_OPTS environment variable in workflow to ensure proper heap allocation
+3. Consider increasing max heap from 4GB to 6GB for release builds specifically
+4. Add memory monitoring to identify optimal settings
+5. Test build performance with new memory configuration
+
+
+TASK 3: Implement Build Scan Publishing
+----------------------------------------
+Build scans provide detailed insights into build performance, dependencies, 
+and potential optimizations. The workflow shows Gradle 9.3.1 is available 
+but build scans are not being published.
+
+Reference: .github/workflows/release.yml lines 40-45
+
+Steps:
+1. Add --scan flag to gradle commands in release.yml workflow
+2. Configure build scan publishing with appropriate terms of service acceptance
+3. Set up automatic build scan URL posting to pull requests
+4. Document how to access and interpret build scan data
+5. Create runbook for using build scans to diagnose slow builds
+
+
+TASK 4: Add Build Time Tracking and Reporting
+----------------------------------------------
+The workflow lacks explicit timing information for individual steps, making 
+it difficult to identify bottlenecks. Most time appears spent in the 16:37 
+minute, suggesting the build step takes significant time.
+
+Reference: .github/workflows/release.yml lines 54-63
+
+Steps:
+1. Add step-level timing using GitHub Actions time tracking annotations
+2. Implement custom timing for assemble and bundle tasks separately
+3. Add timing comparison against previous builds in PR comments
+4. Create dashboard or badge showing average build times
+5. Set up alerts for builds that exceed expected duration thresholds
+
+
+TASK 5: Optimize Matrix Build Strategy
+---------------------------------------
+The workflow builds both 'default' and 'lite' flavors in parallel using a 
+matrix strategy, but there's no optimization for the redundant work being 
+done. Both flavors share most compilation work.
+
+References:
+- .github/workflows/release.yml lines 13-16
+- app/build.gradle lines 33-43
+
+Steps:
+1. Analyze shared vs. flavor-specific build tasks and compilation
+2. Consider building both flavors in a single job with proper task dependencies
+3. Implement build cache sharing between matrix jobs if kept separate
+4. Add remote build cache using GitHub Actions cache or Gradle Enterprise
+5. Measure and document time savings from optimization
+
+
+TASK 6: Enhance ProGuard/R8 Configuration
+------------------------------------------
+The release build has minification disabled which increases APK size and 
+reduces code protection. This should be enabled for release builds with 
+proper keep rules.
+
+Reference: app/build.gradle lines 22-31
+
+Steps:
+1. Enable minifyEnabled = true for release build type
+2. Create comprehensive ProGuard rules for all libraries and Realm models
+3. Test release build thoroughly to ensure no runtime crashes
+4. Add mapping file upload to Firebase Crashlytics or similar service
+5. Document APK size reduction and any performance improvements
+6. Set up automated testing of minified builds in CI
+
+
+TASK 7: Add Automated APK/AAB Size Tracking
+--------------------------------------------
+There's no tracking of the APK or AAB file sizes over time, which is 
+important for monitoring application bloat and regressions.
+
+Reference: .github/workflows/release.yml lines 74-82
+
+Steps:
+1. Extract APK and AAB file sizes in the workflow
+2. Store size metrics in GitHub Actions artifacts or external database
+3. Add size comparison against previous releases in PR comments
+4. Create visualization of size trends over time
+5. Set up alerts for unexpected size increases above threshold
+6. Document acceptable size limits for each build flavor
+
+
+TASK 8: Implement Dependency Update Automation
+-----------------------------------------------
+The project has dependabot configured but there's no automated testing of 
+dependency updates or grouping of related updates to reduce PR noise.
+
+Reference: app/build.gradle lines 175-200
+
+Steps:
+1. Configure dependabot grouping for related dependencies (AndroidX, Kotlin, Hilt)
+2. Add automated build and test workflow for dependabot PRs
+3. Implement security scanning for dependency vulnerabilities
+4. Create weekly dependency update report
+5. Set up automated merge for patch version updates that pass tests
+6. Document dependency update policy and procedures
+
+
+TASK 9: Add Lint Report Generation and Publishing
+--------------------------------------------------
+The build has lintOptions configured but there's no evidence of lint reports 
+being generated or published in the workflow, making it hard to track code 
+quality issues.
+
+Reference: app/build.gradle lines 73-75
+
+Steps:
+1. Enable lint report generation in the workflow (HTML and XML formats)
+2. Upload lint reports as workflow artifacts
+3. Add lint baseline file to track existing issues
+4. Implement lint checks as required status check for PRs
+5. Add lint issue summary to PR comments
+6. Configure Danger or similar tool to highlight new lint warnings
+
+
+TASK 10: Improve Signing Key Security
+--------------------------------------
+The signing process uses secrets correctly but could benefit from additional 
+security measures like key rotation and audit logging.
+
+Reference: .github/workflows/release.yml lines 65-72
+
+Steps:
+1. Implement signing key rotation policy and documentation
+2. Add audit logging for all signing operations
+3. Set up alerts for unauthorized signing attempts
+4. Consider using Google Play App Signing for additional security
+5. Document key backup and recovery procedures
+6. Review and limit repository secret access to essential workflows only
+
+
+================================================================================
+SUMMARY
+================================================================================
+These 10 tasks focus on:
+- Performance: Build speed optimization through caching and memory tuning
+- Observability: Better tracking of build times, sizes, and quality metrics
+- Security: Enhanced signing and dependency management
+- Maintainability: Automated testing and reporting for better workflow reliability
+
+Each task includes specific actionable steps and references to relevant code 
+sections for easy implementation.
+================================================================================
