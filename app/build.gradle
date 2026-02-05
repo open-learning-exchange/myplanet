@@ -11,8 +11,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4563
-        versionName = "0.45.63"
+        versionCode = 4564
+        versionName = "0.45.64"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -220,6 +220,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.android.gif.drawable)
+    implementation(libs.tink.android)
 }
 realm {
     syncEnabled = true
