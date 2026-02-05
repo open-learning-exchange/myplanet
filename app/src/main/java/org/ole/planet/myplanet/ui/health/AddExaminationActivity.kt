@@ -81,11 +81,16 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initViews()
         currentUser = userSessionManager.userModel
         mapConditions = HashMap()
-        mRealm = databaseService.realmInstance
+        mRealm = Realm.getDefaultInstance()
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-        if (pojo == null) {
-            pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+        databaseService.withRealm { realm ->
+            pojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
+            if (pojo == null) {
+                pojo = realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+            }
+            if (pojo != null) {
+                pojo = realm.copyFromRealm(pojo!!)
+            }
         }
         user = mRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
         if (user != null && (user?.key == null || user?.iv == null)) {
@@ -316,6 +321,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+            if (pojo != null) {
+                mRealm.copyToRealmOrUpdate(pojo)
             }
             if (startedTransaction) {
                 mRealm.commitTransaction()
