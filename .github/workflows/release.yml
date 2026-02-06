@@ -54,7 +54,7 @@ jobs:
       - name: build release APK and AAB
         run: |
           FLAVOR=${{ matrix.build }}
-          ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --warning-mode all --stacktrace --parallel --max-workers=4
+          ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --scan --warning-mode all --stacktrace --parallel --max-workers=4
           ls -alR app/build/outputs
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
