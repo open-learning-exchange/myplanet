@@ -39,6 +39,7 @@ android {
         create("lite") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "true"
+            versionNameSuffix "-lite"
         }
     }
 

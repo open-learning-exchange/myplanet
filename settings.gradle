@@ -6,10 +6,10 @@ if (localPropsFile.exists()) {
     localPropsFile.withInputStream { localProps.load(it) }
 }
 
-def cacheUrl = localProps.getProperty('gradle.buildCache.url')
-def cacheUser = localProps.getProperty('gradle.buildCache.user')
-def cachePass = localProps.getProperty('gradle.buildCache.pass')
-def cachePush = localProps.getProperty('gradle.buildCache.push') == 'true'
+def cacheUrl = System.getenv('GRADLE_BUILD_CACHE_URL') ?: localProps.getProperty('gradle.buildCache.url')
+def cacheUser = System.getenv('GRADLE_BUILD_CACHE_USER') ?: localProps.getProperty('gradle.buildCache.user')
+def cachePass = System.getenv('GRADLE_BUILD_CACHE_PASS') ?: localProps.getProperty('gradle.buildCache.pass')
+def cachePush = (System.getenv('GRADLE_BUILD_CACHE_PUSH') ?: localProps.getProperty('gradle.buildCache.push')) == 'true'
 
 println "Gradle cache: GRADLE_BUILD_CACHE_URL=${cacheUrl ?: '(not set)'}"
 
