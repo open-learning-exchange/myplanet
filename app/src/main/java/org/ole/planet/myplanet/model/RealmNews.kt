@@ -127,6 +127,7 @@ open class RealmNews : RealmObject() {
         private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
+        @Deprecated("Use ChatRepository.insertNewsFromJson instead")
         fun insert(mRealm: Realm, doc: JsonObject?) {
             var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
             if (news == null) {
@@ -179,6 +180,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use ChatRepository.serializeNews instead")
         fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("chat", news.chat)

@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -65,8 +66,9 @@ class UploadManager @Inject constructor(
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
-    private val userRepository: UserRepository
-) : FileUploadService() {
+    private val userRepository: UserRepository,
+    private val chatRepository: ChatRepository
+) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(UploadConfigs.NewsActivities)
@@ -226,9 +228,9 @@ class UploadManager @Inject constructor(
                 emptyList()
             } else {
                 data.map { photo ->
-                    val copiedPhoto = realm.copyFromRealm(photo)
                     PhotoData(
-                        photoId = copiedPhoto.id, serialized = RealmSubmitPhotos.serializeRealmSubmitPhotos(copiedPhoto)
+                        photoId = photo.id,
+                        serialized = RealmSubmitPhotos.serializeRealmSubmitPhotos(photo)
                     )
                 }
             }
@@ -301,13 +303,12 @@ class UploadManager @Inject constructor(
                     emptyList()
                 } else {
                     data.map { library ->
-                        val copiedLibrary = realm.copyFromRealm(library)
                         ResourceData(
-                            libraryId = copiedLibrary.id,
-                            title = copiedLibrary.title,
-                            isPrivate = copiedLibrary.isPrivate,
-                            privateFor = copiedLibrary.privateFor,
-                            serialized = RealmMyLibrary.serialize(copiedLibrary, user)
+                            libraryId = library.id,
+                            title = library.title,
+                            isPrivate = library.isPrivate,
+                            privateFor = library.privateFor,
+                            serialized = RealmMyLibrary.serialize(library, user)
                         )
                     }
                 }
@@ -459,10 +460,9 @@ class UploadManager @Inject constructor(
                 .equalTo("updated", true).findAll()
 
             teams.map { team ->
-                val copiedTeam = realm.copyFromRealm(team)
                 TeamData(
-                    teamId = copiedTeam._id,
-                    serialized = RealmMyTeam.serialize(copiedTeam)
+                    teamId = team._id,
+                    serialized = RealmMyTeam.serialize(team)
                 )
             }
         }
@@ -523,11 +523,10 @@ class UploadManager @Inject constructor(
                     if (activity.userId?.startsWith("guest") == true) {
                         null
                     } else {
-                        val copiedActivity = realm.copyFromRealm(activity)
                         ActivityData(
-                            activityId = copiedActivity.id,
-                            userId = copiedActivity.userId,
-                            serialized = RealmOfflineActivity.serializeLoginActivities(copiedActivity, context)
+                            activityId = activity.id,
+                            userId = activity.userId,
+                            serialized = RealmOfflineActivity.serializeLoginActivities(activity, context)
                         )
                     }
                 }
@@ -566,18 +565,32 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        val logs = databaseService.withRealm { realm ->
+        data class TeamLogData(
+            val time: Long?,
+            val user: String?,
+            val type: String?,
+            val serialized: JsonObject
+        )
+
+        val logsData = databaseService.withRealm { realm ->
             val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-            realm.copyFromRealm(results)
+            results.map { log ->
+                TeamLogData(
+                    time = log.time,
+                    user = log.user,
+                    type = log.type,
+                    serialized = RealmTeamLog.serializeTeamActivities(log, context)
+                )
+            }
         }
 
-        logs.forEach { log ->
+        logsData.forEach { logData ->
             try {
                 val `object` = apiInterface.postDoc(
                     UrlUtils.header,
                     "application/json",
                     "${UrlUtils.getUrl()}/team_activities",
-                    RealmTeamLog.serializeTeamActivities(log, context)
+                    logData.serialized
                 ).body()
 
                 if (`object` != null) {
@@ -585,9 +598,9 @@ class UploadManager @Inject constructor(
                     val rev = getString("rev", `object`)
                     databaseService.executeTransactionAsync { realm ->
                         val managedLog = realm.where(RealmTeamLog::class.java)
-                            .equalTo("time", log.time)
-                            .equalTo("user", log.user)
-                            .equalTo("type", log.type)
+                            .equalTo("time", logData.time)
+                            .equalTo("user", logData.user)
+                            .equalTo("type", logData.type)
                             .findFirst()
                         managedLog?._id = id
                         managedLog?._rev = rev
@@ -612,12 +625,26 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getCurrentUser()
 
+        data class NewsUploadData(
+            val id: String?,
+            val _id: String?,
+            val message: String?,
+            val imageUrls: List<String>,
+            val newsJson: JsonObject
+        )
+
         val newsItems = databaseService.withRealm { realm ->
             realm.where(RealmNews::class.java)
                 .findAll()
                 .mapNotNull { news ->
                     if (news.userId?.startsWith("guest") == true) null
-                    else realm.copyFromRealm(news)
+                    else NewsUploadData(
+                        id = news.id,
+                        _id = news._id,
+                        message = news.message,
+                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                        newsJson = chatRepository.serializeNews(news)
+                    )
                 }
         }
 
@@ -629,7 +656,7 @@ class UploadManager @Inject constructor(
                         val imagesArray = com.google.gson.JsonArray()
                         var messageWithImages = news.message ?: ""
 
-                        news.imageUrls?.forEach { imageUrl ->
+                        news.imageUrls.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
 
                             // Create image resource document
@@ -669,8 +696,7 @@ class UploadManager @Inject constructor(
                             messageWithImages += "\n$markdown"
                         }
 
-                        // Serialize news with updated message and images
-                        val newsJson = RealmNews.serializeNews(news)
+                        val newsJson = news.newsJson
                         newsJson.addProperty("message", messageWithImages)
                         newsJson.add("images", imagesArray)
 

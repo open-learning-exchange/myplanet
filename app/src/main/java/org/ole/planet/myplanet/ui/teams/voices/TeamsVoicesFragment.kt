@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
@@ -153,7 +153,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
 
-        NavigationHelper.replaceFragment(
+        FragmentNavigator.replaceFragment(
             parentFragmentManager,
             R.id.fragment_container,
             chatDetailFragment,
@@ -192,7 +192,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                     },
                     getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                    labelManager = labelManager
+                    labelManager = labelManager,
+                    voicesRepository = voicesRepository
                 )
             }
             adapterNews?.sharedPrefManager = sharedPrefManager

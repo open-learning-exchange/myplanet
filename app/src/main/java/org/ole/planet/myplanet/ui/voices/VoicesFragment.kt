@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.OptIn
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -37,7 +39,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -168,8 +170,8 @@ class VoicesFragment : BaseVoicesFragment() {
         if (defaultUserIdentifier.isNotEmpty() && defaultUserIdentifier != "@") {
             return defaultUserIdentifier
         }
-        val planetCode = settings?.getString("planetCode", "") ?: ""
-        val parentCode = settings?.getString("parentCode", "") ?: ""
+        val planetCode = settings.getString("planetCode", "") ?: ""
+        val parentCode = settings.getString("parentCode", "") ?: ""
         return "$planetCode@$parentCode"
     }
 
@@ -222,7 +224,8 @@ class VoicesFragment : BaseVoicesFragment() {
                     voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
                 },
                 getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                labelManager = labelManager
+                labelManager = labelManager,
+                voicesRepository = voicesRepository
             )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
@@ -247,7 +250,7 @@ class VoicesFragment : BaseVoicesFragment() {
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
 
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 parentFragmentManager,
                 R.id.fragment_container,
                 chatDetailFragment,
@@ -286,7 +289,8 @@ class VoicesFragment : BaseVoicesFragment() {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
     }
-    
+
+    @OptIn(FlowPreview::class)
     private fun setupSearchTextListener() {
         etSearch.textChanges()
             .debounce(300)

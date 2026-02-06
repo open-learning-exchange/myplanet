@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.services.AudioRecorderService
+import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -53,7 +53,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private val binding get() = _binding!!
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
-    private var audioRecorderService: AudioRecorderService? = null
+    private var audioRecorder: AudioRecorder? = null
     private var photoURI: Uri? = null
     private var videoUri: Uri? = null
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
@@ -92,8 +92,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 Utilities.toast(activity, "no file selected")
             }
         }
-        audioRecorderService = AudioRecorderService()
-        audioRecorderService?.setCaller(this, requireContext())
+        audioRecorder = AudioRecorder()
+        audioRecorder?.setCaller(this, requireContext())
         requestCameraLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
@@ -170,19 +170,19 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 R.color.card_bg
             ).toDrawable())
 
-        createAudioRecorderService(dialog)
-        alertSoundRecorderBinding.fabRecord.setOnClickListener { audioRecorderService?.onRecordClicked() }
+        createAudioRecorder(dialog)
+        alertSoundRecorderBinding.fabRecord.setOnClickListener { audioRecorder?.onRecordClicked() }
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss)) { _: DialogInterface?, _: Int ->
-            if (audioRecorderService != null && audioRecorderService?.isRecording() == true) {
-                audioRecorderService?.forceStop()
+            if (audioRecorder != null && audioRecorder?.isRecording() == true) {
+                audioRecorder?.forceStop()
             }
             dialog.dismiss()
         }
         dialog.show()
     }
 
-    private fun createAudioRecorderService(dialog: AlertDialog) {
-        audioRecorderService?.setAudioRecordListener(object : OnAudioRecordListener {
+    private fun createAudioRecorder(dialog: AlertDialog) {
+        audioRecorder?.setAudioRecordListener(object : OnAudioRecordListener {
             override fun onRecordStarted() {
                 tvTime?.setText(R.string.recording_audio)
                 floatingActionButton?.setImageResource(R.drawable.ic_stop)

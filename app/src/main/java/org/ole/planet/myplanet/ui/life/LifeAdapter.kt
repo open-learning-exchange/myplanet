@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 class LifeAdapter(
     private val context: Context,
@@ -148,7 +148,7 @@ class LifeAdapter(
             val activity = context as? AppCompatActivity
             activity?.let { act ->
                 f?.let {
-                    NavigationHelper.replaceFragment(
+                    FragmentNavigator.replaceFragment(
                         act.supportFragmentManager,
                         R.id.fragment_container,
                         it,

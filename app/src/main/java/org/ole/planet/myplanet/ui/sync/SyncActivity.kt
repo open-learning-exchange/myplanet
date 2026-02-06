@@ -491,8 +491,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             var attempt = 0
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
-                val hasUser = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmUser::class.java).findAll().isNotEmpty()
+                val hasUser = withContext(Dispatchers.IO) {
+                    userRepository.hasAtLeastOneUser()
                 }
                 if (hasUser) {
                     break
@@ -536,7 +536,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                                 editor.remove("pendingLanguageChange").apply()
 
                                 LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
-                                updateUIWithNewLanguage()
+                                recreate()
                             }
                         }
                     }
@@ -568,52 +568,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     activityContext.invalidateTeamsCacheAndReload()
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun updateUIWithNewLanguage() {
-        try {
-            if (::lblLastSyncDate.isInitialized) {
-                lblLastSyncDate.text = getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))
-            }
-            if (::lblVersion.isInitialized) {
-                lblVersion.text = getString(R.string.app_version)
-            }
-            if (::tvAvailableSpace.isInitialized) {
-                tvAvailableSpace.text = buildString {
-                    append(getString(R.string.available_space_colon))
-                    append(" ")
-                    append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
-                }
-            }
-            if (::inputName.isInitialized) {
-                inputName.hint = getString(R.string.hint_name)
-            }
-            if (::inputPassword.isInitialized) {
-                inputPassword.hint = getString(R.string.password)
-            }
-            if (::btnSignIn.isInitialized) {
-                btnSignIn.text = getString(R.string.btn_sign_in)
-            }
-            if (::btnGuestLogin.isInitialized) {
-                btnGuestLogin.text = getString(R.string.btn_guest_login)
-            }
-            if (::becomeMember.isInitialized) {
-                becomeMember.text = getString(R.string.become_a_member)
-            }
-            if (::btnFeedback.isInitialized) {
-                btnFeedback.text = getString(R.string.feedback)
-            }
-            if (::openCommunity.isInitialized) {
-                openCommunity.text = getString(R.string.open_community)
-            }
-            if (::btnLang.isInitialized) {
-                val currentLanguage = LocaleUtils.getLanguage(this)
-                btnLang.text = getLanguageString(currentLanguage)
-            }
-            invalidateOptionsMenu()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -805,7 +759,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope)
+        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope, configurationsRepository)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                 continueSyncProcess()

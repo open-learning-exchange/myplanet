@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -85,9 +85,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
-
-    @Inject
-    lateinit var tagsRepository: TagsRepository
 
     @Inject
     lateinit var progressRepository: ProgressRepository
@@ -224,7 +221,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
         val allCourses: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
             copiedList.forEachIndexed { index, course ->
@@ -265,7 +262,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupButtonVisibility()
         setupEventListeners()
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        if (::adapterCourses.isInitialized) {
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
 
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -354,7 +353,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         }
                     }
 
-                    NavigationHelper.replaceFragment(
+                    FragmentNavigator.replaceFragment(
                         parentFragmentManager,
                         R.id.fragment_container,
                         progressFragment,
@@ -467,6 +466,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
+        if (!::adapterCourses.isInitialized) return
         if (adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
@@ -612,9 +612,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
 
-        val allSelected = adapterCourses.areAllSelected()
-        updateCheckBoxState(allSelected)
-        selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
+        if (::adapterCourses.isInitialized) {
+            val allSelected = adapterCourses.areAllSelected()
+            updateCheckBoxState(allSelected)
+            selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
+        }
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -685,7 +687,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 args.putString("courseLib", courseLib)
                 args.putSerializable("resources", resources?.let { ArrayList(it) })
                 fragment.arguments = args
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     fragment,
@@ -693,7 +695,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     allowStateLoss = true
                 )
             } else {
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     fragment,
@@ -726,7 +728,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     adapterCourses.updateData(sortedCourseList, map, progressMap)
                 }
             } else {
-                recyclerView.adapter = getAdapter()
+                lifecycleScope.launch {
+                    recyclerView.adapter = getAdapter()
+                }
             }
         }
     }

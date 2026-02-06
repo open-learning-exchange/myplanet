@@ -170,6 +170,38 @@ class UploadCoordinator @Inject constructor(
 
                     config.afterUpload?.invoke(preparedItem.item, uploadedItem)
                     succeeded.add(uploadedItem)
+                } else if (response.code() == 409) {
+                    try {
+                        val docId = preparedItem.dbId ?: preparedItem.localId
+                        val getResponse = apiInterface.getJsonObject(
+                            UrlUtils.header,
+                            "${UrlUtils.getUrl()}/${config.endpoint}/$docId"
+                        )
+                        if (getResponse.isSuccessful && getResponse.body() != null) {
+                            val existingDoc = getResponse.body()!!
+                            val uploadedItem = UploadedItem(
+                                localId = preparedItem.localId,
+                                remoteId = getString("_id", existingDoc),
+                                remoteRev = getString("_rev", existingDoc),
+                                response = existingDoc
+                            )
+                            config.afterUpload?.invoke(preparedItem.item, uploadedItem)
+                            succeeded.add(uploadedItem)
+                        } else {
+                            failed.add(UploadError(
+                                preparedItem.localId,
+                                Exception("Document exists (409) but couldn't fetch revision"),
+                                retryable = false,
+                                httpCode = 409
+                            ))
+                        }
+                    } catch (e: Exception) {
+                        failed.add(UploadError(
+                            preparedItem.localId,
+                            Exception("Document exists (409) but fetch failed: ${e.message}"),
+                            retryable = false, httpCode = 409
+                        ))
+                    }
                 } else {
                     val errorMsg = "Upload failed: HTTP ${response.code()}"
                     Log.w(TAG, "$errorMsg for item ${preparedItem.localId}")

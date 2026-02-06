@@ -5,6 +5,7 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
@@ -50,9 +51,35 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow {
+        val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
         var listener: RealmChangeListener<RealmResults<T>>? = null
+
+        fun safeCloseRealm() {
+            if (isClosed.compareAndSet(false, true)) {
+                try {
+                    results?.let { res ->
+                        listener?.let { l ->
+                            if (res.isValid) {
+                                res.removeChangeListener(l)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                try {
+                    realm?.let { r ->
+                        if (!r.isClosed) {
+                            r.close()
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
 
         try {
             var retryCount = 0
@@ -79,35 +106,33 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             }
             
             results = realm.where(clazz).apply(builder).findAllAsync()
-            listener = RealmChangeListener<RealmResults<T>> {
-                if (!realm.isClosed && !realm.isInTransaction && it.isLoaded && it.isValid) {
-                    val frozenResults = it.freeze()
-                    launch(databaseService.ioDispatcher) {
-                        val copiedList = databaseService.withRealmAsync { bgRealm ->
-                            bgRealm.copyFromRealm(frozenResults)
+            listener = RealmChangeListener<RealmResults<T>> { changedResults ->
+                if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
+                    try {
+                        val frozenResults = changedResults.freeze()
+                        launch(databaseService.ioDispatcher) {
+                            try {
+                                val frozenRealm = frozenResults.realm
+                                val copiedList = frozenRealm.copyFromRealm(frozenResults)
+                                if (!isClosed.get()) {
+                                    send(copiedList)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
-                        send(copiedList)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             }
             results.addChangeListener(listener)
 
             awaitClose {
-                realm?.let { r ->
-                    if (!r.isClosed) {
-                        results?.let { res ->
-                            listener.let { l -> res.removeChangeListener(l) }
-                        }
-                        r.close()
-                    }
-                }
+                safeCloseRealm()
             }
         } catch (e: Exception) {
-            realm?.let { r ->
-                if (!r.isClosed) {
-                    r.close()
-                }
-            }
+            safeCloseRealm()
             throw e
         }
     }.flowOn(Dispatchers.Main)

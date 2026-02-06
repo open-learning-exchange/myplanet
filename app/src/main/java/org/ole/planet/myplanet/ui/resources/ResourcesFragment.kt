@@ -39,11 +39,10 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -53,7 +52,7 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -78,6 +77,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
+    private var allLibraryItems: List<RealmMyLibrary> = emptyList()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -86,7 +86,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var tagsRepository: TagsRepository
+    lateinit var ratingsRepository: RatingsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -179,22 +179,27 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         lifecycleScope.launch {
             try {
-                map = getRatings(mRealm, "resource", model?.id)
-                val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+                map = ratingsRepository.getResourceRatings(model?.id)
+
+                allLibraryItems = if (isMyCourseLib) {
+                    resourcesRepository.getMyLibrary(model?.id)
+                } else {
+                    resourcesRepository.getAllLibraryItems().filter {
+                        !it.isPrivate && it.userId?.contains(model?.id) == false
+                    }
+                }
+
                 val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
                 val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-                val filteredLibraryList: List<RealmMyLibrary> =
-                    if (currentSearchTags.isEmpty() && searchQuery.isEmpty()) {
-                    applyFilter(libraryList.filterNotNull())
-                    } else {
-                    applyFilter(filterLibraryByTag(searchQuery, currentSearchTags))
-                    }
 
-                val resourceIds = filteredLibraryList.mapNotNull { it.id }
-                tagsMap = tagsRepository.getTagsForResources(resourceIds)
+                // Fetch tags for all items to enable filtering
+                val allResourceIds = allLibraryItems.mapNotNull { it.id }
+                tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
+                val filteredLibraryList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
 
                 if (::adapterLibrary.isInitialized) {
-                    adapterLibrary.setLibraryList(mRealm.copyFromRealm(filteredLibraryList))
+                    adapterLibrary.setLibraryList(filteredLibraryList)
                     adapterLibrary.setRatingMap(map!!)
                     adapterLibrary.setTagsMap(tagsMap)
                 }
@@ -207,13 +212,31 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary>()
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+        map = ratingsRepository.getResourceRatings(model?.id)
+
+        allLibraryItems = if (isMyCourseLib) {
+            resourcesRepository.getMyLibrary(model?.id)
+        } else {
+            resourcesRepository.getAllLibraryItems().filter {
+                !it.isPrivate && it.userId?.contains(model?.id) == false
+            }
+        }
+
+        val allResourceIds = allLibraryItems.mapNotNull { it.id }
+        tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(libraryList))
+
+        val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
+        adapterLibrary.setLibraryList(filteredList)
+
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
+
+        checkList()
+        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        changeButtonStatus()
         return adapterLibrary
     }
 
@@ -231,15 +254,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         setupGuestUserRestrictions()
 
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        if (::adapterLibrary.isInitialized) {
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            changeButtonStatus()
+            checkList()
+        }
         clearTagsButton()
         setupUI(binding.myLibraryParentLayout, requireActivity())
-        changeButtonStatus()
         additionalSetup()
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-        checkList()
 
         if (userModel?.id != null) {
             lifecycleScope.launch {
@@ -307,12 +332,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                val filteredList = applyFilter(filterLibraryByTag(etSearch.text.toString().trim(), searchTags))
-                val resourceIds = filteredList.mapNotNull { it?.id }
                 lifecycleScope.launch {
-                    tagsMap = tagsRepository.getTagsForResources(resourceIds)
-                    adapterLibrary.setTagsMap(tagsMap)
-                    adapterLibrary.setLibraryList(mRealm.copyFromRealm(filteredList)) {
+                    val filteredList = applyFilter(filterLocalLibraryByTag(etSearch.text.toString().trim(), searchTags))
+                    adapterLibrary.setLibraryList(filteredList) {
                         recyclerView.scrollToPosition(0)
                     }
                     showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -454,7 +476,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             mediums.clear()
             subjects.clear()
             languages.clear()
-            adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag("", searchTags)))) {
+            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag("", searchTags))) {
                 recyclerView.scrollToPosition(0)
             }
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -474,7 +496,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         chipCloud.setDeleteListener(this)
         if (!searchTags.any { it.name == realmTag.name }) searchTags.add(realmTag)
         chipCloud.addChips(searchTags)
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))) {
+        adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), searchTags))) {
             recyclerView.scrollToPosition(0)
         }
         showTagText(searchTags, tvSelected)
@@ -487,7 +509,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), li)))) {
+        adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), li))) {
             recyclerView.scrollToPosition(0)
         }
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -496,7 +518,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))) {
+            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), searchTags))) {
                 recyclerView.scrollToPosition(0)
             }
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -520,7 +542,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString(), searchTags)))) {
+        adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), searchTags))) {
             recyclerView.scrollToPosition(0)
         }
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -531,7 +553,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        adapterLibrary.setLibraryList(mRealm.copyFromRealm(applyFilter(filterLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags)))) {
+        adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags))) {
             recyclerView.scrollToPosition(0)
         }
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -634,7 +656,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
                 fragment.arguments = args
             }
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 parentFragmentManager,
                 R.id.fragment_container,
                 fragment,
@@ -677,5 +699,35 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
     }
-    
+
+    private fun filterLocalLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        val normalizedSearchTerm = normalizeText(s)
+
+        var filteredList = if (s.isEmpty()) {
+            allLibraryItems
+        } else {
+            val queryParts = s.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val startsWithQuery = mutableListOf<RealmMyLibrary>()
+            val containsQuery = mutableListOf<RealmMyLibrary>()
+
+            for (item in allLibraryItems) {
+                val title = item.title?.let { normalizeText(it) } ?: continue
+                if (title.startsWith(normalizedSearchTerm, ignoreCase = true)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    containsQuery.add(item)
+                }
+            }
+            startsWithQuery + containsQuery
+        }
+
+        if (tags.isNotEmpty()) {
+            filteredList = filteredList.filter { library ->
+                val libraryTags = library.id?.let { tagsMap[it] } ?: emptyList()
+                tags.any { searchTag -> libraryTags.any { it.id == searchTag.id } }
+            }
+        }
+        return filteredList
+    }
 }
