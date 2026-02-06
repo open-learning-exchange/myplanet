@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyPlanet Size Metrics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .chart-container { position: relative; height: 60vh; width: 90vw; margin: auto; }
+        h1 { text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>MyPlanet App Size Trends</h1>
+    <div class="chart-container">
+        <canvas id="sizeChart"></canvas>
+    </div>
+
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('data.json');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+                return [];
+            }
+        }
+
+        function processData(data) {
+            // Group by flavor+build_type+label
+            const datasets = {};
+
+            data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            data.forEach(entry => {
+                const key = `${entry.flavor} ${entry.build_type} ${entry.label}`;
+                if (!datasets[key]) {
+                    datasets[key] = {
+                        label: key,
+                        data: [],
+                        borderWidth: 1,
+                        fill: false
+                    };
+                }
+                datasets[key].data.push({
+                    x: entry.date,
+                    y: entry.size_mb
+                });
+            });
+
+            return Object.values(datasets);
+        }
+
+        async function initChart() {
+            const data = await fetchData();
+            const datasets = processData(data);
+
+            // Assign colors
+            const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+            datasets.forEach((ds, i) => {
+                ds.borderColor = colors[i % colors.length];
+                ds.backgroundColor = colors[i % colors.length];
+            });
+
+            const ctx = document.getElementById('sizeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'category',
+                            title: { display: true, text: 'Date' },
+                            ticks: {
+                                callback: function(val, index) {
+                                    // simple date formatting
+                                    const d = new Date(this.getLabelForValue(val));
+                                    return d.toLocaleDateString();
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Size (MB)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' MB';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        initChart();
+    </script>
+</body>
+</html>

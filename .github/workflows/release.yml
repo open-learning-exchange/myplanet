@@ -6,6 +6,9 @@ on:
       - 'master'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   release:
     name: myPlanet release
@@ -81,6 +84,33 @@ jobs:
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
 
+      - name: measure release size
+        run: |
+          FLAVOR=${{ matrix.build }}
+          python3 scripts/measure_size.py \
+            --file output/myPlanet.apk \
+            --flavor "$FLAVOR" \
+            --build-type release \
+            --config scripts/size_limits.json \
+            --output-json "size-metrics-${FLAVOR}-apk.json" \
+            --output-md "size-report-${FLAVOR}-apk.md" \
+            --label APK
+
+          python3 scripts/measure_size.py \
+            --file output/myPlanet.aab \
+            --flavor "$FLAVOR" \
+            --build-type release \
+            --config scripts/size_limits.json \
+            --output-json "size-metrics-${FLAVOR}-aab.json" \
+            --output-md "size-report-${FLAVOR}-aab.md" \
+            --label AAB
+
+      - name: upload size metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: size-metrics-${{ matrix.build }}
+          path: size-metrics-*.json
+
       - name: publish AAB to playstore
         id: playstore
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
@@ -148,3 +178,95 @@ jobs:
           export discord_channel="${{ secrets.CHANNEL }}" #remote
           echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
           treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"
+
+  track-metrics:
+    needs: release
+    runs-on: ubuntu-24.04
+    if: github.event_name != 'workflow_dispatch'
+    env:
+      COMMIT_DATE: ${{ github.event.head_commit.timestamp }}
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v4
+
+      - name: download size metrics
+        uses: actions/download-artifact@v4
+        with:
+          pattern: size-metrics-*
+          merge-multiple: true
+
+      - name: checkout metrics branch
+        uses: actions/checkout@v4
+        with:
+          ref: metrics
+          path: .metrics
+        continue-on-error: true
+
+      - name: update metrics
+        run: |
+          # Setup .metrics if checkout failed
+          if [ ! -d ".metrics/.git" ]; then
+            echo "Creating new metrics branch"
+            rm -rf .metrics
+            mkdir .metrics
+            cd .metrics
+            git init
+            git checkout -b metrics
+            # Configure remote
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            cd ..
+          else
+            cd .metrics
+            # Ensure remote url includes token for push
+            git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+            git pull origin metrics || true
+            cd ..
+          fi
+
+          # Prepare data.json
+          if [ ! -f .metrics/data.json ]; then
+            echo "[]" > .metrics/data.json
+          fi
+
+          # Run python script to merge json
+          python3 -c "
+          import json, os, glob, datetime
+
+          history_path = '.metrics/data.json'
+          try:
+              with open(history_path, 'r') as f:
+                  history = json.load(f)
+          except:
+              history = []
+
+          commit_date = os.environ.get('COMMIT_DATE')
+          if not commit_date:
+              commit_date = datetime.datetime.now().isoformat()
+
+          for f in glob.glob('size-metrics-*.json'):
+              with open(f) as jf:
+                  data = json.load(jf)
+                  entry = {
+                      'date': commit_date,
+                      'flavor': data['flavor'],
+                      'build_type': data['build_type'],
+                      'label': data['label'],
+                      'size_bytes': data['size_bytes'],
+                      'size_mb': data['size_mb']
+                  }
+                  history.append(entry)
+
+          with open(history_path, 'w') as f:
+              json.dump(history, f, indent=2)
+          "
+
+          # Copy viewer
+          cp scripts/viewer.html .metrics/index.html
+
+          # Push
+          cd .metrics
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+          git add .
+          git commit -m "Update size metrics [skip ci]" || echo "No changes to commit"
+          git push origin metrics

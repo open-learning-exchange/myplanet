@@ -1,0 +1,8 @@
+{
+  "defaultDebug": { "max_size_bytes": 104857600 },
+  "liteDebug": { "max_size_bytes": 104857600 },
+  "defaultRelease": { "max_size_bytes": 62914560 },
+  "liteRelease": { "max_size_bytes": 62914560 },
+  "defaultReleaseBundle": { "max_size_bytes": 157286400 },
+  "liteReleaseBundle": { "max_size_bytes": 157286400 }
+}
