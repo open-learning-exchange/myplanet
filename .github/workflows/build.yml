@@ -46,3 +46,15 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Debug --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: build release to verify minification
+        run: |
+          FLAVOR=${{ matrix.build }}
+          ./gradlew assemble${FLAVOR^}Release --warning-mode all --stacktrace --parallel --max-workers=4
+
+      - name: upload mapping file
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-${{ matrix.build }}-release
+          path: app/build/outputs/mapping/${{ matrix.build }}/release/mapping.txt

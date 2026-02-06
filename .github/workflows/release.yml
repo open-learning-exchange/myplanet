@@ -62,6 +62,13 @@ jobs:
           echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
           echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
+      - name: upload mapping file
+        uses: actions/upload-artifact@v4
+        with:
+          name: mapping-${{ matrix.build }}-release
+          path: app/build/outputs/mapping/${{ matrix.build }}/release/mapping.txt
+          retention-days: 9
+
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
         with:
@@ -118,7 +125,7 @@ jobs:
 
       - name: upload APK and AAB as build artifact
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
           path: output/*
