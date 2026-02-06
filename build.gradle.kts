@@ -1,3 +1,7 @@
+plugins {
+    alias(libs.plugins.ben.manes.versions)
+}
+
 import org.gradle.api.tasks.Delete
 
 buildscript {

@@ -18,3 +18,15 @@ updates:
     commit-message:
       prefix: "all:"
     open-pull-requests-limit: 15
+    groups:
+      androidx:
+        patterns:
+          - "androidx*"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.google.devtools.ksp*"
+      hilt:
+        patterns:
+          - "com.google.dagger*"
+          - "androidx.hilt*"

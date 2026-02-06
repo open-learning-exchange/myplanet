@@ -1,0 +1,31 @@
+name: Weekly Dependency Report
+
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Weekly on Monday morning
+  workflow_dispatch:
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Generate Dependency Report
+        run: ./gradlew dependencyUpdates --no-configuration-cache
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: build/dependencyUpdates/report.txt

@@ -37,6 +37,7 @@ osmdroidAndroid = "6.1.20"
 kotlinxSerializationJson = "1.10.0"
 kotlinxCoroutinesAndroid = "1.10.2"
 androidGifDrawable = "1.2.30"
+versionsPlugin = "0.52.0"
 
 [libraries]
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
@@ -100,3 +101,4 @@ kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 dagger-hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 realm-android = { id = "io.realm.android", version.ref = "realmGradlePlugin" }
+ben-manes-versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
