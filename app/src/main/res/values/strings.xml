@@ -1187,5 +1187,8 @@
     <string name="clear_retry_queue">Clear Queue</string>
     <string name="retry_triggered">Retry triggered</string>
     <string name="retry_queue_cleared">Retry queue cleared</string>
+    <string name="create_new_resource">Create New</string>
+    <string name="private_resource">Private resource (only visible to this team)</string>
+    <string name="resource_added_to_team">Resource added to team</string>
 
 </resources>

@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
 import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
@@ -286,12 +287,16 @@ class UploadManager @Inject constructor(
         try {
             data class ResourceData(
                 val libraryId: String?,
+                val title: String?,
+                val isPrivate: Boolean,
+                val privateFor: String?,
                 val serialized: JsonObject
             )
 
             val user = userRepository.getCurrentUser()
 
             val resourcesToUpload = databaseService.withRealm { realm ->
+                realm.refresh()
                 val data = realm.where(RealmMyLibrary::class.java).isNull("_rev").findAll()
 
                 if (data.isEmpty()) {
@@ -300,6 +305,9 @@ class UploadManager @Inject constructor(
                     data.map { library ->
                         ResourceData(
                             libraryId = library.id,
+                            title = library.title,
+                            isPrivate = library.isPrivate,
+                            privateFor = library.privateFor,
                             serialized = RealmMyLibrary.serialize(library, user)
                         )
                     }
@@ -331,6 +339,23 @@ class UploadManager @Inject constructor(
                                             sub._rev = rev
                                             sub._id = id
                                         }
+
+                                    if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
+                                        val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                                            ?: pref.getString("planetCode", "") ?: ""
+                                        val teamResource = transactionRealm.createObject(
+                                            RealmMyTeam::class.java,
+                                            UUID.randomUUID().toString()
+                                        )
+                                        teamResource.teamId = resourceData.privateFor
+                                        teamResource.title = resourceData.title
+                                        teamResource.resourceId = id
+                                        teamResource.docType = "resourceLink"
+                                        teamResource.updated = true
+                                        teamResource.teamType = "local"
+                                        teamResource.teamPlanetCode = planetCode
+                                        teamResource.sourcePlanet = planetCode
+                                    }
                                 }
 
                                 listener?.let {
