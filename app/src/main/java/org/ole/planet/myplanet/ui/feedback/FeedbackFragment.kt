@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -46,7 +47,26 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         user = model?.name
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)
+        setupFormValidation()
         return binding.root
+    }
+
+    private fun setupFormValidation() {
+        binding.etMessage.doAfterTextChanged { text ->
+            if (text.isNullOrBlank()) {
+                binding.tlMessage.error = getString(R.string.please_enter_feedback)
+            } else {
+                binding.tlMessage.error = null
+            }
+        }
+
+        binding.rgUrgent.setOnCheckedChangeListener { _, _ ->
+            binding.tlUrgent.error = null
+        }
+
+        binding.rgType.setOnCheckedChangeListener { _, _ ->
+            binding.tlType.error = null
+        }
     }
 
     override fun onDestroyView() {
@@ -94,9 +114,9 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     private fun clearError() {
-        binding.tlUrgent.error = ""
-        binding.tlType.error = ""
-        binding.tlMessage.error = ""
+        binding.tlUrgent.error = null
+        binding.tlType.error = null
+        binding.tlMessage.error = null
     }
 
 }
