@@ -38,14 +38,16 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         super.onViewCreated(view, savedInstanceState)
         setupCoursesList()
     }
-    
+
     private fun setupCoursesList() {
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, settings)
-        binding.rvCourse.layoutManager = LinearLayoutManager(activity)
-        binding.rvCourse.adapter = adapterTeamCourse
-        adapterTeamCourse?.let {
-            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val courses = teamsRepository.getTeamCourses(teamId)
+            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, settings)
+            binding.rvCourse.layoutManager = LinearLayoutManager(activity)
+            binding.rvCourse.adapter = adapterTeamCourse
+            adapterTeamCourse?.let {
+                showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+            }
         }
     }
 
@@ -53,24 +55,27 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         setupCoursesList()
     }
 
-
     override fun onNewsItemClick(news: RealmNews?) {}
+
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
     override fun onAddCourse() {
-        Log.d("TeamCoursesFragment", "onAddCourse() called")
+        Log.d("TeamCoursesFragment", "onAddCourse() called, isAdded: $isAdded")
+        if (isAdded && activity != null) {
+            Utilities.toast(requireActivity(), "Loading courses...")
+        }
         showAddCourseDialog()
     }
 
     override fun onAddDocument() {
-        // Not applicable for courses fragment
+        showAddCourseDialog()
     }
 
     private fun showAddCourseDialog() {
-        Log.d("TeamCoursesFragment", "showAddCourseDialog() called, isAdded: $isAdded, activity: ${activity != null}")
+        Log.d("TeamCoursesFragment", "showAddCourseDialog() called, isAdded: $isAdded, activity: ${activity != null}, teamId: $teamId")
         if (!isAdded || activity == null) {
             Log.w("TeamCoursesFragment", "Cannot show dialog - fragment not added or activity is null")
             return
@@ -78,17 +83,23 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val existingIds = team?.courses?.toList() ?: emptyList()
-            val allCourses = mRealm.where(RealmMyCourse::class.java).findAll()
-            val availableCourses = allCourses.filter { it.courseId !in existingIds }
+            try {
+                Log.d("TeamCoursesFragment", "Fetching courses...")
+                val existingCourses = teamsRepository.getTeamCourses(teamId)
+                Log.d("TeamCoursesFragment", "Existing team courses: ${existingCourses.size}")
+                val existingIds = existingCourses.mapNotNull { it.courseId }
+                val allCourses = coursesRepository.getAllCourses()
+                Log.d("TeamCoursesFragment", "All courses in database: ${allCourses.size}")
+                val availableCourses = allCourses.filter { it.courseId !in existingIds }
+                Log.d("TeamCoursesFragment", "Available courses to add: ${availableCourses.size}")
 
-            if (availableCourses.isEmpty()) {
-                Utilities.toast(safeActivity, getString(R.string.no_courses))
-                return@launch
-            }
+                if (availableCourses.isEmpty()) {
+                    Utilities.toast(safeActivity, getString(R.string.no_courses))
+                    return@launch
+                }
 
             val titleView = TextView(safeActivity).apply {
-                text = "Select Courses"
+                text = getString(R.string.select_courses)
                 setTextColor(context.getColor(R.color.daynight_textColor))
                 setPadding(75, 50, 0, 0)
                 textSize = 24f
@@ -108,12 +119,19 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
             val alertDialog = alertDialogBuilder.create()
             alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+            Log.d("TeamCoursesFragment", "Showing dialog...")
             setupCourseListDialog(alertDialog, availableCourses, dialogBinding.alertDialogListView)
+            } catch (e: Exception) {
+                Log.e("TeamCoursesFragment", "Error showing add course dialog", e)
+                if (isAdded) {
+                    Utilities.toast(safeActivity, "Error: ${e.message}")
+                }
+            }
         }
     }
 
     private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<RealmMyCourse>, lv: CheckboxListView) {
-        val names = courses.map { it.courseTitle ?: "Untitled Course" }
+        val names = courses.map { it.courseTitle ?: getString(R.string.untitled_course) }
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         lv.setCheckChangeListener {
@@ -125,43 +143,24 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     }
 
     private fun addCoursesToTeam(courses: List<RealmMyCourse>) {
-        if (team == null || courses.isEmpty()) return
-        val teamId = team?._id ?: return
-
-        // Extract course IDs before async transaction to avoid thread issues
+        if (courses.isEmpty()) return
         val courseIds = courses.mapNotNull { it.courseId }
         if (courseIds.isEmpty()) return
 
-        mRealm.executeTransactionAsync(
-            { realm ->
-                val managedTeam = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
-                    .equalTo("_id", teamId)
-                    .findFirst()
-
-                managedTeam?.let {
-                    courseIds.forEach { courseId ->
-                        if (!it.courses!!.contains(courseId)) {
-                            it.courses!!.add(courseId)
-                        }
-                    }
-                    it.updated = true
-                }
-            },
-            {
-                // onSuccess
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                teamsRepository.addCoursesToTeam(teamId, courseIds)
                 if (isAdded) {
                     Utilities.toast(requireActivity(), getString(R.string.added_to_my_courses))
                     updateCoursesList()
                 }
-            },
-            { error ->
-                // onError
+            } catch (e: Exception) {
                 if (isAdded) {
-                    Utilities.toast(requireActivity(), "Error adding courses: ${error.message}")
-                    Log.d("TeamCoursesFragment", "Error adding courses: ${error.message}")
+                    Utilities.toast(requireActivity(), "Error adding courses: ${e.message}")
+                    Log.e("TeamCoursesFragment", "Error adding courses", e)
                 }
             }
-        )
+        }
     }
 
     override fun onDestroyView() {

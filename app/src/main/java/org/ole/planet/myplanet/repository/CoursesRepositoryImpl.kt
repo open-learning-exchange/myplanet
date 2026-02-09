@@ -30,6 +30,10 @@ class CoursesRepositoryImpl @Inject constructor(
     private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {}
+    }
+
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
         if (userId == null) return myCourses

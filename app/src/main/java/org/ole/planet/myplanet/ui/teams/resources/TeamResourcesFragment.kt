@@ -172,6 +172,10 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         // Not applicable for resources fragment
     }
 
+    override fun onAddDocument() {
+        showResourceListDialog()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
