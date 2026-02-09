@@ -441,6 +441,7 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog = null
         convertView = null
         broadcastJob?.cancel()
+        cleanupRealm()
         super.onDestroyView()
     }
 

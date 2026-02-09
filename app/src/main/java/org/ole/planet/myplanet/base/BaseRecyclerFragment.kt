@@ -87,7 +87,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.realmInstance
+            requireRealmInstance()
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter

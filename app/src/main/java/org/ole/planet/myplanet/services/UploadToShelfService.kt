@@ -46,8 +46,6 @@ class UploadToShelfService @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository
 ) {
-    lateinit var mRealm: Realm
-
     fun uploadUserData(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
