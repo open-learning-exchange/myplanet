@@ -27,43 +27,40 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.PlanetAvailableListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.MyDownloadService
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
-import org.ole.planet.myplanet.utilities.DialogUtils.showError
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
+import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
-    var model: RealmUserModel? = null
+    var model: RealmUser? = null
     protected lateinit var mRealm: Realm
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -76,16 +73,20 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var coursesRepository: CoursesRepository
     @Inject
+    lateinit var tagsRepository: TagsRepository
+    @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var profileDbHandler: UserSessionManager
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
+    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
@@ -108,7 +109,7 @@ abstract class BaseResourceFragment : Fragment() {
             !requireActivity().isFinishing && !requireActivity().isDestroyed
     }
 
-    private fun showProgressDialog() {
+    internal fun showProgressDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             if (isFragmentActive()) {
                 prgDialog.show()
@@ -116,7 +117,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    private fun showNotConnectedToast() {
+    internal fun showNotConnectedToast() {
         if (isFragmentActive()) {
             Utilities.toast(requireActivity(),
                 getString(R.string.device_not_connected_to_planet))
@@ -128,8 +129,8 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = resourcesRepository.getLibraryListForUser(
-                        settings.getString("userId", "--")
+                    val list = resourcesRepository.getDownloadSuggestionList(
+                        profileDbHandler.userModel?.id
                     )
                     showDownloadDialog(list)
                 } finally {
@@ -187,61 +188,58 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        DataService(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (!isAdded) return
-                val userId = profileDbHandler.userModel?.id
-                val librariesForDialog = if (userId.isNullOrBlank()) {
-                    dbMyLibrary
-                } else {
-                    val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
-                    if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
-                }
+        val librariesForDialog = dbMyLibrary
 
-                if (librariesForDialog.isEmpty()) {
-                    return
-                }
+        if (librariesForDialog.isEmpty()) {
+            return
+        }
 
-                activity?.let { fragmentActivity ->
-                    val inflater = fragmentActivity.layoutInflater
-                    val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
-                    convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
+        activity?.let { fragmentActivity ->
+            val inflater = fragmentActivity.layoutInflater
+            val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
+            convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
-                    val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
-                    alertDialogBuilder.setView(convertView)
-                        .setTitle(R.string.download_suggestion)
-                        .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+            val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            alertDialogBuilder.setView(convertView)
+                .setTitle(R.string.download_suggestion)
+                .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                    lifecycleScope.launch {
+                        if (configurationsRepository.isPlanetAvailable()) {
                             lv?.selectedItemsList?.let {
                                 addToLibrary(librariesForDialog, it)
-                                downloadFiles(librariesForDialog, it)
-                            }?.let { startDownload(it) }
-                        }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            lv?.selectedItemsList?.let {
-                                addAllToLibrary(librariesForDialog)
+                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
+                                if (resourcesRepository.downloadResources(selectedLibraries.filterNotNull())) {
+                                    showProgressDialog()
+                                }
                             }
-                            startDownload(downloadAllFiles(librariesForDialog))
-                        }.setNegativeButton(R.string.txt_cancel, null)
-                    downloadSuggestionDialog?.dismiss()
-                    downloadSuggestionDialog = alertDialogBuilder.create()
-                    downloadSuggestionDialog?.let { dialog ->
-                        createListView(librariesForDialog, dialog)
-                        dialog.setOnDismissListener {
-                            downloadSuggestionDialog = null
+                        } else {
+                            showNotConnectedToast()
                         }
-                        dialog.show()
-                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
-                            ?: 0) > 0
                     }
+                }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                    lifecycleScope.launch {
+                        if (configurationsRepository.isPlanetAvailable()) {
+                            addAllToLibrary(librariesForDialog)
+                            if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
+                                showProgressDialog()
+                            }
+                        } else {
+                            showNotConnectedToast()
+                        }
+                    }
+                }.setNegativeButton(R.string.txt_cancel, null)
+            downloadSuggestionDialog?.dismiss()
+            downloadSuggestionDialog = alertDialogBuilder.create()
+            downloadSuggestionDialog?.let { dialog ->
+                createListView(librariesForDialog, dialog)
+                dialog.setOnDismissListener {
+                    downloadSuggestionDialog = null
                 }
+                dialog.show()
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
+                    ?: 0) > 0
             }
-
-            override fun notAvailable() {
-                if (!isAdded) return
-                activity?.let {
-                    Utilities.toast(it, getString(R.string.planet_not_available))
-                }
-            }
-        })
+        }
     }
 
     fun showPendingSurveyDialog() {
@@ -249,7 +247,7 @@ abstract class BaseResourceFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
-            val exams = getExamMap(mRealm, list)
+            val exams = submissionsRepository.getExamMap(list)
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
@@ -265,7 +263,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private fun createSurveyAdapter(
         list: List<RealmSubmission>,
-        exams: HashMap<String?, RealmStepExam>
+        exams: Map<String?, RealmStepExam>
     ): ArrayAdapter<RealmSubmission> {
         return object : ArrayAdapter<RealmSubmission>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
@@ -307,27 +305,6 @@ abstract class BaseResourceFragment : Fragment() {
 
             resourceNotFoundDialog?.show()
         }
-    }
-
-    fun startDownload(urls: ArrayList<String>) {
-        if (!isFragmentActive()) return
-        DataService(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (!isFragmentActive()) return
-                if (urls.isNotEmpty()) {
-                    try {
-                        showProgressDialog()
-                        DownloadUtils.openDownloadService(activity, urls, false)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-
-            override fun notAvailable() {
-                showNotConnectedToast()
-            }
-        })
     }
 
     fun setProgress(download: Download) {
@@ -375,7 +352,7 @@ abstract class BaseResourceFragment : Fragment() {
                         DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
                         "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
                         "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
-                        MyDownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                        DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                     }
                 }
             }
@@ -401,18 +378,25 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun removeFromShelf(`object`: RealmObject) {
-        if (`object` is RealmMyLibrary) {
-            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
-            } }
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-        } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+        val userId = profileDbHandler.userModel?.id ?: model?.id
+        if (userId.isNullOrEmpty()) {
+            return
+        }
+
+        lifecycleScope.launch {
+            if (`object` is RealmMyLibrary) {
+                val resourceId = `object`.resourceId
+                if (resourceId != null) {
+                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                }
+            } else {
+                val courseId = (`object` as RealmMyCourse).courseId
+                if (courseId != null) {
+                    coursesRepository.removeCourseFromShelf(courseId, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                }
+            }
         }
     }
 
@@ -427,62 +411,23 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        if (!isRealmInitialized()) return
-        
         val userId = profileDbHandler.userModel?.id ?: return
-
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            selectedItems.forEach { index ->
-                val item = libraryItems[index]
-                if (item?.userId?.contains(userId) == false) {
-                    item.setUserId(userId)
-                    RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
-                }
-            }
-            
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-        } catch (e: Exception) {
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
+        val resourceIds = selectedItems.mapNotNull { index ->
+            libraryItems.getOrNull(index)?.resourceId
         }
-        Utilities.toast(activity, getString(R.string.added_to_my_library))
+        lifecycleScope.launch {
+            resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
+        }
     }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        if (!isRealmInitialized()) return
-
         val userId = profileDbHandler.userModel?.id ?: return
-
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            libraryItems.forEach { libraryItem ->
-                if (libraryItem?.userId?.contains(userId) == false) {
-                    libraryItem.setUserId(userId, mRealm)
-                    RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
-                }
-            }
-            
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-        } catch (e: Exception) {
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
+        val validLibraryItems = libraryItems.filterNotNull()
+        lifecycleScope.launch {
+            resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
         }
-        Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
     override fun onDestroyView() {
@@ -528,24 +473,19 @@ abstract class BaseResourceFragment : Fragment() {
     companion object {
         var auth = ""
 
-        fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", false).findAll()
-            val libList: MutableList<RealmMyLibrary> = ArrayList()
-            val libraries = getLibraries(l)
-            libList.addAll(libraries)
-            return libList
-        }
-
         fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            DataService(context).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                RepositoryEntryPoint::class.java
+            )
+            val configurationsRepository = entryPoint.configurationsRepository()
+            MainApplication.applicationScope.launch {
+                if (configurationsRepository.isPlanetAvailable()) {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)
                     }
                 }
-
-                override fun notAvailable() {}
-            })
+            }
         }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {

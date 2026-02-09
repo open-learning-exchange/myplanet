@@ -9,47 +9,41 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import java.util.Date
-import java.util.UUID
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
-import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.utilities.CameraUtils
-import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utils.CameraUtils
+import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
-private data class CourseStepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>,
-    val userHasCourse: Boolean
-)
-
+@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
+    @Inject
+    lateinit var progressRepository: ProgressRepository
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
     private lateinit var stepSurvey: List<RealmStepExam>
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var stepNumber = 0
     private var saveInProgress: Job? = null
     private var loadDataJob: Job? = null
@@ -70,63 +64,26 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         return fragmentCourseStepBinding.root
     }
 
-    private suspend fun saveCourseProgress(userId: String?, planetCode: String?, parentCode: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            var courseProgress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", step.courseId)
-                .equalTo("userId", userId)
-                .equalTo("stepNum", stepNumber)
-                .findFirst()
-            if (courseProgress == null) {
-                courseProgress = realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-                courseProgress.createdDate = Date().time
-            }
-            courseProgress?.courseId = step.courseId
-            courseProgress?.stepNum = stepNumber
-            if (stepExams.isEmpty()) {
-                courseProgress?.passed = true
-            }
-            courseProgress?.createdOn = planetCode
-            courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = parentCode
-            courseProgress?.userId = userId
-        }
-    }
-
     private fun launchSaveCourseProgress() {
         if (saveInProgress?.isActive == true) return
         val userId = user?.id
         val planetCode = user?.planetCode
         val parentCode = user?.parentCode
         saveInProgress = lifecycleScope.launch {
-            saveCourseProgress(userId, planetCode, parentCode)
+            progressRepository.saveCourseProgress(
+                userId,
+                planetCode,
+                parentCode,
+                step.courseId,
+                stepNumber,
+                if (stepExams.isEmpty()) true else null
+            )
         }
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
     }
 
-    private suspend fun loadStepData(): CourseStepData = withContext(Dispatchers.IO) {
-        databaseService.withRealm { realm ->
-            val step = realm.where(RealmCourseStep::class.java)
-                .equalTo("id", stepId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }!!
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val userHasCourse = isMyCourse(user?.id, step.courseId, realm)
-            CourseStepData(step, resources, stepExams, stepSurvey, userHasCourse)
-        }
+    private suspend fun loadStepData(): CourseStepData {
+        return coursesRepository.getCourseStepData(stepId!!, user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -216,17 +173,18 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
-        try {
-            if (visible) {
-                val userHasCourse = databaseService.withRealm { realm ->
-                    isMyCourse(user?.id, step.courseId, realm)
+        if (!isAdded || !::step.isInitialized) return
+        lifecycleScope.launch {
+            try {
+                if (visible) {
+                    val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
+                    if (userHasCourse) {
+                        launchSaveCourseProgress()
+                    }
                 }
-                if (userHasCourse) {
-                    launchSaveCourseProgress()
-                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

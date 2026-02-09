@@ -13,20 +13,18 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.base.BaseTeamFragment
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.CheckboxListView
-import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.ui.teams.BaseTeamFragment
+import org.ole.planet.myplanet.utils.Utilities
 
-class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
+class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
     private var adapterTeamCourse: TeamCoursesAdapter? = null
@@ -43,7 +41,7 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
     
     private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        adapterTeamCourse = settings?.let { TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        adapterTeamCourse = TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, settings)
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
         adapterTeamCourse?.let {
@@ -65,6 +63,10 @@ class TeamCoursesFragment : BaseTeamFragment(), TeamPageListener {
     override fun onAddCourse() {
         Log.d("TeamCoursesFragment", "onAddCourse() called")
         showAddCourseDialog()
+    }
+
+    override fun onAddDocument() {
+        // Not applicable for courses fragment
     }
 
     private fun showAddCourseDialog() {

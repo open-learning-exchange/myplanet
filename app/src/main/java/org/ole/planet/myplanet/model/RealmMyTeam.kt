@@ -10,10 +10,10 @@ import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
+import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
@@ -198,15 +198,16 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
+        fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
             return getUsers(teamId, realm, "request")
         }
 
         @JvmStatic
-        fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
+        fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
             return getUsers(teamId, realm, "membership")
         }
 
+        @Deprecated("Use TeamsRepository.getJoinedMemberCount instead")
         @JvmStatic
         fun getJoinedMemberCount(teamId: String, realm: Realm): Int {
             return getUsers(teamId, realm, "membership").size
@@ -224,15 +225,15 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUserModel> {
+        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUser> {
             var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)
             }
             val myTeam = query.findAll()
-            val list = mutableListOf<RealmUserModel>()
+            val list = mutableListOf<RealmUser>()
             for (team in myTeam) {
-                val model = mRealm.where(RealmUserModel::class.java)
+                val model = mRealm.where(RealmUser::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
                 if (model != null && !list.contains(model)) list.add(model)
@@ -304,16 +305,6 @@ open class RealmMyTeam : RealmObject() {
         }
     }
 
-    fun requested(userId: String?, mRealm: Realm): Boolean {
-        val m = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("docType", "request")
-            .equalTo("teamId", _id)
-            .equalTo("userId", userId)
-            .findAll()
-
-        return m.isNotEmpty()
-    }
-
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {
         return mRealm.where(RealmMyTeam::class.java)
             .equalTo("userId", userID)
@@ -322,7 +313,7 @@ open class RealmMyTeam : RealmObject() {
             .count() > 0
     }
 
-    fun leave(user: RealmUserModel?, mRealm: Realm) {
+    fun leave(user: RealmUser?, mRealm: Realm) {
         val teams = mRealm.where(RealmMyTeam::class.java)
             .equalTo("userId", user?.id)
             .equalTo("teamId", this._id)
@@ -337,8 +328,20 @@ open class RealmMyTeam : RealmObject() {
     }
 
     private fun removeTeam(team: RealmMyTeam, mRealm: Realm) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        team.deleteFromRealm()
-        mRealm.commitTransaction()
+        val startedTransaction = !mRealm.isInTransaction
+        if (startedTransaction) {
+            mRealm.beginTransaction()
+        }
+        try {
+            team.deleteFromRealm()
+            if (startedTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (startedTransaction && mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
+        }
     }
 }

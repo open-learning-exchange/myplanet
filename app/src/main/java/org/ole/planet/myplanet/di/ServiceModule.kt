@@ -14,14 +14,15 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.service.sync.ImprovedSyncManager
-import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.service.sync.TransactionSyncManager
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.sync.ImprovedSyncManager
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -47,9 +48,10 @@ object ServiceModule {
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, scope)
     }
 
     @Provides
@@ -59,9 +61,13 @@ object ServiceModule {
         databaseService: DatabaseService,
         submissionsRepository: SubmissionsRepository,
         @AppPreferences preferences: SharedPreferences,
-        gson: Gson
+        gson: Gson,
+        uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
+        personalsRepository: PersonalsRepository,
+        userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository)
     }
 
     @Provides
@@ -69,9 +75,11 @@ object ServiceModule {
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences)
+        return UploadToShelfService(context, databaseService, preferences, resourcesRepository, coursesRepository)
     }
 
     @Provides
@@ -80,8 +88,8 @@ object ServiceModule {
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
         @ApplicationContext context: Context,
-        @ApplicationScope scope: CoroutineScope
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository)
     }
 }

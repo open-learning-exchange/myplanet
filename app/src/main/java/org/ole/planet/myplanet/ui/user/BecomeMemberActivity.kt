@@ -18,16 +18,16 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.callback.SecurityDataListener
+import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
@@ -36,7 +36,7 @@ class BecomeMemberActivity : BaseActivity() {
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
-    
+
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -71,20 +71,23 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
-    private fun collectMemberInfo() = MemberInfo(
-        activityBecomeMemberBinding.etUsername.text.toString(),
-        activityBecomeMemberBinding.etPassword.text.toString(),
-        activityBecomeMemberBinding.etRePassword.text.toString(),
-        activityBecomeMemberBinding.etFname.text.toString(),
-        activityBecomeMemberBinding.etLname.text.toString(),
-        activityBecomeMemberBinding.etMname.text.toString(),
-        activityBecomeMemberBinding.etEmail.text.toString(),
-        activityBecomeMemberBinding.spnLang.selectedItem.toString(),
-        activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
-        activityBecomeMemberBinding.etPhone.text.toString(),
-        dob,
-        selectedGender()
-    )
+    private fun collectMemberInfo(): MemberInfo {
+        val info = MemberInfo(
+            activityBecomeMemberBinding.etUsername.text.toString(),
+            activityBecomeMemberBinding.etPassword.text.toString(),
+            activityBecomeMemberBinding.etRePassword.text.toString(),
+            activityBecomeMemberBinding.etFname.text.toString(),
+            activityBecomeMemberBinding.etLname.text.toString(),
+            activityBecomeMemberBinding.etMname.text.toString(),
+            activityBecomeMemberBinding.etEmail.text.toString(),
+            activityBecomeMemberBinding.spnLang.selectedItem.toString(),
+            activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
+            activityBecomeMemberBinding.etPhone.text.toString(),
+            dob,
+            selectedGender()
+        )
+        return info
+    }
 
     private fun validateMemberInfo(info: MemberInfo): Boolean {
         return when {
@@ -144,7 +147,7 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
-        }, object : SecurityDataListener {
+        }, object : OnSecurityDataListener {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()
@@ -181,7 +184,6 @@ class BecomeMemberActivity : BaseActivity() {
             activityBecomeMemberBinding.etUsername.setText(username)
             activityBecomeMemberBinding.etUsername.isFocusable = false
         }
-
 
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
             finish()

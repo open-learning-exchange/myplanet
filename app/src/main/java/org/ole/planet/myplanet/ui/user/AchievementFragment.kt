@@ -19,24 +19,24 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.ui.references.ReferencesAdapter
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
 
 private data class AchievementData(
     val goals: String = "",
@@ -51,7 +51,7 @@ private data class AchievementData(
 class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -60,8 +60,8 @@ class AchievementFragment : BaseContainerFragment() {
     
     @Inject
     lateinit var syncManager: SyncManager
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -86,8 +86,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
+        if (::onRealtimeSyncListener.isInitialized) {
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         _binding = null
         super.onDestroyView()
@@ -112,7 +112,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -167,41 +167,39 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    private suspend fun loadAchievementDataAsync(): AchievementData = withContext(Dispatchers.IO) {
-        databaseService.withRealm { realm ->
-            val achievement = realm.where(RealmAchievement::class.java)
-                .equalTo("_id", user?.id + "@" + user?.planetCode)
-                .findFirst()
+    private suspend fun loadAchievementDataAsync(): AchievementData = databaseService.withRealmAsync { realm ->
+        val achievement = realm.where(RealmAchievement::class.java)
+            .equalTo("_id", user?.id + "@" + user?.planetCode)
+            .findFirst()
 
-            if (achievement != null) {
-                val achievementCopy = realm.copyFromRealm(achievement)
-                val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                    JsonUtils.gson.fromJson(json, JsonObject::class.java)
-                        ?.getAsJsonArray("resources")
-                        ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
-                }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
+        if (achievement != null) {
+            val achievementCopy = realm.copyFromRealm(achievement)
+            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
+                JsonUtils.gson.fromJson(json, JsonObject::class.java)
+                    ?.getAsJsonArray("resources")
+                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
+            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
 
-                val resources = if (resourceIds.isNotEmpty()) {
-                    realm.copyFromRealm(
-                        realm.where(RealmMyLibrary::class.java)
-                            .`in`("id", resourceIds)
-                            .findAll()
-                    )
-                } else {
-                    emptyList()
-                }
-
-                AchievementData(
-                    goals = achievementCopy.goals ?: "",
-                    purpose = achievementCopy.purpose ?: "",
-                    achievementsHeader = achievementCopy.achievementsHeader ?: "",
-                    achievements = achievementCopy.achievements ?: emptyList(),
-                    achievementResources = resources,
-                    references = achievementCopy.references ?: emptyList()
+            val resources = if (resourceIds.isNotEmpty()) {
+                realm.copyFromRealm(
+                    realm.where(RealmMyLibrary::class.java)
+                        .`in`("id", resourceIds)
+                        .findAll()
                 )
             } else {
-                AchievementData()
+                emptyList()
             }
+
+            AchievementData(
+                goals = achievementCopy.goals ?: "",
+                purpose = achievementCopy.purpose ?: "",
+                achievementsHeader = achievementCopy.achievementsHeader ?: "",
+                achievements = achievementCopy.achievements ?: emptyList(),
+                achievementResources = resources,
+                references = achievementCopy.references ?: emptyList()
+            )
+        } else {
+            AchievementData()
         }
     }
 
@@ -235,7 +233,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "achievements" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
@@ -244,7 +242,7 @@ class AchievementFragment : BaseContainerFragment() {
                 }
             }
         }
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
@@ -316,7 +314,11 @@ class AchievementFragment : BaseContainerFragment() {
             if (lib.isResourceOffline()) {
                 openResource(lib)
             } else {
-                startDownload(arrayListOf(UrlUtils.getUrl(lib)))
+                lifecycleScope.launch {
+                    if (resourcesRepository.downloadResources(listOf(lib))) {
+                        showProgressDialog()
+                    }
+                }
             }
         }
         return btnBinding.root

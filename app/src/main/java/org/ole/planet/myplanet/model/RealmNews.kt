@@ -15,10 +15,10 @@ import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 open class RealmNews : RealmObject() {
     @PrimaryKey
@@ -127,6 +127,7 @@ open class RealmNews : RealmObject() {
         private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
+        @Deprecated("Use ChatRepository.insertNewsFromJson instead")
         fun insert(mRealm: Realm, doc: JsonObject?) {
             var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
             if (news == null) {
@@ -179,6 +180,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use ChatRepository.serializeNews instead")
         fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("chat", news.chat)
@@ -224,7 +226,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUser?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
             val shouldManageTransaction = !mRealm.isInTransaction
             if (shouldManageTransaction) {
                 mRealm.beginTransaction()

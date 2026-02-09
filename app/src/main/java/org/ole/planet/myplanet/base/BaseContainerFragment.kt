@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -32,15 +31,17 @@ import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallP
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.ui.reader.WebViewActivity
-import org.ole.planet.myplanet.utilities.CourseRatingUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.ResourceOpener
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.repository.ResourceUrlsResponse
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.ResourceOpener
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
@@ -75,15 +76,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             CourseRatingUtils.showRating(requireContext(), `object`, rating, timesRated, ratingBar)
         }
     }
-    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
-        for (library in lib) {
-            val url = UrlUtils.getUrl(library)
-            if (!FileUtils.checkFileExist(requireContext(), url) && !TextUtils.isEmpty(url)) {
-                urls.add(url)
-            }
-        }
-        if (urls.isNotEmpty()) {
-            startDownload(urls)
+
+    private fun startDownload(urls: ArrayList<String>) {
+        if (isAdded) {
+            DownloadUtils.openDownloadService(requireContext(), urls, false)
         }
     }
     fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
@@ -174,35 +170,27 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resource = items.resourceId?.let { resourcesRepository.getLibraryItemByResourceId(it) }
-            val downloadUrls = resource?.attachments
-                ?.mapNotNull { attachment ->
-                    attachment.name?.let { name ->
-                        createAttachmentDir(items.resourceId, name)
-                        UrlUtils.getUrl("${items.resourceId}", name)
-                    }
-                }
-                ?.toCollection(ArrayList()) ?: arrayListOf()
-
-            if (downloadUrls.isNotEmpty()) {
-                startDownloadWithAutoOpen(downloadUrls, items)
-            } else {
-                val errorMessage = when {
-                    resource == null -> getString(R.string.resource_not_found_in_database)
-                    resource.attachments.isNullOrEmpty() -> getString(R.string.resource_has_no_attachments)
-                    else -> getString(R.string.unable_to_download_resource)
-                }
-                Utilities.toast(activity, errorMessage)
+            val resourceId = items.resourceId
+            if (resourceId == null) {
+                Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
+                return@launch
             }
-        }
-    }
 
-    private fun createAttachmentDir(resourceId: String?, name: String) {
-        val baseDir = File(context?.getExternalFilesDir(null), "ole/$resourceId")
-        val lastSlashIndex = name.lastIndexOf('/')
-        if (lastSlashIndex > 0) {
-            val dirPath = name.substring(0, lastSlashIndex)
-            File(baseDir, dirPath).mkdirs()
+            val result = resourcesRepository.getHtmlResourceDownloadUrls(resourceId)
+            when (result) {
+                is ResourceUrlsResponse.Success -> {
+                    startDownloadWithAutoOpen(ArrayList(result.urls), items)
+                }
+                is ResourceUrlsResponse.ResourceNotFound -> {
+                    Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
+                }
+                is ResourceUrlsResponse.NoAttachments -> {
+                    Utilities.toast(activity, getString(R.string.resource_has_no_attachments))
+                }
+                is ResourceUrlsResponse.Error -> {
+                    Utilities.toast(activity, getString(R.string.unable_to_download_resource))
+                }
+            }
         }
     }
 
@@ -332,14 +320,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             btnResources.text = getString(R.string.resources_size, resources.size)
             btnResources.setOnClickListener {
                 if (resources.isNotEmpty()) {
-                    showDownloadDialog(resources)
+                    lifecycleScope.launch {
+                        showDownloadDialog(resources)
+                    }
                 }
             }
         }
     }
 
     open fun handleBackPressed() {
-        NavigationHelper.popBackStack(parentFragmentManager)
+        FragmentNavigator.popBackStack(parentFragmentManager)
     }
 
     override fun onPause() {

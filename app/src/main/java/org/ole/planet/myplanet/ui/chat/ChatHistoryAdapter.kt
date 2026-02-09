@@ -13,30 +13,25 @@ import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.teams.TeamSelectionAdapter
-import org.ole.planet.myplanet.ui.voices.ExpandableListAdapter
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-
-data class ChatShareTargets(
-    val community: RealmMyTeam?,
-    val teams: List<RealmMyTeam>,
-    val enterprises: List<RealmMyTeam>,
-)
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,
-    private var currentUser: RealmUserModel?,
+    private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
@@ -57,9 +52,9 @@ class ChatHistoryAdapter(
     )
 ) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
-    private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
+    private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
     private var chatTitle: String? = ""
-    private lateinit var expandableListAdapter: ExpandableListAdapter
+    private lateinit var expandableListAdapter: ChatShareTargetAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
 
@@ -68,7 +63,7 @@ class ChatHistoryAdapter(
         submitList(chatHistory)
     }
 
-    fun updateCachedData(user: RealmUserModel?, sharedNews: List<RealmNews>) {
+    fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
     }
@@ -84,11 +79,7 @@ class ChatHistoryAdapter(
         }
     }
 
-    interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?)
-    }
-
-    fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
+    fun setChatHistoryItemClickListener(listener: OnChatHistoryItemClickListener) {
         chatHistoryItemClickListener = listener
     }
 
@@ -217,7 +208,7 @@ class ChatHistoryAdapter(
 
                 expandableDetailList = getData() as HashMap<String, List<String>>
                 expandableTitleList = ArrayList(expandableDetailList.keys)
-                expandableListAdapter = ExpandableListAdapter(context, expandableTitleList, expandableDetailList)
+                expandableListAdapter = ChatShareTargetAdapter(context, expandableTitleList, expandableDetailList)
                 chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
 
                 chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
@@ -260,7 +251,7 @@ class ChatHistoryAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val teamSelectionAdapter = TeamSelectionAdapter(section) { selectedItem ->
+        val teamSelectionAdapter = TeamsSelectionAdapter(section) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }

@@ -5,10 +5,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
@@ -40,36 +37,6 @@ open class RealmCourseProgress : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
-        fun getCourseProgress(mRealm: Realm, userId: String?): HashMap<String?, JsonObject> {
-            val r = getMyCourseByUserId(userId, mRealm.where(RealmMyCourse::class.java).findAll())
-            val map = HashMap<String?, JsonObject>()
-            for (course in r) {
-                val `object` = JsonObject()
-                val steps = getCourseSteps(mRealm, course.courseId)
-                `object`.addProperty("max", steps.size)
-                `object`.addProperty("current", getCurrentProgress(steps, mRealm, userId, course.courseId))
-                if (isMyCourse(userId, course.courseId, mRealm)) map[course.courseId] = `object`
-            }
-            return map
-        }
-
-        @JvmStatic
-        fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
-            val progresses = mRealm.where(RealmCourseProgress::class.java)
-                .equalTo("userId", userId)
-                .equalTo("courseId", courseId)
-                .findAll()
-            val completedSteps = progresses.map { it.stepNum }.toSet()
-            var i = 0
-            while (i < (steps?.size ?: 0)) {
-                if (!completedSteps.contains(i + 1)) {
-                    break
-                }
-                i++
-            }
-            return i
-        }
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {

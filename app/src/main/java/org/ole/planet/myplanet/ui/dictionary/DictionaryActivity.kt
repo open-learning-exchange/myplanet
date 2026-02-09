@@ -14,12 +14,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.RealmDictionary
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
@@ -56,16 +56,16 @@ class DictionaryActivity : BaseActivity() {
         }
         if (isEmpty) {
             val context = this@DictionaryActivity
-            val json = withContext(Dispatchers.IO) {
-                try {
-                    val data = FileUtils.getStringFromFile(
+            val json = try {
+                val data = withContext(Dispatchers.IO) {
+                    FileUtils.getStringFromFile(
                         FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                     )
-                    JsonUtils.gson.fromJson(data, JsonArray::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    null
                 }
+                JsonUtils.gson.fromJson(data, JsonArray::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
             }
             json?.let { jsonArray ->
                 databaseService.withRealm { realm ->
@@ -93,12 +93,8 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryCount(): Long {
-        return withContext(Dispatchers.IO) {
-            var count = 0L
-            databaseService.withRealm { realm ->
-                count = realm.where(RealmDictionary::class.java).count()
-            }
-            count
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmDictionary::class.java).count()
         }
     }
 

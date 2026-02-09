@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.BuildConfig
 
 class DatabaseService(context: Context) {
     val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val realmDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
     init {
         Realm.init(context)
@@ -55,10 +56,15 @@ class DatabaseService(context: Context) {
     }
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
-        withContext(ioDispatcher) {
-            Realm.getDefaultInstance().use { realm ->
-                realm.executeTransaction { transactionRealm ->
-                    transaction(transactionRealm)
+        withContext(realmDispatcher) {
+            val realm = Realm.getDefaultInstance()
+            try {
+                realm.executeTransaction { r ->
+                    transaction(r)
+                }
+            } finally {
+                if (!realm.isClosed) {
+                    realm.close()
                 }
             }
         }

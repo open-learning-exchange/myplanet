@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -28,14 +27,15 @@ import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.FeedbackReplyAdapter.ReplyViewHolder
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
-    private var mAdapter: FeedbackReplyAdapter? = null
+    private var replyAdapter: FeedbackReplyAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private var feedback: RealmFeedback? = null
     private lateinit var feedbackId: String
@@ -69,9 +69,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter = FeedbackReplyAdapter(applicationContext)
-                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-                        mAdapter!!.submitList(it.messageList)
+                        replyAdapter = FeedbackReplyAdapter(applicationContext)
+                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
+                        replyAdapter!!.submitList(it.messageList)
                         updateForClosed()
                     }
                 }
@@ -157,15 +157,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     companion object {
-        val DIFF_CALLBACK: DiffUtil.ItemCallback<FeedbackReply> =
-            object : DiffUtil.ItemCallback<FeedbackReply>() {
-                override fun areItemsTheSame(oldItem: FeedbackReply, newItem: FeedbackReply): Boolean {
-                    return oldItem.date == newItem.date && oldItem.user == newItem.user
-                }
-
-                override fun areContentsTheSame(oldItem: FeedbackReply, newItem: FeedbackReply): Boolean {
-                    return oldItem == newItem
-                }
-            }
+        val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.date == newItem.date && oldItem.user == newItem.user },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
     }
 }

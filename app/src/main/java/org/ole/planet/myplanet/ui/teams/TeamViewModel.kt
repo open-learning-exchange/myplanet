@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
 
 @HiltViewModel

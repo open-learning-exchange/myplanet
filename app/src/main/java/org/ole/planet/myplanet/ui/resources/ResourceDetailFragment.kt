@@ -10,9 +10,8 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -20,19 +19,21 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
+    @Inject
+    lateinit var ratingsRepository: RatingsRepository
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
     private lateinit var library: RealmMyLibrary
-    var userModel: RealmUserModel? = null
+    var userModel: RealmUser? = null
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
         return resourcesRepository.getLibraryItemById(libraryId)
             ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
@@ -56,14 +57,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             val userId = profileDbHandler.userModel?.id
             try {
-                val updatedLibrary = withContext(Dispatchers.IO) {
-                    val backgroundLibrary = fetchLibrary(libraryId!!)
-                    when {
-                        backgroundLibrary == null -> null
-                        backgroundLibrary.userId?.contains(userId) != true && userId != null ->
-                            resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
-                        else -> backgroundLibrary
-                    }
+                val backgroundLibrary = fetchLibrary(libraryId!!)
+                val updatedLibrary = when {
+                    backgroundLibrary == null -> null
+                    backgroundLibrary.userId?.contains(userId) != true && userId != null ->
+                        resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
+                    else -> backgroundLibrary
                 }
                 if (updatedLibrary != null) {
                     library = updatedLibrary
@@ -121,7 +120,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun handleLibraryNotFound() {
         Toast.makeText(requireContext(), "Resource not found", Toast.LENGTH_LONG).show()
-        NavigationHelper.popBackStack(parentFragmentManager)
+        FragmentNavigator.popBackStack(parentFragmentManager)
     }
 
     private fun setLibraryData() {
@@ -142,9 +141,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
             try {
-                withContext(Dispatchers.IO) {
-                    profileDbHandler.setResourceOpenCount(library)
-                }
+                profileDbHandler.setResourceOpenCount(library)
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }
@@ -223,17 +220,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (!isAdded) {
                     return@launch
                 }
-                val updatedLibrary = withContext(Dispatchers.IO) {
-                    try {
-                        if (userId != null) {
-                            resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
-                        } else {
-                            null
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                val updatedLibrary = try {
+                    if (userId != null) {
+                        resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                    } else {
                         null
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
                 }
                 try {
                     if (updatedLibrary != null) {
@@ -253,7 +248,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (activity is AddResourceActivity) {
                 activity.finish()
             } else {
-                NavigationHelper.popBackStack(parentFragmentManager)
+                FragmentNavigator.popBackStack(parentFragmentManager)
             }
         }
     }
@@ -266,11 +261,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (!isAdded) return@launch
             try {
                 withTimeout(2000) {
-                    val rating = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
-                        } as? com.google.gson.JsonObject
-                    }
+                    val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
                     lastKnownRating = rating
                     setRatings(rating)
                 }

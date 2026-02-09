@@ -9,16 +9,16 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.teams.member.MemberDetailFragment
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 internal class CommunityLeadersAdapter(
     var context: Context,
-    private val userProfileDbHandler: UserProfileDbHandler
-) : ListAdapter<RealmUserModel, CommunityLeadersAdapter.ViewHolderLeader>(
+    private val userSessionManager: UserSessionManager
+) : ListAdapter<RealmUser, CommunityLeadersAdapter.CommunityLeadersViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
             areContentsTheSame = { oldItem, newItem ->
@@ -28,13 +28,13 @@ internal class CommunityLeadersAdapter(
             }
         )
     ) {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderLeader {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommunityLeadersViewHolder {
         val rowJoinedUserBinding =
             RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderLeader(rowJoinedUserBinding)
+        return CommunityLeadersViewHolder(rowJoinedUserBinding)
     }
 
-    override fun onBindViewHolder(holder: ViewHolderLeader, position: Int) {
+    override fun onBindViewHolder(holder: CommunityLeadersViewHolder, position: Int) {
         val leader = getItem(position)
         if (leader.firstName == null) {
             holder.title.text = leader.name
@@ -48,10 +48,10 @@ internal class CommunityLeadersAdapter(
         }
     }
 
-    private fun showLeaderDetails(leader: RealmUserModel) {
+    private fun showLeaderDetails(leader: RealmUser) {
         val activity = context as? FragmentActivity
         if (activity?.findViewById<View>(R.id.fragment_container) != null) {
-            val fragment = MemberDetailFragment.newInstance(
+            val fragment = MembersDetailFragment.newInstance(
                 name = leader.name ?: "",
                 email = leader.email ?: "",
                 dob = leader.dob ?: "",
@@ -63,7 +63,7 @@ internal class CommunityLeadersAdapter(
                 memberLevel = leader.level ?: "",
                 imageUrl = null
             )
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
                 fragment,
@@ -72,7 +72,7 @@ internal class CommunityLeadersAdapter(
         }
     }
 
-    internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
+    internal inner class CommunityLeadersViewHolder(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
         var title = rowJoinedUserBinding.tvTitle
         var tvDescription = rowJoinedUserBinding.tvDescription
         var icon = rowJoinedUserBinding.icMore

@@ -16,42 +16,38 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.ItemTouchHelperListener
-import org.ole.planet.myplanet.callback.ItemTouchHelperViewHolder
+import org.ole.planet.myplanet.callback.OnItemDragStateListener
+import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
-import org.ole.planet.myplanet.ui.references.ReferenceFragment
+import org.ole.planet.myplanet.ui.references.ReferencesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
-import org.ole.planet.myplanet.utilities.DiffUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
-    private val lifeRepository: LifeRepository
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), ItemTouchHelperListener {
+    private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
+    private val reorderCallback: (List<RealmMyLife>) -> Unit
+) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
     private val hide = 0.5f
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
-        return ViewHolderLife(v)
+        return LifeViewHolder(v)
     }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val myLife = getItem(position)
-        if (holder is ViewHolderLife) {
+        if (holder is LifeViewHolder) {
             holder.title.text = myLife.title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLife.imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
@@ -70,7 +66,7 @@ class LifeAdapter(
             }
             holder.visibility.setOnClickListener {
                 holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
-                updateVisibility(holder, holder.bindingAdapterPosition, myLife.isVisible)
+                updateVisibility(holder.bindingAdapterPosition, myLife.isVisible)
             }
             if (!myLife.isVisible) {
                 changeVisibility(holder, R.drawable.ic_visibility, hide)
@@ -80,32 +76,13 @@ class LifeAdapter(
         }
     }
 
-    private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
+    private fun updateVisibility(position: Int, isVisible: Boolean) {
         val myLife = getItem(position)
-        myLife._id?.let {
-            MainApplication.applicationScope.launch(Dispatchers.IO) {
-                lifeRepository.updateVisibility(!isVisible, it)
-                launch(Dispatchers.Main) {
-                    if (isVisible) {
-                        changeVisibility(holder, R.drawable.ic_visibility, hide)
-                        Utilities.toast(
-                            context,
-                            myLife.title + context.getString(R.string.is_now_hidden)
-                        )
-                    } else {
-                        changeVisibility(holder, R.drawable.ic_visibility_off, show)
-                        Utilities.toast(
-                            context,
-                            myLife.title + " " + context.getString(R.string.is_now_shown)
-                        )
-                    }
-                }
-            }
-        }
+        visibilityCallback(myLife, !isVisible)
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
-        (holder as ViewHolderLife).visibility.setImageResource(imageId)
+        (holder as LifeViewHolder).visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
     }
 
@@ -113,15 +90,13 @@ class LifeAdapter(
         val newList = currentList.toMutableList()
         val movedItem = newList.removeAt(fromPosition)
         newList.add(toPosition, movedItem)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
-            lifeRepository.updateMyLifeListOrder(newList)
-        }
+        reorderCallback(newList)
         submitList(newList)
         return true
     }
 
-    internal inner class ViewHolderLife(itemView: View) : RecyclerView.ViewHolder(itemView),
-        ItemTouchHelperViewHolder {
+    internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
+        OnItemDragStateListener {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
         var dragImageButton: ImageButton = itemView.findViewById(R.id.drag_image_button)
@@ -137,7 +112,7 @@ class LifeAdapter(
             if (viewHolder != null) {
                 val myLife = getItem(viewHolder.bindingAdapterPosition)
                 if (!myLife.isVisible) {
-                    (viewHolder as ViewHolderLife?)?.rvItemContainer?.alpha = hide
+                    (viewHolder as LifeViewHolder?)?.rvItemContainer?.alpha = hide
                 }
             }
         }
@@ -155,7 +130,7 @@ class LifeAdapter(
                 "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()
-                "ic_references" -> return ReferenceFragment()
+                "ic_references" -> return ReferencesFragment()
                 "my_achievement" -> return AchievementFragment()
             }
             return null
@@ -173,7 +148,7 @@ class LifeAdapter(
             val activity = context as? AppCompatActivity
             activity?.let { act ->
                 f?.let {
-                    NavigationHelper.replaceFragment(
+                    FragmentNavigator.replaceFragment(
                         act.supportFragmentManager,
                         R.id.fragment_container,
                         it,

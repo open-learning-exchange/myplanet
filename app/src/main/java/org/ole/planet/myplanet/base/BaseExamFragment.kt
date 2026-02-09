@@ -20,43 +20,46 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
-import io.realm.Realm
-import io.realm.RealmResults
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.CoroutineScope
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.utilities.CameraUtils
-import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
+import org.ole.planet.myplanet.utils.CameraUtils
+import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
-    lateinit var databaseService: DatabaseService
-    lateinit var mRealm: Realm
+    lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
     var currentIndex = 0
     private var stepNumber = 0
-    var questions: RealmResults<RealmExamQuestion>? = null
+    var questions: List<RealmExamQuestion>? = null
     var ans = ""
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var sub: RealmSubmission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
@@ -71,23 +74,23 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")
             isMySurvey = requireArguments().getBoolean("isMySurvey")
             isTeam = requireArguments().getBoolean("isTeam", false)
             teamId = requireArguments().getString("teamId")
-            checkId()
             checkType()
         }
     }
 
-    private fun checkId() {
+    private suspend fun checkId() {
         if (TextUtils.isEmpty(stepId)) {
             id = requireArguments().getString("id")
             if (isMySurvey) {
-                sub = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                id?.let {
+                    sub = submissionsRepository.getSubmissionById(it)
+                }
                 id = if (sub?.parentId?.contains("@") == true) {
                     sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
                 } else {
@@ -103,11 +106,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    fun initExam() {
+    suspend fun initExam() {
+        checkId()
         exam = if (!TextUtils.isEmpty(stepId)) {
-            mRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
+            stepId?.let { submissionsRepository.getExamByStepId(it) }
         } else {
-            mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+            id?.let { submissionsRepository.getExamById(it) }
         }
     }
 
@@ -147,19 +151,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    NavigationHelper.popBackStack(parentFragmentManager)
+                    FragmentNavigator.popBackStack(parentFragmentManager)
                 }.setCancelable(false).show()
         }
     }
 
     private fun saveCourseProgress() {
-        val progress = mRealm.where(RealmCourseProgress::class.java)
-            .equalTo("courseId", exam?.courseId)
-            .equalTo("stepNum", stepNumber).findFirst()
-        if (progress != null) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            progress.passed = sub?.status == "graded"
-            mRealm.commitTransaction()
+        viewLifecycleOwner.lifecycleScope.launch {
+            coursesRepository.updateCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
         }
     }
 
@@ -167,18 +166,19 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (!isMySurvey && exam?.isFromNation != true) {
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            sub?.status = "complete"
-            mRealm.commitTransaction()
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            navigateToSurveyList(requireActivity())
+            viewLifecycleOwner.lifecycleScope.launch {
+                submissionsRepository.updateSubmissionStatus(sub?.id, "complete")
+                sub?.status = "complete"
+                Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+                navigateToSurveyList(requireActivity())
+            }
         }
     }
 
     companion object {
         fun navigateToSurveyList(activity: FragmentActivity) {
             val surveyListFragment = SurveyFragment()
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
                 surveyListFragment
@@ -187,17 +187,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
-        mRealm.beginTransaction()
-        val submit = mRealm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
-        submit.submissionId = submitId
-        submit.examId = exam?.id
-        submit.courseId = exam?.courseId
-        submit.memberId = user?.id
-        submit.date = date
-        submit.uniqueId = uniqueId
-        submit.photoLocation = photoPath
-        submit.uploaded = false
-        mRealm.commitTransaction()
+        applicationScope.launch {
+            submissionsRepository.addSubmissionPhoto(
+                submitId,
+                exam?.id,
+                exam?.courseId,
+                user?.id,
+                photoPath
+            )
+        }
     }
 
     override fun onImageCapture(fileUri: String?) {
@@ -231,9 +229,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         CameraUtils.release()
         super.onDestroy()
     }

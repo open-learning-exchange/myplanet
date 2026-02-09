@@ -1,18 +1,37 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
+import org.ole.planet.myplanet.model.RealmUser
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val gson: Gson,
 ) : RealmRepository(databaseService), RatingsRepository {
+    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
+        return withRealmAsync { realm ->
+            getRatingsById(realm, type, resourceId, userId) as? JsonObject
+        }
+    }
+
+    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmRating.getRatings(realm, "course", userId)
+        }
+    }
+
+    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmRating.getRatings(realm, "resource", userId)
+        }
+    }
 
     override suspend fun getRatingSummary(
         type: String,
@@ -88,18 +107,18 @@ class RatingsRepositoryImpl @Inject constructor(
             rate = rate,
         )
 
-    private suspend fun findUserForRating(userId: String): RealmUserModel {
+    private suspend fun findUserForRating(userId: String): RealmUser {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
-        val user = findByField(RealmUserModel::class.java, "id", userId)
-            ?: findByField(RealmUserModel::class.java, "_id", userId)
+        val user = findByField(RealmUser::class.java, "id", userId)
+            ?: findByField(RealmUser::class.java, "_id", userId)
 
         return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
     }
 
     private fun setRatingData(
         ratingObject: RealmRating,
-        userModel: RealmUserModel?,
+        userModel: RealmUser?,
         type: String,
         itemId: String,
         title: String,

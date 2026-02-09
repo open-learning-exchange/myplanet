@@ -15,10 +15,10 @@ import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmMyLibrary : RealmObject() {
     @PrimaryKey
@@ -184,11 +184,13 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
+        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
             return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
         }
 
+        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
             val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
             return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
@@ -209,6 +211,7 @@ open class RealmMyLibrary : RealmObject() {
             return list.map { it.resourceId }.toTypedArray()
         }
 
+        @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val startTime = System.currentTimeMillis()
@@ -241,7 +244,7 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(personal: RealmMyLibrary, user: RealmUserModel?): JsonObject {
+        fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
                 addProperty("uploadDate", Date().time)
@@ -286,11 +289,21 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            resource?.setUserId(userId)
-            mRealm.commitTransaction()
+            try {
+                resource?.setUserId(userId)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
@@ -388,6 +401,7 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
+        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
         @JvmStatic
         fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
             val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }

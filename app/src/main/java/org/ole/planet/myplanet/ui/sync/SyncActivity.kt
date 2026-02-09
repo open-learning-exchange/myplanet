@@ -7,9 +7,8 @@ import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
@@ -52,45 +51,45 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.data.ApiClient
-import org.ole.planet.myplanet.data.ApiClient.client
-import org.ole.planet.myplanet.data.ApiInterface
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
-import org.ole.planet.myplanet.repository.ConfigurationRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.service.sync.SyncManager
-import org.ole.planet.myplanet.service.sync.TransactionSyncManager
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
-import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
-import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
-import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
-import org.ole.planet.myplanet.utilities.ServerConfigUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.Constants.autoSynFeature
+import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
+import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.DialogUtils.showSnack
+import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
+import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
+import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
+import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
+import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository.CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback,
     ConfigurationIdListener {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
@@ -114,7 +113,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var prefData: SharedPrefManager
     @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
+    lateinit var profileDbHandler: UserSessionManager
     lateinit var spnCloud: Spinner
     lateinit var protocolCheckIn: RadioGroup
     lateinit var serverUrl: EditText
@@ -129,7 +128,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
+    @Inject
     lateinit var service: DataService
+    @Inject
+    lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -138,7 +140,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
     @Inject
-    lateinit var configurationRepository: ConfigurationRepository
+    lateinit var configurationsRepository: ConfigurationsRepository
+
+    @Inject
+    open lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -147,7 +152,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     lateinit var transactionSyncManager: TransactionSyncManager
 
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.service.BroadcastService
+    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -161,15 +166,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                         }
 
                         is SyncManager.SyncStatus.Syncing -> {
-                            onSyncStarted()
+                            withContext(Dispatchers.Main) {
+                                onSyncStarted()
+                            }
                         }
 
                         is SyncManager.SyncStatus.Success -> {
-                            onSyncComplete()
+                            withContext(Dispatchers.Main) {
+                                onSyncComplete()
+                            }
                         }
 
                         is SyncManager.SyncStatus.Error -> {
-                            onSyncFailed(status.message)
+                            withContext(Dispatchers.Main) {
+                                onSyncFailed(status.message)
+                            }
                         }
                     }
                 }
@@ -193,7 +204,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                 }
                 isSync = false
                 forceSync = true
-                configurationRepository.checkVersion(this, settings)
+                configurationsRepository.checkVersion(this, settings)
             }
             else -> {
                 if (serverConfigAction == "sync") {
@@ -292,10 +303,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
+
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         try {
-            val url = if (settings.getBoolean("isAlternativeUrl", false)) {
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+            val url = if (isAlternativeUrl) {
                 if (processedUrl?.contains("/db") == true) {
                     processedUrl.replace("/db", "") + "/db/_all_dbs"
                 } else {
@@ -304,24 +317,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             } else {
                 "$processedUrl/_all_dbs"
             }
-            val response = apiInterface.isPlanetAvailableSuspend(url)
+
+            val response = apiInterface.isPlanetAvailable(url)
+            val code = response.code()
 
             if (response.isSuccessful) {
                 val ss = response.body()?.string()
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
 
-                return if ((myList?.size ?: 0) < 8) {
-                    withContext(Dispatchers.Main) {
-                        customProgressDialog.dismiss()
-                        alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                    }
+                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                val dbCount = myList?.size ?: 0
+
+                return if (dbCount < 8) {
+                    customProgressDialog.dismiss()
+                    alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     false
                 } else {
-                    withContext(Dispatchers.Main) {
-                        startSync(type)
-                    }
+                    startSync(type)
                     true
                 }
+            } else if (code == 401) {
+                startSync(type)
+                return true
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -334,10 +350,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
             else -> ""
         }
-        withContext(Dispatchers.Main) {
-            customProgressDialog.dismiss()
-            alertDialogOkay(errorMessage)
-        }
+        customProgressDialog.dismiss()
+        alertDialogOkay(errorMessage)
         return false
     }
 
@@ -379,43 +393,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
             if (settings != null) {
                 this.settings = settings
             }
-            val isEmpty = databaseService.withRealm { realm -> realm.isEmpty }
-            if (isEmpty) {
+            if (!userRepository.hasAtLeastOneUser()) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
-                checkName(username, password, isManagerMode)
+                val user = userRepository.authenticateUser(username, password, isManagerMode)
+                if (user != null) {
+                    saveUserInfoPref(this.settings, password, user)
+                    true
+                } else {
+                    false
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
             false
         }
-    }
-
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        try {
-            val user = databaseService.withRealm { realm ->
-                realm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
-            }
-            user?.let {
-                if (it._id?.isEmpty() == true) {
-                    if (username == it.name && password == it.password) {
-                        saveUserInfoPref(settings, password, it)
-                        return true
-                    }
-                } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                        if (isManagerMode && !it.isManager()) return false
-                        saveUserInfoPref(settings, password, it)
-                        return true
-                    }
-                }
-            }
-        } catch (err: Exception) {
-            err.printStackTrace()
-            return false
-        }
-        return false
     }
 
     fun startSync(type: String) {
@@ -468,13 +461,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
-    private fun onSyncStarted() {
-        customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
-        customProgressDialog.show()
-        isProgressDialogShowing = true
+    private suspend fun onSyncStarted() {
+        withContext(Dispatchers.Main) {
+            customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
+            customProgressDialog.show()
+            isProgressDialogShowing = true
+        }
     }
 
-    private fun onSyncFailed(msg: String?) {
+    private suspend fun onSyncFailed(msg: String?) {
         if (isProgressDialogShowing) {
             customProgressDialog.dismiss()
         }
@@ -490,24 +485,28 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         }
     }
 
-    private fun onSyncComplete() {
+    private suspend fun onSyncComplete() {
         val activityContext = this@SyncActivity
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                var attempt = 0
-                while (true) {
-                    val hasUser = databaseService.withRealm { realm ->
-                        realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
-                    }
-                    if (hasUser) {
-                        break
-                    }
-                    attempt++
-                    delay(1000)
+        try {
+            var attempt = 0
+            val maxAttempts = 3 // Maximum 3 seconds wait
+            while (attempt < maxAttempts) {
+                val hasUser = withContext(Dispatchers.IO) {
+                    userRepository.hasAtLeastOneUser()
                 }
+                if (hasUser) {
+                    break
+                }
+                attempt++
+                delay(1000)
+            }
 
-                withContext(Dispatchers.Main) {
-                    forceSyncTrigger()
+            if (attempt >= maxAttempts) {
+                Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
+            }
+
+            withContext(Dispatchers.Main) {
+                forceSyncTrigger()
                     val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
                     if (
                         syncedUrl != null &&
@@ -537,7 +536,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                                 editor.remove("pendingLanguageChange").apply()
 
                                 LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
-                                updateUIWithNewLanguage()
+                                recreate()
                             }
                         }
                     }
@@ -556,53 +555,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                backgroundDownload(
-                                    downloadAllFiles(getAllLibraryList(realm)),
-                                    activityContext
-                                )
-                            }
+                            backgroundDownload(
+                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
+                                activityContext
+                            )
                         }
                     }
 
                     cancelAll(activityContext)
 
-                    if (activityContext is LoginActivity) {
-                        activityContext.invalidateTeamsCacheAndReload()
-                    }
+                if (activityContext is LoginActivity) {
+                    activityContext.invalidateTeamsCacheAndReload()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
-        }
-    }
-
-    private fun updateUIWithNewLanguage() {
-        try {
-            if (::lblLastSyncDate.isInitialized) {
-                lblLastSyncDate.text = getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))
-            }
-
-            lblVersion.text = getString(R.string.app_version)
-            tvAvailableSpace.text = buildString {
-                append(getString(R.string.available_space_colon))
-                append(" ")
-                append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
-            }
-
-            inputName.hint = getString(R.string.hint_name)
-            inputPassword.hint = getString(R.string.password)
-            btnSignIn.text = getString(R.string.btn_sign_in)
-            btnGuestLogin.text = getString(R.string.btn_guest_login)
-            becomeMember.text = getString(R.string.become_a_member)
-            btnFeedback.text = getString(R.string.feedback)
-            openCommunity.text = getString(R.string.open_community)
-            val currentLanguage = LocaleUtils.getLanguage(this)
-            btnLang.text = getLanguageString(currentLanguage)
-            invalidateOptionsMenu()
         } catch (e: Exception) {
             e.printStackTrace()
-            recreate()
         }
     }
 
@@ -778,7 +745,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
+        if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {
@@ -792,7 +759,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope)
+        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope, configurationsRepository)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                 continueSyncProcess()
@@ -823,7 +790,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        if (customProgressDialog.isShowing() == true) {
+        if (customProgressDialog.isShowing()) {
             customProgressDialog.dismiss()
         }
         if (!blockSync) {
@@ -851,17 +818,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         }
     }
 
-
-    inner class MyTextWatcher(var view: View?) : TextWatcher {
-        override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-        override fun onTextChanged(s: CharSequence, i: Int, i1: Int, i2: Int) {
-            if (view?.id == R.id.input_server_url) {
-                positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
-            }
-        }
-        override fun afterTextChanged(editable: Editable) {}
-    }
-
     override fun onDestroy() {
         super.onDestroy()
     }
@@ -872,12 +828,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationRepository
         private val urlProtocolRegex by lazy { Regex("^https?://") }
 
         suspend fun clearRealmDb() {
-            withContext(Dispatchers.IO) {
-                val databaseService = (context.applicationContext as MainApplication).databaseService
-                databaseService.withRealm { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        transactionRealm.deleteAll()
-                    }
+            val databaseService = (context.applicationContext as MainApplication).databaseService
+            databaseService.withRealmAsync { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    transactionRealm.deleteAll()
                 }
             }
         }

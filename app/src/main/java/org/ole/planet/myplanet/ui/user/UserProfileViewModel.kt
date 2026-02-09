@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.services.UserSessionManager
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -21,11 +21,11 @@ sealed class ProfileUpdateState {
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val userProfileDbHandler: UserProfileDbHandler,
+    private val userSessionManager: UserSessionManager,
 ) : ViewModel() {
 
-    private val _userModel = MutableStateFlow<RealmUserModel?>(null)
-    val userModel: StateFlow<RealmUserModel?> = _userModel.asStateFlow()
+    private val _userModel = MutableStateFlow<RealmUser?>(null)
+    val userModel: StateFlow<RealmUser?> = _userModel.asStateFlow()
 
     private val _updateState = MutableStateFlow<ProfileUpdateState>(ProfileUpdateState.Idle)
     val updateState: StateFlow<ProfileUpdateState> = _updateState.asStateFlow()
@@ -107,21 +107,29 @@ class UserProfileViewModel @Inject constructor(
         _updateState.value = ProfileUpdateState.Idle
     }
 
-    val lastVisit: Long?
-        get() = userProfileDbHandler.lastVisit
+    private val _lastVisit = MutableStateFlow<Long?>(null)
+    val lastVisit: StateFlow<Long?> = _lastVisit.asStateFlow()
 
-    val offlineVisits: Int
-        get() = userProfileDbHandler.offlineVisits
+    private val _offlineVisits = MutableStateFlow(0)
+    val offlineVisits: StateFlow<Int> = _offlineVisits.asStateFlow()
 
-    val numberOfResourceOpen: String
-        get() = userProfileDbHandler.numberOfResourceOpen
+    private val _numberOfResourceOpen = MutableStateFlow("")
+    val numberOfResourceOpen: StateFlow<String> = _numberOfResourceOpen.asStateFlow()
 
     private val _maxOpenedResource = MutableStateFlow("")
     val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
 
     init {
         viewModelScope.launch {
-            _maxOpenedResource.value = userProfileDbHandler.maxOpenedResource()
+            _maxOpenedResource.value = userSessionManager.maxOpenedResource()
+            _lastVisit.value = userSessionManager.getGlobalLastVisit()
+            _numberOfResourceOpen.value = userSessionManager.getNumberOfResourceOpen()
+        }
+    }
+
+    fun getOfflineVisits() {
+        viewModelScope.launch {
+            _offlineVisits.value = userSessionManager.getOfflineVisits(userSessionManager.userModel)
         }
     }
 }

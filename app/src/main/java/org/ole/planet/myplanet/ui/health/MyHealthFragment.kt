@@ -16,14 +16,14 @@ import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ListView
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Sort
@@ -37,45 +37,45 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
-import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
-import org.ole.planet.myplanet.service.sync.SyncManager
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
 
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
 
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var userRepository: UserRepository
-    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
-    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    var userModel: RealmUserModel? = null
-    lateinit var userModelList: List<RealmUserModel>
-    lateinit var adapter: UserListAdapter
+    var userModel: RealmUser? = null
+    lateinit var userModelList: List<RealmUser>
+    lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -109,16 +109,14 @@ class MyHealthFragment : Fragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
+            startSyncManager()
         }
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -179,7 +177,7 @@ class MyHealthFragment : Fragment() {
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        binding.txtDob.hint = "yyyy-MM-dd'"
+        binding.txtDob.hint = "dd-MM-yyyy"
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -187,7 +185,7 @@ class MyHealthFragment : Fragment() {
                 val now = Calendar.getInstance()
                 val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
                     val selectedDate =
-                        String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                        String.format(Locale.US, "%02d-%02d-%04d", dayOfMonth, month + 1, year)
                     binding.txtDob.text = selectedDate
                 }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
                 dpd.show()
@@ -198,7 +196,7 @@ class MyHealthFragment : Fragment() {
 
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
-        adapter = UserListAdapter(requireActivity(), android.R.layout.simple_list_item_1, mutableListOf())
+        adapter = HealthUsersAdapter()
         setupInitialData()
         setupButtons()
     }
@@ -209,8 +207,8 @@ class MyHealthFragment : Fragment() {
         getHealthRecords(userId)
     }
 
-    private fun getCurrentUserProfileCopy(): RealmUserModel? {
-        return userProfileDbHandler.getUserModelCopy()
+    private fun getCurrentUserProfileCopy(): RealmUser? {
+        return userSessionManager.getUserModelCopy()
     }
 
     private fun setupButtons() {
@@ -226,14 +224,14 @@ class MyHealthFragment : Fragment() {
         binding.updateHealth.visibility = View.VISIBLE
 
         binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
+            startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
     }
 
     private fun setupRealtimeSync() {
-        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "health" && update.shouldRefreshUI) {
                     viewLifecycleOwner.lifecycleScope.launch {
@@ -242,7 +240,7 @@ class MyHealthFragment : Fragment() {
                 }
             }
         }
-        syncCoordinator.addListener(realtimeSyncListener)
+        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun getHealthRecords(memberId: String?) {
@@ -252,9 +250,7 @@ class MyHealthFragment : Fragment() {
             val fetchedUser = if (normalizedId.isNullOrEmpty()) {
                 null
             } else {
-                withContext(Dispatchers.IO) {
-                    userRepository.getUserByAnyId(normalizedId)
-                }
+                userRepository.getUserByAnyId(normalizedId)
             }
             if (!isAdded || _binding == null) {
                 return@launch
@@ -265,7 +261,7 @@ class MyHealthFragment : Fragment() {
                 startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
             }
             binding.updateHealth.setOnClickListener {
-                startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
+                startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
             }
             showRecords()
         }
@@ -276,23 +272,21 @@ class MyHealthFragment : Fragment() {
             val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             withContext(Dispatchers.Main) {
                 userModelList = users
-                adapter.clear()
-                adapter.addAll(userModelList)
-                adapter.notifyDataSetChanged()
+                adapter = HealthUsersAdapter { selected ->
+                    userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                    getHealthRecords(userId)
+                    dialog?.dismiss()
+                }
+                adapter.submitList(userModelList)
                 alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
                 alertHealthListBinding?.btnAddMember?.setOnClickListener {
                     startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
                 }
 
                 alertHealthListBinding?.let { binding ->
+                    binding.list.layoutManager = LinearLayoutManager(requireContext())
                     binding.list.adapter = adapter
                     setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
-                    binding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                        val selected = binding.list.adapter.getItem(i) as RealmUserModel
-                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                        getHealthRecords(userId)
-                        dialog?.dismiss()
-                    }
                     sortList(binding.spnSort, binding.list)
                     dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                         .setTitle(getString(R.string.select_health_member)).setView(binding.root)
@@ -303,7 +297,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
+    private fun sortList(spnSort: AppCompatSpinner, rv: RecyclerView) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
@@ -315,21 +309,17 @@ class MyHealthFragment : Fragment() {
                         2 -> "name" to Sort.ASCENDING
                         else -> "name" to Sort.DESCENDING
                     }
-                    val sortedList = withContext(Dispatchers.IO) {
-                        userRepository.getUsersSortedBy(sortBy, sort)
-                    }
+                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     if (isAdded) {
                         userModelList = sortedList
-                        adapter.clear()
-                        adapter.addAll(userModelList)
-                        adapter.notifyDataSetChanged()
+                        adapter.submitList(userModelList)
                     }
                 }
             }
         }
     }
 
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
+    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -340,25 +330,24 @@ class MyHealthFragment : Fragment() {
                     val loadingJob = launch(Dispatchers.Main) {
                         delay(100)
                         alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
-                        lv.visibility = View.GONE
+                        rv.visibility = View.GONE
                     }
 
-                    val userModelList = withContext(Dispatchers.IO) {
-                        userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
-                    }
+                    val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
 
                     loadingJob.cancel()
                     if (isAdded) {
                         alertHealthListBinding?.searchProgress?.visibility = View.GONE
-                        lv.visibility = View.VISIBLE
-                        val adapter = UserListAdapter(
-                            requireActivity(),
-                            android.R.layout.simple_list_item_1,
-                            userModelList
-                        )
-                        lv.adapter = adapter
+                        rv.visibility = View.VISIBLE
+                        val searchAdapter = HealthUsersAdapter { selected ->
+                            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                            getHealthRecords(userId)
+                            dialog?.dismiss()
+                        }
+                        searchAdapter.submitList(userModelList)
+                        rv.adapter = searchAdapter
                         btnAddMember.visibility =
-                            if (adapter.count == 0) View.VISIBLE else View.GONE
+                            if (userModelList.isEmpty()) View.VISIBLE else View.GONE
                     }
                 }
             }
@@ -396,7 +385,7 @@ class MyHealthFragment : Fragment() {
             binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = Utilities.checkNA(currentUser.dob)
+            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
             val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
 
@@ -461,8 +450,8 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
+        if (::onRealtimeSyncListener.isInitialized) {
+            syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null

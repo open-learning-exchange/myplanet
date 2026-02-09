@@ -26,38 +26,35 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
-import org.ole.planet.myplanet.callback.SecurityDataListener
-import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.data.ApiClient.client
-import org.ole.planet.myplanet.data.ApiInterface
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.api.ApiClient.client
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
-import org.ole.planet.myplanet.utilities.DialogUtils.showError
-import org.ole.planet.myplanet.utilities.FileUtils.installApk
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
-abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListener {
-    
+abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
-    
-    @Inject
-    lateinit var databaseService: DatabaseService
     
     @Inject
     lateinit var uploadManager: UploadManager
@@ -67,6 +64,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
 
     @Inject
     lateinit var userRepository: UserRepository
+
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -141,8 +143,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
     }
 
     fun setUrlParts(url: String, password: String): String {
+
         val editor = settings.edit()
         val uri = url.toUri()
+
         var couchdbURL: String
         val urlUser: String
         val urlPwd: String
@@ -157,8 +161,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         } else {
             urlUser = "satellite"
             urlPwd = password
-            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            val port = if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
+
         editor.putString("serverPin", password)
         saveUrlScheme(editor, uri, url, couchdbURL)
         editor.putString("url_user", urlUser)
@@ -166,25 +172,32 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         editor.putString("url_Scheme", uri.scheme)
         editor.putString("url_Host", uri.host)
         editor.apply()
+
+
         if (!couchdbURL.endsWith("db")) {
             couchdbURL += "/db"
         }
+
         return couchdbURL
     }
 
     fun isUrlValid(url: String): Boolean {
-        if (!URLUtil.isValidUrl(url) || url == "http://" || url == "https://") {
+        if (!URLUtil.isValidUrl(url)) {
+            showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
+            return false
+        }
+        if (url == "http://" || url == "https://") {
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataListener? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
         if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
+            uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
                         override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
@@ -197,7 +210,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
             })
             return
         } else if (source == "login") {
-            lifecycleScope.launch(Dispatchers.IO) {
+            applicationScope.launch(Dispatchers.Main) {
                 uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
             }
             return
@@ -205,16 +218,17 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        lifecycleScope.launch {
+        applicationScope.launch(Dispatchers.Main) {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
+            val activity = this@ProcessUserDataActivity
 
             fun checkAllOperationsComplete() {
                 if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    runOnUiThread {
-                        if (!isFinishing && !isDestroyed) {
+                    activity.runOnUiThread {
+                        if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()
-                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -238,38 +252,38 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
                 checkAllOperationsComplete()
             }
 
-            uploadManager.uploadUserActivities(object : SuccessListener {
+            uploadManager.uploadUserActivities(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            uploadManager.uploadExamResult(object : SuccessListener {
+            uploadManager.uploadExamResult(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            lifecycleScope.launch(Dispatchers.IO) {
+            applicationScope.launch(Dispatchers.IO) {
                 val success = uploadManager.uploadFeedback()
                 withContext(Dispatchers.Main) {
                     checkAllOperationsComplete()
                 }
             }
 
-            uploadManager.uploadResource(object : SuccessListener {
+            uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            uploadManager.uploadSubmitPhotos(object : SuccessListener {
+            uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
             })
 
-            uploadManager.uploadActivities(object : SuccessListener {
+            uploadManager.uploadActivities(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
                     checkAllOperationsComplete()
                 }
@@ -282,7 +296,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel?) {
+    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
         this.settings = settings ?: appPreferences
         settings.edit {
             putString("userId", user?.id)
@@ -326,12 +340,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         editor.putString("couchdbURL", couchdbURL)
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataListener? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObjectSuspended(UrlUtils.header, userDocUrl)
+                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)
 
                 if (response?.isSuccessful == true && response.body() != null) {
                     val userDoc = response.body()
@@ -366,7 +380,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), SuccessListen
         salt: String?,
         passwordScheme: String?,
         iterations: String?,
-        securityCallback: SecurityDataListener? = null,
+        securityCallback: OnSecurityDataListener? = null,
     ) {
         try {
             userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)

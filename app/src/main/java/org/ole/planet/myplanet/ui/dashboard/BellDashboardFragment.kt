@@ -11,6 +11,7 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -18,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -25,26 +27,29 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.sync.ServerUrlMapper
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.ChallengePrompter
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
+import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 
+@AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
 
@@ -57,7 +62,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val view = binding.root
         declareElements()
         onLoaded(view)
-        user = profileDbHandler?.userModel
+        user = profileDbHandler.userModel
         return binding.root
     }
 
@@ -216,16 +221,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
         val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-        preferences.edit()
-            .putLong("reminder_time_$surveyIds", reminderTime)
-            .putString("reminder_surveys_$surveyIds", surveyIds)
-            .apply()
-
-        val unitString = when (timeUnit) {
-            TimeUnit.MINUTES -> resources.getQuantityString(R.plurals.minutes, value, value)
-            TimeUnit.HOURS -> resources.getQuantityString(R.plurals.hours, value, value)
-            TimeUnit.DAYS -> resources.getQuantityString(R.plurals.days, value, value)
-            else -> "$value ${timeUnit.name.lowercase()}"
+        preferences.edit {
+            putLong("reminder_time_$surveyIds", reminderTime)
+                .putString("reminder_surveys_$surveyIds", surveyIds)
         }
 
         startReminderCheck()
@@ -274,12 +272,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
 
-        val editor = preferences.edit()
-        for (surveyIds in remindersToRemove) {
-            editor.remove("reminder_time_$surveyIds")
-            editor.remove("reminder_surveys_$surveyIds")
+        preferences.edit {
+            for (surveyIds in remindersToRemove) {
+                remove("reminder_time_$surveyIds")
+                remove("reminder_surveys_$surveyIds")
+            }
         }
-        editor.apply()
 
         return remindersToShow.isNotEmpty()
 
@@ -321,7 +319,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
-        val adapter = DashboardSurveyAdapter({ position ->
+        val adapter = DashboardSurveysAdapter({ position ->
             val selectedSurvey = pendingSurveys[position].id
             SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
         }, surveyListDialog!!)
@@ -338,7 +336,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
-        viewModel.loadCompletedCourses(user?.id)
+        user?.id?.let {
+            viewModel.loadCompletedCourses(it)
+        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -386,10 +386,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun setColor(courseId: String?, star: ImageView) {
-        if (isRealmInitialized() && RealmCertification.isCourseCertified(mRealm, courseId)) {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-        } else {
-            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (courseId != null && coursesRepository.isCourseCertified(courseId)) {
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+            } else {
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+            }
         }
     }
 
@@ -416,7 +418,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         }
-        binding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
+        binding.fabMyActivity.setOnClickListener { openHelperFragment(ActivitiesFragment()) }
         binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 
@@ -437,8 +439,29 @@ class BellDashboardFragment : BaseDashboardFragment() {
         surveyListDialog?.dismiss()
         surveyListDialog = null
         networkStatusJob?.cancel()
-       surveyReminderJob?.cancel()
+        surveyReminderJob?.cancel()
         super.onDestroyView()
         _binding = null
+    }
+
+    override fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
+        if (f is TeamDetailFragment) {
+            v.text = title
+            v.setOnClickListener {
+                lifecycleScope.launch {
+                    val teamObject = id?.let { viewModel.getTeamById(it) }
+                    val optimizedFragment = TeamDetailFragment.newInstance(
+                        teamId = id ?: "",
+                        teamName = title ?: "",
+                        teamType = teamObject?.type ?: "",
+                        isMyTeam = true
+                    )
+                    prefData.setTeamName(title)
+                    homeItemClickListener?.openCallFragment(optimizedFragment)
+                }
+            }
+        } else {
+            super.handleClick(id, title, f, v)
+        }
     }
 }

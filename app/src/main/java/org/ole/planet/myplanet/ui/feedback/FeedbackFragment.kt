@@ -12,11 +12,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
@@ -25,13 +26,9 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     @Inject
     lateinit var feedbackRepository: FeedbackRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
-    private var model: RealmUserModel ?= null
+    lateinit var userSessionManager: UserSessionManager
+    private var model: RealmUser ?= null
     var user: String? = ""
-
-    interface OnFeedbackSubmittedListener {
-        fun onFeedbackSubmitted()
-    }
 
     private var mListener: OnFeedbackSubmittedListener? = null
     fun setOnFeedbackSubmittedListener(listener: OnFeedbackSubmittedListener?) {
@@ -45,7 +42,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        model = userProfileDbHandler.userModel
+        model = userSessionManager.userModel
         user = model?.name
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)

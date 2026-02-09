@@ -11,8 +11,10 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
-import org.ole.planet.myplanet.data.ApiClient
-import org.ole.planet.myplanet.data.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.RetryInterceptor
+import org.ole.planet.myplanet.services.BroadcastService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -37,19 +39,24 @@ object NetworkModule {
             .create()
     }
 
-    private fun buildOkHttpClient(connect: Long, read: Long, write: Long): OkHttpClient {
-        return OkHttpClient.Builder()
+    private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {
+        val builder = OkHttpClient.Builder()
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
-            .build()
+
+        if (retryInterceptor != null) {
+            builder.addInterceptor(retryInterceptor)
+        }
+
+        return builder.build()
     }
 
     @Provides
     @Singleton
     @StandardHttpClient
-    fun provideStandardOkHttpClient(): OkHttpClient {
-        return buildOkHttpClient(10, 10, 10)
+    fun provideStandardOkHttpClient(broadcastService: BroadcastService): OkHttpClient {
+        return buildOkHttpClient(10, 10, 10, RetryInterceptor(broadcastService))
     }
 
     @Provides

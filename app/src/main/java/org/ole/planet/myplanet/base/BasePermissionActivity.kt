@@ -18,7 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     fun checkPermission(strPermission: String?): Boolean {

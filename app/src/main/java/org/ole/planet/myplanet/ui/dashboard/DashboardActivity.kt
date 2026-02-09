@@ -41,7 +41,6 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
@@ -52,76 +51,83 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.NotificationsListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.JoinRequestNotification
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.ChallengePrompter
+import org.ole.planet.myplanet.services.ThemeManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.notifications.NotificationsFragment
+import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.settings.SettingActivity
+import org.ole.planet.myplanet.ui.settings.SettingsActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
-import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
+import org.ole.planet.myplanet.ui.surveys.SendSurveyFragment
+import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.Constants.isBetaWifiFeatureEnabled
-import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.NotificationUtils
-import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
+import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint  
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationsListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
 
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var tabSelectedListener: OnTabSelectedListener
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
     @Inject
-    lateinit var resourcesRepository: ResourcesRepository
+    lateinit var coursesRepository: CoursesRepository
+
+    @Inject
+    lateinit var voicesRepository: VoicesRepository
+    @Inject
+    override lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
-    private val challengeHelper: ChallengeHelper by lazy {
-        ChallengeHelper(this, user, settings, editor, dashboardViewModel, progressRepository)
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
+    private val challengeManager: ChallengePrompter by lazy {
+        ChallengePrompter(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -208,12 +214,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupToolbarActions()
         hideWifi()
         handleNotificationIntent(intent)
-        setupRealmListeners()
+        setupDashboardDataObserver()
 
         binding.root.post {
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
-            challengeHelper.evaluateChallengeDialog()
+            challengeManager.evaluateChallengeDialog()
             reportFullyDrawn()
         }
     }
@@ -224,6 +230,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dashboardViewModel.uiState.collect { state ->
                     updateNotificationBadge(state.unreadNotifications) {
                         openNotificationsList(user?.id ?: "")
+                    }
+                    if (state.newNotifications.isNotEmpty()) {
+                        state.newNotifications.forEach { notificationManager.showNotification(it) }
+                        dashboardViewModel.clearNewNotifications()
                     }
                 }
             }
@@ -243,12 +253,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView = binding.topBarNavigation
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
-        service = DataService(this)
         tl = findViewById(R.id.tab_layout)
         onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
     }
 
@@ -281,7 +290,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userProfileDbHandler.userModel?.isShowTopbar == true
+        val isTopBarVisible = userSessionManager.userModel?.isShowTopbar == true
         navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
@@ -322,7 +331,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             delay(50)
-            if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            val offlineVisits = userSessionManager.getOfflineVisits(user)
+            if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
                 resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
             ) {
                 result?.openDrawer()
@@ -360,7 +370,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userSessionManager)
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
@@ -372,14 +382,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userSessionManager)
                 }
             }
-            R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
+            R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingsActivity::class.java))
             R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
-            R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
+            R.id.change_language -> SettingsActivity.SettingFragment.languageChanger(this)
             R.id.action_theme -> ThemeManager.showThemeDialog(this)
             else -> {}
         }
@@ -392,7 +402,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     result?.closeDrawer()
                 } else {
                     if (supportFragmentManager.backStackEntryCount > 1) {
-                        NavigationHelper.popBackStack(supportFragmentManager)
+                        FragmentNavigator.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
@@ -451,7 +461,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
                 }
                 NotificationUtils.TYPE_STORAGE -> {
-                    startActivity(Intent(this, SettingActivity::class.java))
+                    startActivity(Intent(this, SettingsActivity::class.java))
                 }
                 NotificationUtils.TYPE_JOIN_REQUEST -> {
                     val teamName = intent.getStringExtra("teamName")
@@ -504,12 +514,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = databaseService.withRealmAsync { realm ->
-                realm.where(RealmStepExam::class.java).equalTo("name", surveyId)
-                    .findFirst()?.let {
-                        realm.copyFromRealm(it)
-                    }
-            }
+            val currentStepExam = surveysRepository.getSurvey(surveyId)
             SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
         }
     }
@@ -552,18 +557,35 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
     }
-    private fun setupRealmListeners() {
-        lifecycleScope.launch {
-            resourcesRepository.getRecentResources(user?.id ?: "").collect { onRealmDataChange() }
+
+    private suspend fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
+        var lastException: Exception? = null
+        repeat(maxRetries) { attempt ->
+            try {
+                notificationsRepository.refresh()
+                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                withContext(Dispatchers.Main) {
+                    onNotificationCountUpdated(unreadCount)
+                }
+                return
+            } catch (e: Exception) {
+                lastException = e
+                e.printStackTrace()
+                if (attempt < maxRetries - 1) {
+                    delay(300)
+                }
+            }
         }
+        lastException?.printStackTrace()
+    }
+
+    private fun setupDashboardDataObserver() {
         lifecycleScope.launch {
-            resourcesRepository.getPendingDownloads(user?.id ?: "").collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            submissionsRepository.getPendingSurveysFlow(user?.id).collect { onRealmDataChange() }
-        }
-        lifecycleScope.launch {
-            teamsRepository.getTasksFlow(user?.id).collect { onRealmDataChange() }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.dashboardDataFlow(user?.id).collect {
+                    onRealmDataChange()
+                }
+            }
         }
     }
 
@@ -572,7 +594,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
                 lastNotificationCheckTime = currentTime
-                checkAndCreateNewNotifications()
+                lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id) }
             }
         }
     }
@@ -595,28 +617,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                             }
                                         }
                                     } else {
-                                        withContext(Dispatchers.IO) {
-                                            delay(300)
-                                            try {
-                                                 notificationsRepository.refresh()
-                                                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                                withContext(Dispatchers.Main) {
-                                                    onNotificationCountUpdated(unreadCount)
-                                                }
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                                delay(300)
-                                                try {
-                                                     notificationsRepository.refresh()
-                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                                    withContext(Dispatchers.Main) {
-                                                        onNotificationCountUpdated(unreadCount)
-                                                    }
-                                                } catch (e2: Exception) {
-                                                    e2.printStackTrace()
-                                                }
-                                            }
-                                        }
+                                        delay(300)
+                                        refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
                                     android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
@@ -645,55 +647,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             notificationsShownThisSession = true
             lifecycleScope.launch {
                 delay(1000)
-                checkAndCreateNewNotifications()
-            }
-        }
-    }
-
-    private fun checkAndCreateNewNotifications() {
-        val userId = user?.id
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-
-            try {
-                dashboardViewModel.updateResourceNotification(userId)
-
-                val taskData = teamsRepository.getTaskNotifications(userId)
-                val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
-
-                databaseService.realmInstance.use { backgroundRealm ->
-                    val createdNotifications = createNotifications(backgroundRealm, userId, taskData, joinRequestData)
-                    newNotifications.addAll(createdNotifications)
-
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            withContext(Dispatchers.Main) {
-                try {
-                    onNotificationCountUpdated(unreadCount)
-
-                    val groupedNotifications = newNotifications.groupBy { it.type }
-                    
-                    groupedNotifications.forEach { (type, notifications) ->
-                        when {
-                            notifications.size == 1 -> {
-                                notificationManager.showNotification(notifications.first())
-                            }
-                            notifications.size > 1 -> {
-                                val summaryConfig = createSummaryNotification(type, notifications.size)
-                                notificationManager.showNotification(summaryConfig)
-                            }
-                        }
-                    }
-
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                dashboardViewModel.checkAndCreateNewNotifications(user?.id)
             }
         }
     }
@@ -707,150 +661,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
     }
-
-    private fun createSummaryNotification(type: String, count: Int): NotificationUtils.NotificationConfig {
-        val summaryId = "summary_${type}"
-        
-        return when (type) {
-            "survey" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📋 New Surveys Available",
-                message = "$count new surveys are waiting for you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "task" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "✅ New Tasks Assigned",
-                message = "$count new tasks have been assigned to you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "join_request" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "👥 Team Join Requests",
-                message = "$count new team join requests to review",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_SOCIAL
-            )
-            "resource" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📚 New Resources Available",
-                message = "$count new resources have been added",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_RECOMMENDATION
-            )
-            "storage" -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "⚠️ Storage Warnings",
-                message = "$count storage warnings need attention",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_STATUS
-            )
-            else -> NotificationUtils.NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📱 App Notifications",
-                message = "$count new notifications",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_MESSAGE
-            )
-        }
-    }
-
-    private suspend fun createNotifications(
-        realm: Realm,
-        userId: String?,
-        taskData: List<Triple<String, String, String>>,
-        joinRequestData: List<JoinRequestNotification>
-    ): List<NotificationUtils.NotificationConfig> {
-        val surveyTitles = collectSurveyData(realm, userId)
-        val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
-
-        val notificationConfigs = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .findAll()
-            .mapNotNull { dbNotification ->
-                createNotificationConfigFromDatabase(dbNotification)
-            }
-            .toMutableList()
-
-        surveyTitles.forEach { title ->
-            dashboardViewModel.createNotificationIfMissing("survey", title, title, userId)
-        }
-
-        taskData.forEach { (title, deadline, id) ->
-            dashboardViewModel.createNotificationIfMissing("task", "$title $deadline", id, userId)
-        }
-
-        if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfMissing("storage", "$storageRatio%", "storage", userId)
-        }
-        dashboardViewModel.createNotificationIfMissing("storage", "90%", "storage_test", userId)
-
-        joinRequestData.forEach { (requesterName, teamName, requestId) ->
-            val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
-            dashboardViewModel.createNotificationIfMissing("join_request", message, requestId, userId)
-        }
-        return notificationConfigs
-    }
-
-    private fun collectSurveyData(realm: Realm, userId: String?): List<String> {
-        return realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("status", "pending")
-            .equalTo("type", "survey")
-            .findAll()
-            .mapNotNull { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                    ?.name
-            }
-    }
-
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
-        return when (dbNotification.type.lowercase()) {
-            "survey" -> notificationManager.createSurveyNotification(
-                dbNotification.id, 
-                dbNotification.message
-            ).copy(
-                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
-            )
-            "task" -> {
-                val parts = dbNotification.message.split(" ")
-                val taskTitle = parts.dropLast(3).joinToString(" ")
-                val deadline = parts.takeLast(3).joinToString(" ")
-                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
-                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
-                )
-            }
-            "resource" -> notificationManager.createResourceNotification(
-                dbNotification.id,
-                dbNotification.message.toIntOrNull() ?: 0
-            )
-            "storage" -> {
-                val storageValue = dbNotification.message.replace("%", "").toIntOrNull() ?: 0
-                notificationManager.createStorageWarningNotification(storageValue, dbNotification.id)
-            }
-            "join_request" -> notificationManager.createJoinRequestNotification(
-                dbNotification.id,
-                "New Request",
-                dbNotification.message
-            ).copy(
-                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
-            )
-            else -> null
-        }
-    }
-
 
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
@@ -888,15 +698,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkUser() {
-        user = userProfileDbHandler.userModel
+        user = userSessionManager.userModel
         if (user == null) {
             toast(this, getString(R.string.session_expired))
             logout()
             return
         }
-        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.become_a_member))
+        lifecycleScope.launch {
+            val offlineVisits = userSessionManager.getOfflineVisits(user)
+            if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
+                showGuestDialog()
+            }
+        }
+    }
+
+    private fun showGuestDialog() {
+        val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        builder.setTitle(getString(R.string.become_a_member))
             builder.setMessage(getString(R.string.trial_period_ended))
             builder.setCancelable(false)
             builder.setPositiveButton(getString(R.string.become_a_member), null)
@@ -919,7 +737,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
-        }
     }
 
     private fun topBarVisible(){
@@ -1059,7 +876,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userSessionManager)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -1071,7 +888,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userSessionManager)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -1199,14 +1016,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userSessionManager)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userProfileDbHandler)
+                    guestDialog(this, userSessionManager)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -1258,7 +1075,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onNotificationPermissionGranted() {
         super.onNotificationPermissionGranted()
         if (notificationsShownThisSession) {
-            checkAndCreateNewNotifications()
+            lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id) }
         }
     }
 

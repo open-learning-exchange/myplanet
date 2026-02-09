@@ -576,7 +576,6 @@
     <string name="added_to_my_library">تمت الإضافة إلى myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
-    <string name="planet_not_available">الكوكب غير متاح</string>
     <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
     <string name="removed_from_mylibrary">تمت الإزالة من مكتبتي</string>
@@ -704,12 +703,10 @@
     <string name="please_enter_server_url_first">يرجى إدخال عنوان URL الخادم أولاً.</string>
     <string name="username_cannot_be_empty">اسم المستخدم لا يمكن أن يكون فارغًا</string>
     <string name="unable_to_login">غير قادر على تسجيل الدخول</string>
-    <string name="planet_server_not_reachable">غير قادر على الوصول إلى خادم بلانت</string>
     <string name="select_language">اختر اللغة</string>
     <string name="thank_you">شكرًا لك!</string>
     <string name="please_wait">يرجى الانتظار…</string>
     <string name="update_later">تحديث لاحقًا</string>
-    <string name="checking_version">جاري التحقق من الإصدار…</string>
     <string name="downloading">جارٍ التنزيل…</string>
     <string name="pin_is_required">مطلوب رمز التعريف الشخصي</string>
     <string name="invalid_url">عنوان URL غير صالح</string>
@@ -1153,7 +1150,6 @@
     <string name="filter_by_label">تصفية حسب التصنيف</string>
     <string name="is_available">%1$s متاح. انقر للمتابعة في التعلم</string>
     <string name="failed_to_add_please_retry">فشل في الإضافة. الرجاء المحاولة مرة أخرى</string>
-    <string name="failed_to_mark_as_read">فشل في التعليم كمقروء. الرجاء المحاولة مرة أخرى</string>
     <string name="failed_to_remove_resource">فشل في إزالة المورد. الرجاء المحاولة مرة أخرى</string>
     <string name="failed_to_adopt_survey">فشل في اعتماد الاستبيان. الرجاء المحاولة مرة أخرى</string>
     <string name="failed_to_save_chat">فشل في حفظ الدردشة. الرجاء المحاولة مرة أخرى.</string>
@@ -1181,5 +1177,15 @@
     <string name="no_images_to_download">لا توجد صور لتنزيلها</string>
     <string name="app_theme">سمة التطبيق</string>
     <string name="team_surveys">استطلاعات الفريق</string>
+    <string name="enterprise_created">تم إنشاء المؤسسة</string>
+    <string name="image_already_added">تمت إضافة هذه الصورة بالفعل</string>
+    <string name="debug_retry_queue">قائمة إعادة المحاولة (تصحيح)</string>
+    <string name="debug_retry_queue_summary">عرض وإدارة محاولات الرفع الفاشلة</string>
+    <string name="retry_queue_status">حالة قائمة إعادة المحاولة</string>
+    <string name="pending_retries">محاولات معلّقة: %d</string>
+    <string name="trigger_retry_now">إعادة المحاولة الآن</string>
+    <string name="clear_retry_queue">مسح القائمة</string>
+    <string name="retry_triggered">تم تشغيل إعادة المحاولة</string>
+    <string name="retry_queue_cleared">تم مسح قائمة إعادة المحاولة</string>
 
 </resources>

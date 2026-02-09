@@ -31,6 +31,15 @@
 
     <PreferenceCategory
         android:dependency="beta_function"
+        android:title="@string/debug_retry_queue">
+        <Preference
+            android:key="debug_retry_queue"
+            android:title="@string/debug_retry_queue"
+            android:summary="@string/debug_retry_queue_summary" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:dependency="beta_function"
         android:title="@string/beta_functionality">
         <SwitchPreference
             android:defaultValue="false"

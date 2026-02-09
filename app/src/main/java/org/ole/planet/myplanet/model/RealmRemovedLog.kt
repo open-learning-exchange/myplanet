@@ -8,30 +8,54 @@ import java.util.UUID
 open class RealmRemovedLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    private var userId: String? = null
-    private var type: String? = null
-    private var docId: String? = null
+    var userId: String? = null
+    var type: String? = null
+    var docId: String? = null
 
     companion object {
         @JvmStatic
         fun onAdd(mRealm: Realm, type: String?, userId: String?, docId: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            mRealm.where(RealmRemovedLog::class.java)
-                .equalTo("type", type)
-                .equalTo("userId", userId)
-                .equalTo("docId", docId)
-                .findAll().deleteAllFromRealm()
-            mRealm.commitTransaction()
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
+                mRealm.beginTransaction()
+            }
+            try {
+                mRealm.where(RealmRemovedLog::class.java)
+                    .equalTo("type", type)
+                    .equalTo("userId", userId)
+                    .equalTo("docId", docId)
+                    .findAll().deleteAllFromRealm()
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
         fun onRemove(mRealm: Realm, type: String, userId: String?, docId: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val log = mRealm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
-            log.docId = docId
-            log.userId = userId
-            log.type = type
-            mRealm.commitTransaction()
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
+                mRealm.beginTransaction()
+            }
+            try {
+                val log = mRealm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
+                log.docId = docId
+                log.userId = userId
+                log.type = type
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic

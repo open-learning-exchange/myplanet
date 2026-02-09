@@ -10,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,23 +26,24 @@ import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.voices.NewsActions
-import org.ole.planet.myplanet.ui.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
-import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.NavigationHelper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.VoicesLabelManager
+import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
+import org.ole.planet.myplanet.utils.FileUtils.getImagePath
+import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -49,13 +51,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var databaseService: DatabaseService
     var id: String? = null
-    private lateinit var newsAdapter: NewsAdapter
-    var user: RealmUserModel? = null
+    private lateinit var newsAdapter: VoicesAdapter
+    var user: RealmUser? = null
 
     private val viewModel: ReplyViewModel by viewModels()
     
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     @Inject
@@ -79,7 +81,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = userProfileDbHandler.userModel
+        user = userSessionManager.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -98,7 +100,26 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
-                newsAdapter = NewsAdapter(this@ReplyActivity, user, news, "", null, userProfileDbHandler, lifecycleScope, userRepository, voicesRepository, teamsRepository)
+                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+                newsAdapter = VoicesAdapter(
+                    context = this@ReplyActivity,
+                    currentUser = user,
+                    parentNews = news,
+                    teamName = "",
+                    teamId = null,
+                    userSessionManager = userSessionManager,
+                    scope = lifecycleScope,
+                    isTeamLeaderFn = { false },
+                    getUserFn = { userId -> userRepository.getUserById(userId) },
+                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    },
+                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    labelManager = labelManager,
+                    voicesRepository = voicesRepository
+                )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
@@ -136,14 +157,16 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onNewsItemClick(news: RealmNews?) {}
 
-    override fun onMemberSelected(userModel: RealmUserModel?) {
-        val fragment = NewsActions.showMemberDetails(userModel, userProfileDbHandler) ?: return
-        NavigationHelper.replaceFragment(
-            supportFragmentManager,
-            R.id.fragment_container,
-            fragment,
-            addToBackStack = true
-        )
+    override fun onMemberSelected(userModel: RealmUser?) {
+        lifecycleScope.launch {
+            val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return@launch
+            FragmentNavigator.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
+        }
     }
 
     override fun clearImages() {
@@ -169,6 +192,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
+        if (isImageAlreadyAdded(path)) {
+            Toast.makeText(this, R.string.image_already_added, Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
@@ -178,6 +206,17 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             showSelectedImages()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun isImageAlreadyAdded(path: String): Boolean {
+        return imageList.any { imageJson ->
+            try {
+                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                getString("imageUrl", imgObject) == path
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 

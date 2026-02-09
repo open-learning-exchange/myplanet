@@ -17,17 +17,18 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
+import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
 @AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentCourseDetailBinding? = null
     private val binding get() = _binding!!
     var courses: RealmMyCourse? = null
-    var user: RealmUserModel? = null
+    var user: RealmUser? = null
     var id: String? = null
     @Inject
     lateinit var ratingsRepository: RatingsRepository
@@ -75,7 +76,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setResourceButton(resources, binding.btnResources)
         val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
         setOpenResourceButton(downloadedResources, binding.btnOpen)
-        val steps = coursesRepository.getCourseSteps(courseId)
+        val steps = coursesRepository.getCourseSteps(courseId ?: "")
         setStepsList(steps)
         refreshRatings()
     }
@@ -90,7 +91,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setStepsList(steps: List<RealmCourseStep>) {
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = StepsAdapter(requireActivity(), submissionsRepository, viewLifecycleOwner)
+        val adapter = CoursesStepsAdapter(requireActivity(), submissionsRepository, viewLifecycleOwner)
         binding.stepsList.adapter = adapter
         adapter.submitList(steps.map { step ->
             StepItem(

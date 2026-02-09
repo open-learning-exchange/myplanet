@@ -5,8 +5,10 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
@@ -49,28 +51,91 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow {
-        val realm = Realm.getDefaultInstance()
-        val results = realm.where(clazz).apply(builder).findAllAsync()
-        val listener = RealmChangeListener<RealmResults<T>> {
-            if (it.isLoaded && it.isValid) {
-                val frozenResults = it.freeze()
-                launch(databaseService.ioDispatcher) {
-                    val copiedList = databaseService.withRealmAsync { bgRealm ->
-                        bgRealm.copyFromRealm(frozenResults)
+        val isClosed = AtomicBoolean(false)
+        var realm: Realm? = null
+        var results: RealmResults<T>? = null
+        var listener: RealmChangeListener<RealmResults<T>>? = null
+
+        fun safeCloseRealm() {
+            if (isClosed.compareAndSet(false, true)) {
+                try {
+                    results?.let { res ->
+                        listener?.let { l ->
+                            if (res.isValid) {
+                                res.removeChangeListener(l)
+                            }
+                        }
                     }
-                    send(copiedList)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                try {
+                    realm?.let { r ->
+                        if (!r.isClosed) {
+                            r.close()
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
-        results.addChangeListener(listener)
 
-        awaitClose {
-            if (!realm.isClosed) {
-                results.removeChangeListener(listener)
+        try {
+            var retryCount = 0
+            val maxRetries = 10
+            while (retryCount < maxRetries) {
+                realm = Realm.getDefaultInstance()
+                if (!realm.isInTransaction) {
+                    break
+                }
                 realm.close()
+                realm = null
+                retryCount++
+                delay(50)
             }
+
+            if (realm == null) {
+                realm = Realm.getDefaultInstance()
+            }
+
+            val initialResults = realm.where(clazz).apply(builder).findAll()
+            if (initialResults.isValid && initialResults.isLoaded) {
+                val initialCopy = realm.copyFromRealm(initialResults)
+                send(initialCopy)
+            }
+            
+            results = realm.where(clazz).apply(builder).findAllAsync()
+            listener = RealmChangeListener<RealmResults<T>> { changedResults ->
+                if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
+                    try {
+                        val frozenResults = changedResults.freeze()
+                        launch(databaseService.ioDispatcher) {
+                            try {
+                                val frozenRealm = frozenResults.realm
+                                val copiedList = frozenRealm.copyFromRealm(frozenResults)
+                                if (!isClosed.get()) {
+                                    send(copiedList)
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+            results.addChangeListener(listener)
+
+            awaitClose {
+                safeCloseRealm()
+            }
+        } catch (e: Exception) {
+            safeCloseRealm()
+            throw e
         }
-    }.flowOn(Dispatchers.Main.immediate)
+    }.flowOn(Dispatchers.Main)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,

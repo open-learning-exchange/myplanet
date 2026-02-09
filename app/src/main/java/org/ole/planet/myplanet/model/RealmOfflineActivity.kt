@@ -7,9 +7,9 @@ import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey
@@ -58,25 +58,38 @@ open class RealmOfflineActivity : RealmObject() {
         @JvmStatic
         fun getRecentLogin(mRealm: Realm): RealmOfflineActivity? {
             return mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING)
+                .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", Sort.DESCENDING)
                 .findFirst()
         }
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            var activities = mRealm.where(RealmOfflineActivity::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+            val serverIdStr = JsonUtils.getString("_id", act)
+            val loginTime = JsonUtils.getLong("loginTime", act)
+            val userName = JsonUtils.getString("user", act)
+
+            var activities = mRealm.where(RealmOfflineActivity::class.java)
+                .equalTo("_id", serverIdStr)
+                .findFirst()
+
+            if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
+                activities = mRealm.where(RealmOfflineActivity::class.java)
+                    .equalTo("loginTime", loginTime)
+                    .equalTo("userName", userName)
+                    .findFirst()
+            }
+
             if (activities == null) {
-                activities = mRealm.createObject(RealmOfflineActivity::class.java, JsonUtils.getString("_id", act))
+                activities = mRealm.createObject(RealmOfflineActivity::class.java, serverIdStr)
             }
             if (activities != null) {
                 activities._rev = JsonUtils.getString("_rev", act)
-                activities._id = JsonUtils.getString("_id", act)
-                activities.loginTime = JsonUtils.getLong("loginTime", act)
+                activities._id = serverIdStr
+                activities.loginTime = loginTime
                 activities.type = JsonUtils.getString("type", act)
-                activities.userName = JsonUtils.getString("user", act)
+                activities.userName = userName
                 activities.parentCode = JsonUtils.getString("parentCode", act)
                 activities.createdOn = JsonUtils.getString("createdOn", act)
-                activities.userName = JsonUtils.getString("user", act)
                 activities.logoutTime = JsonUtils.getLong("logoutTime", act)
                 activities.androidId = JsonUtils.getString("androidId", act)
             }

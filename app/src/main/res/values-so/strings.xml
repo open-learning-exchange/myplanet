@@ -576,7 +576,6 @@
     <string name="added_to_my_library">lagu daray myLibrary</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
-    <string name="planet_not_available">Geedka aan la helin</string>
     <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
     <string name="all_files_downloaded_successfully">Dhammaan faylashu waa la degsanayaa si guul ah.</string>
     <string name="removed_from_mylibrary">Ka tirtiray Maktabaddayda</string>
@@ -704,12 +703,10 @@
     <string name="please_enter_server_url_first">Fadlan geli URL-ka serverka ee ugu horaysa.</string>
     <string name="username_cannot_be_empty">Magaca isticmaasha waa in lagu jiro waxaan kusoo haysano</string>
     <string name="unable_to_login">Lama helayno gashad</string>
-    <string name="planet_server_not_reachable">Serverka Geedka lama heli karo</string>
     <string name="select_language">Xulo luqadda</string>
     <string name="thank_you">Mahadsanid!</string>
     <string name="please_wait">Fadlan sug....</string>
     <string name="update_later">Guji dib iminka</string>
-    <string name="checking_version">Rajoo marka</string>
     <string name="downloading">Soo degsado.... "</string>
     <string name="pin_is_required">Pini waa loo baahan yahay</string>
     <string name="invalid_url">URL-ka ma jiro</string>
@@ -1153,7 +1150,6 @@
     <string name="filter_by_label">shaandhee calaamadda</string>
     <string name="is_available">%1$s waa la heli karaa. Taabo si aad u sii wadato barashada</string>
     <string name="failed_to_add_please_retry">Ku guuldareystay in lagu daro. Fadlan isku day mar kale</string>
-    <string name="failed_to_mark_as_read">Ku guuldareystay calaamadeynta sidii la akhriyey. Fadlan isku day mar kale</string>
     <string name="failed_to_remove_resource">Ku guuldareystay ka saarista kheyraadka. Fadlan isku day mar kale</string>
     <string name="failed_to_adopt_survey">Ku guuldareystay qaadashada sahanka. Fadlan isku day mar kale</string>
     <string name="failed_to_save_chat">Ku guuldareystay kaydinta wada hadalka. Fadlan isku day mar kale.</string>
@@ -1181,5 +1177,15 @@
     <string name="no_images_to_download">Ma jiraan sawiro la soo dejinayo</string>
     <string name="app_theme">Mawduuca app-ka</string>
     <string name="team_surveys">Sahaminta kooxda</string>
+    <string name="enterprise_created">Ganacsi La Sameeyay</string>
+    <string name="image_already_added">Sawirkan horay ayaa loo daray</string>
+    <string name="debug_retry_queue">Safka Dib-u-Isku-Dayga (Debug)</string>
+    <string name="debug_retry_queue_summary">Eeg oo maamul isku-dayada gelinta ee fashilmay</string>
+    <string name="retry_queue_status">Xaaladda Safka Dib-u-Isku-Dayga</string>
+    <string name="pending_retries">Isku-dayo sugaya: %d</string>
+    <string name="trigger_retry_now">Isku Day Hadda</string>
+    <string name="clear_retry_queue">Nadiifi Safka</string>
+    <string name="retry_triggered">Isku-day ayaa la bilaabay</string>
+    <string name="retry_queue_cleared">Safka dib-u-isku-dayga waa la nadiifiyay</string>
 
 </resources>

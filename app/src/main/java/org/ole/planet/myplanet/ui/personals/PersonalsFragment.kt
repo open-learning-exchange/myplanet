@@ -13,19 +13,19 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
+import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
+class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     private var _binding: FragmentMyPersonalsBinding? = null
     private val binding get() = _binding!!
     private lateinit var pg: DialogUtils.CustomProgressDialog
@@ -37,7 +37,7 @@ class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
     @Inject
     lateinit var personalsRepository: PersonalsRepository
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
@@ -58,7 +58,7 @@ class PersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = userProfileDbHandler.userModel
+        val model = userSessionManager.userModel
         personalAdapter = PersonalsAdapter(requireActivity())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter

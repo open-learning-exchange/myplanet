@@ -23,46 +23,48 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DataService
+import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.user.ProfileAdapter
-import org.ole.planet.myplanet.utilities.AuthUtils
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.ui.user.UsersAdapter
+import org.ole.planet.myplanet.utils.AuthUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils.getUrl
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
-class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
+class LoginActivity : SyncActivity(), OnUserProfileClickListener {
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
+
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var nameWatcher1: TextWatcher
     private lateinit var nameWatcher2: TextWatcher
-    private lateinit var passwordWatcher: TextWatcher
     private var guest = false
-    var users: List<RealmUserModel>? = null
-    private var mAdapter: ProfileAdapter? = null
+    var users: List<RealmUser>? = null
+    private var mAdapter: UsersAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
@@ -86,7 +88,6 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
-        service = DataService(this)
 
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
@@ -113,7 +114,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            configurationRepository.checkVersion(this, settings)
+            configurationsRepository.checkVersion(this, settings)
         }
         checkUsagesPermission()
         forceSyncTrigger()
@@ -193,13 +194,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = withContext(Dispatchers.IO) {
-                            databaseService.withRealm { realm ->
-                                realm.where(RealmUserModel::class.java)
-                                    .equalTo("name", enterUserName).findFirst()
-                                    ?.let { realm.copyFromRealm(it) }
-                            }
-                        }
+                        val user = userRepository.getUserByName(enterUserName)
                         if (user == null || !user.isArchived) {
                             submitForm(enterUserName, binding.inputPassword.text.toString())
                         } else {
@@ -244,7 +239,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         binding.btnGuestLogin.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
-                showGuestLoginDialog()
+                showGuestLoginDialog(userRepository)
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -282,10 +277,8 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         }
         declareHideKeyboardElements()
         binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-        nameWatcher1 = MyTextWatcher(binding.inputName)
-        passwordWatcher = MyTextWatcher(binding.inputPassword)
-        binding.inputName.addTextChangedListener(nameWatcher1)
-        binding.inputPassword.addTextChangedListener(passwordWatcher)
+        binding.inputName.doAfterTextChanged { binding.inputName.error = null }
+        binding.inputPassword.doAfterTextChanged { binding.inputPassword.error = null }
         binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
             if (isFinishing || isDestroyed) {
                 return@setOnEditorActionListener false
@@ -329,15 +322,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
             return
         }
         lifecycleScope.launch {
-            val teams = withContext(Dispatchers.IO) {
-                databaseService.withRealm { realm ->
-                    realm.where(RealmMyTeam::class.java)
-                        .isEmpty("teamId")
-                        .equalTo("status", "active")
-                        .findAll()
-                        ?.let { realm.copyFromRealm(it) }
-                }
-            }
+            val teams = teamsRepository.getAllActiveTeams()
             cachedTeams = teams
             setupTeamDropdown(teams)
         }
@@ -439,14 +424,6 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
             .show()
     }
 
-    private fun updateConfiguration(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-    }
-
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(newBase))
     }
@@ -466,32 +443,32 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
     }
 
     fun getTeamMembers() {
-        selectedTeamId = prefData.getSelectedTeamId().toString()
-        if (selectedTeamId?.isNotEmpty() == true) {
-            users = databaseService.withRealm { realm ->
-                RealmMyTeam.getUsers(selectedTeamId, realm, "membership").map { realm.copyFromRealm(it) }.toMutableList()
+        lifecycleScope.launch {
+            selectedTeamId = prefData.getSelectedTeamId().toString()
+            if (selectedTeamId?.isNotEmpty() == true) {
+                val teamMembers = teamsRepository.getJoinedMembers(selectedTeamId!!)
+                users = teamMembers
+                val userList = users?.map {
+                    User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+                } ?: emptyList()
+
+                val existingUsers = prefData.getSavedUsers().toMutableList()
+                val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+                val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+                prefData.setSavedUsers(updatedUserList)
             }
-            val userList = (users as? MutableList<RealmUserModel>)?.map {
-                User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-            } ?: emptyList()
 
-            val existingUsers = prefData.getSavedUsers().toMutableList()
-            val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-            val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-            prefData.setSavedUsers(updatedUserList)
+            if (mAdapter == null) {
+                mAdapter = UsersAdapter(this@LoginActivity)
+                binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+                binding.recyclerView.adapter = mAdapter
+            }
+            mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
+
+            binding.recyclerView.isNestedScrollingEnabled = true
+            binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+            binding.recyclerView.isVerticalScrollBarEnabled = true
         }
-
-        if (mAdapter == null) {
-        mAdapter = ProfileAdapter(this)
-            binding.recyclerView.layoutManager = LinearLayoutManager(this)
-            binding.recyclerView.adapter = mAdapter
-        }
-        mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
-
-        binding.recyclerView.isNestedScrollingEnabled = true
-        binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        binding.recyclerView.isVerticalScrollBarEnabled = true
-
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
@@ -505,7 +482,7 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
         } else {
             if (user.source == "guest"){
                 val model = databaseService.withRealm { realm ->
-                    RealmUserModel.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
+                    RealmUser.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
                 }
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
@@ -536,10 +513,9 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = withContext(Dispatchers.IO) {
-                        databaseService.withRealm { realm ->
-                            RealmUserModel.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
-                        }
+                    val model = databaseService.withRealmAsync { realm ->
+                        RealmUser.createGuestUser(username, realm, settings)
+                            ?.let { realm.copyFromRealm(it) }
                     }
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
@@ -654,14 +630,8 @@ class LoginActivity : SyncActivity(), ProfileAdapter.OnItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::nameWatcher1.isInitialized) {
-            binding.inputName.removeTextChangedListener(nameWatcher1)
-        }
         if (this::nameWatcher2.isInitialized) {
             binding.inputName.removeTextChangedListener(nameWatcher2)
-        }
-        if (this::passwordWatcher.isInitialized) {
-            binding.inputPassword.removeTextChangedListener(passwordWatcher)
         }
     }
 }

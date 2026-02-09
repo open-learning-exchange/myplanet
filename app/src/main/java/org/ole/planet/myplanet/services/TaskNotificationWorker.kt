@@ -1,0 +1,53 @@
+package org.ole.planet.myplanet.services
+
+import android.content.Context
+import androidx.hilt.work.HiltWorker
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import java.util.Calendar
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.NotificationUtils.create
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+
+@HiltWorker
+class TaskNotificationWorker @AssistedInject constructor(
+    @Assisted appContext: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val userSessionManager: UserSessionManager,
+    private val teamsRepository: TeamsRepository
+) : CoroutineWorker(appContext, workerParams) {
+
+    override suspend fun doWork(): Result {
+        val current = Calendar.getInstance().timeInMillis
+        val tomorrow = Calendar.getInstance()
+        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
+
+        val user = userSessionManager.userModel
+        val userId = user?.id
+        if (!userId.isNullOrBlank()) {
+            val tasks = runCatching {
+                teamsRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
+            }.getOrElse { emptyList() }
+
+            if (tasks.isNotEmpty()) {
+                tasks.forEach { task ->
+                    create(
+                        applicationContext,
+                        R.drawable.ole_logo,
+                        task.title,
+                        "Task expires on " + formatDate(task.deadline, ""),
+                    )
+                }
+
+                val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }
+                if (taskIds.isNotEmpty()) {
+                    runCatching { teamsRepository.markTasksNotified(taskIds) }
+                }
+            }
+        }
+        return Result.success()
+    }
+}

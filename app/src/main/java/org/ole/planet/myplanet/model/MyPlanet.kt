@@ -11,10 +11,10 @@ import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 
 class MyPlanet : Serializable {
     var planetVersion: String? = null
@@ -29,7 +29,7 @@ class MyPlanet : Serializable {
 
     companion object {
         @JvmStatic
-        fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
+        fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
@@ -44,7 +44,7 @@ class MyPlanet : Serializable {
         }
 
         @JvmStatic
-        fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
+        fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)

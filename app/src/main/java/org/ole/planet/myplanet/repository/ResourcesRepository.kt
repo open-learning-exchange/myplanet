@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmTag
 
 interface ResourcesRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
@@ -21,6 +23,7 @@ interface ResourcesRepository {
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
+    suspend fun markResourceOfflineByUrl(url: String)
     suspend fun markResourceOfflineByLocalAddress(localAddress: String)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
     suspend fun markAllResourcesOffline(isOffline: Boolean)
@@ -29,6 +32,29 @@ interface ResourcesRepository {
         searchText: String,
         planetCode: String,
         parentCode: String,
-        filterPayload: String
+        tags: List<RealmTag>,
+        subjects: Set<String>,
+        languages: Set<String>,
+        levels: Set<String>,
+        mediums: Set<String>
     )
+    suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
+    suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
+    suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String)
+    suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String)
+    suspend fun getOpenedResourceIds(userId: String): Set<String>
+    suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
+    suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary>
+    suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
+    suspend fun removeDeletedResources(currentIds: List<String?>)
+    suspend fun getMyLibIds(userId: String): JsonArray
+    suspend fun removeResourceFromShelf(resourceId: String, userId: String)
+    suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
+}
+
+sealed class ResourceUrlsResponse {
+    data class Success(val urls: List<String>) : ResourceUrlsResponse()
+    object ResourceNotFound : ResourceUrlsResponse()
+    object NoAttachments : ResourceUrlsResponse()
+    object Error : ResourceUrlsResponse()
 }

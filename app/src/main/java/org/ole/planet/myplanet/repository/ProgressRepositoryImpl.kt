@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -11,9 +13,29 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
+    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
+        val mycourses = queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
+        }
+        val map = HashMap<String?, JsonObject>()
+        for (course in mycourses) {
+            course.courseId?.let { courseId ->
+                val progressObject = JsonObject()
+                val steps = queryList(RealmCourseStep::class.java) {
+                    equalTo("courseId", courseId)
+                }
+                progressObject.addProperty("max", steps.size)
+                progressObject.addProperty("current", getCurrentProgress(steps, userId, courseId))
+                map[courseId] = progressObject
+            }
+        }
+        return map
+    }
+
     override suspend fun fetchCourseData(userId: String?): JsonArray {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
@@ -44,6 +66,24 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         return arr
     }
 
+    override suspend fun getCurrentProgress(
+        steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
+    ): Int {
+        val progresses = queryList(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+            equalTo("courseId", courseId)
+        }
+        val completedSteps = progresses.map { it.stepNum }.toSet()
+        var i = 0
+        while (i < (steps?.size ?: 0)) {
+            if (!completedSteps.contains(i + 1)) {
+                break
+            }
+            i++
+        }
+        return i
+    }
+
     private suspend fun getCourseProgressMap(
         userId: String?, mycourses: List<RealmMyCourse>
     ): HashMap<String?, JsonObject> {
@@ -53,29 +93,18 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             val steps = course.courseSteps ?: emptyList()
             progressObject.addProperty("max", steps.size)
             progressObject.addProperty(
-                "current", suspendGetCurrentProgress(steps, userId, course.courseId)
+                "current", getCurrentProgress(steps, userId, course.courseId)
             )
             map[course.courseId] = progressObject
         }
         return map
     }
 
+    @Deprecated("Use getCurrentProgress instead")
     private suspend fun suspendGetCurrentProgress(
         steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
     ): Int {
-        var i = 0
-        while (i < (steps?.size ?: 0)) {
-            val progress = queryList(RealmCourseProgress::class.java) {
-                equalTo("stepNum", i + 1)
-                equalTo("userId", userId)
-                equalTo("courseId", courseId)
-            }
-            if (progress.isEmpty()) {
-                break
-            }
-            i++
-        }
-        return i
+        return getCurrentProgress(steps, userId, courseId)
     }
 
     private suspend fun submissionMap(
@@ -100,5 +129,49 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
         }
+    }
+
+    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
+        return queryList(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+        }
+    }
+
+    override suspend fun saveCourseProgress(
+        userId: String?,
+        planetCode: String?,
+        parentCode: String?,
+        courseId: String?,
+        stepNum: Int,
+        passed: Boolean?
+    ) {
+        executeTransaction { realm ->
+            var courseProgress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("userId", userId)
+                .equalTo("stepNum", stepNum)
+                .findFirst()
+            if (courseProgress == null) {
+                courseProgress =
+                    realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
+                courseProgress.createdDate = Date().time
+            }
+            courseProgress?.courseId = courseId
+            courseProgress?.stepNum = stepNum
+            if (passed != null) {
+                courseProgress?.passed = passed
+            }
+            courseProgress?.createdOn = planetCode
+            courseProgress?.updatedDate = Date().time
+            courseProgress?.parentCode = parentCode
+            courseProgress?.userId = userId
+        }
+    }
+
+    override suspend fun hasUserCompletedSync(userId: String): Boolean {
+        return count(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        } > 0
     }
 }

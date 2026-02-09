@@ -576,7 +576,6 @@
     <string name="added_to_my_library">agregado a myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
-    <string name="planet_not_available">Planet no disponible.</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
     <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
@@ -704,12 +703,10 @@
     <string name="please_enter_server_url_first">Por favor ingresa la URL del servidor primero.</string>
     <string name="username_cannot_be_empty">El nombre de usuario no puede estar vacío</string>
     <string name="unable_to_login">No se puede iniciar sesión</string>
-    <string name="planet_server_not_reachable">Servidor de Planet no accesible.</string>
     <string name="select_language">Seleccionar idioma</string>
     <string name="thank_you">¡Gracias!</string>
     <string name="please_wait">Por favor espera....</string>
     <string name="update_later">Actualizar más tarde</string>
-    <string name="checking_version">Verificando versión....</string>
     <string name="downloading">"Descargando.... "</string>
     <string name="pin_is_required">Se requiere el PIN.</string>
     <string name="invalid_url">URL inválida</string>
@@ -1153,7 +1150,6 @@
     <string name="filter_by_label">filtrar por etiqueta</string>
     <string name="is_available">%1$s está disponible. Toca para continuar aprendiendo</string>
     <string name="failed_to_add_please_retry">Error al agregar. Por favor, inténtalo de nuevo</string>
-    <string name="failed_to_mark_as_read">No se pudo marcar como leído. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_remove_resource">Error al eliminar el recurso. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_adopt_survey">No se pudo adoptar la encuesta. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_save_chat">Error al guardar el chat. Por favor, inténtalo de nuevo.</string>
@@ -1181,5 +1177,15 @@
     <string name="no_images_to_download">No hay imágenes para descargar</string>
     <string name="app_theme">Tema de la aplicación</string>
     <string name="team_surveys">Encuestas del equipo</string>
+    <string name="enterprise_created">Empresa Creada</string>
+    <string name="image_already_added">Esta imagen ya ha sido añadida</string>
+    <string name="debug_retry_queue">Cola de reintentos (Depuración)</string>
+    <string name="debug_retry_queue_summary">Ver y gestionar reintentos de carga fallidos</string>
+    <string name="retry_queue_status">Estado de la cola de reintentos</string>
+    <string name="pending_retries">Reintentos pendientes: %d</string>
+    <string name="trigger_retry_now">Reintentar ahora</string>
+    <string name="clear_retry_queue">Vaciar cola</string>
+    <string name="retry_triggered">Reintento iniciado</string>
+    <string name="retry_queue_cleared">Cola de reintentos vaciada</string>
 
 </resources>

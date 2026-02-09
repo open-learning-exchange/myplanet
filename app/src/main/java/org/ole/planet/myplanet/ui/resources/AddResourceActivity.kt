@@ -21,22 +21,22 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.LocaleUtils
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
+    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityAddResourceBinding
-    var userModel: RealmUserModel? = null
+    var userModel: RealmUser? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null
@@ -54,7 +54,7 @@ class AddResourceActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        userModel = userProfileDbHandler.userModel
+        userModel = userSessionManager.userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
         subjects = RealmList()

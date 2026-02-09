@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.ui.sync
 
 import android.text.TextUtils
 import android.view.View
+import android.webkit.URLUtil
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.RadioGroup
+import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -14,7 +16,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.utilities.ServerConfigUtils
+import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 fun SyncActivity.showConfigurationUIElements(
     binding: DialogServerUrlBinding,
@@ -49,9 +51,13 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
     val protocol = "${settings.getString("serverProtocol", "")}"
     var url = "${serverUrl.text}"
     val pin = "${serverPassword.text}"
+
+
     editor.putString("serverURL", url).apply()
     editor.putString("serverPin", pin).apply()
+
     url = protocol + url
+
     if (isUrlValid(url)) {
         currentDialog = dialog
         service.getMinApk(this, url, pin, this, "SyncActivity")
@@ -231,7 +237,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(org.ole.planet.myplanet.utilities.NetworkUtils.getDeviceName())
+    binding.deviceName.setText(org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
@@ -313,7 +319,9 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
         binding.spnCloud.visibility = if (b) View.VISIBLE else View.GONE
         setUrlAndPin(binding.switchServerUrl.isChecked)
     }
-    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
+    serverUrl.doAfterTextChanged { s ->
+        positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
+    }
     binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
     setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
     protocolSemantics()

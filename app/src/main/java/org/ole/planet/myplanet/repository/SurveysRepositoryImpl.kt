@@ -1,25 +1,185 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.UUID
 import javax.inject.Inject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.ui.survey.SurveyFormState
-import org.ole.planet.myplanet.ui.survey.SurveyInfo
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.surveys.SurveyFormState
+import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 class SurveysRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val userSessionManager: UserSessionManager,
+    @DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
+    override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
+        return queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", examId)
+        }
+    }
 
+    override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
+        databaseService.withRealmAsync { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
+                    .findFirst() ?: return@executeTransaction
+
+                val userModel = userSessionManager.userModel
+                val sParentCode = settings.getString("parentCode", "")
+                val planetCode = settings.getString("planetCode", "")
+
+                val parentJsonString = try {
+                    JSONObject().apply {
+                        put("_id", exam.id)
+                        put("name", exam.name)
+                        put("courseId", exam.courseId ?: "")
+                        put("sourcePlanet", exam.sourcePlanet ?: "")
+                        put("teamShareAllowed", exam.isTeamShareAllowed)
+                        put("noOfQuestions", exam.noOfQuestions)
+                        put("isFromNation", exam.isFromNation)
+                    }.toString()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "{}"
+                }
+
+                val userJsonString = try {
+                    JSONObject().apply {
+                        put("doc", JSONObject().apply {
+                            put("_id", userModel?.id)
+                            put("name", userModel?.name)
+                            put("userId", userModel?.id ?: "")
+                            put("teamPlanetCode", planetCode ?: "")
+                            put("status", "active")
+                            put("type", "team")
+                            put("createdBy", userModel?.id ?: "")
+                        })
+
+                        if (isTeam && teamId != null) {
+                            put("membershipDoc", JSONObject().apply {
+                                put("teamId", teamId)
+                            })
+                        }
+                    }.toString()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "{}"
+                }
+
+                val teamName = if (isTeam && teamId != null) {
+                    transactionRealm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()?.name
+                } else null
+
+                if (isTeam && teamId != null && teamName != null) {
+                    val newSurveyId = UUID.randomUUID().toString()
+
+                    val existingSurvey = transactionRealm.where(RealmStepExam::class.java)
+                        .equalTo("sourceSurveyId", examId)
+                        .equalTo("teamId", teamId)
+                        .findFirst()
+
+                    if (existingSurvey == null) {
+                        transactionRealm.createObject(RealmStepExam::class.java, newSurveyId).apply {
+                            this._rev = null
+                            this.createdDate = System.currentTimeMillis()
+                            this.updatedDate = System.currentTimeMillis()
+                            this.adoptionDate = System.currentTimeMillis()
+                            this.createdBy = userModel?.id
+                            this.totalMarks = exam.totalMarks
+                            this.name = "${exam.name} - $teamName"
+                            this.description = exam.description
+                            this.type = exam.type
+                            this.stepId = exam.stepId
+                            this.courseId = exam.courseId
+                            this.sourcePlanet = exam.sourcePlanet
+                            this.passingPercentage = exam.passingPercentage
+                            this.noOfQuestions = exam.noOfQuestions
+                            this.isFromNation = exam.isFromNation
+                            this.teamId = teamId
+                            this.sourceSurveyId = examId
+                            this.isTeamShareAllowed = false
+                        }
+
+                        val questions = transactionRealm.where(RealmExamQuestion::class.java)
+                            .equalTo("examId", examId)
+                            .findAll()
+
+                        val questionsArray = RealmExamQuestion.serializeQuestions(questions)
+                        RealmExamQuestion.insertExamQuestions(questionsArray, newSurveyId, transactionRealm)
+                    }
+                }
+
+                val adoptionId = "${UUID.randomUUID()}"
+                val existingAdoption = if (isTeam && teamId != null) {
+                    transactionRealm.where(RealmSubmission::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("parentId", examId)
+                        .equalTo("status", "")
+                        .equalTo("membershipDoc.teamId", teamId)
+                        .findFirst()
+                } else {
+                    transactionRealm.where(RealmSubmission::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("parentId", examId)
+                        .equalTo("status", "")
+                        .isNull("membershipDoc")
+                        .findFirst()
+                }
+
+                if (existingAdoption == null) {
+                    transactionRealm.createObject(RealmSubmission::class.java, adoptionId).apply {
+                        this.parentId = examId
+                        this.parent = parentJsonString
+                        this.userId = userId
+                        this.user = userJsonString
+                        this.type = "survey"
+                        this.status = ""
+                        this.uploaded = false
+                        this.source = planetCode ?: ""
+                        this.parentCode = sParentCode ?: ""
+                        this.startTime = System.currentTimeMillis()
+                        this.lastUpdateTime = System.currentTimeMillis()
+                        this.isUpdated = true
+
+                        if (isTeam && teamId != null) {
+                            val team = transactionRealm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", teamId)
+                                .findFirst()
+
+                            if (team != null) {
+                                val teamRef = transactionRealm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+                                teamRef._id = team._id
+                                teamRef.name = team.name
+                                teamRef.type = team.type ?: "team"
+                                this.teamObject = teamRef
+                            }
+
+                            this.membershipDoc = transactionRealm.createObject(RealmMembershipDoc::class.java).apply {
+                                this.teamId = teamId
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
     override suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
 
@@ -105,12 +265,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSurveyInfos(
-        isTeam: Boolean,
-        teamId: String?,
-        userId: String?,
-        surveys: List<RealmStepExam>
-    ): Map<String, SurveyInfo> {
+    override suspend fun getSurveyInfos(isTeam: Boolean, teamId: String?, userId: String?, surveys: List<RealmStepExam>): Map<String, SurveyInfo> {
         val surveyIds = surveys.map { it.id }
         val submissionsQuery = queryList(RealmSubmission::class.java, ensureLatest = true) {
             if (isTeam) {
@@ -121,29 +276,26 @@ class SurveysRepositoryImpl @Inject constructor(
             }
         }
 
-        val submissionsByParentId = submissionsQuery
-            .filter { submission ->
-                val hasStatus = !submission.status.isNullOrEmpty()
-                val matchesParentId = surveyIds.any { surveyId ->
-                    submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
-                }
-                hasStatus && matchesParentId
+        val submissionsByParentId = submissionsQuery.filter { submission ->
+            val isComplete = submission.status == "complete" || submission.status == "requires grading"
+            val matchesParentId = surveyIds.any { surveyId ->
+                submission.parentId == surveyId || submission.parentId?.startsWith("$surveyId@") == true
             }
-            .groupBy { submission ->
-                val parentId = submission.parentId ?: return@groupBy null
-                surveyIds.find { surveyId ->
-                    parentId == surveyId || parentId.startsWith("$surveyId@")
-                }
+            isComplete && matchesParentId
+        }.groupBy { submission ->
+            val parentId = submission.parentId ?: return@groupBy null
+            surveyIds.find { surveyId ->
+                parentId == surveyId || parentId.startsWith("$surveyId@")
             }
-            .filterKeys { it != null }
-            .mapKeys { it.key!! }
+        }.filterKeys { it != null }.mapKeys { it.key!! }
 
         return surveys.filter { it.id != null }.associate { survey ->
             val surveyId = survey.id!!
             val surveySubmissions = submissionsByParentId[surveyId] ?: emptyList()
             val submissionCount = surveySubmissions.size
-            val lastSubmissionDate = surveySubmissions
-                .maxByOrNull { it.startTime }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
+            val lastSubmissionDate = surveySubmissions.maxByOrNull {
+                it.startTime
+            }?.startTime?.let { getFormattedDateWithTime(it) } ?: ""
             val creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
 
             surveyId to SurveyInfo(
@@ -190,6 +342,18 @@ class SurveysRepositoryImpl @Inject constructor(
                 .equalTo("type", "survey")
                 .equalTo("status", "pending", io.realm.Case.INSENSITIVE)
                 .count().toInt()
+        }
+    }
+
+    override suspend fun getSurvey(id: String): RealmStepExam? {
+        return withRealm { realm ->
+            realm.where(RealmStepExam::class.java)
+                .equalTo("id", id)
+                .or()
+                .equalTo("name", id)
+                .findFirst()?.let {
+                    realm.copyFromRealm(it)
+                }
         }
     }
 }

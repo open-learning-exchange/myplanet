@@ -3,6 +3,14 @@ package org.ole.planet.myplanet.repository
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
 interface NotificationsRepository {
+    suspend fun checkAndCreateNotifications(
+        userId: String?,
+        taskData: List<Triple<String, String, String>>,
+        joinRequestData: List<JoinRequestNotification>,
+        joinRequestMessageTemplate: String,
+        storageRatio: Int,
+        surveyTitles: List<String>
+    ): List<org.ole.planet.myplanet.model.RealmNotification>
     suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
     suspend fun getNotifications(userId: String, filter: String): List<org.ole.planet.myplanet.model.RealmNotification>
@@ -19,8 +27,8 @@ interface NotificationsRepository {
     suspend fun getSurveyId(relatedId: String?): String?
     suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>?
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
-    fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
-    fun getTaskTeamName(taskTitle: String): String?
+    suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
+    suspend fun getTaskTeamName(taskTitle: String): String?
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
 }
