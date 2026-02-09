@@ -295,7 +295,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
-            requireActivity(),
+            this,
             pageConfigs,
             team?._id,
             this,
@@ -321,6 +321,13 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         pageId?.let {
                             teamLastPage[teamId] = it
                         }
+                    }
+
+                    // Update MainApplication.listener based on current page
+                    val fragmentTag = "f$position"
+                    val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
+                    if (fragment is org.ole.planet.myplanet.callback.OnTeamPageListener) {
+                        MainApplication.listener = fragment
                     }
                 }
             }
@@ -400,35 +407,23 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val delay = if (isAlreadyOnCoursesPage) 50L else 300L
 
             binding.root.postDelayed({
-                // Try multiple strategies to get the fragment
-                val currentPosition = binding.viewPager2.currentItem
-                val fragmentTag = "f$currentPosition"
-                var currentFragment = childFragmentManager.findFragmentByTag(fragmentTag)
+                // Find TeamCoursesFragment from all fragments
+                val allFragments = childFragmentManager.fragments
+                android.util.Log.d("TeamDetailFragment", "All fragments: ${allFragments.map { "${it.javaClass.simpleName}(visible=${it.isVisible})" }}")
 
-                // Debug logging
-                android.util.Log.d("TeamDetailFragment", "Looking for fragment with tag: $fragmentTag, found: ${currentFragment != null}")
-                android.util.Log.d("TeamDetailFragment", "Current fragment type: ${currentFragment?.javaClass?.simpleName}")
-                android.util.Log.d("TeamDetailFragment", "MainApplication.listener: ${MainApplication.listener != null}")
-                android.util.Log.d("TeamDetailFragment", "MainApplication.listener type: ${MainApplication.listener?.javaClass?.simpleName}")
-
-                // Try to find the fragment in different ways
-                if (currentFragment == null) {
-                    currentFragment = childFragmentManager.fragments.find {
-                        it is TeamCoursesFragment && it.isVisible
-                    }
-                }
+                val coursesFragment = allFragments.filterIsInstance<TeamCoursesFragment>().firstOrNull()
 
                 when {
-                    currentFragment is org.ole.planet.myplanet.callback.OnTeamPageListener -> {
-                        android.util.Log.d("TeamDetailFragment", "Calling onAddCourse on current fragment")
-                        currentFragment.onAddCourse()
+                    coursesFragment != null -> {
+                        android.util.Log.d("TeamDetailFragment", "Found TeamCoursesFragment, calling onAddCourse")
+                        coursesFragment.onAddCourse()
                     }
-                    MainApplication.listener != null -> {
-                        android.util.Log.d("TeamDetailFragment", "Calling onAddCourse on MainApplication.listener")
+                    MainApplication.listener is TeamCoursesFragment -> {
+                        android.util.Log.d("TeamDetailFragment", "Using MainApplication.listener (TeamCoursesFragment)")
                         MainApplication.listener?.onAddCourse()
                     }
                     else -> {
-                        android.util.Log.e("TeamDetailFragment", "Could not find TeamCoursesFragment to call onAddCourse")
+                        android.util.Log.e("TeamDetailFragment", "Could not find TeamCoursesFragment")
                         Utilities.toast(requireActivity(), "Unable to show add course dialog")
                     }
                 }

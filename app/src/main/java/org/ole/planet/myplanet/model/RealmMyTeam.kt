@@ -104,6 +104,9 @@ open class RealmMyTeam : RealmObject() {
                     team.courses!!.add(id)
                 }
             }
+            if (coursesArray.size() > 0) {
+                android.util.Log.d("RealmMyTeam", "Team '${team.name}' synced with ${coursesArray.size()} courses: ${team.courses?.toList()}")
+            }
         }
 
         private fun processDescription(description: String?) {

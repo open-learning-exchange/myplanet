@@ -158,13 +158,17 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamCourses(teamId: String): List<RealmMyCourse> {
         val team = findByField(RealmMyTeam::class.java, "_id", teamId) ?: return emptyList()
         val courseIds = team.courses?.toList() ?: return emptyList()
+        android.util.Log.d("TeamsRepository", "getTeamCourses: teamId=$teamId, courseIds=$courseIds")
         if (courseIds.isEmpty()) return emptyList()
-        return queryList(RealmMyCourse::class.java) {
+        val courses = queryList(RealmMyCourse::class.java) {
             `in`("courseId", courseIds.toTypedArray())
         }
+        android.util.Log.d("TeamsRepository", "getTeamCourses: found ${courses.size} courses in database")
+        return courses
     }
 
     override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>) {
+        android.util.Log.d("TeamsRepository", "addCoursesToTeam: teamId=$teamId, courseIds=$courseIds")
         if (courseIds.isEmpty()) return
         executeTransaction { realm ->
             val team = realm.where(RealmMyTeam::class.java)
@@ -176,6 +180,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }
             }
             team.updated = true
+            android.util.Log.d("TeamsRepository", "addCoursesToTeam: team courses now: ${team.courses?.toList()}")
         }
     }
 
