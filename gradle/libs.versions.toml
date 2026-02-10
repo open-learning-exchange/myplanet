@@ -38,16 +38,7 @@ kotlinxSerializationJson = "1.10.0"
 kotlinxCoroutinesAndroid = "1.10.2"
 androidGifDrawable = "1.2.30"
 webkit = "1.12.0"
-junit = "4.13.2"
-mockk = "1.13.9"
-kotlinxCoroutinesTest = "1.10.1"
-robolectric = "4.11.1"
-
 [libraries]
-junit = { module = "junit:junit", version.ref = "junit" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradlePlugin" }
 realm-gradle-plugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realmGradlePlugin" }
 hilt-android-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
