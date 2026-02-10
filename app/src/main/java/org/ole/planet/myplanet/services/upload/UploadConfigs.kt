@@ -98,7 +98,9 @@ object UploadConfigs {
     val Meetups = UploadConfig(
         modelClass = RealmMeetup::class,
         endpoint = "meetups",
-        queryBuilder = { query -> query },
+        queryBuilder = { query ->
+            query.isNull("meetupId").or().isEmpty("meetupId")
+        },
         serializer = UploadSerializer.Simple(RealmMeetup::serialize),
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
@@ -121,9 +123,14 @@ object UploadConfigs {
     val Feedback = UploadConfig(
         modelClass = RealmFeedback::class,
         endpoint = "feedback",
-        queryBuilder = { query -> query },
+        queryBuilder = { query ->
+            query.equalTo("isUploaded", false)
+        },
         serializer = UploadSerializer.Simple(RealmFeedback::serializeFeedback),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, feedback, _ ->
+            feedback.isUploaded = true
+        }
     )
 
     val CrashLog = UploadConfig(

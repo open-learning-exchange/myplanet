@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.BuildConfig
 
 class DatabaseService(context: Context) {
     val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-    private val realmDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(1)
+    private val realmDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
     init {
         Realm.init(context)
@@ -30,9 +30,7 @@ class DatabaseService(context: Context) {
         Realm.setDefaultConfiguration(config)
     }
 
-    @Deprecated("Use withRealm/withRealmAsync instead")
-    val realmInstance: Realm
-        get() = Realm.getDefaultInstance()
+    fun createManagedRealmInstance(): Realm = Realm.getDefaultInstance()
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
         val realm = Realm.getDefaultInstance()

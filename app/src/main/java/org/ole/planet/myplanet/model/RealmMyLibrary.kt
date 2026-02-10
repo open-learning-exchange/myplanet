@@ -63,6 +63,7 @@ open class RealmMyLibrary : RealmObject() {
     var courseId: String? = null
     var stepId: String? = null
     var isPrivate: Boolean = false
+    var privateFor: String? = null
     var attachments: RealmList<RealmAttachment>? = null
 
     fun serializeResource(): JsonObject {
@@ -215,7 +216,12 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val startTime = System.currentTimeMillis()
-            val ids = getIds(mRealm)
+            val syncedResources = mRealm.where(RealmMyLibrary::class.java)
+                .isNotNull("_rev")
+                .equalTo("isPrivate", false)
+                .findAll()
+            val ids = syncedResources.map { it.resourceId }.toTypedArray()
+
             val idsToDelete = ids.filterNot { it in newIds }
 
             if (idsToDelete.isEmpty()) {
@@ -250,19 +256,27 @@ open class RealmMyLibrary : RealmObject() {
                 addProperty("uploadDate", Date().time)
                 addProperty("createdDate", personal.createdDate)
                 addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-                addProperty("author", user?.name)
+                addProperty("author", personal.author ?: "")
                 addProperty("addedBy", user?.id)
                 addProperty("medium", personal.medium)
                 addProperty("description", personal.description)
                 addProperty("year", personal.year)
                 addProperty("language", personal.language)
+                addProperty("publisher", personal.publisher ?: "")
+                addProperty("linkToLicense", personal.linkToLicense ?: "")
                 add("subject", JsonUtils.getAsJsonArray(personal.subject))
                 add("level", JsonUtils.getAsJsonArray(personal.level))
                 addProperty("resourceType", personal.resourceType)
                 addProperty("openWith", personal.openWith)
+                addProperty("mediaType", personal.mediaType ?: "other")
                 add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
-                addProperty("private", false)
-                addProperty("isDownloadable", "")
+                addProperty("private", personal.isPrivate)
+                if (personal.isPrivate && personal.privateFor != null) {
+                    val privateForObj = JsonObject()
+                    privateForObj.addProperty("teams", personal.privateFor)
+                    add("privateFor", privateForObj)
+                }
+                addProperty("isDownloadable", true)
                 addProperty("sourcePlanet", user?.planetCode)
                 addProperty("resideOn", user?.planetCode)
                 addProperty("updatedDate", Calendar.getInstance().timeInMillis)
@@ -378,6 +392,10 @@ open class RealmMyLibrary : RealmObject() {
                 setLevel(JsonUtils.getJsonArray("level", doc), this)
                 setTag(JsonUtils.getJsonArray("tags", doc), this)
                 isPrivate = JsonUtils.getBoolean("private", doc)
+                if (isPrivate && doc.has("privateFor")) {
+                    val privateForObj = doc.getAsJsonObject("privateFor")
+                    privateFor = privateForObj.get("teams")?.asString
+                }
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
         }

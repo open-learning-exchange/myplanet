@@ -31,11 +31,13 @@ class ResourcesRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java)
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "id", id)
+        return findByField(RealmMyLibrary::class.java, "id", id, true)
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
