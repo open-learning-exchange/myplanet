@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val activitiesRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {

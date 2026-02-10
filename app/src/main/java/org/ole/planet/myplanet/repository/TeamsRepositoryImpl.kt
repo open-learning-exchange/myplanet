@@ -42,7 +42,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
-    @AppPreferences private val preferences: SharedPreferences,
+    @param:AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
