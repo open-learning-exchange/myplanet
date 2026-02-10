@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.dto.Team
 import org.ole.planet.myplanet.repository.TeamsRepository
 
 @AndroidEntryPoint
@@ -25,11 +26,11 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
                 _isMemberFlow.value = false
             }
         }
-    var team: RealmMyTeam? = null
+    var team: Team? = null
     @Inject
     lateinit var teamsRepository: TeamsRepository
-    private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
-    val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
+    private val _teamFlow = MutableStateFlow<Team?>(null)
+    val teamFlow: StateFlow<Team?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 

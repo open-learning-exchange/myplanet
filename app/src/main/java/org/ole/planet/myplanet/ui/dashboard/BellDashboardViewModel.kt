@@ -108,7 +108,7 @@ class BellDashboardViewModel @Inject constructor(
         return reachable
     }
 
-    suspend fun getTeamById(teamId: String) = teamsRepository.getTeamById(teamId)
+    suspend fun getTeamById(teamId: String): org.ole.planet.myplanet.model.dto.Team? = teamsRepository.getTeamById(teamId)
 }
 
 data class CourseCompletion(val courseId: String?, val courseTitle: String?)

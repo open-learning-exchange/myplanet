@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.dto.Member
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
@@ -62,7 +63,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher2: TextWatcher
     private var guest = false
-    var users: List<RealmUser>? = null
+    var users: List<Member>? = null
     private var mAdapter: UsersAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000

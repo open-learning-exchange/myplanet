@@ -34,7 +34,9 @@ import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.ui.user.UserArrayAdapter
+import org.ole.planet.myplanet.model.dto.Member
+import org.ole.planet.myplanet.model.dto.toMemberDto
+import org.ole.planet.myplanet.ui.user.MemberArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
@@ -88,7 +90,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private fun showTaskAlert(t: RealmTeamTask?) {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
-        var selectedAssignee: RealmUser? = null
+        var selectedAssignee: Member? = null
 
         if (t != null) {
             alertTaskBinding.etTask.setText(t.title)
@@ -101,9 +103,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 lifecycleScope.launch {
                     val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
                     if (assigneeUser != null) {
-                        selectedAssignee = assigneeUser
-                        val displayName = assigneeUser.getFullName().ifBlank {
-                            assigneeUser.name ?: getString(R.string.no_assignee)
+                        selectedAssignee = assigneeUser.toMemberDto()
+                        val displayName = selectedAssignee!!.getFullName().ifBlank {
+                            selectedAssignee!!.name ?: getString(R.string.no_assignee)
                         }
                         alertTaskBinding.tvAssignMember.text = displayName
                         alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
@@ -131,7 +133,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 }
 
                 val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-                val adapter: ArrayAdapter<RealmUser> = UserArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+                val adapter: ArrayAdapter<Member> = MemberArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
                 alertUsersSpinnerBinding.spnUser.adapter = adapter
 
                 AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -141,9 +143,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
                         if (selectedItem != null) {
-                            selectedAssignee = selectedItem as RealmUser
-                            val displayName = selectedAssignee.getFullName().ifBlank {
-                                selectedAssignee.name ?: getString(R.string.no_assignee)
+                            selectedAssignee = selectedItem as Member
+                            val displayName = selectedAssignee!!.getFullName().ifBlank {
+                                selectedAssignee!!.name ?: getString(R.string.no_assignee)
                             }
                             alertTaskBinding.tvAssignMember.text = displayName
                             alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
@@ -308,7 +310,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             }
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-            val adapter: ArrayAdapter<RealmUser> = UserArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
+            val adapter: ArrayAdapter<Member> = MemberArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
             alertUsersSpinnerBinding.spnUser.adapter = adapter
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(R.string.select_member)
@@ -319,7 +321,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                         Toast.makeText(context, R.string.no_member_selected, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    val user = selectedItem as RealmUser
+                    val user = selectedItem as Member
                     val taskId = realmTeamTask?.id
                     if (taskId.isNullOrBlank()) {
                         Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()

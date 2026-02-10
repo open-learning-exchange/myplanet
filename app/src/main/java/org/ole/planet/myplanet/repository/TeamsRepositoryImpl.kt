@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -30,6 +31,11 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.dto.Member
+import org.ole.planet.myplanet.model.dto.Team
+import org.ole.planet.myplanet.model.dto.toDto
+import org.ole.planet.myplanet.model.dto.toMemberDto
+import org.ole.planet.myplanet.model.dto.toRealmUser
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -180,9 +186,9 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamById(teamId: String): RealmMyTeam? {
+    override suspend fun getTeamById(teamId: String): Team? {
         if (teamId.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", teamId)
+        return findByField(RealmMyTeam::class.java, "_id", teamId)?.toDto()
     }
 
     override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? {
@@ -897,7 +903,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
     }
 
-    override suspend fun getJoinedMembers(teamId: String): List<RealmUser> {
+    override suspend fun getJoinedMembers(teamId: String): List<Member> {
         val teamMembers = queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
@@ -905,7 +911,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         return queryList(RealmUser::class.java) {
             `in`("id", teamMembers.toTypedArray())
-        }
+        }.map { it.toMemberDto() }
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
@@ -916,7 +922,8 @@ class TeamsRepositoryImpl @Inject constructor(
             val isLeader: Boolean
         )
 
-        val members = getJoinedMembers(teamId).toMutableList()
+        val membersDto = getJoinedMembers(teamId)
+        val members = membersDto.map { it.toRealmUser() }.toMutableList()
         val communityLeadersJson = preferences.getString("communityLeaders", "") ?: ""
 
         if (communityLeadersJson.isNotEmpty()) {
@@ -1094,4 +1101,5 @@ class TeamsRepositoryImpl @Inject constructor(
 
         return successorMember?.userId?.let { id -> userMap[id] }
     }
+
 }

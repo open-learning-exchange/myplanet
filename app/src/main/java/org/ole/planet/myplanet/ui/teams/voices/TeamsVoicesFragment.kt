@@ -19,6 +19,8 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.dto.Team
+import org.ole.planet.myplanet.model.dto.toDto
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -101,7 +103,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
         if (shouldQueryTeamFromRealm()) {
             viewLifecycleOwner.lifecycleScope.launch {
-                team = teamsRepository.getTeamByIdOrTeamId(teamId)
+                team = teamsRepository.getTeamByIdOrTeamId(teamId)?.toDto()
                 updateCanPostMessage(team, isMemberFlow.value)
             }
         } else {
@@ -111,7 +113,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         return binding.root
     }
 
-    private fun updateCanPostMessage(team: RealmMyTeam?, isMember: Boolean) {
+    private fun updateCanPostMessage(team: Team?, isMember: Boolean) {
         val isGuest = user?.id?.startsWith("guest") == true
         val isPublicTeam = team?.isPublic == true
         val canPost = !isGuest && (isMember || isPublicTeam)

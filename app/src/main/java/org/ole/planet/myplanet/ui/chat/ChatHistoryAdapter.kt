@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.dto.Team
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -270,7 +271,15 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
+    private fun showEditTextAndShareButton(team: Team?, section: String, chatHistory: RealmChatHistory) {
+        showEditTextAndShareButtonInternal(team?._id, team?.teamType, team?.teamPlanetCode, section, chatHistory)
+    }
+
+    private fun showEditTextAndShareButton(team: RealmMyTeam?, section: String, chatHistory: RealmChatHistory) {
+        showEditTextAndShareButtonInternal(team?._id, team?.teamType, team?.teamPlanetCode, section, chatHistory)
+    }
+
+    private fun showEditTextAndShareButtonInternal(teamId: String?, teamType: String?, teamPlanetCode: String?, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
@@ -288,10 +297,10 @@ class ChatHistoryAdapter(
 
             val map = HashMap<String?, String>()
             map["message"] = "${addNoteDialogBinding.editText.text}"
-            map["viewInId"] = team?._id ?: ""
+            map["viewInId"] = teamId ?: ""
             map["viewInSection"] = section
-            map["messageType"] = team?.teamType ?: ""
-            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+            map["messageType"] = teamType ?: ""
+            map["messagePlanetCode"] = teamPlanetCode ?: ""
             map["chat"] = "true"
             map["news"] = JsonUtils.gson.toJson(serializedMap)
 

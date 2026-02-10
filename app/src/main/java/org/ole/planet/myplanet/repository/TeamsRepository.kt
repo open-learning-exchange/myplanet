@@ -38,7 +38,7 @@ interface TeamsRepository {
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
-    suspend fun getTeamById(teamId: String): RealmMyTeam?
+    suspend fun getTeamById(teamId: String): org.ole.planet.myplanet.model.dto.Team?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
@@ -121,7 +121,7 @@ interface TeamsRepository {
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
-    suspend fun getJoinedMembers(teamId: String): List<RealmUser>
+    suspend fun getJoinedMembers(teamId: String): List<org.ole.planet.myplanet.model.dto.Member>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
     suspend fun getAssignee(userId: String): RealmUser?
