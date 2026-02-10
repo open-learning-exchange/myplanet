@@ -49,7 +49,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.data.DatabaseService
@@ -139,6 +139,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     open lateinit var resourcesRepository: ResourcesRepository
+
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -530,9 +533,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            backgroundDownload(
-                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
-                                activityContext
+                            resourceDownloadCoordinator.startBackgroundDownload(
+                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
                             )
                         }
                     }

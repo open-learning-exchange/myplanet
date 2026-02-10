@@ -19,7 +19,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -32,7 +31,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.RepositoryEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -44,8 +42,6 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
@@ -54,7 +50,6 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
-import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -67,13 +62,9 @@ abstract class BaseResourceFragment : Fragment() {
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var userRepository: UserRepository
-    @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
     lateinit var coursesRepository: CoursesRepository
-    @Inject
-    lateinit var tagsRepository: TagsRepository
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
@@ -472,21 +463,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
-            val entryPoint = EntryPointAccessors.fromApplication(
-                context.applicationContext,
-                RepositoryEntryPoint::class.java
-            )
-            val configurationsRepository = entryPoint.configurationsRepository()
-            MainApplication.applicationScope.launch {
-                if (configurationsRepository.checkServerAvailability()) {
-                    if (urls.isNotEmpty()) {
-                        DownloadUtils.openDownloadService(context, urls, false)
-                    }
-                }
-            }
-        }
 
         private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()
