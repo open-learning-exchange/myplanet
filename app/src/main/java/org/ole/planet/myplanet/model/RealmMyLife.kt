@@ -24,12 +24,14 @@ open class RealmMyLife : RealmObject {
     constructor()
 
     companion object {
+        @Deprecated("Use LifeRepository.getMyLifeByUserId instead")
         fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
             val userId = settings?.getString("userId", "--")
             return getMyLifeByUserId(mRealm, userId)
         }
 
         @JvmStatic
+        @Deprecated("Use LifeRepository.getMyLifeByUserId instead")
         fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
             return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
                 .sort("weight")
