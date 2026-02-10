@@ -81,7 +81,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initViews()
         currentUser = userSessionManager.userModel
         mapConditions = HashMap()
-        mRealm = databaseService.realmInstance
+        mRealm = databaseService.createManagedRealmInstance()
         userId = intent.getStringExtra("userId")
         pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {

@@ -222,6 +222,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
+    implementation(libs.webkit)
 }
 realm {
     syncEnabled = true
