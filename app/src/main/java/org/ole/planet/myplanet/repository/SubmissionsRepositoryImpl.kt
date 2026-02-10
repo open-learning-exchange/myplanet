@@ -460,7 +460,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam?, type: String?, teamId: String?): RealmSubmission? {
+    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam, type: String?, teamId: String?): RealmSubmission? {
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
         } else {
@@ -473,7 +473,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 val managedSub = createSubmission(null, r)
 
                 val parentId = when {
-                    !exam?.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
                         "${exam.id}@${exam.courseId}"
                     } else {
                         exam.id
@@ -484,13 +484,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
                 try {
                     val parentJsonString = com.google.gson.JsonObject().apply {
-                        addProperty("_id", exam?.id ?: "")
-                        addProperty("name", exam?.name ?: "")
-                        addProperty("courseId", exam?.courseId ?: "")
-                        addProperty("sourcePlanet", exam?.sourcePlanet ?: "")
-                        addProperty("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                        addProperty("noOfQuestions", exam?.noOfQuestions ?: 0)
-                        addProperty("isFromNation", exam?.isFromNation ?: false)
+                        addProperty("_id", exam.id ?: "")
+                        addProperty("name", exam.name ?: "")
+                        addProperty("courseId", exam.courseId ?: "")
+                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                        addProperty("noOfQuestions", exam.noOfQuestions)
+                        addProperty("isFromNation", exam.isFromNation)
                     }.toString()
                     managedSub.parent = parentJsonString
                 } catch (e: Exception) {

@@ -54,7 +54,7 @@ open class FileUploader {
 
                 try {
                     val response = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body)
-                    onDataReceived(response?.body(), listener)
+                    onDataReceived(response.body(), listener)
                 } catch (t: Exception) {
                     listener.onSuccess("Unable to upload resource")
                 }

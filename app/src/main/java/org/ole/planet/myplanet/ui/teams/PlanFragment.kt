@@ -52,9 +52,10 @@ class PlanFragment : BaseTeamFragment() {
             }
         }
         
-        if (team != null) {
-            updateUIWithTeamDetails(team)
-            updateButtonVisibility(team!!)
+        val currentTeam = team
+        if (currentTeam != null) {
+            updateUIWithTeamDetails(currentTeam)
+            updateButtonVisibility(currentTeam)
         }
     }
 
