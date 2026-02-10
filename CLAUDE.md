@@ -14,6 +14,7 @@ This document provides comprehensive guidance for AI assistants working on the m
 8. [Testing Guidelines](#testing-guidelines)
 9. [Security Considerations](#security-considerations)
 10. [Troubleshooting](#troubleshooting)
+11. [Codebase Inventory Summary](#codebase-inventory-summary)
 
 ---
 
@@ -25,7 +26,7 @@ This document provides comprehensive guidance for AI assistants working on the m
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.45.27 (versionCode: 4527)
+- **Current Version**: 0.46.0 (versionCode: 4600)
 - **Build System**: Gradle 9.3.1 with Android Gradle Plugin 9.0.0
 - **License**: AGPL v3
 
@@ -54,7 +55,7 @@ myplanet/
 │   │   │   │   ├── callback/                # Event listeners and interfaces
 │   │   │   │   ├── data/                    # Data services and API
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Realm data models (40 Realm classes, 66 total)
+│   │   │   │   ├── model/                   # Realm data models (40 Realm classes, 67 total)
 │   │   │   │   ├── repository/              # Repository pattern implementations
 │   │   │   │   ├── services/                # Background services and workers
 │   │   │   │   ├── ui/                      # UI components (28 packages)
@@ -79,42 +80,85 @@ myplanet/
 
 ### Package Organization (`org.ole.planet.myplanet`)
 
-| Package | Purpose | Key Files |
-|---------|---------|-----------|
-| `base/` | Base classes for common functionality | BaseActivity, BaseRecyclerFragment, PermissionActivity |
-| `callback/` | Event listeners and interfaces | OnLibraryItemSelectedListener, SyncListener, TeamUpdateListener |
-| `data/` | Data access and API services | DataService.kt, DatabaseService.kt, ApiInterface, auth/ |
-| `di/` | Hilt dependency injection | NetworkModule, DatabaseModule, DataServiceModule, RepositoryModule |
-| `model/` | Realm database models | 40 Realm models including RealmMyTeam, RealmMyCourse, RealmMyLibrary |
-| `repository/` | Repository pattern implementations | 18 repositories with Interface + Impl pairs |
-| `services/` | Background services | sync/SyncManager.kt, UploadManager.kt, AutoSyncWorker |
-| `ui/` | User interface components | 28 feature packages (courses, resources, teams, chat, etc.) |
-| `utils/` | Helper functions | NetworkUtils, ImageUtils, DialogUtils, FileUploader |
+| Package | Purpose | Files | Key Items |
+|---------|---------|-------|-----------|
+| `base/` | Base classes for common functionality | 12 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
+| `callback/` | Event listeners and interfaces | 34 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and 29 more |
+| `data/` | Data access and API services | 9 | DataService.kt, DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 17 | 6 modules (NetworkModule, DatabaseModule, DataServiceModule, RepositoryModule, ServiceModule, SharedPreferencesModule) + 11 entry points |
+| `model/` | Realm database models and DTOs | 67 | 40 Realm models + 27 DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
+| `repository/` | Repository pattern implementations | 38 | 19 repositories with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
+| `services/` | Background services and workers | 37 | 20 root-level + `sync/` (11), `upload/` (4), `retry/` (2) |
+| `ui/` | User interface components | 147 | 28 feature packages with 16 ViewModels (courses, resources, teams, chat, etc.) |
+| `utils/` | Helper functions | 39 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and 32 more |
+
+### UI Sub-packages (28 feature packages, 147 files)
+
+| Package | Files | Key Components |
+|---------|-------|----------------|
+| `ui/calendar/` | 1 | CalendarFragment |
+| `ui/chat/` | 6 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
+| `ui/community/` | 6 | CommunityTabFragment, LeadersFragment |
+| `ui/components/` | 5 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
+| `ui/courses/` | 12 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
+| `ui/dashboard/` | 11 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
+| `ui/dictionary/` | 1 | DictionaryActivity |
+| `ui/enterprises/` | 5 | EnterprisesViewModel, FinancesFragment, ReportsFragment |
+| `ui/events/` | 2 | EventsDetailFragment, EventsAdapter |
+| `ui/exam/` | 2 | ExamTakingFragment, UserInformationFragment |
+| `ui/feedback/` | 6 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
+| `ui/health/` | 5 | MyHealthFragment, AddExaminationActivity |
+| `ui/life/` | 2 | LifeFragment, LifeAdapter |
+| `ui/maps/` | 1 | OfflineMapsActivity |
+| `ui/notifications/` | 3 | NotificationsFragment, NotificationsViewModel |
+| `ui/onboarding/` | 2 | OnboardingActivity, OnboardingAdapter |
+| `ui/personals/` | 2 | PersonalsFragment, PersonalsAdapter |
+| `ui/ratings/` | 2 | RatingsFragment, RatingsViewModel |
+| `ui/references/` | 2 | ReferencesFragment, ReferencesAdapter |
+| `ui/resources/` | 8 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
+| `ui/settings/` | 1 | SettingsActivity |
+| `ui/submissions/` | 8 | SubmissionsFragment, SubmissionViewModel |
+| `ui/surveys/` | 4 | SurveyFragment, SendSurveyFragment |
+| `ui/sync/` | 7 | LoginActivity, SyncActivity, ProcessUserDataActivity |
+| `ui/teams/` | 22 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
+| `ui/user/` | 7 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity |
+| `ui/viewer/` | 8 | ImageViewer, VideoViewer, AudioPlayer, PDFReader, WebView, MarkdownViewer, TextFileViewer, CSVViewer |
+| `ui/voices/` | 6 | VoicesFragment, NewsViewModel, ReplyActivity |
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (~420 lines)
-   - Application initialization
-   - Hilt setup
-   - Network monitoring
-   - Auto-sync worker scheduling
+1. **`MainApplication.kt`** (~448 lines)
+   - Application initialization with Hilt DI
+   - WorkManager scheduling (AutoSyncWorker, StayOnlineWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
+   - Server reachability checking with alternative URL mapping
+   - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`DataService.kt`** (~450 lines)
-   - Main data service for local database operations
+2. **`DataService.kt`** (~369 lines)
+   - Version checking and checksum validation (many methods deprecated in favor of ConfigurationsRepository)
+   - Server availability checking, community server sync, user registration
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt`
 
-3. **`SyncManager.kt`** (~1060 lines)
-   - Orchestrates data synchronization with server
+3. **`SyncManager.kt`** (~1058 lines)
+   - Orchestrates data synchronization with server via StateFlow-based state management
+   - Integrates with ImprovedSyncManager, TransactionSyncManager, RealtimeSyncManager
+   - Semaphore-based concurrency control, adaptive batch processing
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-4. **`UploadManager.kt`** (~720 lines)
-   - Handles upload operations
+4. **`UploadManager.kt`** (~770 lines)
+   - File and data uploads with batch processing (BATCH_SIZE = 50)
+   - Integrates with UploadCoordinator for orchestrated uploads
+   - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-5. **`TeamsRepositoryImpl.kt`** (~1090 lines)
-   - Team management functionality
+5. **`TeamsRepositoryImpl.kt`** (~1097 lines)
+   - Team management with reactive Flow-based queries
+   - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
+
+6. **`ApiInterface.kt`** (~65 lines)
+   - All REST API endpoint definitions (file downloads/uploads, document CRUD, version checking, health access, AI/chat endpoints)
+   - Location: `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt`
 
 ---
 
@@ -124,10 +168,10 @@ myplanet/
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Language** | Kotlin | 2.3.0 | Primary development language |
+| **Language** | Kotlin | 2.3.10 | Primary development language |
 | **Build System** | Gradle | 9.3.1 | Build automation |
 | **Build Plugin** | Android Gradle Plugin | 9.0.0 | Android build tooling |
-| **DI Framework** | Dagger Hilt | 2.58 | Dependency injection |
+| **DI Framework** | Dagger Hilt | 2.59.1 | Dependency injection |
 | **Database** | Realm | 10.19.0 | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
@@ -136,9 +180,12 @@ myplanet/
 | **Background Tasks** | AndroidX Work | 2.11.1 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.13.0 | UI components |
 | **Image Loading** | Glide | 5.0.5 | Image loading and caching |
-| **Media Playback** | Media3 (ExoPlayer) | 1.9.1 | Audio/video playback |
+| **Media Playback** | Media3 (ExoPlayer) | 1.9.2 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
+| **Encryption** | Tink | 1.20.0 | Cryptographic operations |
+| **Serialization** | Kotlin Serialization | 1.10.0 | Kotlin-native serialization |
+| **CSV** | OpenCSV | 5.12.0 | CSV file parsing |
 
 ### Build Configuration
 
@@ -166,23 +213,24 @@ myplanet/
 ```
 ┌─────────────────────────────────────────┐
 │     UI Layer (Activities/Fragments)     │
-│  - User interaction                     │
-│  - View binding                         │
+│  - User interaction & view binding      │
 │  - Lifecycle management                 │
+│  - 16 ViewModels for state management   │
 └──────────────┬──────────────────────────┘
                │
 ┌──────────────▼──────────────────────────┐
-│     Repository Layer                    │
+│     Repository Layer (19 domains)       │
 │  - Data access abstraction              │
-│  - Interface + Implementation           │
-│  - Caching logic                        │
+│  - Interface + Implementation pairs     │
+│  - Reactive Flow-based queries          │
 └──────────────┬──────────────────────────┘
                │
 ┌──────────────▼──────────────────────────┐
-│     Data Manager Layer                  │
-│  - Service.kt (local operations)        │
+│     Service Layer                       │
+│  - DataService (local operations)       │
 │  - ApiInterface (remote operations)     │
 │  - SyncManager (synchronization)        │
+│  - UploadCoordinator (upload orchestr.) │
 └──────────────┬──────────────────────────┘
                │
 ┌──────────────▼──────────────────────────┐
@@ -193,7 +241,30 @@ myplanet/
 └─────────────────────────────────────────┘
 ```
 
-### 2. Repository Pattern
+### 2. MVVM with ViewModels
+
+The UI layer uses ViewModels for state management across 16 feature areas:
+
+| ViewModel | Package | Purpose |
+|-----------|---------|---------|
+| `ChatViewModel` | `ui/chat/` | Chat message state and AI interactions |
+| `TeamViewModel` | `ui/teams/` | Team data and operations |
+| `RequestsViewModel` | `ui/teams/` | Team join requests |
+| `DashboardViewModel` | `ui/dashboard/` | Dashboard data aggregation |
+| `BellDashboardViewModel` | `ui/dashboard/` | Bell community dashboard |
+| `ProgressViewModel` | `ui/courses/` | Course progress tracking |
+| `EnterprisesViewModel` | `ui/enterprises/` | Enterprise finances and reports |
+| `RatingsViewModel` | `ui/ratings/` | Resource ratings |
+| `NewsViewModel` | `ui/voices/` | News/voices feed |
+| `ReplyViewModel` | `ui/voices/` | Reply composition |
+| `FeedbackListViewModel` | `ui/feedback/` | Feedback listing |
+| `FeedbackDetailViewModel` | `ui/feedback/` | Feedback detail view |
+| `SubmissionViewModel` | `ui/submissions/` | Submission management |
+| `SubmissionDetailViewModel` | `ui/submissions/` | Submission details |
+| `UserProfileViewModel` | `ui/user/` | User profile data |
+| `NotificationsViewModel` | `ui/notifications/` | Notification management |
+
+### 3. Repository Pattern
 
 **Convention**: Each data domain has an interface and implementation
 
@@ -214,9 +285,16 @@ class CourseRepositoryImpl @Inject constructor(
 }
 ```
 
+**All 19 Domain Repositories:**
+Activities, Chat, Configurations, Courses, Events, Feedback, Life, Notifications, Personals, Progress, Ratings, Resources, Submissions, Surveys, Tags, Teams, User, Voices
+
+**Utility Classes:**
+- `RealmRepository` - Generic base repository
+- `SubmissionsRepositoryExporter` - Export utilities
+
 **Location**: `app/src/main/java/org/ole/planet/myplanet/repository/`
 
-### 3. Dependency Injection (Hilt)
+### 4. Dependency Injection (Hilt)
 
 **Module Structure:**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
@@ -243,19 +321,26 @@ interface AutoSyncEntryPoint {
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/di/`
 
-### 4. Base Classes for Code Reuse
+### 5. Base Classes for Code Reuse (12 classes)
 
-| Base Class | Purpose | Key Methods |
-|------------|---------|-------------|
-| `BaseActivity` | Common activity functionality | Permission handling, dialogs |
-| `BaseRecyclerFragment` | List-based fragments | Pagination, filtering, search |
-| `BaseContainerFragment` | Navigation containers | Fragment transactions |
-| `BaseResourceFragment` | Resource handling | Download, view, share |
-| `PermissionActivity` | Runtime permissions | Permission request handling |
+| Base Class | Purpose |
+|------------|---------|
+| `BaseActivity` | Common activity functionality (permission handling, dialogs) |
+| `BasePermissionActivity` | Runtime permission request handling |
+| `BaseRecyclerFragment` | List-based fragments (pagination, filtering, search) |
+| `BaseRecyclerParentFragment` | Parent fragment for recycler views |
+| `BaseContainerFragment` | Navigation containers (fragment transactions) |
+| `BaseDashboardFragment` | Dashboard-specific base functionality |
+| `BaseResourceFragment` | Resource handling (download, view, share) |
+| `BaseTeamFragment` | Team-specific base functionality |
+| `BaseExamFragment` | Exam-specific base functionality |
+| `BaseMemberFragment` | Member management base functionality |
+| `BaseDialogFragment` | Dialog base class |
+| `BaseVoicesFragment` | Voices/news-specific base functionality |
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/base/`
 
-### 5. Background Processing
+### 6. Background Processing
 
 **AndroidX Work for Scheduled Tasks:**
 - `AutoSyncWorker` - Periodic data synchronization
@@ -267,9 +352,10 @@ interface AutoSyncEntryPoint {
 - `StayOnlineWorker` - Keeps connection alive
 - `RetryQueueWorker` - Retries failed operations (`services/retry/`)
 
-**Services and Managers:**
+**Services and Managers (20 root-level files):**
 - `SyncManager` - Manual synchronization (`services/sync/`)
-- `UploadManager` - File upload coordination
+- `UploadManager` - File upload coordination (extends FileUploader)
+- `UploadToShelfService` - Shelf upload operations
 - `UploadCoordinator` - Upload orchestration (`services/upload/`)
 - `AudioRecorder` - Audio recording
 - `BroadcastService` - Service broadcasting
@@ -278,12 +364,26 @@ interface AutoSyncEntryPoint {
 - `UserSessionManager` - User session handling
 - `ThemeManager` - App theming
 - `FileUploader` - File upload utilities
+- `DownloadService` - Background file download service (foreground service)
+- `VoicesLabelManager` - Voice/discussion forum label management
+- `ChallengePrompter` - Challenge prompt generation
+- `NotificationActionReceiver` - Broadcast receiver for notification actions
 
-**Sync Sub-package (`services/sync/`):**
+**Sync Sub-package (`services/sync/` - 11 files):**
 - `SyncManager`, `LoginSyncManager`, `TransactionSyncManager`
 - `ImprovedSyncManager`, `RealtimeSyncManager`
 - `AdaptiveBatchProcessor`, `StandardSyncStrategy`, `SyncStrategy`
 - `ThreadSafeRealmManager`, `RealmConnectionPool`, `ServerUrlMapper`
+
+**Upload Sub-package (`services/upload/` - 4 files):**
+- `UploadCoordinator` - Central orchestration for all upload operations with batch processing and retry
+- `UploadConfigs` - Configuration objects for different upload types (NewsActivities, Submissions, Photos, etc.)
+- `UploadConfig` - Generic configuration template with batch size and Realm model binding
+- `UploadResult` - Result wrapper with success/failure/empty states
+
+**Retry Sub-package (`services/retry/` - 2 files):**
+- `RetryQueue` - Queue-based retry mechanism for failed operations
+- `RetryQueueWorker` - Background worker for processing retries
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/services/`
 
@@ -346,16 +446,24 @@ git push -u origin claude/feature-name-sessionid
 ### CI/CD Pipeline
 
 **Build Workflow** (`.github/workflows/build.yml`)
-- Triggers: All branches except `master`
-- Builds both `default` and `lite` flavors
-- Validates compilation
+- Triggers: All branches except `master` (includes `claude/**`, `codex/**`, `dependabot/**`, `jules/**`)
+- Runs on Ubuntu 24.04
+- Matrix builds both `default` and `lite` flavors with fail-fast disabled
+- Uses `gradle/actions/setup-gradle@v5` with caching
+- Build command: `./gradlew assemble${FLAVOR}Debug --parallel --max-workers=4`
 
 **Release Workflow** (`.github/workflows/release.yml`)
 - Triggers: `master` branch push or manual dispatch
-- Builds signed APK and AAB
-- Publishes to Google Play Store (internal track)
-- Creates GitHub release with artifacts
-- Sends Discord notifications
+- Builds signed APK and AAB for both flavors
+- Signs with keystore credentials via GitHub Secrets
+- Generates SHA256 checksums for integrity verification
+- Publishes to Google Play Store (internal track) with fallback retry
+- Creates GitHub release with artifacts (tag: `v${VERSION}`)
+- Sends Discord notifications via Treehouses CLI
+
+**Dependabot** (`.github/dependabot.yml`)
+- Daily checks for GitHub Actions updates (max 10 open PRs)
+- Daily checks for Gradle dependency updates (max 15 open PRs)
 
 ### Adding New Features
 
@@ -424,10 +532,12 @@ git push -u origin claude/feature-name-sessionid
 **File Naming:**
 - Activities: `*Activity.kt` (e.g., `LoginActivity.kt`)
 - Fragments: `*Fragment.kt` (e.g., `CourseListFragment.kt`)
+- ViewModels: `*ViewModel.kt` (e.g., `ChatViewModel.kt`)
 - Adapters: `*Adapter.kt` (e.g., `CourseAdapter.kt`)
 - ViewHolders: `*ViewHolder.kt`
 - Repositories: `*Repository.kt` and `*RepositoryImpl.kt`
 - Models: `Realm*.kt` for Realm objects
+- Workers: `*Worker.kt` (e.g., `AutoSyncWorker.kt`)
 
 **Layout Naming:**
 - Activities: `activity_*.xml`
@@ -1169,11 +1279,13 @@ git rebase --continue
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~440 |
-| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt` | ~430 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1060 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~720 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1090 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~448 |
+| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt` | ~369 |
+| REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1058 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~770 |
+| Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~309 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1097 |
 | Build configuration | `app/build.gradle` | ~250 |
 | Dependency versions | `gradle/libs.versions.toml` | ~200 |
 
@@ -1212,6 +1324,45 @@ git push -u origin claude/feature-id   # Push to remote
 
 ---
 
+## Codebase Inventory Summary
+
+### Source Files (394 total Kotlin files)
+
+| Component | Files | Purpose |
+|-----------|-------|---------|
+| `model/` | 67 | Realm database models (40) + DTOs (27) |
+| `repository/` | 38 | Data access abstraction (19 domains + utilities) |
+| `ui/` | 147 | User interface across 28 feature packages |
+| `services/` | 37 | Background tasks & managers (20 root + 3 sub-packages) |
+| `di/` | 17 | Dependency injection (6 modules + 11 entry points) |
+| `base/` | 12 | Reusable base classes |
+| `callback/` | 34 | Event listeners and interfaces |
+| `data/` | 9 | Data services, API, auth |
+| `utils/` | 39 | Helper utilities |
+| Root | 1 | MainApplication.kt |
+
+### Resource Files
+
+| Category | Count |
+|----------|-------|
+| Layout files (main) | 169 |
+| Layout files (all variants) | 181 |
+| Drawable files | 129 |
+| Translation languages | 5 (ar, es, fr, ne, so) |
+| String resources | ~1,194 lines |
+| Menu files | 2 |
+| XML config files | 3 |
+
+### AndroidManifest Permissions (23 total)
+
+**Network**: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, CHANGE_NETWORK_STATE
+**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK
+**System**: PACKAGE_USAGE_STATS, REQUEST_INSTALL_PACKAGES (default flavor only)
+**Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
+**Other**: BLUETOOTH, FOREGROUND_SERVICE_DATA_SYNC, SYSTEM_ALERT_WINDOW
+
+---
+
 ## Conclusion
 
 This document provides a comprehensive guide for AI assistants working on myPlanet. Key principles:
@@ -1229,6 +1380,6 @@ For questions or clarifications, refer to the Discord community or GitHub issues
 
 ---
 
-**Last Updated**: 2026-02-02
-**Version**: 0.45.27
+**Last Updated**: 2026-02-10
+**Version**: 0.46.0
 **Maintainer**: Open Learning Exchange
