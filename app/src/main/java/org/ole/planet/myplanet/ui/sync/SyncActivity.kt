@@ -303,9 +303,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
-
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         try {
             val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
             val url = if (isAlternativeUrl) {
@@ -318,24 +315,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailable(url)
-            val code = response.code()
-
-            if (response.isSuccessful) {
-                val ss = response.body()?.string()
-
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                val dbCount = myList?.size ?: 0
-
-                return if (dbCount < 8) {
-                    customProgressDialog.dismiss()
-                    alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                    false
-                } else {
-                    startSync(type)
-                    true
-                }
-            } else if (code == 401) {
+            if (configurationsRepository.checkServerAvailability(url)) {
                 startSync(type)
                 return true
             }

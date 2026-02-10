@@ -252,7 +252,7 @@ class PlanFragment : BaseTeamFragment() {
 
     private fun formatTeamDetail(detail: String?, title: String): String {
         if (detail?.trim().isNullOrEmpty()) return ""
-        val formattedDetail = detail?.replace("\n", "<br/>")
+        val formattedDetail = detail.replace("\n", "<br/>")
         return "<b>$title</b><br/>$formattedDetail<br/><br/>"    }
 
     override fun onNewsItemClick(news: RealmNews?) {}
