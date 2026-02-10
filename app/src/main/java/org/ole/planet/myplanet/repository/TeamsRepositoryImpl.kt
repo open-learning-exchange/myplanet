@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -1093,5 +1094,19 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return successorMember?.userId?.let { id -> userMap[id] }
+    }
+
+    override suspend fun getTeamCreator(teamId: String): String? {
+        val team = getTeamById(teamId)
+        return team?.userId
+    }
+
+    override suspend fun getCourses(teamId: String): List<RealmMyCourse> {
+        val team = getTeamById(teamId) ?: return emptyList()
+        val courseIds = team.courses?.toList() ?: emptyList()
+        if (courseIds.isEmpty()) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", courseIds.toTypedArray())
+        }
     }
 }

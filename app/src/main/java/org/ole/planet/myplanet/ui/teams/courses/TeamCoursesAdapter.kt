@@ -1,36 +1,28 @@
 package org.ole.planet.myplanet.ui.teams.courses
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 
 class TeamCoursesAdapter(
     private val context: Context,
-    private var list: MutableList<RealmMyCourse>,
-    mRealm: Realm?,
-    teamId: String?,
-    settings: SharedPreferences
+    private val list: List<RealmMyCourse>,
+    private val teamCreatorId: String?,
+    private val currentUserId: String?
 ) : RecyclerView.Adapter<TeamCoursesAdapter.ViewHolder>() {
     private var listener: OnHomeItemClickListener? = null
-    private val settings: SharedPreferences
-    private val teamCreator: String
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
     }
 
     fun getList(): List<RealmMyCourse> = list
@@ -51,7 +43,7 @@ class TeamCoursesAdapter(
                 listener?.openCallFragment(TakeCourseFragment.newInstance(b))
             }
         }
-        if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {
+        if (!currentUserId.equals(teamCreatorId, ignoreCase = true)) {
             holder.binding.ivRemove.visibility = View.GONE
         }
     }
