@@ -398,7 +398,7 @@ class DownloadService : Service() {
 
     override fun onDestroy() {
         try {
-            stopForeground(true)
+            stopForeground(Service.STOP_FOREGROUND_REMOVE)
         } catch (_: Exception) {
         }
         downloadJob.cancel()
