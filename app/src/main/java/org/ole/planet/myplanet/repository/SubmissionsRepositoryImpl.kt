@@ -473,10 +473,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 val managedSub = createSubmission(null, r)
 
                 val parentId = when {
-                    !exam?.id.isNullOrEmpty() -> if (!exam?.courseId.isNullOrEmpty()) {
-                        "${exam?.id}@${exam?.courseId}"
+                    !exam?.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                        "${exam.id}@${exam.courseId}"
                     } else {
-                        exam?.id
+                        exam.id
                     }
                     else -> managedSub.parentId
                 }
