@@ -76,17 +76,22 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = userRepository.getCurrentUser() ?: run {
-            listener?.onSuccess("Cannot upload activities: user model is null")
-            return
-        }
-
-        if (model.isManager()) {
-            listener?.onSuccess("Skipping activities upload for manager")
-            return
-        }
 
         MainApplication.applicationScope.launch {
+            val model = userRepository.getUserModelSuspending() ?: run {
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("Cannot upload activities: user model is null")
+                }
+                return@launch
+            }
+
+            if (model.isManager()) {
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("Skipping activities upload for manager")
+                }
+                return@launch
+            }
+
             try {
                 try {
                     apiInterface.postDoc(
@@ -293,7 +298,7 @@ class UploadManager @Inject constructor(
                 val serialized: JsonObject
             )
 
-            val user = userRepository.getCurrentUser()
+            val user = userRepository.getUserModelSuspending()
 
             val resourcesToUpload = databaseService.withRealm { realm ->
                 realm.refresh()
@@ -498,7 +503,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = userRepository.getCurrentUser() ?: run {
+        val model = userRepository.getUserModelSuspending() ?: run {
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }
@@ -623,7 +628,7 @@ class UploadManager @Inject constructor(
         // the coordinator for the core upload/update flow where possible.
 
         val apiInterface = client.create(ApiInterface::class.java)
-        val user = userRepository.getCurrentUser()
+        val user = userRepository.getUserModelSuspending()
 
         data class NewsUploadData(
             val id: String?,

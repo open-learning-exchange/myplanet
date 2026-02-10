@@ -56,7 +56,6 @@ class AddResourceActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        userModel = userSessionManager.userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
         teamId = intent.getStringExtra("teamId")
         levels = RealmList()
@@ -64,6 +63,10 @@ class AddResourceActivity : AppCompatActivity() {
         resourceFor = RealmList()
         initializeViews()
         setupPrivateResourceCheckbox()
+        lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
+            binding.tvAddedBy.text = userModel?.name
+        }
     }
 
     private fun setupPrivateResourceCheckbox() {
@@ -76,7 +79,6 @@ class AddResourceActivity : AppCompatActivity() {
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         etYear.setText(currentYear.toString())
         binding.fileUrl.text = getString(R.string.file, resourceUrl)
-        binding.tvAddedBy.text = userModel?.name
         binding.tvLevels.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view,getString(R.string.levels))
         }

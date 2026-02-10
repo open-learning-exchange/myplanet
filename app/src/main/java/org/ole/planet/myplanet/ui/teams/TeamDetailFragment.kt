@@ -77,14 +77,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     private var pageConfigs: List<TeamPageConfig> = emptyList()
     private var loadTeamJob: Job? = null
 
-    private fun getCurrentUser(): RealmUser? {
-        return userSessionManager.userModel
-    }
-
-    private fun detachCurrentUser(): RealmUser? {
-        return userSessionManager.getUserModelCopy()
-    }
-
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
         val idx = pageConfigs.indexOfFirst { it.id == pageId }
@@ -133,7 +125,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = detachCurrentUser()
 
         binding.loadingIndicator?.visibility = View.VISIBLE
         binding.contentLayout?.visibility = View.GONE
@@ -142,6 +133,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         loadTeamJob?.cancel()
         loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
+            val user = userSessionManager.getUserModel()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
                     teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
@@ -474,13 +466,12 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun createTeamLog() {
-        val userModel = getCurrentUser() ?: return
-        val userName = userModel.name
-        val userPlanetCode = userModel.planetCode
-        val userParentCode = userModel.parentCode
-        val teamType = getEffectiveTeamType()
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userModel = userSessionManager.getUserModel() ?: return@launch
+            val userName = userModel.name
+            val userPlanetCode = userModel.planetCode
+            val userParentCode = userModel.parentCode
+            val teamType = getEffectiveTeamType()
             teamsRepository.logTeamVisit(
                 teamId = getEffectiveTeamId(),
                 userName = userName,
