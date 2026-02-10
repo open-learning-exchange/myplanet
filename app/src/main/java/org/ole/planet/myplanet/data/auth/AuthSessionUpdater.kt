@@ -21,8 +21,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class AuthSessionUpdater @AssistedInject constructor(
     @Assisted private val callback: AuthCallback,
-    @AppPreferences private val settings: SharedPreferences,
-    @ApplicationScope private val scope: CoroutineScope
+    @param:AppPreferences private val settings: SharedPreferences,
+    @param:ApplicationScope private val scope: CoroutineScope
 ) {
 
     interface AuthCallback {
