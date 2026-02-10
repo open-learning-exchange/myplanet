@@ -112,6 +112,11 @@ class MyHealthFragment : Fragment() {
         setupButtons()
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshHealthData()
+    }
+
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.canAddPatient.collect { canAdd ->
@@ -285,7 +290,11 @@ class MyHealthFragment : Fragment() {
         binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
         binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
-        val (mh, mm, list, userMap) = healthRecord
+        val mh = healthRecord.healthPojo
+        val mm = healthRecord.healthProfile
+        val list = healthRecord.examinations
+        val userMap = healthRecord.userMap
+
         val myHealths = mm.profile
         binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
         binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
