@@ -20,7 +20,12 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: RealmHealthExamination) {
-        save(examination)
+        try {
+            save(examination)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
     }
 
     override suspend fun getUserHealthProfile(userId: String): RealmMyHealth? {

@@ -84,6 +84,12 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         mapConditions = HashMap()
         userId = intent.getStringExtra("userId")
 
+        if (TextUtils.isEmpty(userId)) {
+            Utilities.toast(this, getString(R.string.user_not_found))
+            finish()
+            return
+        }
+
         lifecycleScope.launch {
             if (userId != null) {
                 user = healthRepository.ensureUserKeys(userId!!)
@@ -247,6 +253,14 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     private fun saveData() {
+        if (TextUtils.isEmpty(userId)) {
+            Utilities.toast(this, getString(R.string.user_not_found))
+            return
+        }
+        if (user == null || user?.key == null || user?.iv == null) {
+            Utilities.toast(this, getString(R.string.user_not_found))
+            return
+        }
         lifecycleScope.launch {
             try {
                 createPojo()
