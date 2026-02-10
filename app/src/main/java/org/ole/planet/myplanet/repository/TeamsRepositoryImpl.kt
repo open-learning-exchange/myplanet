@@ -168,19 +168,32 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>) {
+        android.util.Log.d("TeamsRepository", "=== ADD COURSES TO TEAM START ===")
         android.util.Log.d("TeamsRepository", "addCoursesToTeam: teamId=$teamId, courseIds=$courseIds")
-        if (courseIds.isEmpty()) return
+        if (courseIds.isEmpty()) {
+            android.util.Log.w("TeamsRepository", "addCoursesToTeam: No courses to add, returning early")
+            return
+        }
         executeTransaction { realm ->
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("_id", teamId)
-                .findFirst() ?: return@executeTransaction
+                .findFirst()
+            if (team == null) {
+                android.util.Log.e("TeamsRepository", "addCoursesToTeam: Team not found with _id=$teamId")
+                return@executeTransaction
+            }
+            android.util.Log.d("TeamsRepository", "addCoursesToTeam: Found team '${team.name}', current courses: ${team.courses?.toList()}")
             courseIds.forEach { courseId ->
                 if (team.courses?.contains(courseId) != true) {
                     team.courses?.add(courseId)
+                    android.util.Log.d("TeamsRepository", "addCoursesToTeam: Added course $courseId")
+                } else {
+                    android.util.Log.d("TeamsRepository", "addCoursesToTeam: Course $courseId already in team")
                 }
             }
             team.updated = true
-            android.util.Log.d("TeamsRepository", "addCoursesToTeam: team courses now: ${team.courses?.toList()}")
+            android.util.Log.d("TeamsRepository", "addCoursesToTeam: Set updated=true, team courses now: ${team.courses?.toList()}")
+            android.util.Log.d("TeamsRepository", "=== ADD COURSES TO TEAM END ===")
         }
     }
 

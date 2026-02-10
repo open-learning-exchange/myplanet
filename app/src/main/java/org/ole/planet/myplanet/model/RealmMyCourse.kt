@@ -277,5 +277,49 @@ open class RealmMyCourse : RealmObject() {
             }
             return ids
         }
+
+        @JvmStatic
+        fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
+            val obj = JsonObject()
+            obj.addProperty("_id", course.courseId)
+            obj.addProperty("_rev", course.courseRev)
+            obj.addProperty("courseTitle", course.courseTitle)
+            obj.addProperty("description", course.description)
+            obj.addProperty("languageOfInstruction", course.languageOfInstruction)
+            obj.addProperty("gradeLevel", course.gradeLevel)
+            obj.addProperty("subjectLevel", course.subjectLevel)
+            obj.addProperty("createdDate", course.createdDate)
+            obj.addProperty("method", course.method)
+            obj.addProperty("memberLimit", course.memberLimit)
+
+            // Serialize steps with their resources
+            val stepsArray = JsonArray()
+            course.courseSteps?.forEach { step ->
+                val stepObj = JsonObject()
+                stepObj.addProperty("stepTitle", step.stepTitle)
+                stepObj.addProperty("description", step.description)
+                stepObj.addProperty("id", step.id)
+
+                // Get resources for this step
+                val resourcesArray = JsonArray()
+                val stepResources = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("stepId", step.id)
+                    .equalTo("courseId", course.courseId)
+                    .findAll()
+
+                stepResources.forEach { resource ->
+                    resourcesArray.add(resource.serializeResource())
+                }
+                stepObj.add("resources", resourcesArray)
+                stepsArray.add(stepObj)
+            }
+            obj.add("steps", stepsArray)
+
+            // Empty images array (as per the JSON structure)
+            obj.add("images", JsonArray())
+
+            android.util.Log.d("RealmMyCourse", "serialize: course ${course.courseId} with ${course.courseSteps?.size ?: 0} steps")
+            return obj
+        }
     }
 }
