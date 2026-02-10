@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.base
 
 import com.google.gson.JsonArray
-import io.realm.RealmModel
 import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -11,29 +10,34 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     var isMyCourseLib: Boolean = false
 
     @Suppress("UNCHECKED_CAST")
-    fun getList(c: Class<*>): List<LI> {
+    suspend fun getList(c: Class<*>): List<LI> {
+        val userId = model?.id ?: ""
         return when {
             c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").findAll().toList() as List<LI>
+                surveysRepository.getAllSurveys() as List<LI>
             }
             isMyCourseLib -> {
-                getMyLibItems(c as Class<out RealmModel>)
+                when (c) {
+                    RealmMyLibrary::class.java -> {
+                        resourcesRepository.getMyLibraryItems(userId) as List<LI>
+                    }
+                    RealmMyCourse::class.java -> {
+                        coursesRepository.getMyCourses(userId) as List<LI>
+                    }
+                    else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
+                }
             }
             c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
+                resourcesRepository.getOurLibraryItems(userId) as List<LI>
             }
             else -> {
-                val myLibItems = getMyLibItems(c as Class<out RealmModel>)
-                val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
-                    .isNotEmpty("courseTitle")
-                    .findAll()
-                    .toList()
-                val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
+                val myLibItems = coursesRepository.getMyCourses(userId)
+                val ourCourseItems = coursesRepository.getOurCourses(userId)
 
                 when (c) {
                     RealmMyCourse::class.java -> {
                         val combinedList = mutableListOf<RealmMyCourse>()
-                        (myLibItems as List<RealmMyCourse>).forEach { course ->
+                        myLibItems.forEach { course ->
                             course.isMyCourse = true
                             combinedList.add(course)
                         }
@@ -54,43 +58,36 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     }
 
     @Suppress("UNCHECKED_CAST")
-    fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
-        return when {
-            c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").sort(orderBy ?: "", sort).findAll().toList() as List<LI>
-            }
-            isMyCourseLib -> {
-                getMyLibItems(c as Class<out RealmModel>, orderBy)
-            }
-            c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
-            }
-            else -> {
-                val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
-                RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
-            }
+    suspend fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
+        val list = getList(c)
+        if (orderBy == null) return list
+
+        val isAscending = sort == Sort.ASCENDING
+        return when (c) {
+            RealmMyLibrary::class.java -> sortByProperty(list as List<RealmMyLibrary>, orderBy, isAscending) as List<LI>
+            RealmMyCourse::class.java -> sortByProperty(list as List<RealmMyCourse>, orderBy, isAscending) as List<LI>
+            RealmStepExam::class.java -> sortByProperty(list as List<RealmStepExam>, orderBy, isAscending) as List<LI>
+            else -> list
         }
     }
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
-        val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
+
+    private fun <T> sortByProperty(list: List<T>, propertyName: String, ascending: Boolean): List<T> {
+        val comparator = Comparator<T> { o1, o2 ->
+            val v1 = getProperty(o1!!, propertyName)
+            val v2 = getProperty(o2!!, propertyName)
+            compareValues(v1, v2)
         }
-        val realmResults = if (orderBy != null) {
-            query.sort(orderBy).findAll()
-        } else {
-            query.findAll()
-        }
-        val results: List<T> = realmResults.toList()
-        return when (c) {
-            RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getMyLibraryByUserId(model?.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
-            }
-            RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyCourseByUserId(model?.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
-            }
-            else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
+        return if (ascending) list.sortedWith(comparator) else list.sortedWith(comparator.reversed())
+    }
+
+    private fun getProperty(obj: Any, propertyName: String): Comparable<*>? {
+        // Simple reflection or manual mapping to get property value for sorting
+        try {
+            val field = obj.javaClass.getDeclaredField(propertyName)
+            field.isAccessible = true
+            return field.get(obj) as? Comparable<*>
+        } catch (e: Exception) {
+            return null
         }
     }
 

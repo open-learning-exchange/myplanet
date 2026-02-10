@@ -239,21 +239,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
-        if (s.isEmpty()) return query.findAll()
+    private fun <LI : RealmModel> search(list: List<LI>, s: String, c: Class<LI>): List<LI> {
+        if (s.isEmpty()) return list
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = query.findAll()
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<LI>()
         val containsQuery = mutableListOf<LI>()
 
-        for (item in data) {
+        for (item in list) {
             val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
 
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
@@ -272,14 +267,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
-        var list = getData(s, RealmMyLibrary::class.java)
-        list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model?.id, list)
-        } else {
-            getOurLibrary(model?.id, list)
-        }
+    suspend fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        @Suppress("UNCHECKED_CAST")
+        val allLibraries = getList(RealmMyLibrary::class.java) as List<RealmMyLibrary>
+        val list = search(allLibraries, s, RealmMyLibrary::class.java)
 
         val libraries = if (tags.isNotEmpty()) {
             val filteredLibraries = mutableListOf<RealmMyLibrary>()
@@ -300,17 +291,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+        @Suppress("UNCHECKED_CAST")
+        val allCourses = getList(RealmMyCourse::class.java) as List<RealmMyCourse>
+
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
+            return applyCourseFilter(allCourses)
         }
-        var list = getData(s, RealmMyCourse::class.java)
-        list = if (isMyCourseLib) {
-            coursesRepository.getMyCourses(model?.id, list)
-        } else {
-            getAllCourses(model?.id, list)
-        }
+
+        val list = search(allCourses, s, RealmMyCourse::class.java)
+
         if (tags.isEmpty()) {
-            return list
+            return applyCourseFilter(list)
         }
         val courses = RealmList<RealmMyCourse>()
         list.forEach { course ->
@@ -323,12 +314,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return items.filterIsInstance<RealmMyCourse>()
     }
 
-    private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
+    private suspend fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
         for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
-                .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
-            if (count > 0 && !libraries.contains(library)) {
-                library?.let { libraries.add(it) }
+            val tagId = tg.id
+            if (tagId != null) {
+                val count = tagsRepository.getTagCount("resources", tagId, library?.id)
+                if (count > 0 && !libraries.contains(library)) {
+                    library?.let { libraries.add(it) }
+                }
             }
         }
     }

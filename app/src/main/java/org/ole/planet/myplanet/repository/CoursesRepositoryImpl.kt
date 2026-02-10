@@ -47,6 +47,12 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getOurCourses(userId: String): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {
+            isNotEmpty("courseTitle")
+        }.filter { it.userId?.contains(userId) == false }
+    }
+
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
         return queryListFlow(RealmMyCourse::class.java) {
             equalTo("userId", userId)
