@@ -6,6 +6,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
+import java.io.File
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -19,23 +20,24 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import java.io.File
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val activitiesRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java)
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "id", id)
+        return findByField(RealmMyLibrary::class.java, "id", id, true)
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
@@ -401,5 +403,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         } else {
             ResourceUrlsResponse.Error
         }
+    }
+
+    override suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>> {
+        return mapOf(
+            "languages" to libraries.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet(),
+            "subjects" to libraries.flatMap { it.subject ?: emptyList() }.toSet(),
+            "mediums" to libraries.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet(),
+            "levels" to libraries.flatMap { it.level ?: emptyList() }.toSet()
+        )
     }
 }

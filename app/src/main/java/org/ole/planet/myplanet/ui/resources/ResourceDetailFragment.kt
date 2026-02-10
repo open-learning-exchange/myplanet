@@ -21,8 +21,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint

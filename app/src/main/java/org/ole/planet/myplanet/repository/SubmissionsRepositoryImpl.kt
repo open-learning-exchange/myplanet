@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.util.Log
 import com.google.gson.JsonParser
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.Date
 import java.util.UUID
@@ -11,17 +12,15 @@ import javax.inject.Provider
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.QuestionAnswer
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmUser
-import io.realm.RealmList
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamReference
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
@@ -460,7 +459,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam?, type: String?, teamId: String?): RealmSubmission? {
+    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam, type: String?, teamId: String?): RealmSubmission? {
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
         } else {
@@ -473,10 +472,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 val managedSub = createSubmission(null, r)
 
                 val parentId = when {
-                    !exam?.id.isNullOrEmpty() -> if (!exam?.courseId.isNullOrEmpty()) {
-                        "${exam?.id}@${exam?.courseId}"
+                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                        "${exam.id}@${exam.courseId}"
                     } else {
-                        exam?.id
+                        exam.id
                     }
                     else -> managedSub.parentId
                 }
@@ -484,13 +483,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
                 try {
                     val parentJsonString = com.google.gson.JsonObject().apply {
-                        addProperty("_id", exam?.id ?: "")
-                        addProperty("name", exam?.name ?: "")
-                        addProperty("courseId", exam?.courseId ?: "")
-                        addProperty("sourcePlanet", exam?.sourcePlanet ?: "")
-                        addProperty("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                        addProperty("noOfQuestions", exam?.noOfQuestions ?: 0)
-                        addProperty("isFromNation", exam?.isFromNation ?: false)
+                        addProperty("_id", exam.id ?: "")
+                        addProperty("name", exam.name ?: "")
+                        addProperty("courseId", exam.courseId ?: "")
+                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                        addProperty("noOfQuestions", exam.noOfQuestions)
+                        addProperty("isFromNation", exam.isFromNation)
                     }.toString()
                     managedSub.parent = parentJsonString
                 } catch (e: Exception) {

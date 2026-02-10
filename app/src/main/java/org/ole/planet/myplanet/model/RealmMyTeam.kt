@@ -268,6 +268,18 @@ open class RealmMyTeam : RealmObject() {
 
             JsonUtils.addString(`object`, "_id", team._id)
             JsonUtils.addString(`object`, "_rev", team._rev)
+
+            if (team.docType == "resourceLink") {
+                `object`.addProperty("resourceId", team.resourceId)
+                `object`.addProperty("title", team.title)
+                JsonUtils.addString(`object`, "teamId", team.teamId)
+                `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
+                `object`.addProperty("teamType", team.teamType)
+                `object`.addProperty("sourcePlanet", team.sourcePlanet)
+                `object`.addProperty("docType", team.docType)
+                return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+            }
+
             `object`.addProperty("name", team.name)
             `object`.addProperty("userId", team.userId)
             if (team.docType != "report" && team.docType != "request") {
@@ -302,6 +314,7 @@ open class RealmMyTeam : RealmObject() {
             `object`.addProperty("services", team.services)
             `object`.addProperty("createdBy", team.createdBy)
             `object`.addProperty("resourceId", team.resourceId)
+            `object`.addProperty("title", team.title)
             `object`.addProperty("rules", team.rules)
 
             if (team.teamType == "debit" || team.teamType == "credit") {

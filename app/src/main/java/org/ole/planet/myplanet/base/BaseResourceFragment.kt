@@ -19,6 +19,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -26,9 +27,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.R
-import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
@@ -95,7 +95,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
-            mRealm = databaseService.realmInstance
+            mRealm = databaseService.createManagedRealmInstance()
         }
         return mRealm
     }
@@ -204,7 +204,7 @@ abstract class BaseResourceFragment : Fragment() {
                 .setTitle(R.string.download_suggestion)
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.isPlanetAvailable()) {
+                        if (configurationsRepository.checkServerAvailability()) {
                             lv?.selectedItemsList?.let {
                                 addToLibrary(librariesForDialog, it)
                                 val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
@@ -218,7 +218,7 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.isPlanetAvailable()) {
+                        if (configurationsRepository.checkServerAvailability()) {
                             addAllToLibrary(librariesForDialog)
                             if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
                                 showProgressDialog()
@@ -362,7 +362,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
+        mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
@@ -480,7 +480,7 @@ abstract class BaseResourceFragment : Fragment() {
             )
             val configurationsRepository = entryPoint.configurationsRepository()
             MainApplication.applicationScope.launch {
-                if (configurationsRepository.isPlanetAvailable()) {
+                if (configurationsRepository.checkServerAvailability()) {
                     if (urls.isNotEmpty()) {
                         DownloadUtils.openDownloadService(context, urls, false)
                     }

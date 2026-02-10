@@ -26,10 +26,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
-    @Assisted private val context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val apiInterface: ApiInterface,
-    private val broadcastService: BroadcastService
+    @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
+    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -48,7 +46,7 @@ class DownloadWorker @AssistedInject constructor(
             val urls = urlSet.toTypedArray()
             DownloadUtils.createChannels(context)
 
-            showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads))
+            showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads), -1)
 
             var completedCount = 0
             val results = mutableListOf<Boolean>()
@@ -59,7 +57,7 @@ class DownloadWorker @AssistedInject constructor(
                     results.add(success)
                     completedCount++
 
-                    showProgressNotification(completedCount, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"))
+                    showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -97,6 +95,7 @@ class DownloadWorker @AssistedInject constructor(
         val fileSize = body.contentLength()
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
         var totalBytes: Long = 0
+        var lastUpdateTime = 0L
 
         outputFile.sink().buffer().use { sink ->
             body.source().use { source ->
@@ -107,11 +106,13 @@ class DownloadWorker @AssistedInject constructor(
                     sink.write(buffer, read)
                     totalBytes += read
 
-                    if (totalBytes % (1024 * 100) == 0L) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
                         val progress = if (fileSize > 0) {
                             (totalBytes * 100 / fileSize).toInt()
-                        } else 0
-                        showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
+                        } else -1
+                        showProgressNotification(index, total, getFileNameFromUrl(url), progress)
+                        lastUpdateTime = now
                     }
                 }
                 sink.flush()
@@ -120,24 +121,21 @@ class DownloadWorker @AssistedInject constructor(
         DownloadUtils.updateResourceOfflineStatus(url)
     }
 
-    private suspend fun showProgressNotification(current: Int, total: Int, text: String) {
+    private suspend fun showProgressNotification(current: Int, total: Int, fileName: String, fileProgress: Int = -1) {
+        val text = if (fileProgress in 0..100) {
+            "$fileName ($fileProgress%)"
+        } else {
+            fileName
+        }
         val notification = DownloadUtils.buildProgressNotification(
-            context,
-            current,
-            total,
-            text,
-            forWorker = true
+            context, current + 1, total, text, forWorker = true, fileProgress = fileProgress
         )
         setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
     }
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {
         val notification = DownloadUtils.buildCompletionNotification(
-            context,
-            completed,
-            total,
-            hadErrors,
-            forWorker = true
+            context, completed, total, hadErrors, forWorker = true
         )
 
         notificationManager.notify(COMPLETION_NOTIFICATION_ID, notification)
@@ -165,5 +163,6 @@ class DownloadWorker @AssistedInject constructor(
     companion object {
         const val WORKER_NOTIFICATION_ID = 3
         const val COMPLETION_NOTIFICATION_ID = 4
+        private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
     }
 }

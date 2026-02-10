@@ -1187,6 +1187,9 @@
     <string name="clear_retry_queue">Vaciar cola</string>
     <string name="retry_triggered">Reintento iniciado</string>
     <string name="retry_queue_cleared">Cola de reintentos vaciada</string>
+    <string name="create_new_resource">Crear nuevo</string>
+    <string name="private_resource">Recurso privado (visible solo para este equipo)</string>
+    <string name="resource_added_to_team">Recurso añadido al equipo</string>
     <string name="select_courses">Seleccionar cursos</string>
     <string name="untitled_course">Curso sin título</string>
     <string name="courses_loading">Cargando cursos…</string>

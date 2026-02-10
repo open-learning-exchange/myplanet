@@ -273,6 +273,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
             uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
+                    applicationScope.launch(Dispatchers.IO) {
+                        uploadManager.uploadTeams()
+                    }
                     checkAllOperationsComplete()
                 }
             })
@@ -343,11 +346,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
-                val apiInterface = client?.create(ApiInterface::class.java)
+                val apiInterface = client.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)
+                val response = apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
 
-                if (response?.isSuccessful == true && response.body() != null) {
+                if (response.isSuccessful && response.body() != null) {
                     val userDoc = response.body()
                     val derivedKey = userDoc?.get("derived_key")?.asString
                     val salt = userDoc?.get("salt")?.asString

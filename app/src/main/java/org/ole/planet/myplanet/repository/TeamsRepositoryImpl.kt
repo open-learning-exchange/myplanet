@@ -43,7 +43,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
-    @AppPreferences private val preferences: SharedPreferences,
+    @param:AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
@@ -146,13 +146,21 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
-        return if (resourceIds.isEmpty()) {
+        val linkedResources = if (resourceIds.isEmpty()) {
             emptyList()
         } else {
             queryList(RealmMyLibrary::class.java) {
                 `in`("resourceId", resourceIds.toTypedArray())
             }
         }
+
+        // Also get private resources belonging to this team
+        val privateResources = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+            equalTo("privateFor", teamId)
+        }
+
+        return (linkedResources + privateResources).distinctBy { it.id }
     }
 
     override suspend fun getTeamCourses(teamId: String): List<RealmMyCourse> {
