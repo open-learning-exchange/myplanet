@@ -7,5 +7,5 @@ interface OnLibraryItemSelectedListener {
     @JvmSuppressWildcards
     fun onSelectedListChange(list: MutableList<RealmMyLibrary?>)
     @JvmSuppressWildcards
-    fun onTagClicked(realmTag: RealmTag)
+    fun onTagClicked(tag: RealmTag)
 }
