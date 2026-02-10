@@ -85,7 +85,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             var retryCount = 0
             val maxRetries = 10
             while (retryCount < maxRetries) {
-                realm = Realm.getDefaultInstance()
+                realm = databaseService.createManagedRealmInstance()
                 if (!realm.isInTransaction) {
                     break
                 }
@@ -96,30 +96,22 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             }
 
             if (realm == null) {
-                realm = Realm.getDefaultInstance()
+                realm = databaseService.createManagedRealmInstance()
             }
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
             if (initialResults.isValid && initialResults.isLoaded) {
                 val initialCopy = realm.copyFromRealm(initialResults)
-                send(initialCopy)
+                trySend(initialCopy)
             }
-            
+
             results = realm.where(clazz).apply(builder).findAllAsync()
             listener = RealmChangeListener<RealmResults<T>> { changedResults ->
                 if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
                     try {
-                        val frozenResults = changedResults.freeze()
-                        launch(databaseService.ioDispatcher) {
-                            try {
-                                val frozenRealm = frozenResults.realm
-                                val copiedList = frozenRealm.copyFromRealm(frozenResults)
-                                if (!isClosed.get()) {
-                                    send(copiedList)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                        realm?.let { r ->
+                            val copiedList = r.copyFromRealm(changedResults)
+                            trySend(copiedList)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -135,7 +127,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             safeCloseRealm()
             throw e
         }
-    }.flowOn(Dispatchers.Main)
+    }.flowOn(databaseService.realmBackgroundDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,

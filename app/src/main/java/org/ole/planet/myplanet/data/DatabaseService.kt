@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.data
 
 import android.content.Context
+import android.os.Handler
+import android.os.HandlerThread
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmModel
@@ -9,12 +11,15 @@ import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.android.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 
 class DatabaseService(context: Context) {
     val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
     private val realmDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
+    private val realmThread = HandlerThread("RealmBackground").apply { start() }
+    val realmBackgroundDispatcher: CoroutineDispatcher = Handler(realmThread.looper).asCoroutineDispatcher()
 
     init {
         Realm.init(context)
