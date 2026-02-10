@@ -741,7 +741,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
         } else {
             lifecycleScope.launch(Dispatchers.IO) {
-                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+                configurationsRepository.clearAllData()
             }
         }
         builder.setCancelable(cancelable)
