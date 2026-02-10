@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), ChatRepository {
 
     private val concatenatedLinks = ArrayList<String>()

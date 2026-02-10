@@ -86,7 +86,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.realmInstance
+            mRealm = databaseService.createManagedRealmInstance()
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -244,11 +244,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        if (s.isEmpty()) return mRealm.where(c).findAll()
+        val query = mRealm.where(c)
+        if (c == RealmMyLibrary::class.java) {
+            query.equalTo("isPrivate", false)
+        }
+        if (s.isEmpty()) return query.findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = mRealm.where(c).findAll()
+        val data: RealmResults<LI> = query.findAll()
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<LI>()
         val containsQuery = mutableListOf<LI>()

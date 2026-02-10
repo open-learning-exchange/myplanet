@@ -7,7 +7,8 @@ import org.ole.planet.myplanet.model.MyPlanet
 interface ConfigurationsRepository {
     fun checkHealth(listener: OnSuccessListener)
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences)
-    suspend fun isPlanetAvailable(): Boolean
+    suspend fun checkServerAvailability(): Boolean
+    suspend fun checkServerAvailability(url: String): Boolean
     suspend fun checkCheckSum(path: String): Boolean
 
     interface CheckVersionCallback {
