@@ -27,7 +27,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -48,8 +47,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
     var user: RealmUser? = null
@@ -99,35 +96,33 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
-                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
-                newsAdapter = VoicesAdapter(
-                    context = this@ReplyActivity,
-                    currentUser = user,
-                    parentNews = news,
-                    teamName = "",
-                    teamId = null,
-                    userSessionManager = userSessionManager,
-                    scope = lifecycleScope,
-                    isTeamLeaderFn = { false },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                    },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                    labelManager = labelManager,
-                    voicesRepository = voicesRepository
-                )
-                newsAdapter.sharedPrefManager = sharedPrefManager
-                newsAdapter.setListener(this@ReplyActivity)
-                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-                newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
-                activityReplyBinding.rvReply.adapter = newsAdapter
-            }
+            val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+            newsAdapter = VoicesAdapter(
+                context = this@ReplyActivity,
+                currentUser = user,
+                parentNews = news,
+                teamName = "",
+                teamId = null,
+                userSessionManager = userSessionManager,
+                scope = lifecycleScope,
+                isTeamLeaderFn = { false },
+                getUserFn = { userId -> userRepository.getUserById(userId) },
+                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
+                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                },
+                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                labelManager = labelManager,
+                voicesRepository = voicesRepository
+            )
+            newsAdapter.sharedPrefManager = sharedPrefManager
+            newsAdapter.setListener(this@ReplyActivity)
+            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+            newsAdapter.setImageList(imageList)
+            newsAdapter.updateList(list)
+            activityReplyBinding.rvReply.adapter = newsAdapter
         }
     }
 
