@@ -50,6 +50,7 @@ interface ResourcesRepository {
     suspend fun getMyLibIds(userId: String): JsonArray
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
+    suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
 }
 
 sealed class ResourceUrlsResponse {

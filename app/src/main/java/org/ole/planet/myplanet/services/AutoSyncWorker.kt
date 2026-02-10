@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.CheckVersionCallback
+import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
-    @AppPreferences private val preferences: SharedPreferences,
+    @param:AppPreferences private val preferences: SharedPreferences,
     private val syncManager: SyncManager,
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService,
@@ -54,7 +54,7 @@ class AutoSyncWorker @AssistedInject constructor(
                     Utilities.toast(context, "Syncing started...")
                 }
             }
-            DataService(context).checkVersion(this, preferences)
+            configurationsRepository.checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -83,7 +83,7 @@ class AutoSyncWorker @AssistedInject constructor(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                DataService(MainApplication.context).healthAccess {
+                configurationsRepository.checkHealth {
                     uploadToShelfService.uploadHealth()
                 }
             }

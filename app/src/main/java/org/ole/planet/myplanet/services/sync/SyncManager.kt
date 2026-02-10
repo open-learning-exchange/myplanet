@@ -14,6 +14,8 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
+import javax.inject.Inject
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -59,17 +61,17 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
-class SyncManager constructor(
-    @ApplicationContext private val context: Context,
+class SyncManager @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
-    @ApplicationScope private val syncScope: CoroutineScope
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var isSyncing = false
+    private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
@@ -84,7 +86,7 @@ class SyncManager constructor(
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
-        if (!isSyncing) {
+        if (isSyncing.compareAndSet(false, true)) {
             _syncStatus.value = SyncStatus.Idle
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
@@ -140,7 +142,7 @@ class SyncManager constructor(
         }
         cancelBackgroundSync()
         cancel(context, 111)
-        isSyncing = false
+        isSyncing.set(false)
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         listener = null
@@ -522,7 +524,7 @@ class SyncManager constructor(
 
     private fun cleanupMainSync() {
         cancel(context, 111)
-        isSyncing = false
+        isSyncing.set(false)
     }
 
     private fun initializeSync() {
@@ -531,7 +533,6 @@ class SyncManager constructor(
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
             settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
         }
-        isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
 
@@ -746,7 +747,7 @@ class SyncManager constructor(
 
     private fun handleException(message: String?) {
         if (listener != null) {
-            isSyncing = false
+            isSyncing.set(false)
             MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
             _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")

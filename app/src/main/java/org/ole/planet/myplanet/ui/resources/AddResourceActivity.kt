@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.isVisible
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,6 +42,7 @@ class AddResourceActivity : AppCompatActivity() {
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null
     private var resourceUrl: String? = null
+    private var teamId: String? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -56,10 +58,17 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         userModel = userSessionManager.userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
+        teamId = intent.getStringExtra("teamId")
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
         initializeViews()
+        setupPrivateResourceCheckbox()
+    }
+
+    private fun setupPrivateResourceCheckbox() {
+        binding.cbPrivateResource.isVisible = teamId != null
+        binding.cbPrivateResource.isChecked = teamId != null
     }
 
     private fun initializeViews() {
@@ -85,16 +94,27 @@ class AddResourceActivity : AppCompatActivity() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
         val id = UUID.randomUUID().toString()
+        val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
+
         val resource = RealmMyLibrary().apply {
             this.id = id
             this.title = title
             createResource(this, id)
-            setUserId(userModel?.id)
+            if (!isPrivateTeamResource) {
+                setUserId(userModel?.id)
+            }
         }
         lifecycleScope.launch {
             resourcesRepository.saveLibraryItem(resource)
-            resourcesRepository.markResourceAdded(userModel?.id, id)
-            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
+            if (!isPrivateTeamResource) {
+                resourcesRepository.markResourceAdded(userModel?.id, id)
+            }
+            val message = if (isPrivateTeamResource) {
+                getString(R.string.resource_added_to_team)
+            } else {
+                getString(R.string.added_to_my_library)
+            }
+            toast(this@AddResourceActivity, message)
             finish()
         }
     }
@@ -119,6 +139,8 @@ class AddResourceActivity : AppCompatActivity() {
         resource.resourceLocalAddress = resourceUrl
         resource.resourceOffline = true
         resource.filename = resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
+        resource.isPrivate = binding.cbPrivateResource.isChecked && teamId != null
+        resource.privateFor = if (binding.cbPrivateResource.isChecked && teamId != null) teamId else null
     }
 
     private fun validate(title: String): Boolean {
