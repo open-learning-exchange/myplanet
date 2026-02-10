@@ -273,6 +273,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
             uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
+                    applicationScope.launch(Dispatchers.IO) {
+                        uploadManager.uploadTeams()
+                    }
                     checkAllOperationsComplete()
                 }
             })

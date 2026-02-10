@@ -39,9 +39,10 @@ object DownloadUtils {
                 val channel = NotificationChannel(
                     DOWNLOAD_CHANNEL,
                     "Download Service",
-                    NotificationManager.IMPORTANCE_HIGH
+                    NotificationManager.IMPORTANCE_LOW
                 ).apply {
                     setSound(null, null)
+                    enableVibration(false)
                     description = "Shows download progress for files"
                 }
                 manager.createNotificationChannel(channel)
@@ -78,9 +79,10 @@ object DownloadUtils {
             .setContentText(context.getString(R.string.preparing_download))
             .setSmallIcon(R.drawable.ic_download)
             .setProgress(100, 0, true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setSilent(true)
+            .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
@@ -91,19 +93,28 @@ object DownloadUtils {
         current: Int,
         total: Int,
         text: String,
-        forWorker: Boolean = false
+        forWorker: Boolean = false,
+        fileProgress: Int = -1
     ): Notification {
         val channel = if (forWorker) WORKER_CHANNEL else DOWNLOAD_CHANNEL
         createChannels(context)
-        return NotificationCompat.Builder(context, channel)
+        val builder = NotificationCompat.Builder(context, channel)
             .setContentTitle(context.getString(R.string.downloading_files))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_download)
-            .setProgress(total, current, false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(!forWorker)
             .setSilent(true)
-            .build()
+            .setOnlyAlertOnce(true)
+
+        if (fileProgress in 0..100) {
+            builder.setProgress(100, fileProgress, false)
+            builder.setSubText("$current/$total files")
+        } else {
+            builder.setProgress(total, current, false)
+        }
+
+        return builder.build()
     }
 
     @JvmStatic
@@ -147,11 +158,29 @@ object DownloadUtils {
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
         context?.let { ctx ->
             val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+
+            val existingUrls = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+            val mergedUrls = existingUrls.toMutableSet().apply { addAll(urls) }
+
             preferences.edit {
-                putStringSet("url_list_key", urls.toSet())
+                putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
             }
-            startDownloadServiceSafely(ctx, "url_list_key", fromSync)
+
+            if (!isDownloadServiceRunning(ctx)) {
+                startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
+            }
         }
+    }
+
+    private fun isDownloadServiceRunning(context: Context): Boolean {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        @Suppress("DEPRECATION")
+        for (service in activityManager.getRunningServices(Integer.MAX_VALUE)) {
+            if (DownloadService::class.java.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

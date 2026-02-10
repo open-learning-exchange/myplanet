@@ -33,10 +33,11 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val uploadToShelfService: UploadToShelfService,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val configurationsRepository: ConfigurationsRepository
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -268,14 +269,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val userName = obj["name"]?.asString ?: "unknown"
 
-        val isAvailable = withContext(Dispatchers.IO) {
-            try {
-                val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(settings))
-                response.code() == 200
-            } catch (e: Exception) {
-                false
-            }
-        }
+        val isAvailable = configurationsRepository.checkServerAvailability()
 
         if (isAvailable) {
             return try {
