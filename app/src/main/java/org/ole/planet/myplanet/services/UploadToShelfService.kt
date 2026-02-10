@@ -130,7 +130,7 @@ class UploadToShelfService @Inject constructor(
     private suspend fun checkIfUserExists(apiInterface: ApiInterface, header: String, model: RealmUser): Boolean {
         try {
             val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
-            val exists = res?.body() != null
+            val exists = res.body() != null
             return exists
         } catch (e: Exception) {
             e.printStackTrace()
@@ -143,7 +143,7 @@ class UploadToShelfService @Inject constructor(
             val obj = model.serialize()
             val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
 
-            if (createResponse?.isSuccessful == true) {
+            if (createResponse.isSuccessful) {
                 val id = createResponse.body()?.get("id")?.asString
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
@@ -173,7 +173,7 @@ class UploadToShelfService @Inject constructor(
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
-            if (fetchDataResponse?.isSuccessful == true) {
+            if (fetchDataResponse.isSuccessful) {
                 model.password_scheme = getString("password_scheme", fetchDataResponse.body())
                 model.derived_key = getString("derived_key", fetchDataResponse.body())
                 model.salt = getString("salt", fetchDataResponse.body())
@@ -193,7 +193,7 @@ class UploadToShelfService @Inject constructor(
         try {
             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
-            if (latestDocResponse?.isSuccessful == true) {
+            if (latestDocResponse.isSuccessful) {
                 val latestRev = latestDocResponse.body()?.get("_rev")?.asString
                 val obj = model.serialize()
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
@@ -304,7 +304,7 @@ class UploadToShelfService @Inject constructor(
                 try {
                     val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
 
-                    if (res?.body() != null && res.body()?.has("id") == true) {
+                    if (res.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
                         dbService.executeTransactionAsync { realm ->
                             val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
@@ -342,7 +342,7 @@ class UploadToShelfService @Inject constructor(
                             serialize(pojo)
                         )
 
-                        if (res?.body() != null && res.body()?.has("id") == true) {
+                        if (res.body() != null && res.body()?.has("id") == true) {
                             val rev = res.body()?.get("rev")?.asString
                             dbService.executeTransactionAsync { realm ->
                                 val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
@@ -385,7 +385,7 @@ class UploadToShelfService @Inject constructor(
                 unmanagedUsers.forEach { model ->
                     if (model.id?.startsWith("guest") == true) return@forEach
                     try {
-                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.body()
+                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                         val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
                         val shelfData = dbService.withRealm { backgroundRealm ->
@@ -429,7 +429,7 @@ class UploadToShelfService @Inject constructor(
                 if (model != null) {
                     if (model.id?.startsWith("guest") != true) {
                         val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl)?.body()
+                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                         val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
                         val shelfObject = dbService.withRealm { realm ->
@@ -485,7 +485,7 @@ class UploadToShelfService @Inject constructor(
             val apiInterface = client.create(ApiInterface::class.java)
             try {
                 val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
-                if (response?.body() != null) {
+                if (response.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
                     val rolesArray: JsonArray = if (members?.has("roles") == true) {
