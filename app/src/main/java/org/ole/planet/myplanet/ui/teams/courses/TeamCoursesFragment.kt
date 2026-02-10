@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.teams.courses
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -63,9 +62,8 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     }
 
     override fun onAddCourse() {
-        Log.d("TeamCoursesFragment", "onAddCourse() called, isAdded: $isAdded")
         if (isAdded && activity != null) {
-            Utilities.toast(requireActivity(), "Loading courses...")
+            Utilities.toast(requireActivity(), getString(R.string.courses_loading))
         }
         showAddCourseDialog()
     }
@@ -75,56 +73,48 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     }
 
     private fun showAddCourseDialog() {
-        Log.d("TeamCoursesFragment", "showAddCourseDialog() called, isAdded: $isAdded, activity: ${activity != null}, teamId: $teamId")
         if (!isAdded || activity == null) {
-            Log.w("TeamCoursesFragment", "Cannot show dialog - fragment not added or activity is null")
             return
         }
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                Log.d("TeamCoursesFragment", "Fetching courses...")
                 val existingCourses = teamsRepository.getTeamCourses(teamId)
-                Log.d("TeamCoursesFragment", "Existing team courses: ${existingCourses.size}")
                 val existingIds = existingCourses.mapNotNull { it.courseId }
                 val allCourses = coursesRepository.getAllCourses()
-                Log.d("TeamCoursesFragment", "All courses in database: ${allCourses.size}")
                 val availableCourses = allCourses.filter { it.courseId !in existingIds }
-                Log.d("TeamCoursesFragment", "Available courses to add: ${availableCourses.size}")
 
                 if (availableCourses.isEmpty()) {
                     Utilities.toast(safeActivity, getString(R.string.no_courses))
                     return@launch
                 }
 
-            val titleView = TextView(safeActivity).apply {
-                text = getString(R.string.select_courses)
-                setTextColor(context.getColor(R.color.daynight_textColor))
-                setPadding(75, 50, 0, 0)
-                textSize = 24f
-                typeface = Typeface.DEFAULT_BOLD
-            }
+                val titleView = TextView(safeActivity).apply {
+                    text = getString(R.string.select_courses)
+                    setTextColor(context.getColor(R.color.daynight_textColor))
+                    setPadding(75, 50, 0, 0)
+                    textSize = 24f
+                    typeface = Typeface.DEFAULT_BOLD
+                }
 
-            val dialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
-            val alertDialogBuilder = AlertDialog.Builder(safeActivity)
-                .setCustomTitle(titleView)
+                val dialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
+                val alertDialogBuilder = AlertDialog.Builder(safeActivity)
+                    .setCustomTitle(titleView)
 
-            alertDialogBuilder.setView(dialogBinding.root)
-                .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
-                    val selectedIndices = dialogBinding.alertDialogListView.selectedItemsList
-                    val selectedCourses = selectedIndices.map { availableCourses[it] }
-                    addCoursesToTeam(selectedCourses)
-                }.setNegativeButton(R.string.cancel, null)
+                alertDialogBuilder.setView(dialogBinding.root)
+                    .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
+                        val selectedIndices = dialogBinding.alertDialogListView.selectedItemsList
+                        val selectedCourses = selectedIndices.map { availableCourses[it] }
+                        addCoursesToTeam(selectedCourses)
+                    }.setNegativeButton(R.string.cancel, null)
 
-            val alertDialog = alertDialogBuilder.create()
-            alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
-            Log.d("TeamCoursesFragment", "Showing dialog...")
-            setupCourseListDialog(alertDialog, availableCourses, dialogBinding.alertDialogListView)
+                val alertDialog = alertDialogBuilder.create()
+                alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+                setupCourseListDialog(alertDialog, availableCourses, dialogBinding.alertDialogListView)
             } catch (e: Exception) {
-                Log.e("TeamCoursesFragment", "Error showing add course dialog", e)
                 if (isAdded) {
-                    Utilities.toast(safeActivity, "Error: ${e.message}")
+                    Utilities.toast(safeActivity, getString(R.string.error, e.message))
                 }
             }
         }
@@ -156,8 +146,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
                 }
             } catch (e: Exception) {
                 if (isAdded) {
-                    Utilities.toast(requireActivity(), "Error adding courses: ${e.message}")
-                    Log.e("TeamCoursesFragment", "Error adding courses", e)
+                    Utilities.toast(requireActivity(), getString(R.string.error, e.message))
                 }
             }
         }

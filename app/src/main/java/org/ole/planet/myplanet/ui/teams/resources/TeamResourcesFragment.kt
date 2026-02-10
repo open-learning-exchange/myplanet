@@ -168,9 +168,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         }
     }
 
-    override fun onAddCourse() {
-        // Not applicable for resources fragment
-    }
+    override fun onAddCourse() {}
 
     override fun onAddDocument() {
         showResourceListDialog()

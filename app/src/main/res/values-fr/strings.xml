@@ -1187,5 +1187,9 @@
     <string name="clear_retry_queue">Vider la file</string>
     <string name="retry_triggered">Réessai déclenché</string>
     <string name="retry_queue_cleared">File de réessai vidée</string>
+    <string name="select_courses">Sélectionner des cours</string>
+    <string name="untitled_course">Cours sans titre</string>
+    <string name="courses_loading">Chargement des cours…</string>
+    <string name="error">Erreur : %1$s</string>
 
 </resources>

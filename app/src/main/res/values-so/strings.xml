@@ -1187,5 +1187,9 @@
     <string name="clear_retry_queue">Nadiifi Safka</string>
     <string name="retry_triggered">Isku-day ayaa la bilaabay</string>
     <string name="retry_queue_cleared">Safka dib-u-isku-dayga waa la nadiifiyay</string>
+    <string name="select_courses">Dooro Koorsooyin</string>
+    <string name="untitled_course">Koorso Aan Magac Lahayn</string>
+    <string name="courses_loading">Koorsooyin ayaa la soo dejinayaa…</string>
+    <string name="error">Khalad: %1$s</string>
 
 </resources>

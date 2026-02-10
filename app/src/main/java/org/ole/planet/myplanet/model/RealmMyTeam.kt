@@ -96,15 +96,11 @@ open class RealmMyTeam : RealmObject() {
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
 
-            // Preserve local updated flag - don't overwrite if we have pending local changes
             val hadLocalChanges = team.updated
             val localCourses = team.courses?.toList() ?: emptyList()
 
             if (!hadLocalChanges) {
-                // No local changes, safe to overwrite from server
                 team.updated = JsonUtils.getBoolean("updated", doc)
-            } else {
-                android.util.Log.d("RealmMyTeam", "Team '${team.name}' has pending local changes (updated=true), preserving local state")
             }
 
             val coursesArray = JsonUtils.getJsonArray("courses", doc)
@@ -114,7 +110,6 @@ open class RealmMyTeam : RealmObject() {
                     val id = e.asJsonObject["_id"].asString
                     serverCourseIds.add(id)
                 } catch (ex: Exception) {
-                    // Handle case where course might be just a string ID
                     if (e.isJsonPrimitive) {
                         serverCourseIds.add(e.asString)
                     }
@@ -122,19 +117,13 @@ open class RealmMyTeam : RealmObject() {
             }
 
             if (hadLocalChanges) {
-                // Merge: keep local courses that aren't on server yet
                 val mergedCourses = serverCourseIds.toMutableSet()
                 mergedCourses.addAll(localCourses)
                 team.courses = RealmList()
-                team.courses!!.addAll(mergedCourses)
-                android.util.Log.d("RealmMyTeam", "Team '${team.name}' merged courses: server=${serverCourseIds.size}, local=${localCourses.size}, merged=${mergedCourses.size}")
+                team.courses?.addAll(mergedCourses)
             } else {
-                // No local changes, use server courses
                 team.courses = RealmList()
-                team.courses!!.addAll(serverCourseIds)
-                if (coursesArray.size() > 0) {
-                    android.util.Log.d("RealmMyTeam", "Team '${team.name}' synced with ${coursesArray.size()} courses: ${team.courses?.toList()}")
-                }
+                team.courses?.addAll(serverCourseIds)
             }
         }
 
@@ -319,19 +308,15 @@ open class RealmMyTeam : RealmObject() {
                 `object`.addProperty("type", team.teamType)
             }
 
-            android.util.Log.d("RealmMyTeam", "serialize: final JSON for team ${team._id}: $`object`")
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
         @JvmStatic
         fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
-            // Start with the basic serialization
             val `object` = serialize(team)
 
-            // Serialize courses as full course objects
             if (!team.courses.isNullOrEmpty()) {
                 val coursesArray = JsonArray()
-                android.util.Log.d("RealmMyTeam", "serialize: team ${team._id} has ${team.courses?.size} courses to serialize: ${team.courses?.toList()}")
 
                 team.courses?.forEach { courseId ->
                     val course = realm.where(RealmMyCourse::class.java)
@@ -341,16 +326,10 @@ open class RealmMyTeam : RealmObject() {
                     if (course != null) {
                         val courseJson = RealmMyCourse.serialize(course, realm)
                         coursesArray.add(courseJson)
-                        android.util.Log.d("RealmMyTeam", "serialize: added full course object for ${course.courseTitle} (${courseId})")
-                    } else {
-                        android.util.Log.w("RealmMyTeam", "serialize: course not found for id $courseId, skipping")
                     }
                 }
                 `object`.add("courses", coursesArray)
-                android.util.Log.d("RealmMyTeam", "serialize: serialized ${coursesArray.size()} full course objects")
             }
-
-            android.util.Log.d("RealmMyTeam", "serialize(with realm): final JSON for team ${team._id}")
             return `object`
         }
 

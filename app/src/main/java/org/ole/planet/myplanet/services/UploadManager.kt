@@ -423,7 +423,6 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        Log.d("UploadManager", "uploadTeams: Starting team upload")
         val apiInterface = client.create(ApiInterface::class.java)
 
         data class TeamData(
@@ -437,40 +436,28 @@ class UploadManager @Inject constructor(
             val teams = realm.where(RealmMyTeam::class.java)
                 .equalTo("updated", true).findAll()
 
-            Log.d("UploadManager", "uploadTeams: Found ${teams.size} teams with updated=true")
-
             teams.map { team ->
-                Log.d("UploadManager", "uploadTeams: Preparing team '${team.name}' (${team._id}) with ${team.courses?.size ?: 0} courses: ${team.courses?.toList()}")
                 TeamData(
-                    teamId = team._id,
-                    teamName = team.name,
+                    teamId = team._id, teamName = team.name,
                     coursesCount = team.courses?.size ?: 0,
                     serialized = RealmMyTeam.serialize(team, realm)
                 )
             }
         }
 
-        Log.d("UploadManager", "uploadTeams: ${teamsToUpload.size} teams to upload")
-
         withContext(Dispatchers.IO) {
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
-                        Log.d("UploadManager", "uploadTeams: Uploading team '${teamData.teamName}' (${teamData.teamId}) with ${teamData.coursesCount} courses")
-                        Log.d("UploadManager", "uploadTeams: Request body: ${teamData.serialized}")
-
                         val response = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
                             "${UrlUtils.getUrl()}/teams", teamData.serialized
                         )
 
-                        Log.d("UploadManager", "uploadTeams: Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")
-
                         val `object` = response.body()
 
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
-                            Log.d("UploadManager", "uploadTeams: SUCCESS - Team '${teamData.teamName}' uploaded, new rev: $rev")
 
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 transactionRealm.where(RealmMyTeam::class.java)
@@ -478,20 +465,15 @@ class UploadManager @Inject constructor(
                                     .findFirst()?.let { team ->
                                         team._rev = rev
                                         team.updated = false
-                                        Log.d("UploadManager", "uploadTeams: Marked team '${team.name}' as synced (updated=false)")
                                     }
                             }
-                        } else {
-                            Log.e("UploadManager", "uploadTeams: FAILED - Response body is null for team '${teamData.teamName}', error: ${response.errorBody()?.string()}")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "uploadTeams: EXCEPTION uploading team '${teamData.teamName}'", e)
                         e.printStackTrace()
                     }
                 }
             }
         }
-        Log.d("UploadManager", "uploadTeams: Completed")
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
@@ -550,7 +532,6 @@ class UploadManager @Inject constructor(
             }
 
             uploadTeamActivitiesRefactored()
-
             listener.onSuccess("User activities sync completed successfully")
         } catch (e: Exception) {
             e.printStackTrace()
@@ -585,10 +566,8 @@ class UploadManager @Inject constructor(
         logsData.forEach { logData ->
             try {
                 val `object` = apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/team_activities",
-                    logData.serialized
+                    UrlUtils.header, "application/json",
+                    "${UrlUtils.getUrl()}/team_activities", logData.serialized
                 ).body()
 
                 if (`object` != null) {

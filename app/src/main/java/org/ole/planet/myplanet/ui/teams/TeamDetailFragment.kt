@@ -11,8 +11,6 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +21,7 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
@@ -51,6 +50,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
@@ -295,18 +295,13 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
-            this,
-            pageConfigs,
-            team?._id,
-            this,
-            this
+            this, pageConfigs, team?._id, this, this
         )
         binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
         binding.tabLayout.isInlineLabel = true
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-            val pageConfig = pageConfigs.getOrNull(position)
             tab.text = title
         }.attach()
 
@@ -323,10 +318,9 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         }
                     }
 
-                    // Update MainApplication.listener based on current page
                     val fragmentTag = "f$position"
                     val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
-                    if (fragment is org.ole.planet.myplanet.callback.OnTeamPageListener) {
+                    if (fragment is OnTeamPageListener) {
                         MainApplication.listener = fragment
                     }
                 }
@@ -402,29 +396,18 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             selectPage(CoursesPage.id)
             MainApplication.showDownload = false
 
-            // If already on courses page, call immediately with shorter delay
-            // Otherwise wait longer for page transition
             val delay = if (isAlreadyOnCoursesPage) 50L else 300L
 
             binding.root.postDelayed({
-                // Find TeamCoursesFragment from all fragments
                 val allFragments = childFragmentManager.fragments
-                android.util.Log.d("TeamDetailFragment", "All fragments: ${allFragments.map { "${it.javaClass.simpleName}(visible=${it.isVisible})" }}")
-
                 val coursesFragment = allFragments.filterIsInstance<TeamCoursesFragment>().firstOrNull()
 
                 when {
                     coursesFragment != null -> {
-                        android.util.Log.d("TeamDetailFragment", "Found TeamCoursesFragment, calling onAddCourse")
                         coursesFragment.onAddCourse()
                     }
                     MainApplication.listener is TeamCoursesFragment -> {
-                        android.util.Log.d("TeamDetailFragment", "Using MainApplication.listener (TeamCoursesFragment)")
                         MainApplication.listener?.onAddCourse()
-                    }
-                    else -> {
-                        android.util.Log.e("TeamDetailFragment", "Could not find TeamCoursesFragment")
-                        Utilities.toast(requireActivity(), "Unable to show add course dialog")
                     }
                 }
             }, delay)

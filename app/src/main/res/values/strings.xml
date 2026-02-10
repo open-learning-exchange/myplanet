@@ -751,8 +751,6 @@
     <string name="add_reference">Add Reference</string>
     <string name="add_achievement">Add Achievement</string>
     <string name="select_resources">"Select resources: "</string>
-    <string name="select_courses">Select Courses</string>
-    <string name="untitled_course">Untitled Course</string>
     <string name="date_of_birth">"Date of birth: "</string>
     <string name="unable_to_load">"Unable to load "</string>
     <string name="recording_started">Recording started....</string>
@@ -1189,5 +1187,9 @@
     <string name="clear_retry_queue">Clear Queue</string>
     <string name="retry_triggered">Retry triggered</string>
     <string name="retry_queue_cleared">Retry queue cleared</string>
+    <string name="select_courses">Select Courses</string>
+    <string name="untitled_course">Untitled Course</string>
+    <string name="courses_loading">Loading courses…</string>
+    <string name="error">Error: %1$s</string>
 
 </resources>

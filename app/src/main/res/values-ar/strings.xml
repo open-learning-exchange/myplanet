@@ -1187,5 +1187,9 @@
     <string name="clear_retry_queue">مسح القائمة</string>
     <string name="retry_triggered">تم تشغيل إعادة المحاولة</string>
     <string name="retry_queue_cleared">تم مسح قائمة إعادة المحاولة</string>
+    <string name="select_courses">اختر الدورات</string>
+    <string name="untitled_course">دورة بدون عنوان</string>
+    <string name="courses_loading">جارٍ تحميل الدورات…</string>
+    <string name="error">خطأ: %1$s</string>
 
 </resources>

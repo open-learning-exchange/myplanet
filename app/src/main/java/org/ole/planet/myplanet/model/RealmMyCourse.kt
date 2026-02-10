@@ -292,7 +292,6 @@ open class RealmMyCourse : RealmObject() {
             obj.addProperty("method", course.method)
             obj.addProperty("memberLimit", course.memberLimit)
 
-            // Serialize steps with their resources
             val stepsArray = JsonArray()
             course.courseSteps?.forEach { step ->
                 val stepObj = JsonObject()
@@ -300,7 +299,6 @@ open class RealmMyCourse : RealmObject() {
                 stepObj.addProperty("description", step.description)
                 stepObj.addProperty("id", step.id)
 
-                // Get resources for this step
                 val resourcesArray = JsonArray()
                 val stepResources = realm.where(RealmMyLibrary::class.java)
                     .equalTo("stepId", step.id)
@@ -314,11 +312,7 @@ open class RealmMyCourse : RealmObject() {
                 stepsArray.add(stepObj)
             }
             obj.add("steps", stepsArray)
-
-            // Empty images array (as per the JSON structure)
             obj.add("images", JsonArray())
-
-            android.util.Log.d("RealmMyCourse", "serialize: course ${course.courseId} with ${course.courseSteps?.size ?: 0} steps")
             return obj
         }
     }
