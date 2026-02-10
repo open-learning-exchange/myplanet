@@ -47,7 +47,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.healthAccess(healthUrl)
+                    val response = withContext(Dispatchers.IO) { apiInterface.healthAccess(healthUrl) }
                     withContext(Dispatchers.Main) {
                         when (response.code()) {
                             200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
@@ -105,7 +105,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = fetchVersionInfo(settings)
+                val planetInfo = withContext(Dispatchers.IO) { fetchVersionInfo(settings) }
                 if (planetInfo == null) {
                     withContext(Dispatchers.Main) {
                         callback.onError(context.getString(R.string.version_not_found), true)
