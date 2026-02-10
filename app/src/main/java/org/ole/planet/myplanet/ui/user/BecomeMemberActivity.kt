@@ -143,7 +143,7 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
+        service.becomeMember(obj, object : DataService.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
