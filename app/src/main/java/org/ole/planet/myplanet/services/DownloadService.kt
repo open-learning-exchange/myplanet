@@ -13,6 +13,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -30,8 +31,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.di.getBroadcastService
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -53,6 +54,11 @@ class DownloadService : Service() {
 
     private var totalDownloadsCount = 0
     private var completedDownloadsCount = 0
+    private var lastNotificationUpdateTime = 0L
+    private var currentFileProgress = 0
+    private val processedUrls = mutableSetOf<String>()
+    private var sessionTotalCount = 0
+    private var sessionCompletedCount = 0
 
     private val downloadJob = SupervisorJob()
     private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
@@ -68,28 +74,49 @@ class DownloadService : Service() {
         val initialNotification = DownloadUtils.buildInitialNotification(this)
         startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
-        val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
-        val urlSet = preferences.getStringSet(urlsKey, emptySet()) ?: emptySet()
-
-        if (urlSet.isEmpty()) {
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        urls = urlSet.toTypedArray()
-        totalDownloadsCount = urls.size
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
 
-        updateNotificationForBatchDownload()
-
         downloadScope.launch {
-            urls.forEachIndexed { index, url ->
-                currentIndex = index
-                initDownload(url, fromSync)
-            }
+            processDownloadQueue()
         }
 
         return START_STICKY
+    }
+
+    private suspend fun processDownloadQueue() {
+        while (true) {
+            val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
+
+            val newUrls = pendingUrls.filter { it !in processedUrls }
+
+            if (newUrls.isEmpty()) {
+                if (sessionCompletedCount > 0) {
+                    showCompletionNotification(false)
+                }
+
+                preferences.edit { remove(PENDING_DOWNLOADS_KEY) }
+                stopSelf()
+                return
+            }
+
+            urls = newUrls.toTypedArray()
+            totalDownloadsCount = urls.size
+            sessionTotalCount += urls.size
+            completedDownloadsCount = 0
+            currentIndex = 0
+
+            updateNotificationForBatchDownload()
+
+            urls.forEachIndexed { index, url ->
+                currentIndex = index
+                processedUrls.add(url)
+                initDownload(url, fromSync)
+            }
+
+            val remainingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
+            remainingUrls.removeAll(processedUrls)
+            preferences.edit { putStringSet(PENDING_DOWNLOADS_KEY, remainingUrls) }
+        }
     }
 
     private fun updateNotificationForBatchDownload() {
@@ -98,10 +125,11 @@ class DownloadService : Service() {
             .setContentTitle(getString(R.string.downloading_files))
             .setContentText("Starting downloads (0/$totalDownloadsCount)")
             .setSmallIcon(R.drawable.ic_download)
-            .setProgress(totalDownloadsCount, 0, false)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setProgress(100, 0, true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setSilent(true)
+            .setOnlyAlertOnce(true)
 
         notificationManager?.notify(ONGOING_NOTIFICATION_ID, notificationBuilder?.build())
     }
@@ -195,8 +223,16 @@ class DownloadService : Service() {
     }
 
     private fun downloadFailed(message: String, fromSync: Boolean) {
+        completedDownloadsCount++
+        sessionCompletedCount++
+
+        val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val remainingInQueue = pendingUrls.count { it !in processedUrls }
+        val totalRemaining = (totalDownloadsCount - completedDownloadsCount) + remainingInQueue
+        val displayTotal = sessionCompletedCount + totalRemaining
+
         notificationBuilder?.apply {
-            setContentText("Error: $message (${currentIndex + 1}/$totalDownloadsCount)")
+            setContentText("Error: $message ($sessionCompletedCount/$displayTotal)")
             notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
         }
 
@@ -205,12 +241,6 @@ class DownloadService : Service() {
             this.message = message
         }
         sendIntent(download, fromSync)
-        completedDownloadsCount++
-
-        if (completedDownloadsCount >= totalDownloadsCount) {
-            showCompletionNotification(true)
-            stopSelf()
-        }
 
         if (!fromSync) {
             if (message == "File Not Found") {
@@ -228,8 +258,6 @@ class DownloadService : Service() {
         val fileSize = body.contentLength()
         outputFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         var total: Long = 0
-        val startTime = System.currentTimeMillis()
-        var timeCount = 1
 
         BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
             FileOutputStream(outputFile).use { output ->
@@ -240,7 +268,6 @@ class DownloadService : Service() {
                     if (readCount > 0) {
                         total += readCount
                         val current = (total / 1024.0).roundToInt().toDouble()
-                        val currentTime = System.currentTimeMillis() - startTime
 
                         val download = Download().apply {
                             fileName = getFileNameFromUrl(url)
@@ -252,15 +279,18 @@ class DownloadService : Service() {
                             this.totalFileSize = totalFileSize
                             download.totalFileSize = totalFileSize
                             download.progress = progress
+                            currentFileProgress = progress
                         } else {
                             download.totalFileSize = 0
                             download.progress = -1
+                            currentFileProgress = -1
                         }
 
-                        if (currentTime > 1000 * timeCount) {
+                        val now = System.currentTimeMillis()
+                        if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
                             download.currentFileSize = current.toInt()
                             sendNotification(download)
-                            timeCount++
+                            lastNotificationUpdateTime = now
                         }
                         output.write(data, 0, readCount)
                     }
@@ -295,8 +325,21 @@ class DownloadService : Service() {
 
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             notificationBuilder?.apply {
-                setProgress(totalDownloadsCount, completedDownloadsCount, false)
-                setContentText("Downloading ${currentIndex + 1}/$totalDownloadsCount: ${getFileNameFromUrl(url)}")
+                val fileName = getFileNameFromUrl(url)
+                val progressText = if (currentFileProgress in 0..100) {
+                    "$fileName ($currentFileProgress%)"
+                } else {
+                    fileName
+                }
+
+                if (currentFileProgress in 0..100) {
+                    setProgress(100, currentFileProgress, false)
+                    setSubText("${currentIndex + 1}/$totalDownloadsCount files")
+                } else {
+                    setProgress(100, 0, true)
+                    setSubText("${currentIndex + 1}/$totalDownloadsCount files")
+                }
+                setContentText(progressText)
                 notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
             }
         }
@@ -318,24 +361,26 @@ class DownloadService : Service() {
             DownloadUtils.updateResourceOfflineStatus(url)
         }
         completedDownloadsCount++
+        sessionCompletedCount++
+
+        val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val remainingInQueue = pendingUrls.count { it !in processedUrls }
+        val totalRemaining = (totalDownloadsCount - completedDownloadsCount) + remainingInQueue
 
         val download = Download().apply {
             fileName = getFileNameFromUrl(url)
             fileUrl = url
             progress = 100
-            completeAll = (completedDownloadsCount >= totalDownloadsCount)
+            completeAll = (totalRemaining == 0)
         }
 
         sendIntent(download, fromSync)
         notificationBuilder?.apply {
-            setProgress(totalDownloadsCount, completedDownloadsCount, false)
-            setContentText("Downloaded ${completedDownloadsCount}/${totalDownloadsCount} files")
+            val displayTotal = sessionCompletedCount + totalRemaining
+            setProgress(displayTotal, sessionCompletedCount, false)
+            setContentText("Downloaded $sessionCompletedCount/$displayTotal files")
+            setSubText(null)
             notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
-        }
-
-        if (completedDownloadsCount >= totalDownloadsCount) {
-            showCompletionNotification(false)
-            stopSelf()
         }
     }
 
@@ -353,7 +398,7 @@ class DownloadService : Service() {
 
     override fun onDestroy() {
         try {
-            stopForeground(true)
+            stopForeground(Service.STOP_FOREGROUND_REMOVE)
         } catch (_: Exception) {
         }
         downloadJob.cancel()
@@ -367,6 +412,8 @@ class DownloadService : Service() {
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
         const val ONGOING_NOTIFICATION_ID = 1
         const val COMPLETION_NOTIFICATION_ID = 2
+        private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
+        const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, DownloadService::class.java).apply {

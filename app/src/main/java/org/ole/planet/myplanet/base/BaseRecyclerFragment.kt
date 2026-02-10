@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -20,14 +19,11 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -53,7 +49,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -245,11 +240,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        if (s.isEmpty()) return mRealm.where(c).findAll()
+        val query = mRealm.where(c)
+        if (c == RealmMyLibrary::class.java) {
+            query.equalTo("isPrivate", false)
+        }
+        if (s.isEmpty()) return query.findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = mRealm.where(c).findAll()
+        val data: RealmResults<LI> = query.findAll()
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<LI>()
         val containsQuery = mutableListOf<LI>()

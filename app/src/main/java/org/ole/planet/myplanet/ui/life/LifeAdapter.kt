@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
 import org.ole.planet.myplanet.ui.personals.PersonalsFragment
 import org.ole.planet.myplanet.ui.references.ReferencesFragment
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 class LifeAdapter(
     private val context: Context,

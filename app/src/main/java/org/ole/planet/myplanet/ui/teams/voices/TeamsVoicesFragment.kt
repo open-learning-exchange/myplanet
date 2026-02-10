@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {

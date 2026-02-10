@@ -15,6 +15,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -60,15 +61,15 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
-class SyncManager constructor(
-    @ApplicationContext private val context: Context,
+class SyncManager @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
-    @ApplicationScope private val syncScope: CoroutineScope
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)

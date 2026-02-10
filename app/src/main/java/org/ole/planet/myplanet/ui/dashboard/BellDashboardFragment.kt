@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment

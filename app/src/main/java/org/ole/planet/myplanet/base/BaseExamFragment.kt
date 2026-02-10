@@ -22,23 +22,22 @@ import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
-import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utils.Utilities
 

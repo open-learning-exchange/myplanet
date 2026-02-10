@@ -30,10 +30,10 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class ConfigurationsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
-    @ApplicationScope private val serviceScope: CoroutineScope,
-    @AppPreferences private val preferences: SharedPreferences
+    @param:ApplicationScope private val serviceScope: CoroutineScope,
+    @param:AppPreferences private val preferences: SharedPreferences
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -153,7 +153,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun isPlanetAvailable(): Boolean {
+    override suspend fun checkServerAvailability(): Boolean {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
@@ -165,11 +165,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         withContext(Dispatchers.IO) {
-            val primaryReachable = isServerReachable(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+            val primaryReachable = checkServerAvailability(mapping.primaryUrl)
+            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
 
             if (!primaryReachable && alternativeReachable) {
-                mapping.alternativeUrl?.let { alternativeUrl ->
+                mapping.alternativeUrl!!.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = preferences.edit()
 
@@ -185,13 +185,31 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
 
         return try {
-            val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
-            val isAvailable = response.code() == 200
+            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(preferences))
             serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
             isAvailable
         } catch (e: Exception) {
             serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
             false
+        }
+    }
+
+    override suspend fun checkServerAvailability(url: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiInterface.isPlanetAvailable(url)
+                val code = response.code()
+                if (response.isSuccessful) {
+                    val ss = response.body()?.string()
+                    val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                    val dbCount = myList?.size ?: 0
+                    dbCount >= 8
+                } else {
+                    code == 401
+                }
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 
@@ -274,17 +292,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 withContext(Dispatchers.Main) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                 }
-            }
-        }
-    }
-
-    private suspend fun isServerReachable(url: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = apiInterface.isPlanetAvailable(url)
-                response.isSuccessful
-            } catch (e: Exception) {
-                false
             }
         }
     }

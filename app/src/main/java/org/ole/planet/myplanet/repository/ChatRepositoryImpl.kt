@@ -10,7 +10,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmList
 import io.realm.Sort
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
@@ -24,7 +23,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), ChatRepository {
 
     private val concatenatedLinks = ArrayList<String>()

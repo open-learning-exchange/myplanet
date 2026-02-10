@@ -27,9 +27,9 @@ class ChatShareTargetAdapter(private val context: Context, private val expandabl
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             reusedView = layoutInflater.inflate(R.layout.expandable_list_item, parent, false)
         }
-        val expandedListTextView = reusedView?.findViewById<View>(R.id.expandedListItem) as TextView
+        val expandedListTextView = reusedView.findViewById<View>(R.id.expandedListItem) as TextView
         expandedListTextView.text = expandedListText
-        reusedView.setBackgroundColor(ContextCompat.getColor(parent?.context!!, R.color.multi_select_grey))
+        reusedView.setBackgroundColor(ContextCompat.getColor(parent.context, R.color.multi_select_grey))
         expandedListTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
         return reusedView
     }
@@ -57,8 +57,8 @@ class ChatShareTargetAdapter(private val context: Context, private val expandabl
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             reusedView = layoutInflater.inflate(R.layout.expandable_list_group, parent, false)
         }
-        val listTitleTextView = reusedView?.findViewById<View>(R.id.listTitle) as TextView
-        val arrowIcon = reusedView?.findViewById<ImageView>(R.id.arrowIcon)
+        val listTitleTextView = reusedView.findViewById<View>(R.id.listTitle) as TextView
+        val arrowIcon = reusedView.findViewById<ImageView>(R.id.arrowIcon)
         listTitleTextView.setTypeface(null, Typeface.BOLD)
         listTitleTextView.text = listTitle
         listTitleTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))

@@ -19,7 +19,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
@@ -71,6 +70,7 @@ import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
@@ -89,10 +89,8 @@ import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 
