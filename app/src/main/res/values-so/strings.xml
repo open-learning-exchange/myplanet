@@ -1187,5 +1187,8 @@
     <string name="clear_retry_queue">Nadiifi Safka</string>
     <string name="retry_triggered">Isku-day ayaa la bilaabay</string>
     <string name="retry_queue_cleared">Safka dib-u-isku-dayga waa la nadiifiyay</string>
+    <string name="create_new_resource">Abuur Cusub</string>
+    <string name="private_resource">Khayraad gaar ah (kaliya kooxdaan ayaa arki karta)</string>
+    <string name="resource_added_to_team">Khayraadka waxaa lagu daray kooxda</string>
 
 </resources>

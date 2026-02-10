@@ -1187,5 +1187,8 @@
     <string name="clear_retry_queue">सूची खाली गर्नुहोस्</string>
     <string name="retry_triggered">पुनः प्रयास सुरु भयो</string>
     <string name="retry_queue_cleared">पुनः प्रयास सूची खाली गरियो</string>
+    <string name="create_new_resource">नयाँ सिर्जना गर्नुहोस्</string>
+    <string name="private_resource">निजी स्रोत (यस टोलीलाई मात्र देखिने)</string>
+    <string name="resource_added_to_team">स्रोत टोलीमा थपियो</string>
 
 </resources>
