@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.health
 
 import android.app.DatePickerDialog
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
@@ -18,7 +17,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils

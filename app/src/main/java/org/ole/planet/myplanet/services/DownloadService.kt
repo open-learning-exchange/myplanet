@@ -31,8 +31,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.di.getBroadcastService
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils

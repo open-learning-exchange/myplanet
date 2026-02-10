@@ -19,11 +19,10 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME

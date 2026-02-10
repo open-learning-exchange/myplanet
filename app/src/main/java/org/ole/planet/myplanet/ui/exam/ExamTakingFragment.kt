@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,8 +25,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback

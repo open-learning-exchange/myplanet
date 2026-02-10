@@ -14,8 +14,8 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
-import javax.inject.Inject
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred

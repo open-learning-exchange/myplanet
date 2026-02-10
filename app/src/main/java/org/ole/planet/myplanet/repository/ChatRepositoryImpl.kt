@@ -10,7 +10,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmList
 import io.realm.Sort
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService

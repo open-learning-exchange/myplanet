@@ -43,8 +43,8 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.DialogUtils
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 

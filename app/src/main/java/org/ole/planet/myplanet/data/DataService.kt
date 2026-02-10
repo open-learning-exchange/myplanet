@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.data
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import androidx.core.net.toUri
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
 import java.io.IOException
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.Constants

@@ -12,7 +12,6 @@ import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
-import android.webkit.URLUtil
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CompoundButton
@@ -54,12 +53,8 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDow
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository

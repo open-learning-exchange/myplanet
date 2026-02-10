@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment.Companion.newInstance
@@ -38,7 +39,6 @@ import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
