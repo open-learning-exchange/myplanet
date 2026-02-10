@@ -85,6 +85,7 @@ class SyncManager @Inject constructor(
     }
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
+        android.util.Log.d("SyncManager", "=== SYNC MANAGER START === type=$type, timestamp=${System.currentTimeMillis()}")
         this.listener = listener
         if (isSyncing.compareAndSet(false, true)) {
             _syncStatus.value = SyncStatus.Idle
@@ -95,9 +96,12 @@ class SyncManager @Inject constructor(
             // Use improved sync manager if beta sync is enabled
             val useImproved = settings.getBoolean("useImprovedSync", false)
             val isSyncRequest = type.equals("sync", ignoreCase = true)
+            android.util.Log.d("SyncManager", "useImproved=$useImproved, isSyncRequest=$isSyncRequest")
             if (useImproved && isSyncRequest) {
+                android.util.Log.d("SyncManager", "Using improved sync")
                 initializeAndStartImprovedSync(listener, syncTables)
             } else {
+                android.util.Log.d("SyncManager", "Using legacy sync")
                 if (useImproved && !isSyncRequest) {
                     createLog("sync_manager_route", "legacy|reason=$type")
                 } else if (!useImproved) {
@@ -105,6 +109,8 @@ class SyncManager @Inject constructor(
                 }
                 authenticateAndSync(type, syncTables)
             }
+        } else {
+            android.util.Log.d("SyncManager", "Sync already in progress, skipping")
         }
     }
 
@@ -136,6 +142,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun destroy() {
+        android.util.Log.d("SyncManager", "=== SYNC MANAGER DESTROY (download complete) === timestamp=${System.currentTimeMillis()}")
         if (betaSync) {
             syncScope.cancel()
             ThreadSafeRealmManager.closeThreadRealm()
@@ -144,6 +151,7 @@ class SyncManager @Inject constructor(
         cancel(context, 111)
         isSyncing.set(false)
         settings.edit { putLong("LastSync", Date().time) }
+        android.util.Log.d("SyncManager", "Calling onSyncComplete listener")
         listener?.onSyncComplete()
         listener = null
         _syncStatus.value = SyncStatus.Success("Sync completed")

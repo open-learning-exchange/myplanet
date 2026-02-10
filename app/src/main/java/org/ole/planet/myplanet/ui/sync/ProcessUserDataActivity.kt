@@ -26,6 +26,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -215,10 +216,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             }
             return
         }
+        android.util.Log.d("ProcessUserData", "=== UPLOAD FLOW START === source=$source, timestamp=${System.currentTimeMillis()}")
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
         applicationScope.launch(Dispatchers.Main) {
+            android.util.Log.d("ProcessUserData", "Upload coroutine started, timestamp=${System.currentTimeMillis()}")
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
             val activity = this@ProcessUserDataActivity
@@ -228,17 +231,20 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                     activity.runOnUiThread {
                         if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()
+                            android.util.Log.d("ProcessUserData", "=== UPLOAD FLOW COMPLETE === timestamp=${System.currentTimeMillis()}")
                             Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
             }
 
+            android.util.Log.d("ProcessUserData", "Starting uploads... timestamp=${System.currentTimeMillis()}")
             uploadManager.uploadAchievement()
             uploadManager.uploadNews()
             uploadManager.uploadResourceActivities("")
             uploadManager.uploadCourseActivities()
             uploadManager.uploadSearchActivity()
+            android.util.Log.d("ProcessUserData", "About to call uploadTeams(), timestamp=${System.currentTimeMillis()}")
             uploadManager.uploadTeams()
             uploadManager.uploadRating()
             uploadManager.uploadTeamTask()
@@ -292,6 +298,92 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 }
             })
         }
+    }
+
+    /**
+     * Suspend function that performs all uploads and waits for completion.
+     * Use this for sequential sync: upload first, then download.
+     */
+    suspend fun performUploadAndWait(): Boolean {
+        android.util.Log.d("ProcessUserData", "=== UPLOAD (AWAIT) START === timestamp=${System.currentTimeMillis()}")
+
+        val uploadComplete = CompletableDeferred<Boolean>()
+        val asyncOperationsCounter = AtomicInteger(0)
+        val totalAsyncOperations = 6
+
+        fun checkAllOperationsComplete() {
+            val count = asyncOperationsCounter.incrementAndGet()
+            android.util.Log.d("ProcessUserData", "Upload operation completed: $count/$totalAsyncOperations")
+            if (count == totalAsyncOperations) {
+                android.util.Log.d("ProcessUserData", "=== UPLOAD (AWAIT) COMPLETE === timestamp=${System.currentTimeMillis()}")
+                uploadComplete.complete(true)
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            android.util.Log.d("ProcessUserData", "Starting all uploads...")
+
+            // Synchronous uploads (these complete immediately or are suspend functions)
+            uploadManager.uploadAchievement()
+            uploadManager.uploadNews()
+            uploadManager.uploadResourceActivities("")
+            uploadManager.uploadCourseActivities()
+            uploadManager.uploadSearchActivity()
+            uploadManager.uploadTeams()
+            uploadManager.uploadRating()
+            uploadManager.uploadTeamTask()
+            uploadManager.uploadMeetups()
+            uploadManager.uploadAdoptedSurveys()
+            uploadManager.uploadSubmissions()
+            uploadManager.uploadCrashLog()
+            android.util.Log.d("ProcessUserData", "Synchronous uploads complete, waiting for async uploads...")
+
+            // Async uploads with callbacks
+            uploadToShelfService.uploadUserData {
+                uploadToShelfService.uploadHealth()
+                checkAllOperationsComplete()
+            }
+
+            uploadManager.uploadUserActivities(object : OnSuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadExamResult(object : OnSuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            applicationScope.launch(Dispatchers.IO) {
+                uploadManager.uploadFeedback()
+                withContext(Dispatchers.Main) {
+                    checkAllOperationsComplete()
+                }
+            }
+
+            uploadManager.uploadResource(object : OnSuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+
+            uploadManager.uploadActivities(object : OnSuccessListener {
+                override fun onSuccess(success: String?) {
+                    checkAllOperationsComplete()
+                }
+            })
+        }
+
+        // Wait for all async operations to complete
+        return uploadComplete.await()
     }
 
     protected fun hideKeyboard(view: View?) {

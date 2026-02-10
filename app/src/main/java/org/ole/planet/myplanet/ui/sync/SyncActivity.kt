@@ -392,6 +392,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun startSync(type: String) {
+        android.util.Log.d("SyncActivity", "=== SYNC FLOW START === type=$type, timestamp=${System.currentTimeMillis()}")
         syncManager.start(null, type)
     }
 
@@ -786,11 +787,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private fun continueSyncProcess() {
         try {
             lifecycleScope.launch {
+                android.util.Log.d("SyncActivity", "continueSyncProcess: isSync=$isSync, forceSync=$forceSync, timestamp=${System.currentTimeMillis()}")
                 if (isSync) {
+                    // Full sync flow: Upload first (wait), then Download
+                    // This ensures local changes are pushed before being overwritten by server data
+                    android.util.Log.d("SyncActivity", "=== FULL SYNC: Step 1 - Upload local changes (awaiting completion) ===")
+                    val uploadSuccess = performUploadAndWait()
+                    android.util.Log.d("SyncActivity", "=== FULL SYNC: Upload completed with success=$uploadSuccess ===")
+
+                    android.util.Log.d("SyncActivity", "=== FULL SYNC: Step 2 - Download from server ===")
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl, "upload")
-                    startUpload("")
+                    // Upload-only flow (also wait for completion)
+                    android.util.Log.d("SyncActivity", "=== UPLOAD ONLY (awaiting completion) ===")
+                    val uploadSuccess = performUploadAndWait()
+                    android.util.Log.d("SyncActivity", "=== UPLOAD ONLY completed with success=$uploadSuccess ===")
                 }
             }
         } catch (e: Exception) {
