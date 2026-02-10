@@ -114,7 +114,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
-        if (!isRealmInitialized() || isAddInProgress) return
+        if (!isAdded || isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
@@ -161,10 +161,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
-            }
-
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
@@ -202,20 +198,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
                 }
 
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
-                    removeFromShelf(`object`)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
-                    }
-                } catch (e: Exception) {
-                    if (mRealm.isInTransaction) {
-                        mRealm.cancelTransaction()
-                    }
-                    throw e
-                }
+                removeFromShelf(`object`)
             }
             recyclerView.adapter = getAdapter()
             showNoData(tvMessage, getAdapter().itemCount, "")
@@ -272,7 +255,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+    @Deprecated("Use repository instead")
+    suspend fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
@@ -299,6 +283,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
+    @Deprecated("Use repository instead")
     suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
@@ -323,10 +308,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return items.filterIsInstance<RealmMyCourse>()
     }
 
-    private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
+    private suspend fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
         for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
-                .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
+            val count = tagsRepository.getTagCount("resources", tg.id ?: "", library?.id)
             if (count > 0 && !libraries.contains(library)) {
                 library?.let { libraries.add(it) }
             }
