@@ -14,6 +14,8 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
@@ -102,18 +104,21 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     private fun initList() {
-        languages = filterListener?.getData()?.get("languages")
-        subjects = filterListener?.getData()?.get("subjects")
-        mediums = filterListener?.getData()?.get("mediums")
-        levels = filterListener?.getData()?.get("levels")
-        selectedLvls = filterListener?.getSelectedFilter()?.get("levels") as MutableSet<String>
-        selectedSubs = filterListener?.getSelectedFilter()?.get("subjects") as MutableSet<String>
-        selectedMeds = filterListener?.getSelectedFilter()?.get("mediums") as MutableSet<String>
-        selectedLang = filterListener?.getSelectedFilter()?.get("languages") as MutableSet<String>
-        setAdapter(binding.listLevel, levels, selectedLvls)
-        setAdapter(binding.listLang, languages, selectedLang)
-        setAdapter(binding.listMedium, mediums, selectedMeds)
-        setAdapter(binding.listSub, subjects, selectedSubs)
+        lifecycleScope.launch {
+            val data = filterListener?.getData()
+            languages = data?.get("languages")
+            subjects = data?.get("subjects")
+            mediums = data?.get("mediums")
+            levels = data?.get("levels")
+            selectedLvls = filterListener?.getSelectedFilter()?.get("levels") as MutableSet<String>
+            selectedSubs = filterListener?.getSelectedFilter()?.get("subjects") as MutableSet<String>
+            selectedMeds = filterListener?.getSelectedFilter()?.get("mediums") as MutableSet<String>
+            selectedLang = filterListener?.getSelectedFilter()?.get("languages") as MutableSet<String>
+            setAdapter(binding.listLevel, levels, selectedLvls)
+            setAdapter(binding.listLang, languages, selectedLang)
+            setAdapter(binding.listMedium, mediums, selectedMeds)
+            setAdapter(binding.listSub, subjects, selectedSubs)
+        }
     }
 
     private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>) {
