@@ -22,10 +22,10 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 class SurveysRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val userSessionManager: UserSessionManager,
-    @DefaultPreferences private val settings: SharedPreferences,
+    @param:DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {

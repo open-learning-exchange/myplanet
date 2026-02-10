@@ -90,19 +90,25 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 if (type == "exam") {
                     clearAllExistingAnswers {
                         viewLifecycleOwner.lifecycleScope.launch {
-                            sub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, exam, type, if (isTeam) teamId else null
-                            )
-                            startExam(questions?.get(currentIndex))
-                            updateNavButtons()
+                            val currentExam = exam
+                            if (currentExam != null) {
+                                sub = submissionsRepository.createExamSubmission(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
+                                startExam(questions?.get(currentIndex))
+                                updateNavButtons()
+                            }
                         }
                     }
                 } else {
-                    sub = submissionsRepository.createExamSubmission(
-                        user?.id, user?.dob, user?.gender, exam, type, if (isTeam) teamId else null
-                    )
-                    startExam(questions?.get(currentIndex))
-                    updateNavButtons()
+                    val currentExam = exam
+                    if (currentExam != null) {
+                        sub = submissionsRepository.createExamSubmission(
+                            user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                        )
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    }
                 }
             } else {
                 binding.container.visibility = View.GONE
