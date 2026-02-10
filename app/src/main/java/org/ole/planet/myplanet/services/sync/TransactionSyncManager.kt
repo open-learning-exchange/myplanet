@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val chatRepository: ChatRepository
 ) {
     suspend fun authenticate(): Boolean {
