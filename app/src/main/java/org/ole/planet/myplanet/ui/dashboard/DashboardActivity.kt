@@ -133,6 +133,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var isUiInitialized = false
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -145,13 +146,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
 
-        handleInitialFragment()
         addBackPressCallback()
         collectUiState()
-
-        lifecycleScope.launch {
-            initializeDashboard()
-        }
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
@@ -244,6 +240,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                 user = state.user
                                 updateAppTitle()
                                 if (handleGuestAccess()) return@collect
+
+                                if (!isUiInitialized) {
+                                    handleInitialFragment()
+                                    initializeDashboard()
+                                    isUiInitialized = true
+                                }
+
                                 val offlineVisits = userSessionManager.getOfflineVisits(user)
                                 if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
                                     showGuestDialog()
