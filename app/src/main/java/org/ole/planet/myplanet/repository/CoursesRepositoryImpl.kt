@@ -417,4 +417,21 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
     }
+
+    override suspend fun getAllCourses(userId: String?): List<RealmMyCourse> {
+        val allCourses = queryList(RealmMyCourse::class.java) {
+            isNotEmpty("courseTitle")
+        }
+        allCourses.forEach { course ->
+            course.isMyCourse = course.userId?.contains(userId) == true
+        }
+        return allCourses
+    }
+
+    override suspend fun getCoursesByIds(ids: List<String>): List<RealmMyCourse> {
+        if (ids.isEmpty()) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", ids.toTypedArray())
+        }
+    }
 }

@@ -92,14 +92,6 @@ class VoicesFragment : BaseVoicesFragment() {
             binding.llAddNews.visibility = View.GONE
         }
 
-        if (mRealm.isInTransaction) {
-            try {
-                mRealm.commitTransaction()
-            } catch (_: Exception) {
-                mRealm.cancelTransaction()
-            }
-        }
-
         setupSearchTextListener()
         setupLabelFilter()
 
@@ -434,9 +426,6 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onDestroyView() {
         binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
