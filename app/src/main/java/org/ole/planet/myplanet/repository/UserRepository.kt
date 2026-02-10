@@ -57,6 +57,8 @@ interface UserRepository {
         payload: JsonObject
     )
 
+    suspend fun createMember(user: JsonObject): Pair<Boolean, String>
+
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
     suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUser>
