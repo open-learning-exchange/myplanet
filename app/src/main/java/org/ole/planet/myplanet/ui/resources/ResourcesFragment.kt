@@ -36,9 +36,6 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -559,14 +556,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
-    override fun getData(): Map<String, Set<String>> {
+    override suspend fun getData(): Map<String, Set<String>> {
         val libraryList = adapterLibrary.getLibraryList().filterNotNull()
-        val b: MutableMap<String, Set<String>> = HashMap()
-        b["languages"] = libraryList.let { getArrayList(it, "languages").filterNotNull().toSet() }
-        b["subjects"] = libraryList.let { getSubjects(it).toList().toSet() }
-        b["mediums"] = getArrayList(libraryList, "mediums").filterNotNull().toSet()
-        b["levels"] = getLevels(libraryList).toList().toSet()
-        return b
+        return resourcesRepository.getFilterFacets(libraryList)
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {

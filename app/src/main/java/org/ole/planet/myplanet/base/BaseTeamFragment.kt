@@ -38,8 +38,8 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         super.onCreate(savedInstanceState)
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        user = profileDbHandler?.userModel
-        teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
+        user = profileDbHandler.userModel
+        teamId = requireArguments().getString("id", "")
 
         loadTeamDetails()
     }
