@@ -79,6 +79,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, settings: SharedPreferences) {
+        val baseUrl = UrlUtils.baseUrl(settings)
+        if (baseUrl.isEmpty()) {
+            return
+        }
+
         serviceScope.launch {
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
