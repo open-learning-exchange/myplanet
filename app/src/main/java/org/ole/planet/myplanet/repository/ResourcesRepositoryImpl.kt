@@ -404,4 +404,13 @@ class ResourcesRepositoryImpl @Inject constructor(
             ResourceUrlsResponse.Error
         }
     }
+
+    override suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>> {
+        return mapOf(
+            "languages" to libraries.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet(),
+            "subjects" to libraries.flatMap { it.subject ?: emptyList() }.toSet(),
+            "mediums" to libraries.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet(),
+            "levels" to libraries.flatMap { it.level ?: emptyList() }.toSet()
+        )
+    }
 }
