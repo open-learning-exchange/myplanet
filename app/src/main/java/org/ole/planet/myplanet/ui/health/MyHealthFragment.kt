@@ -19,6 +19,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,24 +31,16 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -61,36 +54,27 @@ class MyHealthFragment : Fragment() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
-    @Inject
-    lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var userRepository: UserRepository
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
-    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
+    private val viewModel: HealthViewModel by viewModels()
+
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
     var userModel: RealmUser? = null
-    lateinit var userModelList: List<RealmUser>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
-    private val serverUrlMapper = ServerUrlMapper()
-    private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
     private var textWatcher: TextWatcher? = null
-    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        startHealthSync()
+        viewModel.startHealthSync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -98,83 +82,10 @@ class MyHealthFragment : Fragment() {
         return binding.root
     }
 
-    private fun startHealthSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isHealthSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_health_data))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshHealthData()
-                        prefManager.setHealthSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
-                    }
-                }
-            }
-        }, "full", listOf("health"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
-        }
-    }
-
-    private fun refreshHealthData() {
-        if (!isAdded || requireActivity().isFinishing) return
-
-        try {
-            val currentUser = getCurrentUserProfileCopy()
-            userId = if (TextUtils.isEmpty(currentUser?._id)) {
-                currentUser?.id
-            } else {
-                currentUser?._id
-            }
-            getHealthRecords(userId)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
-        setupRealtimeSync()
+
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
         binding.txtDob.hint = "dd-MM-yyyy"
 
@@ -196,103 +107,126 @@ class MyHealthFragment : Fragment() {
         binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
         adapter = HealthUsersAdapter()
-        setupInitialData()
+
+        setupObservers()
         setupButtons()
     }
 
-    private fun setupInitialData() {
-        val currentUser = getCurrentUserProfileCopy()
-        userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
-        getHealthRecords(userId)
-    }
-
-    private fun getCurrentUserProfileCopy(): RealmUser? {
-        return userSessionManager.getUserModelCopy()
-    }
-
-    private fun setupButtons() {
-        val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
-        binding.btnnewPatient.visibility =
-            if (isHealthProvider) View.VISIBLE else View.GONE
-
-        binding.btnnewPatient.setOnClickListener {
-            if (isHealthProvider) {
-                selectPatient()
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.canAddPatient.collect { canAdd ->
+                binding.btnnewPatient.visibility = if (canAdd) View.VISIBLE else View.GONE
             }
         }
-        binding.updateHealth.visibility = View.VISIBLE
 
-        binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
-        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.selectedUser.collect { user ->
+                userModel = user
+                userId = if (user?._id.isNullOrEmpty()) user?.id else user?._id
 
-        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
-    }
+                if (user != null) {
+                    binding.lblHealthName.text = user.getFullName() ?: getString(R.string.empty_text)
+                    binding.txtDob.text = if (TextUtils.isEmpty(user.dob)) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(user.dob)
 
-    private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "health" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshHealthData()
+                    binding.addNewRecord.setOnClickListener {
+                        startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
+                    }
+                    binding.updateHealth.setOnClickListener {
+                        startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
                     }
                 }
             }
         }
-        syncManagerInstance.addListener(onRealtimeSyncListener)
-    }
 
-    private fun getHealthRecords(memberId: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val normalizedId = memberId?.trim()
-            userId = normalizedId
-            val fetchedUser = if (normalizedId.isNullOrEmpty()) {
-                null
-            } else {
-                userRepository.getUserByAnyId(normalizedId)
+            viewModel.healthRecord.collect { record ->
+                showRecords(record)
             }
-            if (!isAdded || _binding == null) {
-                return@launch
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.syncStatus.collect { status ->
+                 when (status) {
+                    is SyncManager.SyncStatus.Syncing -> {
+                        if (customProgressDialog == null && isAdded) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText(getString(R.string.syncing_health_data))
+                            customProgressDialog?.show()
+                        }
+                    }
+                    is SyncManager.SyncStatus.Success -> {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        prefManager.setHealthSynced(true)
+                    }
+                    is SyncManager.SyncStatus.Error -> {
+                         customProgressDialog?.dismiss()
+                         customProgressDialog = null
+                         if (isAdded) {
+                            Snackbar.make(binding.root, "Sync failed: ${status.message}", Snackbar.LENGTH_LONG).setAction("Retry") { viewModel.startHealthSync() }.show()
+                         }
+                    }
+                    else -> {}
+                }
             }
-            userModel = fetchedUser
-            binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
-            binding.addNewRecord.setOnClickListener {
-                startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
-            }
-            binding.updateHealth.setOnClickListener {
-                startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
-            }
-            showRecords()
         }
     }
 
-    private fun selectPatient() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
-            withContext(Dispatchers.Main) {
-                userModelList = users
-                adapter = HealthUsersAdapter { selected ->
-                    userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                    getHealthRecords(userId)
-                    dialog?.dismiss()
-                }
-                adapter.submitList(userModelList)
-                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-                alertHealthListBinding?.btnAddMember?.setOnClickListener {
-                    startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-                }
+    private fun setupButtons() {
+        binding.btnnewPatient.setOnClickListener {
+            if (viewModel.canAddPatient.value) {
+                selectPatient()
+            }
+        }
+        binding.updateHealth.visibility = View.VISIBLE
+    }
 
-                alertHealthListBinding?.let { binding ->
-                    binding.list.layoutManager = LinearLayoutManager(requireContext())
-                    binding.list.adapter = adapter
-                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
-                    sortList(binding.spnSort, binding.list)
-                    dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                        .setTitle(getString(R.string.select_health_member)).setView(binding.root)
-                        .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-                    dialog?.show()
+    private fun selectPatient() {
+        viewModel.loadUsers("joinDate", Sort.DESCENDING)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            showPatientDialog()
+        }
+    }
+
+    private fun showPatientDialog() {
+        alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+        adapter = HealthUsersAdapter { selected ->
+            viewModel.selectUser(if (selected._id.isNullOrEmpty()) selected.id else selected._id)
+            dialog?.dismiss()
+        }
+
+        alertHealthListBinding?.let { binding ->
+            binding.list.layoutManager = LinearLayoutManager(requireContext())
+            binding.list.adapter = adapter
+
+            // Observer for users list
+            val job = viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.usersList.collect { users ->
+                    adapter.submitList(users)
+                    // If list updates, assume loading is done for search
+                    binding.searchProgress.visibility = View.GONE
+                    binding.list.visibility = View.VISIBLE
+                    binding.btnAddMember.visibility = if (users.isEmpty()) View.VISIBLE else View.GONE
                 }
             }
+
+            setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+            sortList(binding.spnSort, binding.list)
+
+            binding.btnAddMember.setOnClickListener {
+                startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            }
+
+            dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.select_health_member))
+                .setView(binding.root)
+                .setCancelable(false)
+                .setNegativeButton(R.string.dismiss, null)
+                .create()
+
+            dialog?.setOnDismissListener { job.cancel() }
+            dialog?.show()
         }
     }
 
@@ -301,19 +235,13 @@ class MyHealthFragment : Fragment() {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val (sortBy, sort) = when (p2) {
-                        0 -> "joinDate" to Sort.DESCENDING
-                        1 -> "joinDate" to Sort.ASCENDING
-                        2 -> "name" to Sort.ASCENDING
-                        else -> "name" to Sort.DESCENDING
-                    }
-                    val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
-                    if (isAdded) {
-                        userModelList = sortedList
-                        adapter.submitList(userModelList)
-                    }
+                 val (sortBy, sort) = when (p2) {
+                    0 -> "joinDate" to Sort.DESCENDING
+                    1 -> "joinDate" to Sort.ASCENDING
+                    2 -> "name" to Sort.ASCENDING
+                    else -> "name" to Sort.DESCENDING
                 }
+                viewModel.loadUsers(sortBy, sort)
             }
         }
     }
@@ -323,122 +251,79 @@ class MyHealthFragment : Fragment() {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun afterTextChanged(editable: Editable) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    val loadingJob = launch(Dispatchers.Main) {
-                        delay(100)
-                        alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
-                        rv.visibility = View.GONE
-                    }
-
-                    val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
-
-                    loadingJob.cancel()
-                    if (isAdded) {
-                        alertHealthListBinding?.searchProgress?.visibility = View.GONE
-                        rv.visibility = View.VISIBLE
-                        val searchAdapter = HealthUsersAdapter { selected ->
-                            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                            getHealthRecords(userId)
-                            dialog?.dismiss()
-                        }
-                        searchAdapter.submitList(userModelList)
-                        rv.adapter = searchAdapter
-                        btnAddMember.visibility =
-                            if (userModelList.isEmpty()) View.VISIBLE else View.GONE
-                    }
-                }
+                 alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
+                 rv.visibility = View.GONE
+                 viewModel.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
             }
         }
         etSearch.addTextChangedListener(textWatcher)
     }
 
-    override fun onResume() {
-        super.onResume()
-        showRecords()
-    }
-
-    private fun showRecords() {
+    private fun showRecords(healthRecord: HealthRecord?) {
         if (!isAdded || _binding == null) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = userModel
-            if (currentUser == null || userId.isNullOrEmpty()) {
-                binding.layoutUserDetail.visibility = View.GONE
-                binding.tvMessage.visibility = View.VISIBLE
-                binding.tvMessage.text = getString(R.string.health_record_not_available)
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.VISIBLE
-                binding.tvDataPlaceholder.visibility = View.GONE
-                return@launch
-            }
+        val currentUser = userModel
+        if (currentUser == null || userId.isNullOrEmpty() || healthRecord == null) {
+            binding.layoutUserDetail.visibility = View.GONE
+            binding.tvMessage.visibility = View.VISIBLE
+            binding.tvMessage.text = getString(R.string.health_record_not_available)
+            binding.txtOtherNeed.text = getString(R.string.empty_text)
+            binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+            binding.txtBirthPlace.text = getString(R.string.empty_text)
+            binding.txtEmergencyContact.text = getString(R.string.empty_text)
+            binding.rvRecords.adapter = null
+            binding.rvRecords.visibility = View.GONE
+            binding.tvNoRecords.visibility = View.VISIBLE
+            binding.tvDataPlaceholder.visibility = View.GONE
+            return
+        }
 
-            binding.layoutUserDetail.visibility = View.VISIBLE
-            binding.tvMessage.visibility = View.GONE
-            binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
-            binding.txtEmail.text = Utilities.checkNA(currentUser.email)
-            binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
+        binding.layoutUserDetail.visibility = View.VISIBLE
+        binding.tvMessage.visibility = View.GONE
+        binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
+        binding.txtEmail.text = Utilities.checkNA(currentUser.email)
+        binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
+        binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
-            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
+        val (mh, mm, list, userMap) = healthRecord
+        val myHealths = mm.profile
+        binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
+        binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
+        binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
+        val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
+        binding.txtEmergencyContact.text = getString(
+            R.string.emergency_contact_details,
+            Utilities.checkNA(myHealths?.emergencyContactName),
+            Utilities.checkNA(myHealths?.emergencyContactType),
+            Utilities.checkNA(contact)
+        ).trimIndent()
 
-            if (healthRecord != null) {
-                val (mh, mm, list, userMap) = healthRecord
-                val myHealths = mm.profile
-                binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-                binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-                binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
-                val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
-                binding.txtEmergencyContact.text = getString(
-                    R.string.emergency_contact_details,
-                    Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
-                    Utilities.checkNA(contact)
-                ).trimIndent()
+        if (list.isNotEmpty()) {
+            binding.rvRecords.visibility = View.VISIBLE
+            binding.tvNoRecords.visibility = View.GONE
+            binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                if (list.isNotEmpty()) {
-                    binding.rvRecords.visibility = View.VISIBLE
-                    binding.tvNoRecords.visibility = View.GONE
-                    binding.tvDataPlaceholder.visibility = View.VISIBLE
-
-                    if (!::healthAdapter.isInitialized) {
-                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
-                    } else {
-                        healthAdapter.updateData(mh, currentUser, userMap)
-                    }
-                    binding.rvRecords.apply {
-                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                        isNestedScrollingEnabled = false
-                        adapter = healthAdapter
-                    }
-                    healthAdapter.submitList(list)
-                    binding.rvRecords.post {
-                        val lastPosition = list.size - 1
-                        if (lastPosition >= 0) {
-                            binding.rvRecords.scrollToPosition(lastPosition)
-                        }
-                    }
-                } else {
-                    binding.rvRecords.visibility = View.GONE
-                    binding.tvNoRecords.visibility = View.GONE
-                    binding.tvDataPlaceholder.visibility = View.VISIBLE
-                }
+            if (!::healthAdapter.isInitialized) {
+                healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap)
             } else {
-                binding.txtOtherNeed.text = getString(R.string.empty_text)
-                binding.txtSpecialNeeds.text = getString(R.string.empty_text)
-                binding.txtBirthPlace.text = getString(R.string.empty_text)
-                binding.txtEmergencyContact.text = getString(R.string.empty_text)
-                binding.rvRecords.adapter = null
-                binding.rvRecords.visibility = View.GONE
-                binding.tvNoRecords.visibility = View.VISIBLE
-                binding.tvDataPlaceholder.visibility = View.GONE
+                healthAdapter.updateData(mh, currentUser, userMap)
             }
+            binding.rvRecords.apply {
+                layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                isNestedScrollingEnabled = false
+                adapter = healthAdapter
+            }
+            healthAdapter.submitList(list)
+            binding.rvRecords.post {
+                val lastPosition = list.size - 1
+                if (lastPosition >= 0) {
+                    binding.rvRecords.scrollToPosition(lastPosition)
+                }
+            }
+        } else {
+            binding.rvRecords.visibility = View.GONE
+            binding.tvNoRecords.visibility = View.GONE
+            binding.tvDataPlaceholder.visibility = View.VISIBLE
         }
     }
 
@@ -449,12 +334,8 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (::onRealtimeSyncListener.isInitialized) {
-            syncManagerInstance.removeListener(onRealtimeSyncListener)
-        }
         alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
-        searchJob?.cancel()
         _binding = null
         super.onDestroyView()
     }
