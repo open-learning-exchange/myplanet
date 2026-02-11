@@ -25,7 +25,7 @@ class TaskNotificationWorker @AssistedInject constructor(
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
 
-        val user = userSessionManager.userModel
+        val user = userSessionManager.getUserModel()
         val userId = user?.id
         if (!userId.isNullOrBlank()) {
             val tasks = runCatching {

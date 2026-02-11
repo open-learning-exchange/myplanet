@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 interface CoursesRepository {
+    suspend fun getAllCourses(): List<RealmMyCourse>
     fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse>
     suspend fun getMyCourses(userId: String): List<RealmMyCourse>
     suspend fun getOurCourses(userId: String): List<RealmMyCourse>
