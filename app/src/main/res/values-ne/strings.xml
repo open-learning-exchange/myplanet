@@ -1190,5 +1190,9 @@
     <string name="create_new_resource">नयाँ सिर्जना गर्नुहोस्</string>
     <string name="private_resource">निजी स्रोत (यस टोलीलाई मात्र देखिने)</string>
     <string name="resource_added_to_team">स्रोत टोलीमा थपियो</string>
+    <string name="select_courses">पाठ्यक्रमहरू चयन गर्नुहोस्</string>
+    <string name="untitled_course">शीर्षक नभएको पाठ्यक्रम</string>
+    <string name="courses_loading">पाठ्यक्रमहरू लोड हुँदै छन्…</string>
+    <string name="error">त्रुटि: %1$s</string>
 
 </resources>

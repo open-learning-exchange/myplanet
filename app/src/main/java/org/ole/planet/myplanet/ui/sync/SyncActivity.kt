@@ -56,6 +56,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -136,6 +137,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var isProgressDialogShowing = false
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
+
+    @Inject
+    lateinit var communityRepository: CommunityRepository
 
     @Inject
     open lateinit var resourcesRepository: ResourcesRepository
@@ -741,7 +745,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
         } else {
             lifecycleScope.launch(Dispatchers.IO) {
-                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+                configurationsRepository.clearAllData()
             }
         }
         builder.setCancelable(cancelable)

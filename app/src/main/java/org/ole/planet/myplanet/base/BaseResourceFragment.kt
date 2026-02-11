@@ -20,9 +20,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.EntryPointAccessors
-import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.RealmResults
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -61,8 +59,6 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    @Deprecated("Use repositories instead")
-    protected lateinit var mRealm: Realm
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -93,17 +89,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
     private var broadcastJob: Job? = null
-
-    protected fun requireRealmInstance(): Realm {
-        if (!isRealmInitialized()) {
-            mRealm = databaseService.createManagedRealmInstance()
-        }
-        return mRealm
-    }
-
-    protected fun isRealmInitialized(): Boolean {
-        return ::mRealm.isInitialized && !mRealm.isClosed
-    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -363,7 +348,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
@@ -378,25 +362,23 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
+    suspend fun removeFromShelf(`object`: RealmObject) {
         val userId = profileDbHandler.userModel?.id ?: model?.id
         if (userId.isNullOrEmpty()) {
             return
         }
 
-        lifecycleScope.launch {
-            if (`object` is RealmMyLibrary) {
-                val resourceId = `object`.resourceId
-                if (resourceId != null) {
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                }
-            } else {
-                val courseId = (`object` as RealmMyCourse).courseId
-                if (courseId != null) {
-                    coursesRepository.removeCourseFromShelf(courseId, userId)
-                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
-                }
+        if (`object` is RealmMyLibrary) {
+            val resourceId = `object`.resourceId
+            if (resourceId != null) {
+                resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+            }
+        } else {
+            val courseId = (`object` as RealmMyCourse).courseId
+            if (courseId != null) {
+                coursesRepository.removeCourseFromShelf(courseId, userId)
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
             }
         }
     }
@@ -445,32 +427,6 @@ abstract class BaseResourceFragment : Fragment() {
         super.onDestroyView()
     }
 
-    override fun onDestroy() {
-        cleanupRealm()
-        super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (e: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
-    }
-
     companion object {
         var auth = ""
 
@@ -487,16 +443,6 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }
             }
-        }
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
         }
     }
 }

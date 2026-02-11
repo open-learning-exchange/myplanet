@@ -125,7 +125,9 @@ class SettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
-            user = profileDbHandler.userModel
+            lifecycleScope.launch {
+                user = profileDbHandler.getUserModel()
+            }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()

@@ -250,22 +250,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = userSessionManager.userModel
-        searchTags = ArrayList()
-        initializeView()
-        loadDataAsync()
-        updateCheckBoxState(false)
-        setupButtonVisibility()
-        setupEventListeners()
-        clearTags()
-        if (::adapterCourses.isInitialized) {
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        }
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
-
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
         setupMyProgressButton()
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
+            searchTags = ArrayList()
+            initializeView()
+            setupButtonVisibility()
+            setupEventListeners()
+            clearTags()
+            if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+            if (::adapterCourses.isInitialized) {
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            }
+            loadDataAsync()
+            updateCheckBoxState(false)
+        }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
