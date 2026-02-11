@@ -158,16 +158,18 @@ class MyHealthFragment : Fragment() {
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            val currentUser = getCurrentUserProfileCopy()
-            userId = if (TextUtils.isEmpty(currentUser?._id)) {
-                currentUser?.id
-            } else {
-                currentUser?._id
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val currentUser = userSessionManager.getUserModel()
+                userId = if (TextUtils.isEmpty(currentUser?._id)) {
+                    currentUser?.id
+                } else {
+                    currentUser?._id
+                }
+                getHealthRecords(userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            getHealthRecords(userId)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -197,17 +199,14 @@ class MyHealthFragment : Fragment() {
 
         adapter = HealthUsersAdapter()
         setupInitialData()
-        setupButtons()
     }
 
     private fun setupInitialData() {
-        val currentUser = getCurrentUserProfileCopy()
-        userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
-        getHealthRecords(userId)
-    }
-
-    private fun getCurrentUserProfileCopy(): RealmUser? {
-        return userSessionManager.getUserModelCopy()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = userSessionManager.getUserModel()
+            userId = if (TextUtils.isEmpty(currentUser?._id)) currentUser?.id else currentUser?._id
+            getHealthRecords(userId)
+        }
     }
 
     private fun setupButtons() {
@@ -255,6 +254,7 @@ class MyHealthFragment : Fragment() {
                 return@launch
             }
             userModel = fetchedUser
+            setupButtons()
             binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
             binding.addNewRecord.setOnClickListener {
                 startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))

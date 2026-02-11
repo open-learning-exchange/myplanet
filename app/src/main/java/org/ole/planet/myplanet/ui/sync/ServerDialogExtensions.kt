@@ -9,9 +9,11 @@ import android.widget.CompoundButton
 import android.widget.RadioGroup
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import io.realm.Sort
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -301,17 +303,17 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
     showConfigurationUIElements(binding, true, dialog)
 
-    val communities: List<RealmCommunity> = databaseService.withRealm { realm ->
-        realm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll().let { realm.copyFromRealm(it) }
-    }
-    val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
-    binding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
-    binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-            onChangeServerUrl()
-        }
+    lifecycleScope.launch {
+        val communities = communityRepository.getAllSorted()
+        val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
+        binding.spnCloud.adapter = ArrayAdapter(this@setupManualConfigEnabled, R.layout.spinner_item_white, nonEmptyCommunities)
+        binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                onChangeServerUrl()
+            }
 
-        override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     binding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->

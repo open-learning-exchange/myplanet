@@ -81,7 +81,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = userSessionManager.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -98,6 +97,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         id ?: return
         lifecycleScope.launch {
+            if (user == null) {
+                user = userSessionManager.getUserModel()
+            }
             val (news, list) = viewModel.getNewsWithReplies(id)
             databaseService.withRealm { realm ->
                 val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Realm
@@ -94,17 +95,35 @@ open class RealmMyTeam : RealmObject() {
             team.startDate = JsonUtils.getLong("startDate", doc)
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
-            team.updated = JsonUtils.getBoolean("updated", doc)
 
-            if (includeCourses) {
-                val coursesArray = JsonUtils.getJsonArray("courses", doc)
-                team.courses = RealmList()
-                for (e in coursesArray) {
+            val hadLocalChanges = team.updated
+            val localCourses = team.courses?.toList() ?: emptyList()
+
+            if (!hadLocalChanges) {
+                team.updated = JsonUtils.getBoolean("updated", doc)
+            }
+
+            val coursesArray = JsonUtils.getJsonArray("courses", doc)
+            val serverCourseIds = mutableListOf<String>()
+            for (e in coursesArray) {
+                try {
                     val id = e.asJsonObject["_id"].asString
-                    if (!team.courses!!.contains(id)) {
-                        team.courses!!.add(id)
+                    serverCourseIds.add(id)
+                } catch (ex: Exception) {
+                    if (e.isJsonPrimitive) {
+                        serverCourseIds.add(e.asString)
                     }
                 }
+            }
+
+            if (hadLocalChanges) {
+                val mergedCourses = serverCourseIds.toMutableSet()
+                mergedCourses.addAll(localCourses)
+                team.courses = RealmList()
+                team.courses?.addAll(mergedCourses)
+            } else {
+                team.courses = RealmList()
+                team.courses?.addAll(serverCourseIds)
             }
         }
 
@@ -303,6 +322,28 @@ open class RealmMyTeam : RealmObject() {
             }
 
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+        }
+
+        @JvmStatic
+        fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
+            val `object` = serialize(team)
+
+            if (!team.courses.isNullOrEmpty()) {
+                val coursesArray = JsonArray()
+
+                team.courses?.forEach { courseId ->
+                    val course = realm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+
+                    if (course != null) {
+                        val courseJson = RealmMyCourse.serialize(course, realm)
+                        coursesArray.add(courseJson)
+                    }
+                }
+                `object`.add("courses", coursesArray)
+            }
+            return `object`
         }
 
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {

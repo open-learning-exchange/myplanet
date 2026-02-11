@@ -129,7 +129,8 @@ class UserProfileViewModel @Inject constructor(
 
     fun getOfflineVisits() {
         viewModelScope.launch {
-            _offlineVisits.value = userSessionManager.getOfflineVisits(userSessionManager.userModel)
+            val user = userSessionManager.getUserModel()
+            _offlineVisits.value = userSessionManager.getOfflineVisits(user)
         }
     }
 }
