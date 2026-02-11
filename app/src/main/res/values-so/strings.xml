@@ -1190,5 +1190,9 @@
     <string name="create_new_resource">Abuur Cusub</string>
     <string name="private_resource">Khayraad gaar ah (kaliya kooxdaan ayaa arki karta)</string>
     <string name="resource_added_to_team">Khayraadka waxaa lagu daray kooxda</string>
+    <string name="select_courses">Dooro Koorsooyin</string>
+    <string name="untitled_course">Koorso Aan Magac Lahayn</string>
+    <string name="courses_loading">Koorsooyin ayaa la soo dejinayaa…</string>
+    <string name="error">Khalad: %1$s</string>
 
 </resources>

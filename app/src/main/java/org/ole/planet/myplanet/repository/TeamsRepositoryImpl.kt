@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -160,6 +161,37 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return (linkedResources + privateResources).distinctBy { it.id }
+    }
+
+    override suspend fun getTeamCourses(teamId: String): List<RealmMyCourse> {
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId) ?: return emptyList()
+        val courseIds = team.courses?.toList() ?: return emptyList()
+
+        if (courseIds.isEmpty()) return emptyList()
+        val courses = queryList(RealmMyCourse::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+        }
+        return courses
+    }
+
+    override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>) {
+        if (courseIds.isEmpty()) {
+            return
+        }
+        executeTransaction { realm ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+            if (team == null) {
+                return@executeTransaction
+            }
+            courseIds.forEach { courseId ->
+                if (team.courses?.contains(courseId) != true) {
+                    team.courses?.add(courseId)
+                }
+            }
+            team.updated = true
+        }
     }
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
