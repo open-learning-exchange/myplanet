@@ -110,7 +110,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
-        if (isAddInProgress) return
+        if (!isAdded || isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
@@ -194,11 +194,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
                 }
 
-                try {
-                    removeFromShelf(`object`)
-                } catch (e: Exception) {
-                    throw e
-                }
+                removeFromShelf(`object`)
             }
             recyclerView.adapter = getAdapter()
             showNoData(tvMessage, getAdapter().itemCount, "")

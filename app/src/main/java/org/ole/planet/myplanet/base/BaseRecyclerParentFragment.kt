@@ -14,6 +14,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     @Inject
     lateinit var surveysRepository: SurveysRepository
 
+    @Deprecated("Use repository instead")
     @Suppress("UNCHECKED_CAST")
     suspend fun getList(c: Class<*>): List<LI> {
         return when {
@@ -39,6 +40,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         }
     }
 
+    @Deprecated("Use repository instead")
     @Suppress("UNCHECKED_CAST")
     suspend fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         // Ignoring sort/orderBy as repositories don't support it generically yet, and existing usage might be limited.
