@@ -76,10 +76,16 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        userModel = userSessionManager.userModel
         shouldHideElements = arguments?.getBoolean("shouldHideElements") == true
         initViews()
         return fragmentUserInformationBinding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
+        }
     }
 
     private fun initViews() {

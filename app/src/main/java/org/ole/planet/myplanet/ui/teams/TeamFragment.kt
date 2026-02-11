@@ -69,14 +69,6 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamBinding.inflate(inflater, container, false)
-        user = userSessionManager.getUserModelCopy()
-
-        if (user?.isGuest() == true) {
-            binding.addTeam.visibility = View.GONE
-        } else {
-            binding.addTeam.visibility = View.VISIBLE
-        }
-
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
             getString(R.string.enterprises)
@@ -211,10 +203,18 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupRecyclerView()
-        observeTeamData()
-        refreshTeamList()
-        setupTextWatcher()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            if (user?.isGuest() == true) {
+                binding.addTeam.visibility = View.GONE
+            } else {
+                binding.addTeam.visibility = View.VISIBLE
+            }
+            setupRecyclerView()
+            observeTeamData()
+            refreshTeamList()
+            setupTextWatcher()
+        }
     }
 
     private fun setupRecyclerView() {
