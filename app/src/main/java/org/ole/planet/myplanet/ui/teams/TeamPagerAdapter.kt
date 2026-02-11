@@ -2,34 +2,35 @@ package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MembersPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 
 class TeamPagerAdapter(
-    private val fm: FragmentActivity,
+    private val parentFragment: Fragment,
     private val pages: List<TeamPageConfig>,
     private val teamId: String?,
     private val onMemberChangeListener: OnMemberChangeListener,
     private val teamUpdateListener: OnTeamUpdateListener
-) : FragmentStateAdapter(fm) {
+) : FragmentStateAdapter(parentFragment) {
 
     override fun getItemCount(): Int = pages.size
 
     fun getPageTitle(position: Int): CharSequence =
-        fm.getString(pages[position].titleRes)
+        parentFragment.getString(pages[position].titleRes)
 
     override fun getItemId(position: Int): Long {
         val page = pages.getOrNull(position)
@@ -55,6 +56,9 @@ class TeamPagerAdapter(
             }
             ApplicantsPage, JoinRequestsPage -> if (fragment is RequestsFragment) {
                 fragment.setOnMemberChangeListener(onMemberChangeListener)
+            }
+            CoursesPage -> if (fragment is TeamCoursesFragment) {
+                MainApplication.listener = fragment
             }
             DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
                 MainApplication.listener = fragment
