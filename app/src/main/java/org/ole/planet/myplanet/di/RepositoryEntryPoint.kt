@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.di
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -11,4 +12,5 @@ import org.ole.planet.myplanet.repository.UserRepository
 interface RepositoryEntryPoint {
     fun userRepository(): UserRepository
     fun configurationsRepository(): ConfigurationsRepository
+    fun communityRepository(): CommunityRepository
 }

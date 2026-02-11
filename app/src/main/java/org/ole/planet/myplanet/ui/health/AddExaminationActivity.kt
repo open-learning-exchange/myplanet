@@ -12,6 +12,7 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
@@ -20,6 +21,7 @@ import io.realm.Realm
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
@@ -28,6 +30,8 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
@@ -48,6 +52,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var healthRepository: HealthRepository
+    @Inject
+    lateinit var userRepository: UserRepository
     private lateinit var binding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
     var userId: String? = null
@@ -79,42 +87,15 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = userSessionManager.userModel
+        lifecycleScope.launch {
+            currentUser = userSessionManager.getUserModel()
+        }
         mapConditions = HashMap()
         mRealm = databaseService.createManagedRealmInstance()
         userId = intent.getStringExtra("userId")
-        pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-        if (pojo == null) {
-            pojo = mRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
-        }
-        user = mRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-        if (user != null && (user?.key == null || user?.iv == null)) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                user?.key = generateKey()
-                user?.iv = generateIv()
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
-        }
-        if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
-        }
-        if (health == null) {
-            initHealth()
-        }
-        initExamination()
-        validateFields()
-        findViewById<View>(R.id.btn_save).setOnClickListener {
+        val btnSave = findViewById<View>(R.id.btn_save)
+        btnSave.isEnabled = false
+        btnSave.setOnClickListener {
             if(!allowSubmission){
                 scrollToView(binding.etBloodpressure)
             }
@@ -122,6 +103,33 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 return@setOnClickListener
             }
             saveData()
+        }
+
+        lifecycleScope.launch {
+            if (userId != null) {
+                val (u, p) = healthRepository.getHealthEntry(userId!!)
+                user = u
+                pojo = p
+
+                val updatedUser = userRepository.ensureUserSecurityKeys(userId!!)
+                if (updatedUser != null) {
+                    user = updatedUser
+                }
+            }
+
+            if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
+                try {
+                    health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            if (health == null) {
+                initHealth()
+            }
+            initExamination()
+            validateFields()
+            btnSave.isEnabled = true
         }
     }
 
@@ -276,7 +284,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             createPojo()
             if (examination == null) {
                 val odUserId = generateIv()
-                examination = mRealm.createObject(RealmHealthExamination::class.java, odUserId)
+                examination = RealmHealthExamination()
+                examination?._id = odUserId
                 examination?.userId = odUserId
             }
             examination?.profileId = health?.userKey
@@ -317,6 +326,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
+            pojo?.let { mRealm.copyToRealmOrUpdate(it) }
+            examination?.let { mRealm.copyToRealmOrUpdate(it) }
+
             if (startedTransaction) {
                 mRealm.commitTransaction()
             }
@@ -407,7 +420,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun createPojo() {
         try {
             if (pojo == null) {
-                pojo = mRealm.createObject(RealmHealthExamination::class.java, userId)
+                pojo = RealmHealthExamination()
+                pojo?._id = userId
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
