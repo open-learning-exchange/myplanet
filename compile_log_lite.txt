@@ -1,0 +1,18 @@
+Downloading https://services.gradle.org/distributions/gradle-9.3.1-bin.zip
+.............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+
+Welcome to Gradle 9.3.1!
+
+Here are the highlights of this release:
+ - Test reporting improvements
+ - Error and warning improvements
+ - Build authoring improvements
+
+For more details see https://docs.gradle.org/9.3.1/release-notes.html
+
+Starting a Gradle Daemon (subsequent builds will be faster)
+Calculating task graph as no cached configuration is available for tasks: app:compileLiteDebugKotlin
+Gradle cache: GRADLE_BUILD_CACHE_URL=http://34.134.219.48:5071/cache/
+
+> Configure project :
+Could not load entry bc86f517dc82e7140d26b451d8037d36 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out

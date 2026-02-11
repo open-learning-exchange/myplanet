@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
@@ -80,6 +80,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
 
     override val workManagerConfiguration: WorkManagerConfiguration
         get() = WorkManagerConfiguration.Builder()
@@ -336,9 +339,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         applicationScope.launch {
                             val canReachServer = isServerReachable(serverUrl)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                backgroundDownload(
-                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
-                                    applicationContext
+                                resourceDownloadCoordinator.startBackgroundDownload(
+                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
                                 )
                             }
                         }

@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -104,6 +104,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -160,7 +162,7 @@ class SettingsActivity : AppCompatActivity() {
                     lifecycleScope.launch {
                         try {
                             val files = libraryList ?: resourcesRepository.getAllLibrariesToSync().also { libraryList = it }
-                            backgroundDownload(downloadAllFiles(files), requireContext())
+                            resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
                         } finally {
                             preference.isEnabled = true
                         }
