@@ -452,6 +452,8 @@ class UploadManager @Inject constructor(
 
         data class TeamData(
             val teamId: String?,
+            val teamName: String?,
+            val coursesCount: Int,
             val serialized: JsonObject
         )
 
@@ -461,8 +463,9 @@ class UploadManager @Inject constructor(
 
             teams.map { team ->
                 TeamData(
-                    teamId = team._id,
-                    serialized = RealmMyTeam.serialize(team)
+                    teamId = team._id, teamName = team.name,
+                    coursesCount = team.courses?.size ?: 0,
+                    serialized = RealmMyTeam.serialize(team, realm)
                 )
             }
         }
@@ -471,10 +474,12 @@ class UploadManager @Inject constructor(
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
-                        val `object` = apiInterface.postDoc(
+                        val response = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
                             "${UrlUtils.getUrl()}/teams", teamData.serialized
-                        ).body()
+                        )
+
+                        val `object` = response.body()
 
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
@@ -552,7 +557,6 @@ class UploadManager @Inject constructor(
             }
 
             uploadTeamActivitiesRefactored()
-
             listener.onSuccess("User activities sync completed successfully")
         } catch (e: Exception) {
             e.printStackTrace()
@@ -587,10 +591,8 @@ class UploadManager @Inject constructor(
         logsData.forEach { logData ->
             try {
                 val `object` = apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/team_activities",
-                    logData.serialized
+                    UrlUtils.header, "application/json",
+                    "${UrlUtils.getUrl()}/team_activities", logData.serialized
                 ).body()
 
                 if (`object` != null) {
