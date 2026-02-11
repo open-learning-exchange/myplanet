@@ -48,6 +48,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getUserModelSuspending() instead")
     override fun getCurrentUser(): RealmUser? {
         return getUserModel()
     }
@@ -231,6 +232,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getUserModelSuspending() instead")
     override fun getUserModel(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
         return databaseService.withRealm { realm ->
@@ -321,6 +323,15 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun createMember(userJson: JsonObject): Result<String> {
+        val (isSuccess, message) = becomeMember(userJson)
+        return if (isSuccess) {
+            Result.success(message)
+        } else {
+            Result.failure(Exception(message))
+        }
+    }
+
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
@@ -361,8 +372,13 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getActiveUserIdSuspending() instead")
     override fun getActiveUserId(): String {
         return getUserModel()?.id ?: ""
+    }
+
+    override suspend fun getActiveUserIdSuspending(): String {
+        return getUserModelSuspending()?.id ?: ""
     }
     override suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,

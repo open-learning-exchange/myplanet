@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -35,23 +36,23 @@ class SubmissionViewModel @Inject constructor(
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
 
-    private val userId by lazy { userRepository.getActiveUserId() }
+    private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
 
-    private val allSubmissionsFlow = flow {
-        emitAll(submissionsRepository.getSubmissionsFlow(userId))
+    private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
+        submissionsRepository.getSubmissionsFlow(uid)
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
-    private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams) { subs, type, query, examMap ->
+    private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
         var filtered = when (type) {
-            "survey" -> subs.filter { it.userId == userId && it.type == "survey" }
+            "survey" -> subs.filter { it.userId == uid && it.type == "survey" }
             "survey_submission" -> subs.filter {
-                it.userId == userId && it.type == "survey" && it.status != "pending"
+                it.userId == uid && it.type == "survey" && it.status != "pending"
             }
-            else -> subs.filter { it.userId == userId && it.type != "survey" }
+            else -> subs.filter { it.userId == uid && it.type != "survey" }
         }.sortedByDescending { it.lastUpdateTime }
 
         if (query.isNotEmpty()) {
