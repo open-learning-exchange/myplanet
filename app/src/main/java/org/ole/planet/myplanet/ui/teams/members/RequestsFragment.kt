@@ -33,13 +33,15 @@ class RequestsFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = userSessionManager.userModel ?: RealmUser()
+        currentUser = RealmUser()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel.fetchMembers(teamId)
         viewLifecycleOwner.lifecycleScope.launch {
+            currentUser = userSessionManager.getUserModel() ?: RealmUser()
+            (adapter as? RequestsAdapter)?.setUser(currentUser)
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collect { uiState ->

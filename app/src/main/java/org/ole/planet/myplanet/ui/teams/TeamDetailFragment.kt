@@ -11,8 +11,6 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +21,7 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
@@ -48,8 +47,10 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
@@ -76,14 +77,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
     private var loadTeamJob: Job? = null
-
-    private fun getCurrentUser(): RealmUser? {
-        return userSessionManager.userModel
-    }
-
-    private fun detachCurrentUser(): RealmUser? {
-        return userSessionManager.getUserModelCopy()
-    }
 
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
@@ -133,7 +126,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = detachCurrentUser()
 
         binding.loadingIndicator?.visibility = View.VISIBLE
         binding.contentLayout?.visibility = View.GONE
@@ -142,6 +134,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         loadTeamJob?.cancel()
         loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
+            val user = userSessionManager.getUserModel()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
                     teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
@@ -294,18 +287,13 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
-            requireActivity(),
-            pageConfigs,
-            team?._id,
-            this,
-            this
+            this, pageConfigs, team?._id, this, this
         )
         binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
         binding.tabLayout.isInlineLabel = true
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-            val pageConfig = pageConfigs.getOrNull(position)
             tab.text = title
         }.attach()
 
@@ -320,6 +308,12 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         pageId?.let {
                             teamLastPage[teamId] = it
                         }
+                    }
+
+                    val fragmentTag = "f$position"
+                    val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
+                    if (fragment is OnTeamPageListener) {
+                        MainApplication.listener = fragment
                     }
                 }
             }
@@ -388,9 +382,27 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
-            selectPage(DocumentsPage.id)
+            val coursesPageIndex = pageIndexById(CoursesPage.id)
+            val isAlreadyOnCoursesPage = coursesPageIndex != null && binding.viewPager2.currentItem == coursesPageIndex
+
+            selectPage(CoursesPage.id)
             MainApplication.showDownload = false
-            MainApplication.listener?.onAddDocument()
+
+            val delay = if (isAlreadyOnCoursesPage) 50L else 300L
+
+            binding.root.postDelayed({
+                val allFragments = childFragmentManager.fragments
+                val coursesFragment = allFragments.filterIsInstance<TeamCoursesFragment>().firstOrNull()
+
+                when {
+                    coursesFragment != null -> {
+                        coursesFragment.onAddCourse()
+                    }
+                    MainApplication.listener is TeamCoursesFragment -> {
+                        MainApplication.listener?.onAddCourse()
+                    }
+                }
+            }, delay)
         }
     }
 
@@ -474,13 +486,12 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun createTeamLog() {
-        val userModel = getCurrentUser() ?: return
-        val userName = userModel.name
-        val userPlanetCode = userModel.planetCode
-        val userParentCode = userModel.parentCode
-        val teamType = getEffectiveTeamType()
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userModel = userSessionManager.getUserModel() ?: return@launch
+            val userName = userModel.name
+            val userPlanetCode = userModel.planetCode
+            val userParentCode = userModel.parentCode
+            val teamType = getEffectiveTeamType()
             teamsRepository.logTeamVisit(
                 teamId = getEffectiveTeamId(),
                 userName = userName,

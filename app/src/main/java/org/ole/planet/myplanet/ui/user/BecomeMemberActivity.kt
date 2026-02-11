@@ -165,7 +165,6 @@ class BecomeMemberActivity : BaseActivity() {
                 } else {
                     Utilities.toast(this@BecomeMemberActivity, result.second)
                     customProgressDialog.dismiss()
-                    autoLoginNewMember(info.username, info.password)
                 }
             }
         }

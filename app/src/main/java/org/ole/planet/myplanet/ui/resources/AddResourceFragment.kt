@@ -265,9 +265,18 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 .putExtra("resource_local_url", path)
                 .putExtra("teamId", teamId))
         } else {
-            val userModel = userSessionManager.userModel ?: return
-            showAlert(requireContext(), path, personalsRepository, userModel.id, userModel.name, viewLifecycleOwner.lifecycleScope) {
-                dismiss()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val userModel = userSessionManager.getUserModel() ?: return@launch
+                showAlert(
+                    requireContext(),
+                    path,
+                    personalsRepository,
+                    userModel.id,
+                    userModel.name,
+                    viewLifecycleOwner.lifecycleScope
+                ) {
+                    dismiss()
+                }
             }
         }
     }
