@@ -156,46 +156,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     content.viewTreeObserver.removeOnPreDrawListener(this)
                     startPostponedEnterTransition()
                     return true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
             }
         )
@@ -290,7 +250,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name.isNullOrBlank()) {
-                    name = user?.name
+                    name = userProfileModel.name
                 }
                 val communityName = settings.getString("communityName", "")
                 binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {

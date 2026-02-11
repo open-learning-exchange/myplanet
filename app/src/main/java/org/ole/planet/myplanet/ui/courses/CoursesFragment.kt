@@ -253,11 +253,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = userSessionManager.userModel
-        searchTags = ArrayList()
-        initializeView()
-        loadDataAsync()
-        updateCheckBoxState(false)
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
+            searchTags = ArrayList()
+            initializeView()
+            loadDataAsync()
+            updateCheckBoxState(false)
+        }
         setupButtonVisibility()
         setupEventListeners()
         clearTags()

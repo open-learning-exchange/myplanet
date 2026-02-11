@@ -37,15 +37,14 @@ class ActivitiesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val userModel = userSessionManager.userModel
         val daynightTextColor = ResourcesCompat.getColor(resources, R.color.daynight_textColor, null)
 
         val endMillis = Calendar.getInstance().timeInMillis
         val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
-        val userId = userModel?.id ?: return
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userModel = userSessionManager.getUserModel()
+            val userId = userModel?.id ?: return@launch
             val monthlyCounts = userRepository.getMonthlyLoginCounts(userId, startMillis, endMillis)
             renderChart(monthlyCounts, daynightTextColor)
         }
