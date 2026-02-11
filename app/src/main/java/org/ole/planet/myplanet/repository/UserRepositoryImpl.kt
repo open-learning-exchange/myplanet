@@ -281,6 +281,10 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
+    override suspend fun createMember(user: JsonObject): Pair<Boolean, String> {
+        return becomeMember(user)
+    }
+
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val userName = obj["name"]?.asString ?: "unknown"
 
@@ -333,15 +337,6 @@ class UserRepositoryImpl @Inject constructor(
             val iv = AndroidDecrypter.generateIv()
             saveUser(obj, settings, keyString, iv)
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
-        }
-    }
-
-    override suspend fun createMember(userJson: JsonObject): Result<String> {
-        val (isSuccess, message) = becomeMember(userJson)
-        return if (isSuccess) {
-            Result.success(message)
-        } else {
-            Result.failure(Exception(message))
         }
     }
 
