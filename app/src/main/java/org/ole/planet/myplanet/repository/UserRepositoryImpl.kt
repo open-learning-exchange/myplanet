@@ -143,6 +143,19 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun ensureUserSecurityKeys(userId: String): RealmUser? {
+        return withRealm { realm ->
+            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            if (user != null && (user.key == null || user.iv == null)) {
+                realm.executeTransaction {
+                    if (user.key == null) user.key = AndroidDecrypter.generateKey()
+                    if (user.iv == null) user.iv = AndroidDecrypter.generateIv()
+                }
+            }
+            if (user != null) realm.copyFromRealm(user) else null
+        }
+    }
+
     override suspend fun updateSecurityData(
         name: String,
         userId: String?,
