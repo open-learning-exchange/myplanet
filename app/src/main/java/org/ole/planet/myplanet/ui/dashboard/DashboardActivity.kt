@@ -141,17 +141,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
-        checkUser()
         initViews()
-        updateAppTitle()
         notificationManager = NotificationUtils.getInstance(this)
-        if (handleGuestAccess()) return
-
-        handleInitialFragment()
-        addBackPressCallback()
-        collectUiState()
 
         lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            checkUser()
+            updateAppTitle()
+            if (handleGuestAccess()) return@launch
+
+            handleInitialFragment()
+            addBackPressCallback()
+            collectUiState()
             initializeDashboard()
         }
 
@@ -261,11 +262,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateAppTitle() {
         try {
-            val userProfileModel = profileDbHandler.userModel
+            val userProfileModel = user
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name.isNullOrBlank()) {
-                    name = profileDbHandler.userModel?.name
+                    name = userProfileModel.name
                 }
                 val communityName = settings.getString("communityName", "")
                 binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
@@ -288,7 +289,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return true
         }
         navigationView.setOnItemSelectedListener(this)
-        val isTopBarVisible = userSessionManager.userModel?.isShowTopbar == true
+        val isTopBarVisible = user?.isShowTopbar == true
         navigationView.visibility = if (isTopBarVisible) {
             View.VISIBLE
         } else {
@@ -696,7 +697,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkUser() {
-        user = userSessionManager.userModel
         if (user == null) {
             toast(this, getString(R.string.session_expired))
             logout()

@@ -57,13 +57,13 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentExamTakingBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        user = userSessionManager.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
             initExam()
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
