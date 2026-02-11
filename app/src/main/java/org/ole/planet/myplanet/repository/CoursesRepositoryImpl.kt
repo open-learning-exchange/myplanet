@@ -30,6 +30,10 @@ class CoursesRepositoryImpl @Inject constructor(
     private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {}
+    }
+
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
         if (userId == null) return myCourses
@@ -416,5 +420,22 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
+    }
+
+    override suspend fun getAllCourses(userId: String?): List<RealmMyCourse> {
+        val allCourses = queryList(RealmMyCourse::class.java) {
+            isNotEmpty("courseTitle")
+        }
+        allCourses.forEach { course ->
+            course.isMyCourse = course.userId?.contains(userId) == true
+        }
+        return allCourses
+    }
+
+    override suspend fun getCoursesByIds(ids: List<String>): List<RealmMyCourse> {
+        if (ids.isEmpty()) return emptyList()
+        return queryList(RealmMyCourse::class.java) {
+            `in`("id", ids.toTypedArray())
+        }
     }
 }
