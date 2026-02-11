@@ -66,11 +66,7 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
-        user = userSessionManager.getUserModelCopy()
         setupUI(binding.voicesFragmentParentLayout, requireActivity())
-        if (user?.id?.startsWith("guest") == true) {
-            binding.btnNewVoice.visibility = View.GONE
-        }
         etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
@@ -101,6 +97,11 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            if (user?.id?.startsWith("guest") == true) {
+                binding.btnNewVoice.visibility = View.GONE
+            }
+
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {

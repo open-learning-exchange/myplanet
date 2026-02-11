@@ -10,6 +10,7 @@ interface ConfigurationsRepository {
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean
     suspend fun checkCheckSum(path: String): Boolean
+    suspend fun clearAllData()
 
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
