@@ -340,15 +340,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createMember(userJson: JsonObject): Result<String> {
-        val (isSuccess, message) = becomeMember(userJson)
-        return if (isSuccess) {
-            Result.success(message)
-        } else {
-            Result.failure(Exception(message))
-        }
-    }
-
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
