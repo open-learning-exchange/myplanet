@@ -115,13 +115,13 @@ class TransactionSyncManager @Inject constructor(
         userSessionManager: UserSessionManager
     ) {
         listener.onSyncStarted()
-        val model = userSessionManager.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        val id = model?.id
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val model = userSessionManager.getUserModel()
+            val id = model?.id
             try {
                 val userModel = databaseService.withRealm { realm ->
                     realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }

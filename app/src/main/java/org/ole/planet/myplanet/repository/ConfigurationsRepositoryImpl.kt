@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -33,7 +34,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
-    @param:AppPreferences private val preferences: SharedPreferences
+    @param:AppPreferences private val preferences: SharedPreferences,
+    private val databaseService: DatabaseService
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -192,6 +194,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
             false
         }
+    }
+
+    override suspend fun clearAllData() {
+        databaseService.executeTransactionAsync { it.deleteAll() }
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {

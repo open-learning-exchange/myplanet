@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -143,18 +142,32 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        DataService(this).becomeMember(obj, object : DataService.CreateUserCallback {
-            override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
-            }
-        }, object : OnSecurityDataListener {
-            override fun onSecurityDataUpdated() {
-                runOnUiThread {
+        lifecycleScope.launch {
+            val result = userRepository.createMember(obj)
+            withContext(Dispatchers.Main) {
+                result.onSuccess { message ->
+                    Utilities.toast(this@BecomeMemberActivity, message)
+                    if (message == getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        customProgressDialog.dismiss()
+                        autoLoginNewMember(info.username, info.password)
+                    } else {
+                        startUpload("becomeMember", info.username, object : OnSecurityDataListener {
+                            override fun onSecurityDataUpdated() {
+                                runOnUiThread {
+                                    customProgressDialog.dismiss()
+                                    autoLoginNewMember(info.username, info.password)
+                                }
+                            }
+                        })
+                    }
+                }.onFailure { exception ->
+                    val message = exception.message ?: ""
+                    Utilities.toast(this@BecomeMemberActivity, message)
                     customProgressDialog.dismiss()
                     autoLoginNewMember(info.username, info.password)
                 }
             }
-        })
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
