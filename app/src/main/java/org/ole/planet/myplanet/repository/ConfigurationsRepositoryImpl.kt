@@ -68,7 +68,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         is java.net.UnknownHostException -> "Server not reachable"
                         is java.net.SocketTimeoutException -> "Connection timeout"
                         is java.net.ConnectException -> "Unable to connect to server"
-                        is java.io.IOException -> "Network connection error"
+                        is IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
                     withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
@@ -171,7 +171,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
 
             if (!primaryReachable && alternativeReachable) {
-                mapping.alternativeUrl!!.let { alternativeUrl ->
+                mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = preferences.edit()
 
