@@ -16,7 +16,7 @@
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">settings</string>
-    <string name="hint_name">username</string>
+    <string name="hint_name">Username</string>
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="select_team">select team</string>
@@ -467,7 +467,7 @@
     <string name="add_label">Add Label</string>
     <string name="share_with_community">Share with community</string>
     <string name="add_res">Add Resource</string>
-    <string name="password">password</string>
+    <string name="password">Password</string>
     <string name="retype_password">Confirm Password</string>
     <string name="become_a_member">become a member</string>
     <string name="change_member">Change Member</string>
@@ -980,9 +980,9 @@
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
     <string name="dark_mode">dark mode</string>
-    <string name="dark_mode_off">off</string>
-    <string name="dark_mode_on">on</string>
-    <string name="dark_mode_follow_system">follow system</string>
+    <string name="dark_mode_off">Light Mode</string>
+    <string name="dark_mode_on">Dark Mode</string>
+    <string name="dark_mode_follow_system">Follow System</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
