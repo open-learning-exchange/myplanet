@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
-import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -82,7 +81,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.createManagedRealmInstance()
             model = profileDbHandler.userModel
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -114,7 +112,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
-        if (!isRealmInitialized() || isAddInProgress) return
+        if (isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
@@ -161,10 +159,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
-            }
-
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
@@ -203,17 +197,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 }
 
                 try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
                     removeFromShelf(`object`)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
-                    }
                 } catch (e: Exception) {
-                    if (mRealm.isInTransaction) {
-                        mRealm.cancelTransaction()
-                    }
                     throw e
                 }
             }
@@ -357,30 +342,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onDestroy() {
-        cleanupRealm()
         super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (e: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
     }
 
     override fun onDetach() {

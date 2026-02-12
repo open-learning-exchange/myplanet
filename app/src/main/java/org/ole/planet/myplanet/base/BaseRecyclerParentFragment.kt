@@ -81,7 +81,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     }
 
     private fun getProperty(obj: Any, propertyName: String): Comparable<*>? {
-        // Simple reflection or manual mapping to get property value for sorting
         try {
             val field = obj.javaClass.getDeclaredField(propertyName)
             field.isAccessible = true

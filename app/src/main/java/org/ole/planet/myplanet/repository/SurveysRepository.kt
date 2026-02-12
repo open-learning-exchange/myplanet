@@ -26,4 +26,5 @@ interface SurveysRepository {
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
     suspend fun getSurvey(id: String): RealmStepExam?
+    suspend fun getAllSurveys(): List<RealmStepExam>
 }

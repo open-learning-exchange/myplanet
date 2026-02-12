@@ -22,7 +22,6 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +33,7 @@ import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SubmissionUploadExecutor
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -56,6 +56,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     var shouldHideElements: Boolean? = null
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var submissionUploadExecutor: SubmissionUploadExecutor
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -326,7 +328,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val capturedSyncStartTime = syncStartTime
 
         // Use GlobalScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
-        GlobalScope.launch(Dispatchers.IO) {
+        submissionUploadExecutor.execute {
             Log.d("UserInformationFragment", "GlobalScope coroutine started, will not be cancelled by fragment lifecycle")
             Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
             val checkStartTime = System.currentTimeMillis()

@@ -306,7 +306,9 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     lifecycleScope.launch {
         val communities = communityRepository.getAllSorted()
         val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
-        binding.spnCloud.adapter = ArrayAdapter(this@setupManualConfigEnabled, R.layout.spinner_item_white, nonEmptyCommunities)
+        val adapter = ArrayAdapter(this@setupManualConfigEnabled, android.R.layout.simple_spinner_item, nonEmptyCommunities)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spnCloud.adapter = adapter
         binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 onChangeServerUrl()
