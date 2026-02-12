@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -40,6 +41,7 @@ class DataService constructor(
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
+    private val communityRepository: CommunityRepository,
 ) {
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
@@ -162,30 +164,6 @@ class DataService constructor(
         }
     }
 
-    fun becomeMember(obj: JsonObject, callback: CreateUserCallback, securityCallback: OnSecurityDataListener? = null) {
-        serviceScope.launch {
-            val result = userRepository.becomeMember(obj)
-            withContext(Dispatchers.Main) {
-                if (result.first) {
-                    if (context is ProcessUserDataActivity) {
-                        val userName = obj["name"].asString
-                        context.startUpload("becomeMember", userName, securityCallback)
-                    }
-
-                    if (result.second == context.getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        Utilities.toast(MainApplication.context, result.second)
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-
-                    callback.onSuccess(result.second)
-                } else {
-                    callback.onSuccess(result.second)
-                    securityCallback?.onSecurityDataUpdated()
-                }
-            }
-        }
-    }
-
     suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
             val response = withContext(Dispatchers.IO) {
@@ -198,26 +176,7 @@ class DataService constructor(
                 println("Realm transaction started")
 
                 val transactionResult = runCatching {
-                    withContext(Dispatchers.IO) {
-                        databaseService.withRealm { backgroundRealm ->
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
-                            }
-                        }
-                    }
+                    communityRepository.replaceAll(arr)
                 }
 
                 val endTime = System.currentTimeMillis()
@@ -325,10 +284,6 @@ class DataService constructor(
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
         fun onCheckingVersion()
         fun onError(msg: String, blockSync: Boolean)
-    }
-
-    interface CreateUserCallback {
-        fun onSuccess(message: String)
     }
 
     interface ConfigurationIdListener {

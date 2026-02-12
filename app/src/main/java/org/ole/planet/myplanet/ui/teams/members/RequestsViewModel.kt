@@ -36,7 +36,8 @@ class RequestsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMembers(teamId).size
-            val isLeader = teamsRepository.isTeamLeader(teamId, userSessionManager.userModel?.id)
+            val user = userSessionManager.getUserModel()
+            val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
             _uiState.value = RequestsUiState(members, isLeader, memberCount)
         }
     }

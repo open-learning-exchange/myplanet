@@ -76,17 +76,22 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = userRepository.getCurrentUser() ?: run {
-            listener?.onSuccess("Cannot upload activities: user model is null")
-            return
-        }
-
-        if (model.isManager()) {
-            listener?.onSuccess("Skipping activities upload for manager")
-            return
-        }
 
         MainApplication.applicationScope.launch {
+            val model = userRepository.getUserModelSuspending() ?: run {
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("Cannot upload activities: user model is null")
+                }
+                return@launch
+            }
+
+            if (model.isManager()) {
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("Skipping activities upload for manager")
+                }
+                return@launch
+            }
+
             try {
                 try {
                     apiInterface.postDoc(
@@ -293,7 +298,7 @@ class UploadManager @Inject constructor(
                 val serialized: JsonObject
             )
 
-            val user = userRepository.getCurrentUser()
+            val user = userRepository.getUserModelSuspending()
 
             val resourcesToUpload = databaseService.withRealm { realm ->
                 realm.refresh()
@@ -452,6 +457,8 @@ class UploadManager @Inject constructor(
 
         data class TeamData(
             val teamId: String?,
+            val teamName: String?,
+            val coursesCount: Int,
             val serialized: JsonObject
         )
 
@@ -461,8 +468,9 @@ class UploadManager @Inject constructor(
 
             teams.map { team ->
                 TeamData(
-                    teamId = team._id,
-                    serialized = RealmMyTeam.serialize(team)
+                    teamId = team._id, teamName = team.name,
+                    coursesCount = team.courses?.size ?: 0,
+                    serialized = RealmMyTeam.serialize(team, realm)
                 )
             }
         }
@@ -471,10 +479,12 @@ class UploadManager @Inject constructor(
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
-                        val `object` = apiInterface.postDoc(
+                        val response = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
                             "${UrlUtils.getUrl()}/teams", teamData.serialized
-                        ).body()
+                        )
+
+                        val `object` = response.body()
 
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
@@ -498,7 +508,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = userRepository.getCurrentUser() ?: run {
+        val model = userRepository.getUserModelSuspending() ?: run {
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }
@@ -552,7 +562,6 @@ class UploadManager @Inject constructor(
             }
 
             uploadTeamActivitiesRefactored()
-
             listener.onSuccess("User activities sync completed successfully")
         } catch (e: Exception) {
             e.printStackTrace()
@@ -587,10 +596,8 @@ class UploadManager @Inject constructor(
         logsData.forEach { logData ->
             try {
                 val `object` = apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/team_activities",
-                    logData.serialized
+                    UrlUtils.header, "application/json",
+                    "${UrlUtils.getUrl()}/team_activities", logData.serialized
                 ).body()
 
                 if (`object` != null) {
@@ -623,7 +630,7 @@ class UploadManager @Inject constructor(
         // the coordinator for the core upload/update flow where possible.
 
         val apiInterface = client.create(ApiInterface::class.java)
-        val user = userRepository.getCurrentUser()
+        val user = userRepository.getUserModelSuspending()
 
         data class NewsUploadData(
             val id: String?,
