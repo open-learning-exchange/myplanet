@@ -11,6 +11,7 @@ interface SurveysRepository {
     suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getIndividualSurveys(): List<RealmStepExam>
+    suspend fun getAllSurveys(): List<RealmStepExam>
     suspend fun getSurveyInfos(
         isTeam: Boolean,
         teamId: String?,
@@ -25,5 +26,4 @@ interface SurveysRepository {
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
     suspend fun getSurvey(id: String): RealmStepExam?
-    suspend fun getAllSurveys(): List<RealmStepExam>
 }

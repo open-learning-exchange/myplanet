@@ -10,6 +10,8 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.RealmList
+import io.realm.RealmModel
 import io.realm.RealmObject
 import java.text.Normalizer
 import java.util.Locale
@@ -209,9 +211,104 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
+    private suspend fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
+        for (tg in tags) {
+            val tagId = tg.id
+            val linkId = course?.courseId
+            if (tagId != null) {
+                val count = tagsRepository.getTagCount("courses", tagId, linkId)
+                if (count > 0 && !courses.contains(course)) {
+                    course?.let { courses.add(it) }
+                }
+            }
+        }
+    }
+
+    private fun <LI : RealmModel> search(list: List<LI>, s: String, c: Class<LI>): List<LI> {
+        if (s.isEmpty()) return list
+
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
+        val normalizedQuery = normalizeText(s)
+        val startsWithQuery = mutableListOf<LI>()
+        val containsQuery = mutableListOf<LI>()
+
+        for (item in list) {
+            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
+
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(item)
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                containsQuery.add(item)
+            }
+        }
+        return startsWithQuery + containsQuery
+    }
+
+    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
+        return when {
+            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
+            else -> (item as RealmMyCourse).courseTitle
+        }
+    }
+
+    suspend fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        @Suppress("UNCHECKED_CAST")
+        val allLibraries = getList(RealmMyLibrary::class.java) as List<RealmMyLibrary>
+        val list = search(allLibraries, s, RealmMyLibrary::class.java)
+
+        val libraries = if (tags.isNotEmpty()) {
+            val filteredLibraries = mutableListOf<RealmMyLibrary>()
+            for (library in list) {
+                filter(tags, library, filteredLibraries)
+            }
+            filteredLibraries
+        } else {
+            list
+        }
+
+        return libraries
+    }
+
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+    }
+
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+        @Suppress("UNCHECKED_CAST")
+        val allCourses = getList(RealmMyCourse::class.java) as List<RealmMyCourse>
+
+        if (tags.isEmpty() && s.isEmpty()) {
+            return applyCourseFilter(allCourses)
+        }
+
+        val list = search(allCourses, s, RealmMyCourse::class.java)
+
+        if (tags.isEmpty()) {
+            return applyCourseFilter(list)
+        }
+        val courses = RealmList<RealmMyCourse>()
+        list.forEach { course ->
+            checkAndAddToList(course, courses, tags)
+        }
+        return applyCourseFilter(courses)
+    }
+
+    private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
+        return items.filterIsInstance<RealmMyCourse>()
+    }
+
+    private suspend fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
+        for (tg in tags) {
+            val tagId = tg.id
+            if (tagId != null) {
+                val count = tagsRepository.getTagCount("resources", tagId, library?.id)
+                if (count > 0 && !libraries.contains(library)) {
+                    library?.let { libraries.add(it) }
+                }
+            }
+        }
     }
 
     fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
