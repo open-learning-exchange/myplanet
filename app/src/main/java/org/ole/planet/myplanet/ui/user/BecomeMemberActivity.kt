@@ -145,26 +145,26 @@ class BecomeMemberActivity : BaseActivity() {
         lifecycleScope.launch {
             val result = userRepository.createMember(obj)
             withContext(Dispatchers.Main) {
-                result.onSuccess { message ->
-                    Utilities.toast(this@BecomeMemberActivity, message)
-                    if (message == getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        customProgressDialog.dismiss()
-                        autoLoginNewMember(info.username, info.password)
-                    } else {
-                        startUpload("becomeMember", info.username, object : OnSecurityDataListener {
-                            override fun onSecurityDataUpdated() {
-                                runOnUiThread {
-                                    customProgressDialog.dismiss()
-                                    autoLoginNewMember(info.username, info.password)
-                                }
+                if (result.first) {
+                    val userName = obj["name"].asString
+                    val securityCallback = object : OnSecurityDataListener {
+                        override fun onSecurityDataUpdated() {
+                            runOnUiThread {
+                                customProgressDialog.dismiss()
+                                autoLoginNewMember(info.username, info.password)
                             }
-                        })
+                        }
                     }
-                }.onFailure { exception ->
-                    val message = exception.message ?: ""
-                    Utilities.toast(this@BecomeMemberActivity, message)
+                    startUpload("becomeMember", userName, securityCallback)
+
+                    if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
+                        Utilities.toast(MainApplication.context, result.second)
+                        securityCallback.onSecurityDataUpdated()
+                    }
+                    Utilities.toast(this@BecomeMemberActivity, result.second)
+                } else {
+                    Utilities.toast(this@BecomeMemberActivity, result.second)
                     customProgressDialog.dismiss()
-                    autoLoginNewMember(info.username, info.password)
                 }
             }
         }
