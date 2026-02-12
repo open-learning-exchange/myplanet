@@ -50,6 +50,12 @@ data class DashboardUiState(
     val fullName: String? = null,
 )
 
+sealed interface UserState {
+    object Loading : UserState
+    data class Success(val user: RealmUser) : UserState
+    object Error : UserState
+}
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val application: Application,
@@ -65,7 +71,21 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
+    private val _userState = MutableStateFlow<UserState>(UserState.Loading)
+    val userState: StateFlow<UserState> = _userState.asStateFlow()
+
     private var userContentJob: Job? = null
+
+    fun loadCurrentUser() {
+        viewModelScope.launch {
+            val user = userRepository.getUserModelSuspending()
+            if (user != null) {
+                _userState.value = UserState.Success(user)
+            } else {
+                _userState.value = UserState.Error
+            }
+        }
+    }
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }

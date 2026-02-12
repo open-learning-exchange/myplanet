@@ -133,6 +133,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var isUiInitialized = false
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -141,20 +142,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
+        dashboardViewModel.loadCurrentUser()
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
 
-        lifecycleScope.launch {
-            user = userSessionManager.getUserModel()
-            checkUser()
-            updateAppTitle()
-            if (handleGuestAccess()) return@launch
-
-            handleInitialFragment()
-            addBackPressCallback()
-            collectUiState()
-            initializeDashboard()
-        }
+        addBackPressCallback()
+        collectUiState()
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
@@ -163,46 +156,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     content.viewTreeObserver.removeOnPreDrawListener(this)
                     startPostponedEnterTransition()
                     return true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
             }
         )
@@ -226,13 +179,44 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun collectUiState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dashboardViewModel.uiState.collect { state ->
-                    updateNotificationBadge(state.unreadNotifications) {
-                        openNotificationsList(user?.id ?: "")
+                launch {
+                    dashboardViewModel.uiState.collect { state ->
+                        updateNotificationBadge(state.unreadNotifications) {
+                            openNotificationsList(user?.id ?: "")
+                        }
+                        if (state.newNotifications.isNotEmpty()) {
+                            state.newNotifications.forEach { notificationManager.showNotification(it) }
+                            dashboardViewModel.clearNewNotifications()
+                        }
                     }
-                    if (state.newNotifications.isNotEmpty()) {
-                        state.newNotifications.forEach { notificationManager.showNotification(it) }
-                        dashboardViewModel.clearNewNotifications()
+                }
+
+                launch {
+                    dashboardViewModel.userState.collect { state ->
+                        when (state) {
+                            is UserState.Loading -> {
+                            }
+                            is UserState.Success -> {
+                                user = state.user
+                                updateAppTitle()
+                                if (handleGuestAccess()) return@collect
+
+                                if (!isUiInitialized) {
+                                    handleInitialFragment()
+                                    initializeDashboard()
+                                    isUiInitialized = true
+                                }
+
+                                val offlineVisits = userSessionManager.getOfflineVisits(user)
+                                if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
+                                    showGuestDialog()
+                                }
+                            }
+                            is UserState.Error -> {
+                                toast(this@DashboardActivity, getString(R.string.session_expired))
+                                logout()
+                            }
+                        }
                     }
                 }
             }
@@ -696,20 +680,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navMenu.findItem(R.id.menu_goOnline).isVisible = isBetaWifiFeatureEnabled(this)
     }
 
-    private fun checkUser() {
-        if (user == null) {
-            toast(this, getString(R.string.session_expired))
-            logout()
-            return
-        }
-        lifecycleScope.launch {
-            val offlineVisits = userSessionManager.getOfflineVisits(user)
-            if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
-                showGuestDialog()
-            }
-        }
-    }
-
     private fun showGuestDialog() {
         val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         builder.setTitle(getString(R.string.become_a_member))
@@ -726,7 +696,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
+                intent.putExtra("username", user?.name)
                 intent.putExtra("guest", guest)
                 setResult(RESULT_OK, intent)
                 startActivity(intent)
