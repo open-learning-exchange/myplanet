@@ -34,13 +34,9 @@ class ConfigurationManager(
 ) {
 
     fun getMinApk(
-        listener: DataService.ConfigurationIdListener?,
-        url: String,
-        pin: String,
-        activity: SyncActivity,
-        callerActivity: String
+        listener: DataService.ConfigurationIdListener?, url: String, pin: String,
+        activity: SyncActivity, callerActivity: String
     ) {
-
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(url)
         val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
@@ -126,8 +122,7 @@ class ConfigurationManager(
 
                     fetchConfiguration(couchdbURL)?.let { (id, code) ->
                         return UrlCheckResult.Success(id, code, currentUrl)
-                    } ?: run {
-                    }
+                    } ?: run {}
                 }
             }
             UrlCheckResult.Failure(currentUrl)
