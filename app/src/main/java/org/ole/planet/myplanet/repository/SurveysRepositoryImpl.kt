@@ -34,12 +34,12 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
+        val userModel = userSessionManager.getUserModel()
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->
                 val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
                     .findFirst() ?: return@executeTransaction
 
-                val userModel = userSessionManager.userModel
                 val sParentCode = settings.getString("parentCode", "")
                 val planetCode = settings.getString("planetCode", "")
 
@@ -354,6 +354,12 @@ class SurveysRepositoryImpl @Inject constructor(
                 .findFirst()?.let {
                     realm.copyFromRealm(it)
                 }
+        }
+    }
+
+    override suspend fun getAllSurveys(): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
         }
     }
 }

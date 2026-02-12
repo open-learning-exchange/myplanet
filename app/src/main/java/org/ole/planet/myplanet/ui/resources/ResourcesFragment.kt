@@ -220,7 +220,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
 
-        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
+        val allResourceIds = allLibraryItems.mapNotNull { it.id }
+        tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.getUserModel(), emptyMap(), emptySet())
 
         val filteredList = filterLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
         adapterLibrary.setLibraryList(filteredList)
@@ -237,7 +240,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        userModel = profileDbHandler?.userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
@@ -246,7 +248,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         initArrays()
         hideButton()
 
-        setupGuestUserRestrictions()
+        lifecycleScope.launch {
+            userModel = profileDbHandler?.getUserModel()
+            setupGuestUserRestrictions()
+
+            if (userModel?.id != null) {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                        }
+                    }
+                }
+            }
+        }
 
         if (::adapterLibrary.isInitialized) {
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -259,18 +274,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-
-        if (userModel?.id != null) {
-            lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
-                        if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
-                        }
-                    }
-                }
-            }
-        }
         
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
