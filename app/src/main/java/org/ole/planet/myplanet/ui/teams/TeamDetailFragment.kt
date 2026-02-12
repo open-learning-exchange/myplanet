@@ -24,9 +24,12 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.dto.Team
+import org.ole.planet.myplanet.model.dto.toDto
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -137,7 +140,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val user = userSessionManager.getUserModel()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)?.toDto()
                 }
 
                 else -> {
@@ -415,7 +418,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
             val updatedTeam = when {
-                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)?.toDto()
                 fallbackTeamId.isNotEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
                 else -> null
             }

@@ -20,6 +20,8 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.dto.Team
+import org.ole.planet.myplanet.model.dto.toDto
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -59,7 +61,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
+    private fun updateButtonVisibility(currentTeam: Team) {
         isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         binding.btnAddPlan.text = if (isEnterprise) {
@@ -69,7 +71,7 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id ?: "", user?._id)
+            val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id, user?._id)
             binding.btnAddPlan.isVisible = isMyTeam
             binding.btnAddPlan.isEnabled = isMyTeam
 
@@ -90,7 +92,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: RealmMyTeam) {
+    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: Team) {
         val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupDialogFields(alertCreateTeamBinding, team)
 
@@ -109,7 +111,7 @@ class PlanFragment : BaseTeamFragment() {
         dialog.show()
     }
 
-    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: RealmMyTeam) {
+    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: Team) {
         binding.spnTeamType.visibility = if (isEnterprise) View.GONE else View.VISIBLE
         binding.etServices.visibility = if (isEnterprise) View.VISIBLE else View.GONE
         binding.etRules.visibility = if (isEnterprise) View.VISIBLE else View.GONE
@@ -138,7 +140,7 @@ class PlanFragment : BaseTeamFragment() {
         binding: AlertCreateTeamBinding,
         activity: FragmentActivity,
         context: Context,
-        team: RealmMyTeam,
+        team: Team,
         dialog: AlertDialog,
     ) {
         val name = binding.etName.text.toString().trim()
@@ -150,7 +152,7 @@ class PlanFragment : BaseTeamFragment() {
 
         val userId = user?.id ?: return
         val createdBy = userId
-        val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
+        val teamIdentifier = team._id.takeIf { it.isNotBlank() }
             ?: team.teamId?.takeIf { it.isNotBlank() }
         if (teamIdentifier == null) {
             Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
@@ -194,18 +196,20 @@ class PlanFragment : BaseTeamFragment() {
                 )
 
                 if (wasUpdated) {
-                    val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
-                        ?: (this@PlanFragment.team ?: team)
+                    val refreshedRealmTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
 
-                    refreshedTeam.apply {
-                        this.name = name
-                        this.services = servicesToSave
-                        this.rules = rulesToSave
-                        this.description = descriptionToSave
-                        this.teamType = teamType
-                        this.isPublic = isPublic
-                        this.createdBy = createdBy.takeIf { it.isNotBlank() } ?: this.createdBy
-                        this.updated = true
+                    val refreshedTeam = if (refreshedRealmTeam != null) {
+                        refreshedRealmTeam.toDto()
+                    } else {
+                        team.copy(
+                            name = name,
+                            services = servicesToSave,
+                            rules = rulesToSave,
+                            description = descriptionToSave,
+                            teamType = teamType,
+                            isPublic = isPublic,
+                            createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
+                        )
                     }
 
                     this@PlanFragment.team = refreshedTeam
@@ -222,7 +226,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateUIWithTeamDetails(updatedTeam: RealmMyTeam?) {
+    private fun updateUIWithTeamDetails(updatedTeam: Team?) {
         if (updatedTeam == null) return
         isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
 
