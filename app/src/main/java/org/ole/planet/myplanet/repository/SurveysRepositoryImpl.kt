@@ -363,9 +363,4 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllSurveys(): List<RealmStepExam> {
-        return queryList(RealmStepExam::class.java) {
-            equalTo("type", "surveys")
-        }
-    }
 }
