@@ -102,9 +102,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             it.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
                     deleteSelected(false)
-                    val adapter = getAdapter()
-                    recyclerView.adapter = adapter
-                    showNoData(tvMessage, adapter.itemCount, "")
+                    recyclerView.adapter = getAdapter()
                 }
             }
         }

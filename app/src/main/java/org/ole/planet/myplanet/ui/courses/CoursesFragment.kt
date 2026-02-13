@@ -191,21 +191,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     courseLib = "courses"
                 }
 
-                recyclerView.adapter = null
                 adapterCourses = CoursesAdapter(
                     requireActivity(),
                     map,
                     userModel,
                     tagsRepository
                 )
-                adapterCourses.submitList(sortedCourseList)
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
                 adapterCourses.setRatingChangeListener(this@CoursesFragment)
                 recyclerView.adapter = adapterCourses
-
-                checkList()
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                adapterCourses.submitList(sortedCourseList) {
+                    checkList()
+                    showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -230,6 +229,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectedItems?.clear()
                 clearAllSelections()
                 checkList()
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
             }
         }
         adapterCourses.setProgressMap(progressMap)
