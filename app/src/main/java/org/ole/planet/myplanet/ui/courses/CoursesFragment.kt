@@ -299,9 +299,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    clearAllSelections()
-                    loadDataAsync()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        deleteSelected(true)
+                        clearAllSelections()
+                        loadDataAsync()
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -315,9 +317,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    clearAllSelections()
-                    loadDataAsync()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        deleteSelected(true)
+                        clearAllSelections()
+                        loadDataAsync()
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
