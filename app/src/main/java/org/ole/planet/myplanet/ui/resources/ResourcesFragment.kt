@@ -317,9 +317,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
-                    val newFragment = ResourcesFragment()
-                    recreateFragment(newFragment)
+                    lifecycleScope.launch {
+                        deleteSelected(true)
+                        val newFragment = ResourcesFragment()
+                        recreateFragment(newFragment)
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
