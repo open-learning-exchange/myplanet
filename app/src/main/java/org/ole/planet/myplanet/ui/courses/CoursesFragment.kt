@@ -301,7 +301,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         deleteSelected(true)
-                        clearAllSelections()
                         loadDataAsync()
                     }
                 }
@@ -319,7 +318,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         deleteSelected(true)
-                        clearAllSelections()
                         loadDataAsync()
                     }
                 }
