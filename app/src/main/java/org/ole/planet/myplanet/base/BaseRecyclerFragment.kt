@@ -13,7 +13,9 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmObject
 import java.text.Normalizer
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -99,7 +101,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    deleteSelected(false)
+                    // Refresh the adapter after deletion
+                    withContext(Dispatchers.Main) {
+                        recyclerView.adapter = getAdapter()
+                        showNoData(tvMessage, (recyclerView.adapter as? RecyclerView.Adapter<*>)?.itemCount ?: 0, "")
+                    }
+                }
+            }
         }
     }
 
@@ -185,24 +196,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun deleteSelected(deleteProgress: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val itemsToDelete = selectedItems?.toList() ?: emptyList()
-            itemsToDelete.forEach { item ->
-                val `object` = item as RealmObject
-                if (deleteProgress && `object` is RealmMyCourse) {
-                    `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
-                }
-
-                try {
-                    removeFromShelf(`object`)
-                } catch (e: Exception) {
-                    throw e
-                }
+    suspend fun deleteSelected(deleteProgress: Boolean) {
+        val itemsToDelete = selectedItems?.toList() ?: emptyList()
+        itemsToDelete.forEach { item ->
+            val `object` = item as RealmObject
+            if (deleteProgress && `object` is RealmMyCourse) {
+                `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
             }
-            recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "")
+            removeFromShelf(`object`)
         }
+        // UI refresh is handled by the caller (loadDataAsync() or recreateFragment())
     }
 
     fun countSelected(): Int {
