@@ -13,7 +13,9 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmObject
 import java.text.Normalizer
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -196,15 +198,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (deleteProgress && `object` is RealmMyCourse) {
                 `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
             }
-
-            try {
-                removeFromShelf(`object`)
-            } catch (e: Exception) {
-                throw e
-            }
+            removeFromShelf(`object`)
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+        withContext(Dispatchers.Main) {
+            recyclerView.adapter = getAdapter()
+            showNoData(tvMessage, getAdapter().itemCount, "")
+        }
     }
 
     fun countSelected(): Int {
