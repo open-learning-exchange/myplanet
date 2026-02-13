@@ -104,6 +104,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             it.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
                     deleteSelected(false)
+                    // Refresh the adapter after deletion
+                    withContext(Dispatchers.Main) {
+                        recyclerView.adapter = getAdapter()
+                        showNoData(tvMessage, (recyclerView.adapter as? RecyclerView.Adapter<*>)?.itemCount ?: 0, "")
+                    }
                 }
             }
         }
@@ -200,10 +205,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
             removeFromShelf(`object`)
         }
-        withContext(Dispatchers.Main) {
-            recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "")
-        }
+        // UI refresh is handled by the caller (loadDataAsync() or recreateFragment())
     }
 
     fun countSelected(): Int {
