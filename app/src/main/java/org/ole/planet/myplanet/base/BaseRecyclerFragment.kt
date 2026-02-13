@@ -99,7 +99,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    deleteSelected(false)
+                    val adapter = getAdapter()
+                    recyclerView.adapter = adapter
+                    showNoData(tvMessage, adapter.itemCount, "")
+                }
+            }
         }
     }
 
@@ -185,23 +192,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun deleteSelected(deleteProgress: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val itemsToDelete = selectedItems?.toList() ?: emptyList()
-            itemsToDelete.forEach { item ->
-                val `object` = item as RealmObject
-                if (deleteProgress && `object` is RealmMyCourse) {
-                    `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
-                }
-
-                try {
-                    removeFromShelf(`object`)
-                } catch (e: Exception) {
-                    throw e
-                }
+    suspend fun deleteSelected(deleteProgress: Boolean) {
+        val itemsToDelete = selectedItems?.toList() ?: emptyList()
+        itemsToDelete.forEach { item ->
+            val `object` = item as RealmObject
+            if (deleteProgress && `object` is RealmMyCourse) {
+                `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
             }
-            recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "")
+            removeFromShelf(`object`)
         }
     }
 
