@@ -45,7 +45,6 @@ interface CoursesRepository {
     suspend fun isCourseCertified(courseId: String): Boolean
     suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
-    suspend fun deleteCourseProgress(courseId: String)
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
 }
