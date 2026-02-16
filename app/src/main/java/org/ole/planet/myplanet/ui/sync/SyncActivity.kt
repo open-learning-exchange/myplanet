@@ -314,7 +314,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            if (configurationsRepository.checkServerAvailability(url)) {
+            val isAvailable = configurationsRepository.checkServerAvailability(url)
+            if (isAvailable) {
                 startSync(type)
                 return true
             }
