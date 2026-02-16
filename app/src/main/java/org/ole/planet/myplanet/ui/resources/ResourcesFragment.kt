@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -84,6 +85,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var ratingsRepository: RatingsRepository
+
+    @Inject
+    lateinit var tagsRepository: TagsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper

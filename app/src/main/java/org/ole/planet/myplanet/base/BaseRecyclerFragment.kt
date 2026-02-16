@@ -19,9 +19,12 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
 import org.ole.planet.myplanet.model.RealmTag
@@ -212,8 +215,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 throw e
             }
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
+        selectedItems?.clear()
     }
 
     fun countSelected(): Int {

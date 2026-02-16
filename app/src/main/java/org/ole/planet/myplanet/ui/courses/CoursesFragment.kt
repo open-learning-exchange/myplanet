@@ -24,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -183,11 +185,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         lifecycleScope.launch {
             try {
+                // Run independent queries in parallel
+                val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
+                val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+
                 if (!mRealm.isInTransaction) {
                     mRealm.refresh()
                 }
-                val map = ratingsRepository.getCourseRatings(model?.id)
-                val progressMap = progressRepository.getCourseProgress(model?.id)
+
                 val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
                 val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
                     copiedList.forEachIndexed { index, course ->
@@ -201,6 +206,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
+
+                // Wait for parallel queries to complete
+                val map = ratingsDeferred.await()
+                val progressMap = progressDeferred.await()
 
                 recyclerView.adapter = null
                 adapterCourses = CoursesAdapter(
