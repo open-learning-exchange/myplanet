@@ -36,7 +36,7 @@ pbkdf2 = "1.1.4"
 osmdroidAndroid = "6.1.20"
 kotlinxSerializationJson = "1.10.0"
 kotlinxCoroutinesAndroid = "1.10.2"
-androidGifDrawable = "1.2.30"
+androidGifDrawable = "1.2.31"
 webkit = "1.15.0"
 
 [libraries]

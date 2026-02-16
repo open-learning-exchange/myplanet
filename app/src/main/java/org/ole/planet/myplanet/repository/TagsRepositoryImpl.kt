@@ -103,12 +103,4 @@ class TagsRepositoryImpl @Inject constructor(
         val parentsById = parents.associateBy { it.id }
         return tagIds.mapNotNull { parentsById[it] }
     }
-
-    override suspend fun getTagCount(dbType: String, tagId: String, linkId: String?): Long {
-        return count(RealmTag::class.java) {
-            equalTo("db", dbType)
-            equalTo("tagId", tagId)
-            equalTo("linkId", linkId)
-        }
-    }
 }

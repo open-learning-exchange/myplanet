@@ -7,9 +7,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
 import java.io.File
-import java.text.Normalizer
 import java.util.Calendar
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -414,66 +412,5 @@ class ResourcesRepositoryImpl @Inject constructor(
             "mediums" to libraries.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet(),
             "levels" to libraries.flatMap { it.level ?: emptyList() }.toSet()
         )
-    }
-
-    override suspend fun filterLibraryByTag(
-        text: String,
-        tagIds: List<String?>,
-        userId: String?,
-        isMyCourseLib: Boolean
-    ): List<RealmMyLibrary> = withRealm { realm ->
-        val query = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false)
-        val allData = query.findAll()
-
-        val filteredBySearch = if (text.isNotEmpty()) {
-            val normalizedSearchTerm = normalizeText(text)
-            val queryParts = text.split(" ").filterNot { it.isEmpty() }
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
-
-            val startsWithQuery = mutableListOf<RealmMyLibrary>()
-            val containsQuery = mutableListOf<RealmMyLibrary>()
-
-            for (item in allData) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
-                if (title.startsWith(normalizedSearchTerm, ignoreCase = true)) {
-                    startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                    containsQuery.add(item)
-                }
-            }
-            startsWithQuery + containsQuery
-        } else {
-            allData.toList()
-        }
-
-        var list = if (isMyCourseLib) {
-            RealmMyLibrary.getMyLibraryByUserId(userId, filteredBySearch)
-        } else {
-            RealmMyLibrary.getOurLibrary(userId, filteredBySearch)
-        }
-
-        if (tagIds.isNotEmpty()) {
-            val filteredLibraries = mutableListOf<RealmMyLibrary>()
-            for (library in list) {
-                for (tagId in tagIds) {
-                    val count = realm.where(RealmTag::class.java)
-                        .equalTo("db", "resources")
-                        .equalTo("tagId", tagId)
-                        .equalTo("linkId", library.id)
-                        .count()
-                    if (count > 0 && !filteredLibraries.contains(library)) {
-                        filteredLibraries.add(library)
-                    }
-                }
-            }
-            list = filteredLibraries
-        }
-
-        realm.copyFromRealm(list)
-    }
-
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 }
