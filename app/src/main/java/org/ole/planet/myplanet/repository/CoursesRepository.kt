@@ -48,6 +48,4 @@ interface CoursesRepository {
     suspend fun deleteCourseProgress(courseId: String)
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
-    suspend fun getAllCourses(userId: String?): List<RealmMyCourse>
-    suspend fun getCoursesByIds(ids: List<String>): List<RealmMyCourse>
 }
