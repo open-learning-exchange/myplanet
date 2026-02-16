@@ -102,6 +102,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             it.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
                     deleteSelected(false)
+                    recyclerView.adapter = getAdapter()
+                    showNoData(tvMessage, recyclerView.adapter?.itemCount, "")
                 }
             }
         }
@@ -199,8 +201,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             removeFromShelf(`object`)
         }
-        recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun countSelected(): Int {

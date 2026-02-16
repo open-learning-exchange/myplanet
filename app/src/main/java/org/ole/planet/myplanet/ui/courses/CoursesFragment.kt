@@ -302,7 +302,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     lifecycleScope.launch {
                         deleteSelected(true)
                         clearAllSelections()
-                        loadDataAsync()
+                        filterCoursesAndUpdateUi()
                     }
                 }
                 .setNegativeButton(R.string.no, null).show()
@@ -320,7 +320,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     lifecycleScope.launch {
                         deleteSelected(true)
                         clearAllSelections()
-                        loadDataAsync()
+                        filterCoursesAndUpdateUi()
                     }
                 }
                 .setNegativeButton(R.string.no, null).show()
