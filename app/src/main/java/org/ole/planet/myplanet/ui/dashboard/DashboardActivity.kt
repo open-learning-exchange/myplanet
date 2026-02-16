@@ -141,18 +141,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
+        user = userSessionManager.userModel
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
+        checkUser()
+        updateAppTitle()
+        if (handleGuestAccess()) return
+
+        handleInitialFragment()
+        addBackPressCallback()
+        collectUiState()
 
         lifecycleScope.launch {
-            user = userSessionManager.getUserModel()
-            checkUser()
-            updateAppTitle()
-            if (handleGuestAccess()) return@launch
-
-            handleInitialFragment()
-            addBackPressCallback()
-            collectUiState()
             initializeDashboard()
         }
 
@@ -163,46 +163,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     content.viewTreeObserver.removeOnPreDrawListener(this)
                     startPostponedEnterTransition()
                     return true
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 }
             }
         )
@@ -1087,8 +1047,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun showNotificationDisabledReminder() {
         if (!::binding.isInitialized) return
 
-        val snackbar = Snackbar.make(
-            binding.root,
+        val snackbar = Snackbar.make(binding.root,
             "Notifications are disabled. You might miss important updates.",
             Snackbar.LENGTH_LONG
         )
