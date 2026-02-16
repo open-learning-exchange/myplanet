@@ -384,26 +384,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return intermediate.copy(userHasCourse = userHasCourse)
     }
 
-    override suspend fun deleteCourseProgress(courseId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", courseId)
-                .findAll()
-                .deleteAllFromRealm()
-            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java)
-                .equalTo("courseId", courseId)
-                .findAll()
-            for (exam in examList) {
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
-            }
-        }
-    }
-
     override suspend fun getMyCourseIds(userId: String): JsonArray {
         return withRealm { realm ->
             val myCourses = realm.where(RealmMyCourse::class.java)
@@ -420,22 +400,5 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
-    }
-
-    override suspend fun getAllCourses(userId: String?): List<RealmMyCourse> {
-        val allCourses = queryList(RealmMyCourse::class.java) {
-            isNotEmpty("courseTitle")
-        }
-        allCourses.forEach { course ->
-            course.isMyCourse = course.userId?.contains(userId) == true
-        }
-        return allCourses
-    }
-
-    override suspend fun getCoursesByIds(ids: List<String>): List<RealmMyCourse> {
-        if (ids.isEmpty()) return emptyList()
-        return queryList(RealmMyCourse::class.java) {
-            `in`("id", ids.toTypedArray())
-        }
     }
 }
