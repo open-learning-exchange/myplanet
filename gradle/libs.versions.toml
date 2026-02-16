@@ -1,6 +1,6 @@
 [versions]
 kotlin = "2.3.10"
-androidGradlePlugin = "9.0.0"
+androidGradlePlugin = "9.0.1"
 realmGradlePlugin = "10.19.0"
 hilt = "2.59.1"
 ksp = "2.3.5"
