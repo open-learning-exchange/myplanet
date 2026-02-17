@@ -79,6 +79,20 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getMyLibraryItems(userId: String, isPrivate: Boolean): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+            equalTo("isPrivate", isPrivate)
+        }
+    }
+
+    override suspend fun getOurLibraryItems(userId: String): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            not().equalTo("userId", userId)
+            equalTo("isPrivate", false)
+        }
+    }
+
     override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
         if (stepId == null) return emptyList()
 

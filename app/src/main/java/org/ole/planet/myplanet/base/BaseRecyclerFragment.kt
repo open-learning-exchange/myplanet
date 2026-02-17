@@ -277,7 +277,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+    suspend fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
@@ -304,7 +304,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }

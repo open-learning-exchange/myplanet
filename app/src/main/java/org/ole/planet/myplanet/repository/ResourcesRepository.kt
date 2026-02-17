@@ -14,6 +14,8 @@ interface ResourcesRepository {
     suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary>
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary>
     suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
+    suspend fun getMyLibraryItems(userId: String, isPrivate: Boolean = false): List<RealmMyLibrary>
+    suspend fun getOurLibraryItems(userId: String): List<RealmMyLibrary>
     suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
     suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
