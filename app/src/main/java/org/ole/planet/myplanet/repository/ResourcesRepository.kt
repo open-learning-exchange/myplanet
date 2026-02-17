@@ -15,6 +15,7 @@ interface ResourcesRepository {
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary>
     suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
     suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
+    suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary>
     suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
@@ -39,6 +40,7 @@ interface ResourcesRepository {
         mediums: Set<String>
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
+    suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String)
     suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String)
