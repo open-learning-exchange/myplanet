@@ -32,12 +32,15 @@ import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     @Inject
     lateinit var progressRepository: ProgressRepository
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
@@ -201,7 +204,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             if (notDownloaded.isNotEmpty()) {
                 val urls = ArrayList(notDownloaded.map { UrlUtils.getUrl(it) })
                 if (urls.isNotEmpty()) {
-                    backgroundDownload(urls, requireContext())
+                    resourceDownloadCoordinator.startBackgroundDownload(urls)
                 }
             }
         }
