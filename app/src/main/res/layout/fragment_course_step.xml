@@ -77,7 +77,6 @@
                 android:textColor="@color/daynight_textColor"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/tv_title" />
-
             <TextView
                 android:id="@+id/tv_resources_header"
                 android:layout_width="wrap_content"
@@ -90,7 +89,6 @@
                 android:visibility="gone"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/description" />
-
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/resource_download_progress"
                 android:layout_width="0dp"
@@ -101,7 +99,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/tv_resources_header" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_inline_resources"
                 android:layout_width="0dp"
@@ -111,7 +108,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/resource_download_progress" />
-
             <Button
                 android:id="@+id/btnTakeSurvey"
                 android:layout_width="wrap_content"
