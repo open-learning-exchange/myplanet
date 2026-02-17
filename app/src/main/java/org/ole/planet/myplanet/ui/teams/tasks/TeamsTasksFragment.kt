@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.dto.Member
-import org.ole.planet.myplanet.model.dto.toMemberDto
+import org.ole.planet.myplanet.model.Member
+import org.ole.planet.myplanet.model.toMemberDto
 import org.ole.planet.myplanet.ui.user.MemberArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate

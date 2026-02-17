@@ -31,11 +31,11 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.model.dto.Member
-import org.ole.planet.myplanet.model.dto.Team
-import org.ole.planet.myplanet.model.dto.toDto
-import org.ole.planet.myplanet.model.dto.toMemberDto
-import org.ole.planet.myplanet.model.dto.toRealmUser
+import org.ole.planet.myplanet.model.Member
+import org.ole.planet.myplanet.model.Team
+import org.ole.planet.myplanet.model.toDto
+import org.ole.planet.myplanet.model.toMemberDto
+import org.ole.planet.myplanet.model.toRealmUser
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper

@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.model.dto.Member
+import org.ole.planet.myplanet.model.Member
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment

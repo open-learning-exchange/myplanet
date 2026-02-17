@@ -11,7 +11,7 @@ import android.widget.TextView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.dto.Member
+import org.ole.planet.myplanet.model.Member
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class MemberArrayAdapter(activity: Activity, val view: Int, var list: List<Member>) : ArrayAdapter<Member>(activity, view, list) {
