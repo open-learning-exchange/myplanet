@@ -22,7 +22,6 @@
             android:layout_height="180dp"
             android:scaleType="centerCrop"
             android:visibility="gone" />
-
         <FrameLayout
             android:id="@+id/video_thumbnail_container"
             android:layout_width="match_parent"
@@ -35,7 +34,6 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 android:background="@color/md_black_1000" />
-
             <ImageView
                 android:layout_width="48dp"
                 android:layout_height="48dp"
@@ -55,7 +53,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="10sp"
             android:visibility="gone" />
-
         <LinearLayout
             android:id="@+id/audio_preview_container"
             android:layout_width="match_parent"
@@ -74,7 +71,6 @@
                 android:padding="@dimen/_4dp"
                 android:src="@drawable/ic_play"
                 app:tint="@color/daynight_textColor" />
-
             <View
                 android:id="@+id/audio_waveform"
                 android:layout_width="0dp"
@@ -82,7 +78,6 @@
                 android:layout_marginHorizontal="@dimen/_10dp"
                 android:layout_weight="1"
                 android:background="@color/disable_color" />
-
             <TextView
                 android:id="@+id/tv_audio_duration"
                 android:layout_width="wrap_content"
@@ -103,7 +98,6 @@
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:src="@drawable/ic_folder" />
-
             <TextView
                 android:id="@+id/tv_resource_title"
                 android:layout_width="0dp"
@@ -114,13 +108,11 @@
                 android:maxLines="2"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_small" />
-
             <ProgressBar
                 android:id="@+id/pb_download"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:visibility="gone" />
-
             <ImageView
                 android:id="@+id/iv_status"
                 android:layout_width="24dp"
