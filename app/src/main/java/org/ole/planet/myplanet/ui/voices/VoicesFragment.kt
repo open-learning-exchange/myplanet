@@ -140,10 +140,13 @@ class VoicesFragment : BaseVoicesFragment() {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     imageList.clear()
                     llImage?.removeAllViews()
-                    adapterNews?.addItem(n)
-                    labelFilteredList = applyLabelFilter(filteredNewsList)
-                    searchFilteredList = applySearchFilter(labelFilteredList)
-                    setData(searchFilteredList)
+                    if (n != null) {
+                        n.sortDate = n.calculateSortDate()
+                        filteredNewsList = listOf(n) + filteredNewsList
+                        labelFilteredList = applyLabelFilter(filteredNewsList)
+                        searchFilteredList = applySearchFilter(labelFilteredList)
+                        setData(searchFilteredList)
+                    }
                     scrollToTop()
                     binding.llAddNews.visibility = View.GONE
                     binding.btnNewVoice.text = getString(R.string.new_voice)
