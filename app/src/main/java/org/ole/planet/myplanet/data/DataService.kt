@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.Constants
@@ -39,8 +38,6 @@ class DataService constructor(
 ) {
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
-    private val configurationManager =
-        ConfigurationManager(context, preferences, retrofitInterface)
 
     @Deprecated("Use ConfigurationsRepository.checkHealth instead")
     fun healthAccess(listener: OnSuccessListener) {
@@ -197,10 +194,6 @@ class DataService constructor(
         }
     }
 
-    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
-        configurationManager.getMinApk(listener, url, pin, activity, callerActivity)
-    }
-
     private fun shouldPromptForSettings(settings: SharedPreferences): Boolean {
         if (!settings.getBoolean("isAlternativeUrl", false)) {
             if (settings.getString("couchdbURL", "").isNullOrEmpty()) {
@@ -280,7 +273,4 @@ class DataService constructor(
         fun onError(msg: String, blockSync: Boolean)
     }
 
-    interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String)
-    }
 }
