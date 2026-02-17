@@ -72,7 +72,7 @@ object DialogUtils {
                     context.startActivity(intent)
                 }
             } else {
-                Utilities.toast(context, context.getString(R.string.unable_to_access_feature))
+                Utilities.toast(context, context.getString(R.string.feature_not_available))
             }
         }
         cancel.setOnClickListener {
