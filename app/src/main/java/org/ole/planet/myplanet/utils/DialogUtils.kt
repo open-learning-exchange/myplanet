@@ -9,6 +9,8 @@ import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -54,9 +56,22 @@ object DialogUtils {
         becomeMember.setOnClickListener {
             val guest = true
             val intent = Intent(context, BecomeMemberActivity::class.java)
-            intent.putExtra("username", profileDbHandler.userModel?.name)
-            intent.putExtra("guest", guest)
-            context.startActivity(intent)
+            var ctx = context
+            while (ctx is android.content.ContextWrapper) {
+                if (ctx is LifecycleOwner) {
+                    break
+                }
+                ctx = ctx.baseContext
+            }
+
+            if (ctx is LifecycleOwner) {
+                ctx.lifecycleScope.launch {
+                    val userModel = profileDbHandler.getUserModel()
+                    intent.putExtra("username", userModel?.name)
+                    intent.putExtra("guest", guest)
+                    context.startActivity(intent)
+                }
+            }
         }
         cancel.setOnClickListener {
             dialog.dismiss()

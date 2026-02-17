@@ -41,13 +41,13 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        user = profileDbHandler?.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
             courses = id?.takeIf { it.isNotBlank() }?.let { coursesRepository.getCourseByCourseId(it) }
             initRatingView("course", id ?: courses?.courseId, courses?.courseTitle, this@CourseDetailFragment)
             courses?.let { bindCourseData(it) }

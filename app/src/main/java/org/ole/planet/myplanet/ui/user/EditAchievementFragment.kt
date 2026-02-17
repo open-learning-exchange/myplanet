@@ -62,7 +62,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        user = profileDbHandler.userModel
         achievementArray = JsonArray()
         initializeData()
         return fragmentEditAchievementBinding.root
@@ -300,8 +299,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun initializeData() {
-        val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            val achievementId = user?.id + "@" + user?.planetCode
             achievement = databaseService.withRealmAsync { realm ->
                 var achievement = realm.where(RealmAchievement::class.java)
                     .equalTo("_id", achievementId)

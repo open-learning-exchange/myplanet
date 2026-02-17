@@ -78,7 +78,6 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
-        user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -215,7 +214,6 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
-        setupUserData()
         loadInitialAchievementData()
     }
 
@@ -227,6 +225,8 @@ class AchievementFragment : BaseContainerFragment() {
 
     private fun loadInitialAchievementData() {
         viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()
         }

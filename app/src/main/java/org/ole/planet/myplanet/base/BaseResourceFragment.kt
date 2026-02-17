@@ -125,7 +125,7 @@ abstract class BaseResourceFragment : Fragment() {
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
                     val list = resourcesRepository.getDownloadSuggestionList(
-                        profileDbHandler.userModel?.id
+                        profileDbHandler.getUserModel()?.id
                     )
                     showDownloadDialog(list)
                 } finally {
@@ -238,8 +238,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = profileDbHandler.userModel
         viewLifecycleOwner.lifecycleScope.launch {
+            model = profileDbHandler.getUserModel()
             val list = submissionsRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
             val exams = submissionsRepository.getExamMap(list)
@@ -373,12 +373,11 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun removeFromShelf(`object`: RealmObject) {
-        val userId = profileDbHandler.userModel?.id ?: model?.id
-        if (userId.isNullOrEmpty()) {
-            return
-        }
-
         lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: model?.id
+            if (userId.isNullOrEmpty()) {
+                return@launch
+            }
             if (`object` is RealmMyLibrary) {
                 val resourceId = `object`.resourceId
                 if (resourceId != null) {
@@ -406,20 +405,20 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        val userId = profileDbHandler.userModel?.id ?: return
-        val resourceIds = selectedItems.mapNotNull { index ->
-            libraryItems.getOrNull(index)?.resourceId
-        }
         lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+            val resourceIds = selectedItems.mapNotNull { index ->
+                libraryItems.getOrNull(index)?.resourceId
+            }
             resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
         }
     }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        val userId = profileDbHandler.userModel?.id ?: return
-        val validLibraryItems = libraryItems.filterNotNull()
         lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+            val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
         }

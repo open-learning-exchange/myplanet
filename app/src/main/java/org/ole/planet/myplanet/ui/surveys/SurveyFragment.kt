@@ -57,16 +57,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = SurveysAdapter(
-            requireActivity(),
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            surveyInfoMap,
-            bindingDataMap
-        )
         prefManager = SharedPrefManager(requireContext())
         
         viewModel.startExamSync()
@@ -80,23 +70,35 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this)
-        realtimeSyncHelper.setupRealtimeSync()
-        initializeViews()
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                viewModel.search(s.toString())
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val userProfileModel = profileDbHandler.getUserModel()
+            adapter = SurveysAdapter(
+                requireActivity(),
+                userProfileModel?.id,
+                isTeam,
+                teamId,
+                this@SurveyFragment,
+                surveyInfoMap,
+                bindingDataMap
+            )
+            realtimeSyncHelper = RealtimeSyncHelper(this@SurveyFragment, this@SurveyFragment)
+            realtimeSyncHelper.setupRealtimeSync()
+            initializeViews()
+            textWatcher = object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                    viewModel.search(s.toString())
+                }
 
-            override fun afterTextChanged(s: Editable) {}
+                override fun afterTextChanged(s: Editable) {}
+            }
+            binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
+            setupRecyclerView()
+            setupListeners()
+            viewModel.loadSurveys(isTeam, teamId, false)
+            showHideRadioButton()
+            setupObservers()
         }
-        binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
-        setupRecyclerView()
-        setupListeners()
-        viewModel.loadSurveys(isTeam, teamId, false)
-        showHideRadioButton()
-        setupObservers()
     }
 
     override fun onResume() {

@@ -38,7 +38,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         super.onCreate(savedInstanceState)
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        user = profileDbHandler.userModel
         teamId = requireArguments().getString("id", "")
 
         loadTeamDetails()
@@ -50,6 +49,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()
         val existingTeam = team
         lifecycleScope.launch(Dispatchers.IO) {
+            user = profileDbHandler.getUserModel()
             val teamResult = if (shouldQueryTeam) {
                 try {
                     teamsRepository.getTeamById(teamId)
