@@ -57,16 +57,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = SurveysAdapter(
-            requireActivity(),
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            surveyInfoMap,
-            bindingDataMap
-        )
         prefManager = SharedPrefManager(requireContext())
         
         viewModel.startExamSync()
@@ -76,7 +66,21 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewModel.adoptSurvey(surveyId)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> = adapter
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+        if (!::adapter.isInitialized) {
+            val user = profileDbHandler.getUserModel()
+            adapter = SurveysAdapter(
+                requireActivity(),
+                user?.id,
+                isTeam,
+                teamId,
+                this,
+                surveyInfoMap,
+                bindingDataMap
+            )
+        }
+        return adapter
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -92,6 +96,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
             override fun afterTextChanged(s: Editable) {}
         }
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
+        viewLifecycleOwner.lifecycleScope.launch {
+            getAdapter()
+        }
         setupRecyclerView()
         setupListeners()
         viewModel.loadSurveys(isTeam, teamId, false)
@@ -121,7 +128,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     private fun setupRecyclerView() {
         recyclerView.setHasFixedSize(true)
-        recyclerView.adapter = adapter
     }
 
     private fun setupListeners() {
@@ -182,6 +188,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewLifecycleOwner.lifecycleScope.launch {
             launch {
                 viewModel.surveys.collect { surveys ->
+                    getAdapter()
                     adapter.submitList(surveys) {
                         updateUIState()
                     }
