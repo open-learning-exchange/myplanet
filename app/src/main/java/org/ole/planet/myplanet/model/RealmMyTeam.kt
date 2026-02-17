@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Realm
@@ -94,17 +95,35 @@ open class RealmMyTeam : RealmObject() {
             team.startDate = JsonUtils.getLong("startDate", doc)
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
-            team.updated = JsonUtils.getBoolean("updated", doc)
 
-            if (includeCourses) {
-                val coursesArray = JsonUtils.getJsonArray("courses", doc)
-                team.courses = RealmList()
-                for (e in coursesArray) {
+            val hadLocalChanges = team.updated
+            val localCourses = team.courses?.toList() ?: emptyList()
+
+            if (!hadLocalChanges) {
+                team.updated = JsonUtils.getBoolean("updated", doc)
+            }
+
+            val coursesArray = JsonUtils.getJsonArray("courses", doc)
+            val serverCourseIds = mutableListOf<String>()
+            for (e in coursesArray) {
+                try {
                     val id = e.asJsonObject["_id"].asString
-                    if (!team.courses!!.contains(id)) {
-                        team.courses!!.add(id)
+                    serverCourseIds.add(id)
+                } catch (ex: Exception) {
+                    if (e.isJsonPrimitive) {
+                        serverCourseIds.add(e.asString)
                     }
                 }
+            }
+
+            if (hadLocalChanges) {
+                val mergedCourses = serverCourseIds.toMutableSet()
+                mergedCourses.addAll(localCourses)
+                team.courses = RealmList()
+                team.courses?.addAll(mergedCourses)
+            } else {
+                team.courses = RealmList()
+                team.courses?.addAll(serverCourseIds)
             }
         }
 
@@ -249,6 +268,18 @@ open class RealmMyTeam : RealmObject() {
 
             JsonUtils.addString(`object`, "_id", team._id)
             JsonUtils.addString(`object`, "_rev", team._rev)
+
+            if (team.docType == "resourceLink") {
+                `object`.addProperty("resourceId", team.resourceId)
+                `object`.addProperty("title", team.title)
+                JsonUtils.addString(`object`, "teamId", team.teamId)
+                `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
+                `object`.addProperty("teamType", team.teamType)
+                `object`.addProperty("sourcePlanet", team.sourcePlanet)
+                `object`.addProperty("docType", team.docType)
+                return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+            }
+
             `object`.addProperty("name", team.name)
             `object`.addProperty("userId", team.userId)
             if (team.docType != "report" && team.docType != "request") {
@@ -283,6 +314,7 @@ open class RealmMyTeam : RealmObject() {
             `object`.addProperty("services", team.services)
             `object`.addProperty("createdBy", team.createdBy)
             `object`.addProperty("resourceId", team.resourceId)
+            `object`.addProperty("title", team.title)
             `object`.addProperty("rules", team.rules)
 
             if (team.teamType == "debit" || team.teamType == "credit") {
@@ -290,6 +322,28 @@ open class RealmMyTeam : RealmObject() {
             }
 
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
+        }
+
+        @JvmStatic
+        fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
+            val `object` = serialize(team)
+
+            if (!team.courses.isNullOrEmpty()) {
+                val coursesArray = JsonArray()
+
+                team.courses?.forEach { courseId ->
+                    val course = realm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+
+                    if (course != null) {
+                        val courseJson = RealmMyCourse.serialize(course, realm)
+                        coursesArray.add(courseJson)
+                    }
+                }
+                `object`.add("courses", coursesArray)
+            }
+            return `object`
         }
 
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {
@@ -330,8 +384,20 @@ open class RealmMyTeam : RealmObject() {
     }
 
     private fun removeTeam(team: RealmMyTeam, mRealm: Realm) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        team.deleteFromRealm()
-        mRealm.commitTransaction()
+        val startedTransaction = !mRealm.isInTransaction
+        if (startedTransaction) {
+            mRealm.beginTransaction()
+        }
+        try {
+            team.deleteFromRealm()
+            if (startedTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (startedTransaction && mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
+        }
     }
 }

@@ -11,11 +11,13 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/legacy_buttons_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:layout_marginEnd="@dimen/_10dp"
-            android:gravity="end">
+            android:gravity="end"
+            android:visibility="gone">
 
             <Button
                 android:id="@+id/btn_open"
@@ -31,6 +33,15 @@
                 android:text="@string/download_resources"
                 android:textAllCaps="false"
                 android:theme="@style/AccentButton" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="@dimen/_10dp"
+            android:gravity="end">
+
             <Button
                 android:id="@+id/btn_take_test"
                 android:layout_width="wrap_content"
@@ -66,6 +77,37 @@
                 android:textColor="@color/daynight_textColor"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/tv_title" />
+            <TextView
+                android:id="@+id/tv_resources_header"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/resources"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/description" />
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/resource_download_progress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_normal"
+                android:indeterminate="true"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tv_resources_header" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_inline_resources"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:visibility="gone"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/resource_download_progress" />
             <Button
                 android:id="@+id/btnTakeSurvey"
                 android:layout_width="wrap_content"
@@ -76,7 +118,7 @@
                 android:visibility="gone"
                 android:textAllCaps="false"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/description" />
+                app:layout_constraintTop_toBottomOf="@+id/rv_inline_resources" />
         </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

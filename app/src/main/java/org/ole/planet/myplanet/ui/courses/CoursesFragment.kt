@@ -24,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -45,12 +46,12 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.NavigationHelper
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -184,11 +185,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         lifecycleScope.launch {
             try {
+                // Run independent queries in parallel
+                val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
+                val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+
                 if (!mRealm.isInTransaction) {
                     mRealm.refresh()
                 }
-                val map = ratingsRepository.getCourseRatings(model?.id)
-                val progressMap = progressRepository.getCourseProgress(model?.id)
+
                 val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
                 val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
                     copiedList.forEachIndexed { index, course ->
@@ -202,6 +206,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
+
+                // Wait for parallel queries to complete
+                val map = ratingsDeferred.await()
+                val progressMap = progressDeferred.await()
 
                 recyclerView.adapter = null
                 adapterCourses = CoursesAdapter(
@@ -224,7 +232,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
         val allCourses: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
             copiedList.forEachIndexed { index, course ->
@@ -257,20 +265,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = userSessionManager.userModel
-        searchTags = ArrayList()
-        initializeView()
-        loadDataAsync()
-        updateCheckBoxState(false)
-        setupButtonVisibility()
-        setupEventListeners()
-        clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
-
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
         setupMyProgressButton()
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
+            searchTags = ArrayList()
+            initializeView()
+            setupButtonVisibility()
+            setupEventListeners()
+            clearTags()
+            if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+            if (::adapterCourses.isInitialized) {
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            }
+            loadDataAsync()
+            updateCheckBoxState(false)
+        }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
@@ -354,7 +365,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         }
                     }
 
-                    NavigationHelper.replaceFragment(
+                    FragmentNavigator.replaceFragment(
                         parentFragmentManager,
                         R.id.fragment_container,
                         progressFragment,
@@ -467,6 +478,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun checkList() {
+        if (!::adapterCourses.isInitialized) return
         if (adapterCourses.currentList.isEmpty()) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
@@ -612,9 +624,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
 
-        val allSelected = adapterCourses.areAllSelected()
-        updateCheckBoxState(allSelected)
-        selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
+        if (::adapterCourses.isInitialized) {
+            val allSelected = adapterCourses.areAllSelected()
+            updateCheckBoxState(allSelected)
+            selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
+        }
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -685,7 +699,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 args.putString("courseLib", courseLib)
                 args.putSerializable("resources", resources?.let { ArrayList(it) })
                 fragment.arguments = args
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     fragment,
@@ -693,7 +707,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     allowStateLoss = true
                 )
             } else {
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     parentFragmentManager,
                     R.id.fragment_container,
                     fragment,
@@ -726,7 +740,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     adapterCourses.updateData(sortedCourseList, map, progressMap)
                 }
             } else {
-                recyclerView.adapter = getAdapter()
+                lifecycleScope.launch {
+                    recyclerView.adapter = getAdapter()
+                }
             }
         }
     }

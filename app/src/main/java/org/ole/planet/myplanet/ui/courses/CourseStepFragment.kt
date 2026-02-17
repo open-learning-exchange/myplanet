@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -17,12 +18,13 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -31,28 +33,17 @@ import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-
-private data class CourseStepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>,
-    val userHasCourse: Boolean
-)
-
-private data class IntermediateStepData(
-    val step: RealmCourseStep,
-    val resources: List<RealmMyLibrary>,
-    val stepExams: List<RealmStepExam>,
-    val stepSurvey: List<RealmStepExam>
-)
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     @Inject
     lateinit var progressRepository: ProgressRepository
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
+    private var nextStepId: String? = null
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
@@ -61,12 +52,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private var stepNumber = 0
     private var saveInProgress: Job? = null
     private var loadDataJob: Job? = null
+    private var inlineResourceAdapter: InlineResourceAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNumber")
+            nextStepId = requireArguments().getString("nextStepId")
         }
     }
 
@@ -97,35 +90,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        val intermediateData = databaseService.withRealmAsync { realm ->
-            val step = realm.where(RealmCourseStep::class.java)
-                .equalTo("id", stepId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }!!
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            IntermediateStepData(step, resources, stepExams, stepSurvey)
-        }
-        val userHasCourse = coursesRepository.isMyCourse(user?.id, intermediateData.step.courseId)
-        return CourseStepData(
-            step = intermediateData.step,
-            resources = intermediateData.resources,
-            stepExams = intermediateData.stepExams,
-            stepSurvey = intermediateData.stepSurvey,
-            userHasCourse = userHasCourse
-        )
+        return coursesRepository.getCourseStepData(stepId!!, user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -161,6 +126,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 }
 
                 setListeners()
+                setupInlineResources()
+                autoDownloadResources()
+                prefetchNextStepResources()
+
                 val textWithSpans = fragmentCourseStepBinding.description.text
                 if (textWithSpans is Spannable) {
                     val urlSpans =
@@ -183,6 +152,70 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     launchSaveCourseProgress()
                 }
             }
+        }
+    }
+
+    private fun setupInlineResources() {
+        if (resources.isEmpty()) {
+            fragmentCourseStepBinding.tvResourcesHeader.visibility = View.GONE
+            fragmentCourseStepBinding.rvInlineResources.visibility = View.GONE
+            return
+        }
+
+        fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
+        fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
+
+        inlineResourceAdapter = InlineResourceAdapter(resources) { library ->
+            openResource(library)
+        }
+        fragmentCourseStepBinding.rvInlineResources.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = inlineResourceAdapter
+        }
+    }
+
+    private fun autoDownloadResources() {
+        val notDownloaded = resources.filter { !it.isResourceOffline() }
+        if (notDownloaded.isEmpty()) {
+            return
+        }
+
+        fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val serverAvailable = configurationsRepository.checkServerAvailability()
+
+            if (serverAvailable) {
+                resourcesRepository.downloadResourcesPriority(notDownloaded)
+            } else {
+                fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun prefetchNextStepResources() {
+        if (nextStepId == null) {
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val nextResources = resourcesRepository.getAllStepResources(nextStepId)
+            val notDownloaded = nextResources.filter { !it.isResourceOffline() }
+            if (notDownloaded.isNotEmpty()) {
+                val urls = ArrayList(notDownloaded.map { UrlUtils.getUrl(it) })
+                if (urls.isNotEmpty()) {
+		    resourceDownloadCoordinator.startBackgroundDownload(urls)
+                }
+            }
+        }
+    }
+
+    private fun refreshInlineResources() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val updatedResources = resourcesRepository.getAllStepResources(stepId)
+            resources = updatedResources
+            inlineResourceAdapter?.updateResources(updatedResources)
+            fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
         }
     }
 
@@ -231,12 +264,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun setListeners() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val notDownloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = false)
-            setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
-            val downloadedResources = resourcesRepository.getStepResources(stepId, resourceOffline = true)
-            setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
-        }
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
                 val takeExam: Fragment = ExamTakingFragment()
@@ -259,7 +286,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
-        setListeners()
+        refreshInlineResources()
     }
 
     override fun onImageCapture(fileUri: String?) {}

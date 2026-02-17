@@ -28,7 +28,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,14 +37,14 @@ import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.user.UserProfileAdapter
+import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -64,7 +63,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
-    private var mAdapter: UserProfileAdapter? = null
+    private var mAdapter: UsersAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
@@ -477,14 +476,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             .show()
     }
 
-    private fun updateConfiguration(languageCode: String) {
-        val locale = Locale(languageCode)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-    }
-
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(newBase))
     }
@@ -520,7 +511,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             }
 
             if (mAdapter == null) {
-                mAdapter = UserProfileAdapter(this@LoginActivity)
+                mAdapter = UsersAdapter(this@LoginActivity)
                 binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
                 binding.recyclerView.adapter = mAdapter
             }

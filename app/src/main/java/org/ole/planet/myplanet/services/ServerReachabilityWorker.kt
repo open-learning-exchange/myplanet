@@ -10,9 +10,11 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -20,20 +22,22 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
-    private val workerEntryPoint = EntryPointAccessors.fromApplication(
-        context.applicationContext,
-        WorkerDependenciesEntryPoint::class.java
-    )
-    private val uploadManager = workerEntryPoint.uploadManager()
-    private val submissionsRepository = workerEntryPoint.submissionsRepository()
+@HiltWorker
+class ServerReachabilityWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    @AppPreferences private val preferences: SharedPreferences,
+    private val uploadManager: UploadManager,
+    private val submissionsRepository: SubmissionsRepository
+) : CoroutineWorker(context, workerParams) {
+
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -50,9 +54,8 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             }
 
             val isNetworkReconnection = inputData.getBoolean(NETWORK_RECONNECTION_KEY, false)
-            val preferences = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val serverUrl = preferences.getString("serverURL", "") ?: ""
-            
+
             if (serverUrl.isEmpty()) {
                 return Result.success()
             }
@@ -62,20 +65,20 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             }
 
             if (!isReachable) {
-                tryServerSwitch(serverUrl, preferences, isNetworkReconnection)
+                tryServerSwitch(serverUrl, isNetworkReconnection)
             }
-            
+
             if (isReachable && isNetworkReconnection) {
                 val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
                 val currentTime = System.currentTimeMillis()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
-                    showServerNotification(preferences)
+                    showServerNotification()
                     preferences.edit {
                         putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                     }
                 }
-                checkAvailableServerAndUpload(preferences)
+                checkAvailableServerAndUpload()
             }
 
             Result.success()
@@ -85,16 +88,16 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private suspend fun tryServerSwitch(serverUrl: String, preferences: SharedPreferences, isNetworkReconnection: Boolean) {
+    private suspend fun tryServerSwitch(serverUrl: String, isNetworkReconnection: Boolean) {
         try {
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(serverUrl)
-            
+
             if (mapping.alternativeUrl != null) {
                 val alternativeReachable = withContext(Dispatchers.IO) {
                     isServerReachable(mapping.alternativeUrl)
                 }
-                
+
                 if (alternativeReachable) {
                     serverUrlMapper.updateServerIfNecessary(mapping, preferences) { url ->
                         isServerReachable(url)
@@ -105,12 +108,12 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                         val currentTime = System.currentTimeMillis()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
-                            showServerNotification(preferences)
+                            showServerNotification()
                             preferences.edit {
                                 putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                             }
                         }
-                        checkAvailableServerAndUpload(preferences)
+                        checkAvailableServerAndUpload()
                     }
                 }
             }
@@ -119,21 +122,21 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private fun showServerNotification(preferences: SharedPreferences) {
+    private fun showServerNotification() {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(notificationManager)
-        
+
         val intent = Intent(applicationContext, DashboardActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
-        
+
         val pendingIntent = PendingIntent.getActivity(
             applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
+
         val appName = applicationContext.getString(R.string.app_project_name)
-        val serverName = getServerDisplayName(preferences)
-        
+        val serverName = getServerDisplayName()
+
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ole_logo)
             .setContentTitle(appName)
@@ -142,16 +145,16 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
-        
+
         try {
             notificationManager.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
-    
-    private suspend fun checkAvailableServerAndUpload(settings: SharedPreferences) {
-        val updateUrl = "${settings.getString("serverURL", "")}"
+
+    private suspend fun checkAvailableServerAndUpload() {
+        val updateUrl = "${preferences.getString("serverURL", "")}"
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
@@ -159,7 +162,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             val primaryAvailable = withTimeoutOrNull(15000) {
                 isServerReachable(mapping.primaryUrl)
             } ?: false
-            
+
             val alternativeAvailable = if (mapping.alternativeUrl != null) {
                 withTimeoutOrNull(15000) {
                     isServerReachable(mapping.alternativeUrl)
@@ -171,8 +174,8 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                    val editor = preferences.edit()
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
                 }
             }
             uploadSubmissions()
@@ -214,7 +217,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             e.printStackTrace()
         }
     }
-    
+
     private fun createNotificationChannel(notificationManager: NotificationManager) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -225,12 +228,12 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             notificationManager.createNotificationChannel(channel)
         }
     }
-    
-    private fun getServerDisplayName(preferences: SharedPreferences): String {
+
+    private fun getServerDisplayName(): String {
         return try {
             val communityName = preferences.getString("communityName", "") ?: ""
             val planetString = applicationContext.getString(R.string.planet)
-            
+
             if (communityName.isNotEmpty()) {
                 "$planetString $communityName"
             } else {

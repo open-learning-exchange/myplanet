@@ -15,7 +15,7 @@ interface SubmissionsRepository {
     suspend fun getSubmissionById(id: String): RealmSubmission?
     suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission>
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
-    suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
+    suspend fun getExamMap(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
     suspend fun getExamQuestionCount(stepId: String): Int
     suspend fun hasSubmission(
         stepExamId: String?,
@@ -40,4 +40,10 @@ interface SubmissionsRepository {
     suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File?
     suspend fun generateMultipleSubmissionsPdf(context: android.content.Context, submissionIds: List<String>, examTitle: String): java.io.File?
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
+    suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: org.ole.planet.myplanet.model.RealmStepExam, type: String?, teamId: String?): RealmSubmission?
+    suspend fun saveExamAnswer(submission: RealmSubmission?, question: org.ole.planet.myplanet.model.RealmExamQuestion, ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean, type: String, index: Int, total: Int, isExplicitSubmission: Boolean): Boolean
+    suspend fun getLastPendingSubmission(userId: String?): RealmSubmission?
+    suspend fun updateSubmissionStatus(submissionId: String?, status: String)
+    suspend fun getExamByStepId(stepId: String): RealmStepExam?
+    suspend fun getExamById(id: String): RealmStepExam?
 }

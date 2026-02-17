@@ -31,8 +31,8 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
-import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -70,7 +70,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        userModel = userSessionManager.userModel
         return binding.root
     }
 
@@ -80,6 +79,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
             val course: RealmMyCourse? = courseId?.let { coursesRepository.getCourseById(it) }
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
@@ -91,7 +91,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            steps = coursesRepository.getCourseSteps(courseId)
+            steps = coursesRepository.getCourseSteps(courseId!!)
 
             if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                 try {
@@ -134,7 +134,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             setListeners()
             checkSurveyCompletion()
             binding.backButton.setOnClickListener {
-                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }
@@ -368,7 +368,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private suspend fun getCourseProgress(): Int {
-        val user = userSessionManager.userModel
+        val user = userSessionManager.getUserModel()
         val courseProgressMap = progressRepository.getCourseProgress(user?.id)
         return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
@@ -386,7 +386,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             binding.finishStep.isEnabled = true
             binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             binding.finishStep.setOnClickListener {
-                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
+                FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }

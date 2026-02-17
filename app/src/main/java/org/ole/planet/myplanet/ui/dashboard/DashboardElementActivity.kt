@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment.Companion.newInstance
@@ -38,7 +39,6 @@ import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
-import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
@@ -83,9 +83,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             c++
             if(c>2){
                 c--
-                NavigationHelper.popBackStack(fragmentManager, tag, 0)
+                FragmentNavigator.popBackStack(fragmentManager, tag, 0)
             }else{
-                NavigationHelper.replaceFragment(
+                FragmentNavigator.replaceFragment(
                     fragmentManager,
                     R.id.fragment_container,
                     newFragment,
@@ -100,13 +100,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 if(c>0 && c>2){
                     c=0
                 }
-                NavigationHelper.popBackStack(fragmentManager, tag, 0)
+                FragmentNavigator.popBackStack(fragmentManager, tag, 0)
             } else {
                 if(c>0 && c>2){
                     c=0
                 }
                 if(tag!="") {
-                    NavigationHelper.replaceFragment(
+                    FragmentNavigator.replaceFragment(
                         fragmentManager,
                         R.id.fragment_container,
                         newFragment,
@@ -163,7 +163,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
         lifecycleScope.launch {
-            createActionAsync(databaseService, "${profileDbHandler.userModel?.id}", null, "sync")
+            val userModel = profileDbHandler.getUserModel()
+            createActionAsync(databaseService, "${userModel?.id}", null, "sync")
         }
     }
 

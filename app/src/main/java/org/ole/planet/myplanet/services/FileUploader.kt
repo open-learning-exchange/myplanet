@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
-open class FileUploadService {
+open class FileUploader {
     fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: OnSuccessListener) {
         val f = personal.path?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.path)
@@ -43,7 +43,7 @@ open class FileUploadService {
     }
 
     private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        val apiInterface = ApiClient.client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch {
             try {
                 val connection = f.toURI().toURL().openConnection()
@@ -53,8 +53,8 @@ open class FileUploadService {
                 val url = String.format(format, UrlUtils.getUrl(), id, name)
 
                 try {
-                    val response = apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)
-                    onDataReceived(response?.body(), listener)
+                    val response = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body)
+                    onDataReceived(response.body(), listener)
                 } catch (t: Exception) {
                     listener.onSuccess("Unable to upload resource")
                 }

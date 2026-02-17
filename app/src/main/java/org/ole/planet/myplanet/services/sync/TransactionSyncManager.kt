@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -35,7 +36,8 @@ import org.ole.planet.myplanet.utils.Utilities
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
+    private val chatRepository: ChatRepository
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -113,13 +115,13 @@ class TransactionSyncManager @Inject constructor(
         userSessionManager: UserSessionManager
     ) {
         listener.onSyncStarted()
-        val model = userSessionManager.userModel
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        val id = model?.id
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val model = userSessionManager.getUserModel()
+            val id = model?.id
             try {
                 val userModel = databaseService.withRealm { realm ->
                     realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
@@ -188,23 +190,46 @@ class TransactionSyncManager @Inject constructor(
                     arr.size()
                 )
 
-                // Use async transaction to avoid blocking (ANR-safe)
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { mRealm: Realm ->
-                        val insertStartTime = System.currentTimeMillis()
-
-                        if (table == "chat_history") {
-                            insertToChat(arr, mRealm)
+                if (table == "news") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
                         }
-                        insertDocs(arr, mRealm, table)
+                    }
 
-                        val insertDuration = System.currentTimeMillis() - insertStartTime
-                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                            "insert_batch",
-                            table,
-                            insertDuration,
-                            arr.size()
-                        )
+                    chatRepository.insertNewsList(docs)
+
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else {
+                    // Use async transaction to avoid blocking (ANR-safe)
+                    databaseService.withRealm { realm ->
+                        realm.executeTransactionAsync { mRealm: Realm ->
+                            val insertStartTime = System.currentTimeMillis()
+
+                            if (table == "chat_history") {
+                                insertToChat(arr, mRealm)
+                            }
+                            insertDocs(arr, mRealm, table)
+
+                            val insertDuration = System.currentTimeMillis() - insertStartTime
+                            org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                                "insert_batch",
+                                table,
+                                insertDuration,
+                                arr.size()
+                            )
+                        }
                     }
                 }
 

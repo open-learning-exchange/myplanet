@@ -11,9 +11,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
 
 internal class CommunityLeadersAdapter(
     var context: Context,
@@ -63,7 +63,7 @@ internal class CommunityLeadersAdapter(
                 memberLevel = leader.level ?: "",
                 imageUrl = null
             )
-            NavigationHelper.replaceFragment(
+            FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
                 fragment,

@@ -6,6 +6,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
+import java.io.File
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
@@ -14,25 +15,29 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val activitiesRepository: ActivitiesRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java)
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "id", id)
+        return findByField(RealmMyLibrary::class.java, "id", id, true)
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
@@ -81,6 +86,14 @@ class ResourcesRepositoryImpl @Inject constructor(
             equalTo("stepId", stepId)
             equalTo("resourceOffline", resourceOffline)
             isNotNull("resourceLocalAddress")
+        }
+    }
+
+    override suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary> {
+        if (stepId == null) return emptyList()
+
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("stepId", stepId)
         }
     }
 
@@ -242,7 +255,18 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
+        return try {
+            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            if (urls.isNotEmpty()) {
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            }
+            true
+        } catch (e: Exception) {
             false
         }
     }
@@ -318,5 +342,94 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         return allNeedingUpdate
+    }
+
+    override suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary> {
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }
+
+        val resourceIdsFromTeams = if (teamIds.isNotEmpty()) {
+            queryList(RealmMyTeam::class.java) {
+                `in`("teamId", teamIds.toTypedArray())
+                equalTo("docType", "resourceLink")
+            }.mapNotNull { it.resourceId }
+        } else {
+            emptyList()
+        }
+
+        return queryList(RealmMyLibrary::class.java) {
+            beginGroup()
+            equalTo("userId", userId)
+            if (resourceIdsFromTeams.isNotEmpty()) {
+                or()
+                `in`("resourceId", resourceIdsFromTeams.toTypedArray())
+            }
+            endGroup()
+        }
+    }
+
+    override suspend fun removeDeletedResources(currentIds: List<String?>) {
+        val validCurrentIds = currentIds.filterNotNull().toSet()
+        executeTransaction { realm ->
+            val allResources = realm.where(RealmMyLibrary::class.java).findAll()
+            val idsToDelete = allResources.mapNotNull { it.resourceId }.filter { it !in validCurrentIds }
+
+            if (idsToDelete.isNotEmpty()) {
+                val chunkSize = 1000
+                idsToDelete.chunked(chunkSize).forEach { chunk ->
+                    realm.where(RealmMyLibrary::class.java)
+                        .`in`("resourceId", chunk.toTypedArray())
+                        .findAll()
+                        .deleteAllFromRealm()
+                }
+            }
+        }
+    }
+
+    override suspend fun getMyLibIds(userId: String): JsonArray {
+        val libs = queryList(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+        }
+        val jsonArray = JsonArray()
+        libs.forEach { jsonArray.add(it.id) }
+        return jsonArray
+    }
+
+    override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
+        updateUserLibrary(resourceId, userId, false)
+    }
+
+    override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {
+        val resource = getLibraryItemByResourceId(resourceId) ?: return ResourceUrlsResponse.ResourceNotFound
+        if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments
+
+        val urls = resource.attachments?.mapNotNull { attachment ->
+            attachment.name?.let { name ->
+                val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
+                val lastSlashIndex = name.lastIndexOf('/')
+                if (lastSlashIndex > 0) {
+                    val dirPath = name.substring(0, lastSlashIndex)
+                    File(baseDir, dirPath).mkdirs()
+                }
+                UrlUtils.getUrl(resourceId, name)
+            }
+        }
+
+        return if (!urls.isNullOrEmpty()) {
+            ResourceUrlsResponse.Success(urls)
+        } else {
+            ResourceUrlsResponse.Error
+        }
+    }
+
+    override suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>> {
+        return mapOf(
+            "languages" to libraries.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet(),
+            "subjects" to libraries.flatMap { it.subject ?: emptyList() }.toSet(),
+            "mediums" to libraries.mapNotNull { it.mediaType }.filterNot { it.isBlank() }.toSet(),
+            "levels" to libraries.flatMap { it.level ?: emptyList() }.toSet()
+        )
     }
 }

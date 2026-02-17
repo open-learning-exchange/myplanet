@@ -63,6 +63,7 @@ open class RealmMyLibrary : RealmObject() {
     var courseId: String? = null
     var stepId: String? = null
     var isPrivate: Boolean = false
+    var privateFor: String? = null
     var attachments: RealmList<RealmAttachment>? = null
 
     fun serializeResource(): JsonObject {
@@ -184,11 +185,13 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
+        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
             return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
         }
 
+        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
             val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
             return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
@@ -209,10 +212,16 @@ open class RealmMyLibrary : RealmObject() {
             return list.map { it.resourceId }.toTypedArray()
         }
 
+        @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val startTime = System.currentTimeMillis()
-            val ids = getIds(mRealm)
+            val syncedResources = mRealm.where(RealmMyLibrary::class.java)
+                .isNotNull("_rev")
+                .equalTo("isPrivate", false)
+                .findAll()
+            val ids = syncedResources.map { it.resourceId }.toTypedArray()
+
             val idsToDelete = ids.filterNot { it in newIds }
 
             if (idsToDelete.isEmpty()) {
@@ -247,19 +256,27 @@ open class RealmMyLibrary : RealmObject() {
                 addProperty("uploadDate", Date().time)
                 addProperty("createdDate", personal.createdDate)
                 addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-                addProperty("author", user?.name)
+                addProperty("author", personal.author ?: "")
                 addProperty("addedBy", user?.id)
                 addProperty("medium", personal.medium)
                 addProperty("description", personal.description)
                 addProperty("year", personal.year)
                 addProperty("language", personal.language)
+                addProperty("publisher", personal.publisher ?: "")
+                addProperty("linkToLicense", personal.linkToLicense ?: "")
                 add("subject", JsonUtils.getAsJsonArray(personal.subject))
                 add("level", JsonUtils.getAsJsonArray(personal.level))
                 addProperty("resourceType", personal.resourceType)
                 addProperty("openWith", personal.openWith)
+                addProperty("mediaType", personal.mediaType ?: "other")
                 add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
-                addProperty("private", false)
-                addProperty("isDownloadable", "")
+                addProperty("private", personal.isPrivate)
+                if (personal.isPrivate && personal.privateFor != null) {
+                    val privateForObj = JsonObject()
+                    privateForObj.addProperty("teams", personal.privateFor)
+                    add("privateFor", privateForObj)
+                }
+                addProperty("isDownloadable", true)
                 addProperty("sourcePlanet", user?.planetCode)
                 addProperty("resideOn", user?.planetCode)
                 addProperty("updatedDate", Calendar.getInstance().timeInMillis)
@@ -286,11 +303,21 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            resource?.setUserId(userId)
-            mRealm.commitTransaction()
+            try {
+                resource?.setUserId(userId)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
@@ -365,6 +392,10 @@ open class RealmMyLibrary : RealmObject() {
                 setLevel(JsonUtils.getJsonArray("level", doc), this)
                 setTag(JsonUtils.getJsonArray("tags", doc), this)
                 isPrivate = JsonUtils.getBoolean("private", doc)
+                if (isPrivate && doc.has("privateFor")) {
+                    val privateForObj = doc.getAsJsonObject("privateFor")
+                    privateFor = privateForObj.get("teams")?.asString
+                }
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
         }
@@ -388,22 +419,27 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
+        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
         @JvmStatic
         fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
             val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
             return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
             }
         }
+
+        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
         @JvmStatic
         fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.level ?: emptyList() }.toSet()
         }
 
+        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
             return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
         }
 
+        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
         @JvmStatic
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()

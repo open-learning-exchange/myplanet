@@ -146,17 +146,6 @@ open class RealmMyCourse : RealmObject() {
             settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 
-        fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
-            val myCourse = mRealm.where<RealmMyCourse>().equalTo("id", courseId).findFirst()
-            val courseSteps = myCourse?.courseSteps ?: emptyList()
-            return courseSteps
-        }
-
-        fun getCourseStepIds(mRealm: Realm, courseId: String?): Array<String?> {
-            val course = mRealm.where<RealmMyCourse>().equalTo("courseId", courseId).findFirst()
-            val stepIds = course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
-            return stepIds
-        }
 
         private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
             if (stepContainer.has("exam")) {
@@ -230,17 +219,28 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
         fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
             return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         }
 
         @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            insertMyCourses("", myCoursesDoc, mRealm)
-            mRealm.commitTransaction()
+            try {
+                insertMyCourses("", myCoursesDoc, mRealm)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
@@ -250,14 +250,25 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
-            if (!mRealm.isInTransaction) {
+            val startedTransaction = !mRealm.isInTransaction
+            if (startedTransaction) {
                 mRealm.beginTransaction()
             }
-            course?.setUserId(id)
-            mRealm.commitTransaction()
+            try {
+                course?.setUserId(id)
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
         fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
             val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
             val ids = JsonArray()
@@ -265,6 +276,44 @@ open class RealmMyCourse : RealmObject() {
                 ids.add(lib.courseId)
             }
             return ids
+        }
+
+        @JvmStatic
+        fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
+            val obj = JsonObject()
+            obj.addProperty("_id", course.courseId)
+            obj.addProperty("_rev", course.courseRev)
+            obj.addProperty("courseTitle", course.courseTitle)
+            obj.addProperty("description", course.description)
+            obj.addProperty("languageOfInstruction", course.languageOfInstruction)
+            obj.addProperty("gradeLevel", course.gradeLevel)
+            obj.addProperty("subjectLevel", course.subjectLevel)
+            obj.addProperty("createdDate", course.createdDate)
+            obj.addProperty("method", course.method)
+            obj.addProperty("memberLimit", course.memberLimit)
+
+            val stepsArray = JsonArray()
+            course.courseSteps?.forEach { step ->
+                val stepObj = JsonObject()
+                stepObj.addProperty("stepTitle", step.stepTitle)
+                stepObj.addProperty("description", step.description)
+                stepObj.addProperty("id", step.id)
+
+                val resourcesArray = JsonArray()
+                val stepResources = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("stepId", step.id)
+                    .equalTo("courseId", course.courseId)
+                    .findAll()
+
+                stepResources.forEach { resource ->
+                    resourcesArray.add(resource.serializeResource())
+                }
+                stepObj.add("resources", resourcesArray)
+                stepsArray.add(stepObj)
+            }
+            obj.add("steps", stepsArray)
+            obj.add("images", JsonArray())
+            return obj
         }
     }
 }

@@ -10,11 +10,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
@@ -27,6 +29,10 @@ class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
+
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {}
+    }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
@@ -60,11 +66,14 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCourseByCourseId(courseId: String?): RealmMyCourse? {
-        if (courseId.isNullOrBlank()) {
+    override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
+        if (courseId.isBlank()) {
             return null
         }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            course?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
@@ -95,12 +104,24 @@ class CoursesRepositoryImpl @Inject constructor(
         }.toInt()
     }
 
-    override suspend fun getCourseSteps(courseId: String?): List<RealmCourseStep> {
-        if (courseId.isNullOrEmpty()) {
+    override suspend fun getCourseSteps(courseId: String): List<RealmCourseStep> {
+        if (courseId.isBlank()) {
             return emptyList()
         }
-        return queryList(RealmCourseStep::class.java) {
-            equalTo("courseId", courseId)
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            val steps = course?.courseSteps
+            if (steps != null) java.util.Collections.unmodifiableList(realm.copyFromRealm(steps)) else emptyList()
+        }
+    }
+
+    override suspend fun getCourseStepIds(courseId: String): List<String?> {
+        if (courseId.isBlank()) {
+            return emptyList()
+        }
+        return withRealm { realm ->
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            course?.courseSteps?.map { it.id } ?: emptyList()
         }
     }
 
@@ -323,5 +344,61 @@ class CoursesRepositoryImpl @Inject constructor(
         return count(RealmCertification::class.java) {
             contains("courseIds", courseId)
         } > 0
+    }
+
+    override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean) {
+        if (courseId.isNullOrEmpty()) return
+        executeTransaction { realm ->
+            val progress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("stepNum", stepNum)
+                .findFirst()
+            progress?.passed = passed
+        }
+    }
+
+    override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
+        val intermediate = withRealm { realm ->
+            val step = realm.where(RealmCourseStep::class.java)
+                .equalTo("id", stepId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+                ?: throw IllegalStateException("Step not found")
+            val resources = realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            val stepExams = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "courses")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            val stepSurvey = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "surveys")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            CourseStepData(step, resources, stepExams, stepSurvey, false)
+        }
+        val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
+        return intermediate.copy(userHasCourse = userHasCourse)
+    }
+
+    override suspend fun getMyCourseIds(userId: String): JsonArray {
+        return withRealm { realm ->
+            val myCourses = realm.where(RealmMyCourse::class.java)
+                .equalTo("userId", userId)
+                .findAll()
+
+            val ids = JsonArray()
+            for (course in myCourses) {
+                ids.add(course.courseId)
+            }
+            ids
+        }
+    }
+
+    override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
+        leaveCourse(courseId, userId)
     }
 }

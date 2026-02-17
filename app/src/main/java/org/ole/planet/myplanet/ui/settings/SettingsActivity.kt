@@ -31,15 +31,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.services.retry.RetryQueueWorker
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
@@ -50,12 +54,8 @@ import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
-import org.ole.planet.myplanet.utils.NavigationHelper
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.services.retry.RetryQueue
-import org.ole.planet.myplanet.services.retry.RetryQueueWorker
-import org.ole.planet.myplanet.model.RealmRetryOperation
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
@@ -76,7 +76,7 @@ class SettingsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        NavigationHelper.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
+        FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
     }
 
@@ -104,6 +104,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
@@ -125,7 +127,9 @@ class SettingsActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
-            user = profileDbHandler.userModel
+            lifecycleScope.launch {
+                user = profileDbHandler.getUserModel()
+            }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
             setBetaToggleOn()
@@ -158,7 +162,7 @@ class SettingsActivity : AppCompatActivity() {
                     lifecycleScope.launch {
                         try {
                             val files = libraryList ?: resourcesRepository.getAllLibrariesToSync().also { libraryList = it }
-                            backgroundDownload(downloadAllFiles(files), requireContext())
+                            resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
                         } finally {
                             preference.isEnabled = true
                         }

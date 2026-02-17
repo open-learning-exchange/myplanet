@@ -1189,5 +1189,12 @@
     <string name="retry_queue_cleared">Retry queue cleared</string>
     <string name="passwords_do_not_match">Passwords do not match</string>
     <string name="email_invalid_format">Please enter a valid email address</string>
+    <string name="create_new_resource">Create New</string>
+    <string name="private_resource">Private resource (only visible to this team)</string>
+    <string name="resource_added_to_team">Resource added to team</string>
+    <string name="select_courses">Select Courses</string>
+    <string name="untitled_course">Untitled Course</string>
+    <string name="courses_loading">Loading courses…</string>
+    <string name="error">Error: %1$s</string>
 
 </resources>

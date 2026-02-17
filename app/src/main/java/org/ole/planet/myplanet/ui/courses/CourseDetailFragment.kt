@@ -76,7 +76,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setResourceButton(resources, binding.btnResources)
         val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
         setOpenResourceButton(downloadedResources, binding.btnOpen)
-        val steps = coursesRepository.getCourseSteps(courseId)
+        val steps = coursesRepository.getCourseSteps(courseId ?: "")
         setStepsList(steps)
         refreshRatings()
     }

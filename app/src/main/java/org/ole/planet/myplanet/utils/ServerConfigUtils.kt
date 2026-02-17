@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.content.Context
+import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
@@ -67,7 +68,7 @@ object ServerConfigUtils {
         settings: android.content.SharedPreferences,
         editor: android.content.SharedPreferences.Editor,
     ): String {
-        val uri = android.net.Uri.parse(url)
+        val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
             val userinfo = org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity.getUserInfo(uri)
             Triple(userinfo[0], userinfo[1], url)

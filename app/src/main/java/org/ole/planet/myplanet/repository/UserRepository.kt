@@ -14,6 +14,8 @@ interface UserRepository {
     suspend fun getUserById(userId: String): RealmUser?
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
+    suspend fun findUserByName(name: String): RealmUser?
+    suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
     suspend fun getMonthlyLoginCounts(
@@ -22,6 +24,7 @@ interface UserRepository {
         endMillis: Long,
     ): Map<Int, Int>
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
+    suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
     suspend fun updateSecurityData(
         name: String,
         userId: String?,
@@ -55,6 +58,8 @@ interface UserRepository {
         payload: JsonObject
     )
 
+    suspend fun createMember(user: JsonObject): Pair<Boolean, String>
+
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
     suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUser>
@@ -63,12 +68,16 @@ interface UserRepository {
         currentUser: RealmUser
     ): HealthRecord?
 
+    @Deprecated("Use getUserModelSuspending() instead")
     fun getUserModel(): RealmUser?
+    @Deprecated("Use getUserModelSuspending() instead")
     fun getCurrentUser(): RealmUser?
     suspend fun getUserModelSuspending(): RealmUser?
     suspend fun getUserProfile(): RealmUser?
     suspend fun getUserImageUrl(): String?
+    @Deprecated("Use getActiveUserIdSuspending() instead")
     fun getActiveUserId(): String
+    suspend fun getActiveUserIdSuspending(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
     fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?

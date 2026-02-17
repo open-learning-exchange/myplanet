@@ -1189,5 +1189,12 @@
     <string name="retry_queue_cleared">تم مسح قائمة إعادة المحاولة</string>
     <string name="passwords_do_not_match">كلمتا المرور غير متطابقتين</string>
     <string name="email_invalid_format">يرجى إدخال عنوان بريد إلكتروني صالح</string>
+    <string name="create_new_resource">إنشاء جديد</string>
+    <string name="private_resource">مورد خاص (مرئي لهذا الفريق فقط)</string>
+    <string name="resource_added_to_team">تمت إضافة المورد إلى الفريق</string>
+    <string name="select_courses">اختر الدورات</string>
+    <string name="untitled_course">دورة بدون عنوان</string>
+    <string name="courses_loading">جارٍ تحميل الدورات…</string>
+    <string name="error">خطأ: %1$s</string>
 
 </resources>

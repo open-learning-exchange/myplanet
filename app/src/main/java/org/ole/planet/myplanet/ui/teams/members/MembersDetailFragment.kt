@@ -9,7 +9,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
-import org.ole.planet.myplanet.utils.NavigationHelper
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 class MembersDetailFragment : Fragment() {
     private var _binding: FragmentMemberDetailBinding? = null
@@ -47,7 +47,7 @@ class MembersDetailFragment : Fragment() {
         }
 
         binding.btnClose.setOnClickListener {
-            activity?.supportFragmentManager?.let { NavigationHelper.popBackStack(it) }
+            activity?.supportFragmentManager?.let { FragmentNavigator.popBackStack(it) }
         }
     }
 

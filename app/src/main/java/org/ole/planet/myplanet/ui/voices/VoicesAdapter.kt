@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -75,7 +76,8 @@ class VoicesAdapter(
     private val deletePostFn: suspend (String) -> Unit,
     private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
     private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
-    private val labelManager: VoicesLabelManager
+    private val labelManager: VoicesLabelManager,
+    private val voicesRepository: VoicesRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -114,7 +116,6 @@ class VoicesAdapter(
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
-    var user: RealmUser? = null
     private val profileDbHandler = userSessionManager
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUser?>()
@@ -174,7 +175,6 @@ class VoicesAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        user = userSessionManager.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return VoicesViewHolder(binding)
     }
@@ -357,6 +357,8 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     holder,
+                    voicesRepository,
+                    scope
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -372,7 +374,7 @@ class VoicesAdapter(
             val conversations = JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
 
-            if (user?.id?.startsWith("guest") == false) {
+            if (currentUser?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : OnChatItemClickListener {
                     override fun onChatItemClick(position: Int, chatItem: ChatMessage) {
                         listener?.onNewsItemClick(news)
@@ -441,7 +443,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun isGuestUser() = user?.id?.startsWith("guest") == true
+    private fun isGuestUser() = currentUser?.id?.startsWith("guest") == true
 
     private fun isOwner(news: RealmNews?): Boolean =
         news?.userId == currentUser?._id
@@ -544,6 +546,8 @@ class VoicesAdapter(
                     currentUser,
                     listener,
                     viewHolder,
+                    voicesRepository,
+                    scope
                 ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {

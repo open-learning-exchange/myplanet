@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 
 @AndroidEntryPoint
 class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResourcesUpdateListener {
@@ -53,6 +54,11 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        showLibraryList()
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -117,12 +123,25 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                         teamsRepository.addResourceLinks(teamId, selectedResources, user)
                         showLibraryList()
                     }
-                }.setNegativeButton(R.string.cancel, null)
+                }
+                .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
+                    showAddResourceFragment()
+                }
+                .setNegativeButton(R.string.cancel, null)
 
             val alertDialog = alertDialogBuilder.create()
             alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
             listSetting(alertDialog, availableLibraries, myLibraryAlertdialogBinding.alertDialogListView)
         }
+    }
+
+    private fun showAddResourceFragment() {
+        val fragment = AddResourceFragment()
+        fragment.arguments = Bundle().apply {
+            putInt("type", 0)
+            putString("teamId", teamId)
+        }
+        fragment.show(childFragmentManager, "AddResourceFragment")
     }
 
     private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: CheckboxListView) {
@@ -167,6 +186,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             }
         }
     }
+
+    override fun onAddCourse() {}
 
     override fun onAddDocument() {
         showResourceListDialog()

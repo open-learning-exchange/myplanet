@@ -48,9 +48,10 @@ object ServiceModule {
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, scope)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, scope)
     }
 
     @Provides
@@ -63,9 +64,10 @@ object ServiceModule {
         gson: Gson,
         uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
         personalsRepository: PersonalsRepository,
-        userRepository: org.ole.planet.myplanet.repository.UserRepository
+        userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository)
     }
 
     @Provides
@@ -73,9 +75,11 @@ object ServiceModule {
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences)
+        return UploadToShelfService(context, databaseService, preferences, resourcesRepository, coursesRepository)
     }
 
     @Provides
@@ -84,8 +88,8 @@ object ServiceModule {
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
         @ApplicationContext context: Context,
-        @ApplicationScope scope: CoroutineScope
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context)
+        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository)
     }
 }

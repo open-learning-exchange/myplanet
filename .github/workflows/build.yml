@@ -45,4 +45,4 @@ jobs:
       - name: build debug as test
         run: |
           FLAVOR=${{ matrix.build }}
-          ./gradlew assemble${FLAVOR^}Debug --warning-mode all --stacktrace
+          ./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4

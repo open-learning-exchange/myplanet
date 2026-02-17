@@ -27,6 +27,12 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
+        return withRealmAsync { realm ->
+            RealmRating.getRatings(realm, "resource", userId)
+        }
+    }
+
     override suspend fun getRatingSummary(
         type: String,
         itemId: String,
@@ -42,7 +48,7 @@ class RatingsRepositoryImpl @Inject constructor(
             val totalRatings = results.size
             val averageRating =
                 if (totalRatings > 0) {
-                    results.average("rate")?.toFloat() ?: 0f
+                    results.average("rate").toFloat()
                 } else {
                     0f
                 }

@@ -12,7 +12,6 @@ import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
-import android.webkit.URLUtil
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CompoundButton
@@ -50,17 +49,14 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ServerAddress
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -143,7 +139,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var configurationsRepository: ConfigurationsRepository
 
     @Inject
+    lateinit var communityRepository: CommunityRepository
+
+    @Inject
     open lateinit var resourcesRepository: ResourcesRepository
+
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
 
     @Inject
     lateinit var syncManager: SyncManager
@@ -303,9 +305,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
-
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         try {
             val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
             val url = if (isAlternativeUrl) {
@@ -318,24 +317,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
 
-            val response = apiInterface.isPlanetAvailable(url)
-            val code = response.code()
-
-            if (response.isSuccessful) {
-                val ss = response.body()?.string()
-
-                val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                val dbCount = myList?.size ?: 0
-
-                return if (dbCount < 8) {
-                    customProgressDialog.dismiss()
-                    alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                    false
-                } else {
-                    startSync(type)
-                    true
-                }
-            } else if (code == 401) {
+            val isAvailable = configurationsRepository.checkServerAvailability(url)
+            if (isAvailable) {
                 startSync(type)
                 return true
             }
@@ -491,8 +474,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             var attempt = 0
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
-                val hasUser = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmUser::class.java).findAll().isNotEmpty()
+                val hasUser = withContext(Dispatchers.IO) {
+                    userRepository.hasAtLeastOneUser()
                 }
                 if (hasUser) {
                     break
@@ -536,7 +519,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                                 editor.remove("pendingLanguageChange").apply()
 
                                 LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
-                                updateUIWithNewLanguage()
+                                recreate()
                             }
                         }
                     }
@@ -555,9 +538,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            backgroundDownload(
-                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
-                                activityContext
+                            resourceDownloadCoordinator.startBackgroundDownload(
+                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
                             )
                         }
                     }
@@ -568,52 +550,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     activityContext.invalidateTeamsCacheAndReload()
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun updateUIWithNewLanguage() {
-        try {
-            if (::lblLastSyncDate.isInitialized) {
-                lblLastSyncDate.text = getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))
-            }
-            if (::lblVersion.isInitialized) {
-                lblVersion.text = getString(R.string.app_version)
-            }
-            if (::tvAvailableSpace.isInitialized) {
-                tvAvailableSpace.text = buildString {
-                    append(getString(R.string.available_space_colon))
-                    append(" ")
-                    append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
-                }
-            }
-            if (::inputName.isInitialized) {
-                inputName.hint = getString(R.string.hint_name)
-            }
-            if (::inputPassword.isInitialized) {
-                inputPassword.hint = getString(R.string.password)
-            }
-            if (::btnSignIn.isInitialized) {
-                btnSignIn.text = getString(R.string.btn_sign_in)
-            }
-            if (::btnGuestLogin.isInitialized) {
-                btnGuestLogin.text = getString(R.string.btn_guest_login)
-            }
-            if (::becomeMember.isInitialized) {
-                becomeMember.text = getString(R.string.become_a_member)
-            }
-            if (::btnFeedback.isInitialized) {
-                btnFeedback.text = getString(R.string.feedback)
-            }
-            if (::openCommunity.isInitialized) {
-                openCommunity.text = getString(R.string.open_community)
-            }
-            if (::btnLang.isInitialized) {
-                val currentLanguage = LocaleUtils.getLanguage(this)
-                btnLang.text = getLanguageString(currentLanguage)
-            }
-            invalidateOptionsMenu()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -805,14 +741,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope)
+        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope, configurationsRepository)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                 continueSyncProcess()
             }
         } else {
             lifecycleScope.launch(Dispatchers.IO) {
-                databaseService.executeTransactionAsync { realm -> realm.deleteAll() }
+                configurationsRepository.clearAllData()
             }
         }
         builder.setCancelable(cancelable)

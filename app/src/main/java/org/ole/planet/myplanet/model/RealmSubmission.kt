@@ -113,13 +113,6 @@ open class RealmSubmission : RealmObject() {
 
                 if (submission.has("answers")) {
                     val answersArray = submission.get("answers").asJsonArray
-                    for (i in 0 until answersArray.size()) {
-                        val answer = answersArray[i].asJsonObject
-                    }
-                }
-
-                if (submission.has("answers")) {
-                    val answersArray = submission.get("answers").asJsonArray
                     sub?.answers = RealmList<RealmAnswer>()
 
                     for (i in 0 until answersArray.size()) {
@@ -204,16 +197,6 @@ open class RealmSubmission : RealmObject() {
                 `object`.add("user", JsonParser.parseString(sub.user))
             }
             return `object`
-        }
-
-        @JvmStatic
-        @Deprecated("Use SubmissionsRepository.isStepCompleted instead")
-        fun isStepCompleted(realm: Realm, id: String?, userId: String?): Boolean {
-            val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
-            return exam.id?.let {
-                realm.where(RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it).notEqualTo("status", "pending").findFirst()
-            } != null
         }
 
         @JvmStatic

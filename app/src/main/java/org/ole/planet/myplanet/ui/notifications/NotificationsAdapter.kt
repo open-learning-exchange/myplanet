@@ -23,7 +23,7 @@ class NotificationsAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotificationsViewHolder {
         val rowNotificationsBinding =
             RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return NotificationsViewHolder(rowNotificationsBinding)
+        return NotificationsViewHolder(rowNotificationsBinding, onMarkAsReadClick, onNotificationClick)
     }
 
     override fun onBindViewHolder(holder: NotificationsViewHolder, position: Int) {
@@ -31,8 +31,11 @@ class NotificationsAdapter(
         holder.bind(notification)
     }
 
-    inner class NotificationsViewHolder(private val rowNotificationsBinding: RowNotificationsBinding) :
-        RecyclerView.ViewHolder(rowNotificationsBinding.root) {
+    class NotificationsViewHolder(
+        private val rowNotificationsBinding: RowNotificationsBinding,
+        private val onMarkAsReadClick: (String) -> Unit,
+        private val onNotificationClick: (Notification) -> Unit
+    ) : RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
         fun bind(notification: Notification) {
             rowNotificationsBinding.title.text =
@@ -43,6 +46,7 @@ class NotificationsAdapter(
             if (notification.isRead) {
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
                 rowNotificationsBinding.root.alpha = 0.5f
+                rowNotificationsBinding.btnMarkAsRead.setOnClickListener(null)
             } else {
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
                 rowNotificationsBinding.root.alpha = 1.0f

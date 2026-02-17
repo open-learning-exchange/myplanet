@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.AudioRecorderService
+import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
     private lateinit var binding: ActivityPdfreaderBinding
-    private lateinit var audioRecorderService: AudioRecorderService
+    private lateinit var audioRecorder: AudioRecorder
     private var fileName: String? = null
     @Inject
     lateinit var personalsRepository: PersonalsRepository
@@ -47,8 +47,8 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
         binding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
-        audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
-        audioRecorderService.setCaller(this, this)
+        audioRecorder = AudioRecorder().setAudioRecordListener(this)
+        audioRecorder.setCaller(this, this)
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             lifecycleScope.launch {
@@ -58,7 +58,7 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
             }
         }
         renderPdfFile()
-        binding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
+        binding.fabRecord.setOnClickListener { audioRecorder.onRecordClicked()}
         binding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
                 openAudioFile(this, library.translationAudioPath)
@@ -118,16 +118,18 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        val userModel = userSessionManager.userModel
-        if (userModel != null) {
-            AddResourceFragment.showAlert(
-                this,
-                outputFile,
-                personalsRepository,
-                userModel.id,
-                userModel.name,
-                lifecycleScope
-            ) {}
+        lifecycleScope.launch {
+            val userModel = userSessionManager.getUserModel()
+            if (userModel != null) {
+                AddResourceFragment.showAlert(
+                    this@PDFReaderActivity,
+                    outputFile,
+                    personalsRepository,
+                    userModel.id,
+                    userModel.name,
+                    lifecycleScope
+                ) {}
+            }
         }
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
@@ -148,8 +150,8 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
     }
 
     override fun onDestroy() {
-        if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
-            audioRecorderService.stopRecording()
+        if (this::audioRecorder.isInitialized && audioRecorder.isRecording()) {
+            audioRecorder.stopRecording()
         }
         super.onDestroy()
     }
