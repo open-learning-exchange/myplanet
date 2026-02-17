@@ -66,13 +66,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initView(view)
+        binding.cardProfileBell.txtCommunityName.text = model?.planetCode
+        setupNetworkStatusMonitoring()
+        (activity as DashboardActivity?)?.supportActionBar?.hide()
+        observeCompletedCourses()
+
         viewLifecycleOwner.lifecycleScope.launch {
             user = profileDbHandler.getUserModel()
-            initView(view)
-            binding.cardProfileBell.txtCommunityName.text = model?.planetCode
-            setupNetworkStatusMonitoring()
-            (activity as DashboardActivity?)?.supportActionBar?.hide()
-            observeCompletedCourses()
             if ((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
             }

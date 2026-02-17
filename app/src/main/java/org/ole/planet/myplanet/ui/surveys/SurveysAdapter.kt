@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 
 class SurveysAdapter(
     private val context: Context,
-    private val userId: String?,
+    private var userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
     private val onAdoptSurveyListener: OnSurveyAdoptListener,
@@ -31,6 +31,11 @@ class SurveysAdapter(
     private var isTitleAscending = true
     private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
         sortSurveyList(false, list)
+    }
+
+    fun setUserId(userId: String?) {
+        this.userId = userId
+        notifyDataSetChanged()
     }
 
     init {

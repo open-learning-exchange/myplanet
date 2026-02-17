@@ -71,6 +71,8 @@ object DialogUtils {
                     intent.putExtra("guest", guest)
                     context.startActivity(intent)
                 }
+            } else {
+                Utilities.toast(context, context.getString(R.string.unable_to_access_feature))
             }
         }
         cancel.setOnClickListener {
