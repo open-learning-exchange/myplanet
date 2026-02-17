@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -602,5 +603,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun hasAtLeastOneUser(): Boolean {
         return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+    }
+
+    override suspend fun hasUserSyncAction(userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+        val actions = queryList(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        }
+        return actions.isNotEmpty()
     }
 }
