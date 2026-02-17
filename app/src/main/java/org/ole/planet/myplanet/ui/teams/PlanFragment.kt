@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.dto.Team
-import org.ole.planet.myplanet.model.dto.toDto
+import org.ole.planet.myplanet.model.Team
+import org.ole.planet.myplanet.model.toDto
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 

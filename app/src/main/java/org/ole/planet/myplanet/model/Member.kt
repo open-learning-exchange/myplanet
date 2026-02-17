@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model.dto
+package org.ole.planet.myplanet.model
 
 data class Member(
     val id: String?,

@@ -1,8 +1,6 @@
-package org.ole.planet.myplanet.model.dto
+package org.ole.planet.myplanet.model
 
 import io.realm.RealmList
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
 
 fun RealmMyTeam.toDto(): Team {
     return Team(
