@@ -27,7 +27,7 @@ class TeamViewModel @Inject constructor(
     fun prepareTeamData(teams: List<RealmMyTeam>, userId: String?) {
         currentTeams = teams
         viewModelScope.launch {
-            val processedTeams = withContext(Dispatchers.Default) {
+            val processedTeams = withContext(Dispatchers.IO) {
                 val validTeams = teams.filter {
                     !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
                 }
