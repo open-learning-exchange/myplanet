@@ -77,9 +77,10 @@ object ServiceModule {
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
-        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        userRepository: org.ole.planet.myplanet.repository.UserRepository
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, resourcesRepository, coursesRepository)
+        return UploadToShelfService(context, databaseService, preferences, resourcesRepository, coursesRepository, userRepository)
     }
 
     @Provides

@@ -82,6 +82,12 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getPendingSyncUsers(limit: Int): List<RealmUser> {
+        return queryList(RealmUser::class.java) {
+            isEmpty("_id").or().equalTo("isUpdated", true)
+        }.take(limit)
+    }
+
     override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUser> {
         return withRealm { realm ->
             val results = realm.where(RealmUser::class.java)
