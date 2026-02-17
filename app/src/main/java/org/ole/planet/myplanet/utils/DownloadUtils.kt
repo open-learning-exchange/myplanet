@@ -34,40 +34,32 @@ object DownloadUtils {
     @JvmStatic
     fun createChannels(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
-                val channel = NotificationChannel(
-                    DOWNLOAD_CHANNEL,
-                    "Download Service",
-                    NotificationManager.IMPORTANCE_LOW
-                ).apply {
-                    setSound(null, null)
-                    enableVibration(false)
-                    description = "Shows download progress for files"
-                }
-                manager.createNotificationChannel(channel)
+        if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
+            val channel = NotificationChannel(DOWNLOAD_CHANNEL, "Download Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                setSound(null, null)
+                enableVibration(false)
+                description = "Shows download progress for files"
             }
-            if (manager.getNotificationChannel(COMPLETION_CHANNEL) == null) {
-                val channel = NotificationChannel(
-                    COMPLETION_CHANNEL,
-                    "Download Completion",
-                    NotificationManager.IMPORTANCE_HIGH
-                ).apply {
-                    description = "Notifies when downloads are completed"
-                }
-                manager.createNotificationChannel(channel)
+            manager.createNotificationChannel(channel)
+        }
+        if (manager.getNotificationChannel(COMPLETION_CHANNEL) == null) {
+            val channel = NotificationChannel(COMPLETION_CHANNEL, "Download Completion",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notifies when downloads are completed"
             }
-            if (manager.getNotificationChannel(WORKER_CHANNEL) == null) {
-                val channel = NotificationChannel(
-                    WORKER_CHANNEL,
-                    "Background Downloads",
-                    NotificationManager.IMPORTANCE_LOW
-                ).apply {
-                    description = "Shows progress for background downloads"
-                    setSound(null, null)
-                }
-                manager.createNotificationChannel(channel)
+            manager.createNotificationChannel(channel)
+        }
+        if (manager.getNotificationChannel(WORKER_CHANNEL) == null) {
+            val channel = NotificationChannel(WORKER_CHANNEL, "Background Downloads",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows progress for background downloads"
+                setSound(null, null)
             }
+            manager.createNotificationChannel(channel)
         }
     }
 
@@ -146,12 +138,23 @@ object DownloadUtils {
         return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
     }
 
-    @JvmStatic
-    fun downloadFiles(
-        dbMyLibrary: List<RealmMyLibrary?>,
-        selectedItems: ArrayList<Int>
-    ): ArrayList<String> {
-        return ArrayList(selectedItems.map { UrlUtils.getUrl(dbMyLibrary[it]) })
+    @RequiresApi(Build.VERSION_CODES.S)
+    fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
+        context?.let { ctx ->
+            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+
+            val existingPriority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+            val mergedPriority = existingPriority.toMutableSet().apply { addAll(urls) }
+
+            preferences.edit {
+                putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
+            }
+
+            val serviceRunning = isDownloadServiceRunning(ctx)
+            if (!serviceRunning) {
+                startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
+            }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -166,7 +169,8 @@ object DownloadUtils {
                 putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
             }
 
-            if (!isDownloadServiceRunning(ctx)) {
+            val serviceRunning = isDownloadServiceRunning(ctx)
+            if (!serviceRunning) {
                 startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
             }
         }
