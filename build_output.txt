@@ -1,0 +1,64 @@
+Reusing configuration cache.
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDefaultDebugAssets UP-TO-DATE
+> Task :app:generateVersionsXml UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:mergeDefaultDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDefaultDebug UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:desugarDefaultDebugFileDependencies UP-TO-DATE
+> Task :app:mergeDefaultDebugAssets UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+> Task :app:compileDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:compressDefaultDebugAssets UP-TO-DATE
+> Task :app:checkDefaultDebugAarMetadata UP-TO-DATE
+> Task :app:extractDeepLinksDefaultDebug UP-TO-DATE
+> Task :app:createDefaultDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:mapDefaultDebugSourceSetPaths UP-TO-DATE
+> Task :app:mergeDefaultDebugJniLibFolders UP-TO-DATE
+> Task :app:checkDefaultDebugDuplicateClasses UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugMainManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifestForPackage UP-TO-DATE
+> Task :app:mergeDefaultDebugNativeLibs UP-TO-DATE
+> Task :app:mergeLibDexDefaultDebug UP-TO-DATE
+> Task :app:stripDefaultDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDefaultDebug UP-TO-DATE
+> Task :app:writeDefaultDebugAppMetadata UP-TO-DATE
+> Task :app:writeDefaultDebugSigningConfigVersions UP-TO-DATE
+> Task :app:kspDefaultDebugKotlin UP-TO-DATE
+> Task :app:mergeExtDexDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugResources UP-TO-DATE
+> Task :app:kaptGenerateStubsDefaultDebugKotlin UP-TO-DATE
+> Task :app:kaptDefaultDebugKotlin UP-TO-DATE
+> Task :app:compileDefaultDebugKotlin UP-TO-DATE
+> Task :app:compileDefaultDebugJavaWithJavac UP-TO-DATE
+> Task :app:hiltSyncDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugJavaRes UP-TO-DATE
+> Task :app:mergeDefaultDebugJavaResource UP-TO-DATE
+> Task :app:hiltAggregateDepsDefaultDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDefaultDebug
+Could not load entry c1e8cf38496c783e2cfaa14b379116b1 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:defaultDebugRealmAccessorsTransformer
+> Task :app:transformDefaultDebugClassesWithAsm
+> Task :app:dexBuilderDefaultDebug
+> Task :app:mergeDefaultDebugGlobalSynthetics
+> Task :app:mergeProjectDexDefaultDebug
+> Task :app:packageDefaultDebug
+> Task :app:assembleDefaultDebug
+> Task :app:createDefaultDebugApkListingFileRedirect
+
+BUILD SUCCESSFUL in 1m 25s
+50 actionable tasks: 8 executed, 42 up-to-date
+Configuration cache entry reused.
+The remote build cache was disabled during the build due to errors.
