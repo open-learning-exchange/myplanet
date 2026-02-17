@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.services
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.di.ApplicationScope
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class SubmissionUploadExecutor @Inject constructor(

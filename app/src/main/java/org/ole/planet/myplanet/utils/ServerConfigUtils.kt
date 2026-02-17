@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.utils
 
 import android.content.Context
+import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
-import androidx.core.net.toUri
 
 object ServerConfigUtils {
     fun getServerAddresses(context: Context): List<ServerAddress> {
