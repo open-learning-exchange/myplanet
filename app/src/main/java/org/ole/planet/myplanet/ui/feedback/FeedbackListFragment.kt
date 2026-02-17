@@ -109,7 +109,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                                 customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                                 customProgressDialog?.setText(getString(R.string.syncing_feedback))
                             }
-                            if (customProgressDialog?.isShowing == false) {
+                            if (customProgressDialog?.isShowing() == false) {
                                 customProgressDialog?.show()
                             }
                         }
