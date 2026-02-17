@@ -223,6 +223,12 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.ext.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }
 realm {
     syncEnabled = true
