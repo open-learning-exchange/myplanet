@@ -30,8 +30,10 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
@@ -291,9 +293,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                service.syncPlanetServers { success: String? ->
-                    toast(this@LoginActivity, success)
+                val success = withContext(Dispatchers.IO) {
+                    communityRepository.syncCommunityDocs()
                 }
+                val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
+                toast(this@LoginActivity, message)
             }
         }
         nameWatcher2 = object : TextWatcher {

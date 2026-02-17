@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -35,7 +34,6 @@ class DataService constructor(
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val uploadToShelfService: UploadToShelfService,
-    private val communityRepository: CommunityRepository,
 ) {
     private val preferences: SharedPreferences = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
@@ -154,45 +152,6 @@ class DataService constructor(
                 withContext(Dispatchers.Main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
-            }
-        }
-    }
-
-    suspend fun syncPlanetServers(callback: OnSuccessListener) {
-        try {
-            val response = withContext(Dispatchers.IO) {
-                retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
-            }
-
-            if (response.isSuccessful && response.body() != null) {
-                val arr = JsonUtils.getJsonArray("rows", response.body())
-                val startTime = System.currentTimeMillis()
-                println("Realm transaction started")
-
-                val transactionResult = runCatching {
-                    communityRepository.replaceAll(arr)
-                }
-
-                val endTime = System.currentTimeMillis()
-                println("Realm transaction finished in ${endTime - startTime}ms")
-
-                withContext(Dispatchers.Main) {
-                    transactionResult.onSuccess {
-                        callback.onSuccess(context.getString(R.string.server_sync_successfully))
-                    }.onFailure { e ->
-                        e.printStackTrace()
-                        callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                    }
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-                }
-            }
-        } catch (t: Throwable) {
-            t.printStackTrace()
-            withContext(Dispatchers.Main) {
-                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
             }
         }
     }
