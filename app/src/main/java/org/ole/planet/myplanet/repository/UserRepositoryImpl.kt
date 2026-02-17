@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import com.google.gson.JsonObject
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.Normalizer
 import java.util.Calendar
@@ -35,7 +36,7 @@ class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
-    private val uploadToShelfService: UploadToShelfService,
+    private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository
 ) : RealmRepository(databaseService), UserRepository {
@@ -374,7 +375,7 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                    uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
                 } catch (keyIvException: Exception) { }
                 Result.success(userModel)
             } else {
