@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import io.realm.Sort
+import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.JsonUtils
-import javax.inject.Inject
 
 class CommunityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
