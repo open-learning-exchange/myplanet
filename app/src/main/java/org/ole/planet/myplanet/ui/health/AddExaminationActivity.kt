@@ -275,7 +275,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                     val odUserId = generateIv()
                     examination = RealmHealthExamination()
                     examination?._id = odUserId
-                    examination?.userId = userId
+                    examination?.userId = odUserId
                 }
                 examination?.profileId = health?.userKey
                 examination?.creatorId = health?.userKey
