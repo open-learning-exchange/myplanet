@@ -89,6 +89,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary> {
+        if (stepId == null) return emptyList()
+
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("stepId", stepId)
+        }
+    }
+
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
 
@@ -247,7 +255,18 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
+        return try {
+            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            if (urls.isNotEmpty()) {
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            }
+            true
+        } catch (e: Exception) {
             false
         }
     }
