@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 interface CoursesRepository {
+    suspend fun getAllCourses(): List<RealmMyCourse>
     fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse>
     suspend fun getMyCourses(userId: String): List<RealmMyCourse>
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
@@ -44,7 +45,6 @@ interface CoursesRepository {
     suspend fun isCourseCertified(courseId: String): Boolean
     suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
-    suspend fun deleteCourseProgress(courseId: String)
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
 }

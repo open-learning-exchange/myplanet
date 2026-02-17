@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -84,6 +85,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var ratingsRepository: RatingsRepository
+
+    @Inject
+    lateinit var tagsRepository: TagsRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -223,7 +227,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val allResourceIds = allLibraryItems.mapNotNull { it.id }
         tagsMap = tagsRepository.getTagsForResources(allResourceIds)
 
-        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.userModel, emptyMap(), emptySet())
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.getUserModel(), emptyMap(), emptySet())
 
         val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
         adapterLibrary.setLibraryList(filteredList)
@@ -240,7 +244,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        userModel = profileDbHandler?.userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
@@ -249,7 +252,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         initArrays()
         hideButton()
 
-        setupGuestUserRestrictions()
+        lifecycleScope.launch {
+            userModel = profileDbHandler?.getUserModel()
+            setupGuestUserRestrictions()
+
+            if (userModel?.id != null) {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                        }
+                    }
+                }
+            }
+        }
 
         if (::adapterLibrary.isInitialized) {
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -262,18 +278,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-
-        if (userModel?.id != null) {
-            lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
-                        if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
-                        }
-                    }
-                }
-            }
-        }
         
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()

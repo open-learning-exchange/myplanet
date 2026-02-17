@@ -9,9 +9,11 @@ import android.widget.CompoundButton
 import android.widget.RadioGroup
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import io.realm.Sort
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -158,7 +160,8 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
             val protocol = if (
                 actualUrl == BuildConfig.PLANET_XELA_URL ||
                 actualUrl == BuildConfig.PLANET_SANPABLO_URL ||
-                actualUrl == BuildConfig.PLANET_URIUR_URL
+                actualUrl == BuildConfig.PLANET_URIUR_URL ||
+                isLocalNetwork(actualUrl)
             ) "http://" else "https://"
             editor.putString("serverProtocol", protocol).apply()
             if (serverCheck) {
@@ -208,7 +211,6 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     }
     serverUrl.isEnabled = false
     serverPassword.isEnabled = false
-    editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
 }
 
 fun SyncActivity.onNeutralButtonClick(dialog: MaterialDialog) {
@@ -301,17 +303,19 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
     showConfigurationUIElements(binding, true, dialog)
 
-    val communities: List<RealmCommunity> = databaseService.withRealm { realm ->
-        realm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll().let { realm.copyFromRealm(it) }
-    }
-    val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
-    binding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
-    binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-            onChangeServerUrl()
-        }
+    lifecycleScope.launch {
+        val communities = communityRepository.getAllSorted()
+        val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
+        val adapter = ArrayAdapter(this@setupManualConfigEnabled, android.R.layout.simple_spinner_item, nonEmptyCommunities)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spnCloud.adapter = adapter
+        binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                onChangeServerUrl()
+            }
 
-        override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
     }
 
     binding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
@@ -325,4 +329,14 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
     setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
     protocolSemantics()
+}
+
+private fun isLocalNetwork(url: String): Boolean {
+    val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
+    return host.startsWith("192.168.") ||
+            host.startsWith("10.") ||
+            host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")) ||
+            host == "localhost" ||
+            host == "127.0.0.1" ||
+            host.endsWith(".local")
 }

@@ -30,6 +30,10 @@ class CoursesRepositoryImpl @Inject constructor(
     private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {}
+    }
+
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
         if (userId == null) return myCourses
@@ -378,26 +382,6 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
         return intermediate.copy(userHasCourse = userHasCourse)
-    }
-
-    override suspend fun deleteCourseProgress(courseId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", courseId)
-                .findAll()
-                .deleteAllFromRealm()
-            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java)
-                .equalTo("courseId", courseId)
-                .findAll()
-            for (exam in examList) {
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
-            }
-        }
     }
 
     override suspend fun getMyCourseIds(userId: String): JsonArray {

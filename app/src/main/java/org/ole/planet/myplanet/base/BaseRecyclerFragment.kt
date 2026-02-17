@@ -19,9 +19,12 @@ import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
 import org.ole.planet.myplanet.model.RealmTag
@@ -194,47 +197,49 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val itemsToDelete = selectedItems?.toList() ?: emptyList()
-            itemsToDelete.forEach { item ->
+        selectedItems?.forEach { item ->
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
                 val `object` = item as RealmObject
-                if (deleteProgress && `object` is RealmMyCourse) {
-                    `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
+                deleteCourseProgress(deleteProgress, `object`)
+                removeFromShelf(`object`)
+                if (mRealm.isInTransaction) {
+                    mRealm.commitTransaction()
                 }
-
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
-                    removeFromShelf(`object`)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
-                    }
-                } catch (e: Exception) {
-                    if (mRealm.isInTransaction) {
-                        mRealm.cancelTransaction()
-                    }
-                    throw e
+            } catch (e: Exception) {
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
                 }
+                throw e
             }
-            recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "")
         }
+        selectedItems?.clear()
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
 
-    private suspend fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
+    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+        if (deleteProgress && `object` is RealmMyCourse) {
+            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
+            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
+            for (exam in examList) {
+                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
+                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
+                    .deleteAllFromRealm()
+            }
+        }
+    }
+
+    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
         for (tg in tags) {
-            val tagId = tg.id
-            val linkId = course?.courseId
-            if (tagId != null) {
-                val count = tagsRepository.getTagCount("courses", tagId, linkId)
-                if (count > 0 && !courses.contains(course)) {
-                    course?.let { courses.add(it) }
-                }
+            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
+                .equalTo("linkId", course?.courseId).count()
+            if (count > 0 && !courses.contains(course)) {
+                course?.let { courses.add(it) }
             }
         }
     }
@@ -299,7 +304,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }
