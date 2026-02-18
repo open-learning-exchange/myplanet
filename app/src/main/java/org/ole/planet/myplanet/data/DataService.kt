@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.data
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
@@ -11,10 +10,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ConfigurationManager
@@ -22,9 +19,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.VersionUtils
 
 class DataService constructor(
     private val context: Context,
@@ -39,59 +34,6 @@ class DataService constructor(
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
-
-    @Deprecated("Use ConfigurationsRepository.checkVersion instead")
-    fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (shouldPromptForSettings(settings)) return
-
-        serviceScope.launch {
-            withContext(Dispatchers.Main) {
-                callback.onCheckingVersion()
-            }
-            try {
-                val planetInfo = fetchVersionInfo(settings)
-                if (planetInfo == null) {
-                    withContext(Dispatchers.Main) {
-                        callback.onError(context.getString(R.string.version_not_found), true)
-                    }
-                    return@launch
-                }
-
-                preferences.edit {
-                    putLong("last_version_check_timestamp", System.currentTimeMillis())
-                    putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                    putString("versionDetail", JsonUtils.gson.toJson(planetInfo))
-                }
-
-                val rawApkVersion = fetchApkVersionString(settings)
-                val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
-                if (versionStr.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                    }
-                    return@launch
-                }
-
-                val apkVersion = parseApkVersionString(versionStr)
-                    ?: run {
-                        withContext(Dispatchers.Main) {
-                            callback.onError(
-                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                                false
-                            )
-                        }
-                        return@launch
-                    }
-
-                handleVersionEvaluation(planetInfo, apkVersion, callback)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    callback.onError(context.getString(R.string.connection_failed), true)
-                }
-            }
-        }
-    }
 
     suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
@@ -136,84 +78,6 @@ class DataService constructor(
         configurationManager.getMinApk(listener, url, pin, activity, callerActivity)
     }
 
-    private fun shouldPromptForSettings(settings: SharedPreferences): Boolean {
-        if (!settings.getBoolean("isAlternativeUrl", false)) {
-            if (settings.getString("couchdbURL", "").isNullOrEmpty()) {
-                (context as? SyncActivity)?.settingDialog()
-                return true
-            }
-        }
-        return false
-    }
-
-    private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
-        withContext(Dispatchers.IO) {
-            val result = ApiClient.executeWithResult {
-                retrofitInterface.checkVersion(UrlUtils.getUpdateUrl(settings))
-            }
-            when (result) {
-                is NetworkResult.Success -> result.data
-                else -> null
-            }
-        }
-
-    private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
-        withContext(Dispatchers.IO) {
-            val result = ApiClient.executeWithResult {
-                retrofitInterface.getApkVersion(UrlUtils.getApkVersionUrl(settings))
-            }
-            when (result) {
-                is NetworkResult.Success -> result.data.string()
-                else -> null
-            }
-        }
-
-    private fun parseApkVersionString(raw: String?): Int? {
-        if (raw.isNullOrEmpty()) return null
-        var vsn = raw.replace("v".toRegex(), "")
-        vsn = vsn.replace("\\.".toRegex(), "")
-        val cleaned = if (vsn.startsWith("0")) vsn.replaceFirst("0", "") else vsn
-        return cleaned.toIntOrNull()
-    }
-
-    private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: CheckVersionCallback) {
-        val currentVersion = VersionUtils.getVersionCode(context)
-        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, false)
-                }
-            }
-            return
-        }
-        if (apkVersion > currentVersion) {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-                }
-            }
-            return
-        }
-        if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onUpdateAvailable(info, true)
-                }
-            }
-        } else {
-            serviceScope.launch {
-                withContext(Dispatchers.Main) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                }
-            }
-        }
-    }
-
-    interface CheckVersionCallback {
-        fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
-        fun onCheckingVersion()
-        fun onError(msg: String, blockSync: Boolean)
-    }
 
     interface ConfigurationIdListener {
         fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String)
