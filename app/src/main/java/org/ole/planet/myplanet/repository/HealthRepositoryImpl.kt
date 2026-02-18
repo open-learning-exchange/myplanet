@@ -38,8 +38,6 @@ class HealthRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 executeTransaction { realm ->
-                    realm.copyToRealmOrUpdate(examination)
-
                     val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
                     if (user != null) {
                         var pojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
@@ -74,6 +72,10 @@ class HealthRepositoryImpl @Inject constructor(
 
                         health.profile = profile
                         health.lastExamination = Date().time
+
+                        // Update examination profileId to link it correctly
+                        examination.profileId = health.userKey
+                        realm.copyToRealmOrUpdate(examination)
 
                         try {
                             pojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(health), user.key, user.iv)
