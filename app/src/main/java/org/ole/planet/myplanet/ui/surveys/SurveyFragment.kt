@@ -97,7 +97,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         }
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
         viewLifecycleOwner.lifecycleScope.launch {
-            getAdapter()
+            recyclerView.adapter = getAdapter()
         }
         setupRecyclerView()
         setupListeners()
