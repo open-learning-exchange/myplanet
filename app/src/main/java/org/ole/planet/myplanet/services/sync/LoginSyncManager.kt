@@ -40,10 +40,6 @@ class LoginSyncManager private constructor(
                 withContext(Dispatchers.Main) { listener.onSyncStarted() }
 
                 val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-                if (apiInterface == null) {
-                    withContext(Dispatchers.Main) { listener.onSyncFailed("Network client not available.") }
-                    return@launch
-                }
 
                 val authHeader = try {
                     "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
@@ -137,9 +133,6 @@ class LoginSyncManager private constructor(
                 `object`.add("selector", selector)
 
                 val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-                if (apiInterface == null) {
-                    return@launch
-                }
 
                 val header = UrlUtils.header
                 if (header.isBlank()) {
