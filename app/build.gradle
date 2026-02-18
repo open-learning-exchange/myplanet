@@ -35,10 +35,14 @@ android {
         create("default") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "false"
+            resValue "string", "app_version", "${defaultConfig.versionName}"
         }
         create("lite") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "true"
+            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
+            versionNameSuffix "-lite"
+            resValue "string", "app_version", "${defaultConfig.versionName}-lite"
         }
     }
 
@@ -81,6 +85,7 @@ android {
         viewBinding = true
         buildConfig = true
         dataBinding = true
+        resValues = true
     }
 
     bundle {
@@ -149,22 +154,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-
-tasks.register('generateVersionsXml') {
-    def versionNameProvider = project.provider { android.defaultConfig.versionName }
-    def versionsXmlFile = file('src/main/res/values/versions.xml')
-
-    inputs.property("versionName", versionNameProvider)
-    outputs.file(versionsXmlFile)
-
-    doLast {
-        versionsXmlFile.text = """<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_version">${versionNameProvider.get()}</string>
-</resources>"""
-    }
-}
-preBuild.dependsOn generateVersionsXml
 
 repositories {
     mavenCentral()

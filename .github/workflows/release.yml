@@ -27,15 +27,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: check and diff the code to get lite
-        if: matrix.build == 'lite'
-        run: |
-          file="app/src/main/AndroidManifest.xml"
-          lite="app/src/lite/AndroidManifest.xml"
-          ls -al "$file" "$lite"
-          diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
-          cp "$lite" "$file"
-
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
         with:
@@ -47,10 +38,6 @@ jobs:
       - name: set release version
         run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
 
-      - name: set lite version name
-        if: matrix.build == 'lite'
-        run: sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
-
       - name: build release APK and AAB
         run: |
           FLAVOR=${{ matrix.build }}
@@ -59,7 +46,11 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
-          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)
+          if [ "$FLAVOR" == "lite" ]; then
+            VERSION="${VERSION}-lite"
+          fi
+          echo "ANDROID_VERSION_NAME=${VERSION}" >> $GITHUB_ENV
           echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
       - name: sign release APK and AAB
