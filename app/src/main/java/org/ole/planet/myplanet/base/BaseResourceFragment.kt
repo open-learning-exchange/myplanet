@@ -406,11 +406,11 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        val userId = profileDbHandler.userModel?.id ?: return
-        val resourceIds = selectedItems.mapNotNull { index ->
-            libraryItems.getOrNull(index)?.resourceId
-        }
         lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+            val resourceIds = selectedItems.mapNotNull { index ->
+                libraryItems.getOrNull(index)?.resourceId
+            }
             resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
         }
