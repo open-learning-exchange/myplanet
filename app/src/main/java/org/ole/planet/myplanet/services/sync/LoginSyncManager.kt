@@ -160,7 +160,7 @@ class LoginSyncManager private constructor(
                         settings.edit { putString("communityLeaders", "$responseBody") }
 
                         val array = JsonUtils.getJsonArray("docs", responseBody)
-                        if (array != null && array.size() > 0) {
+                        if (array.size() > 0) {
                             try {
                                 settings.edit { putString("user_admin", JsonUtils.gson.toJson(array[0])) }
                             } catch (e: Exception) {
