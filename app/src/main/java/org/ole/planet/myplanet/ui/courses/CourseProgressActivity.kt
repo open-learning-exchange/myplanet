@@ -45,11 +45,13 @@ class CourseProgressActivity : BaseActivity() {
     }
 
     private fun updateUI(data: CourseProgressData) {
-        if (data.max != 0) {
-            binding.progressView.setProgress((data.current.toDouble() / data.max.toDouble() * 100).toInt(), true)
+        val progress = if (data.max != 0) {
+            (data.current.toDouble() / data.max.toDouble() * 100).toInt()
         } else {
-            binding.progressView.setProgress(0, true)
+            0
         }
+        binding.progressView.setProgress(progress, true)
+        binding.tvProgressPercent.text = progress.toString()
         binding.tvCourse.text = data.title
         binding.tvProgress.text = getString(
             R.string.course_progress,

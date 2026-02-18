@@ -7,11 +7,10 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.RadioGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.afollestad.materialdialogs.DialogAction
-import com.afollestad.materialdialogs.MaterialDialog
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
@@ -22,12 +21,12 @@ import org.ole.planet.myplanet.utils.ServerConfigUtils
 fun SyncActivity.showConfigurationUIElements(
     binding: DialogServerUrlBinding,
     manualSelected: Boolean,
-    dialog: MaterialDialog,
+    dialog: AlertDialog,
 ) {
     serverAddresses.visibility = if (manualSelected) View.GONE else View.VISIBLE
     syncToServerText.visibility = if (manualSelected) View.GONE else View.VISIBLE
     positiveAction.visibility = if (manualSelected) View.VISIBLE else View.GONE
-    dialog.getActionButton(DialogAction.NEUTRAL).text =
+    dialog.getButton(AlertDialog.BUTTON_NEUTRAL).text =
         if (manualSelected) {
             getString(R.string.btn_sync_save)
         } else {
@@ -47,7 +46,7 @@ fun SyncActivity.showConfigurationUIElements(
     }
 }
 
-fun SyncActivity.performSync(dialog: MaterialDialog) {
+fun SyncActivity.performSync(dialog: AlertDialog) {
     serverConfigAction = "sync"
     val protocol = "${settings.getString("serverProtocol", "")}"
     var url = "${serverUrl.text}"
@@ -137,7 +136,7 @@ fun SyncActivity.setupManualUi(binding: DialogServerUrlBinding) {
     serverPassword.isEnabled = true
 }
 
-fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: MaterialDialog) {
+fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: AlertDialog) {
     serverAddresses.layoutManager = LinearLayoutManager(this)
     serverListAddresses = ServerConfigUtils.getServerAddresses(this)
 
@@ -212,11 +211,11 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     serverPassword.isEnabled = false
 }
 
-fun SyncActivity.onNeutralButtonClick(dialog: MaterialDialog) {
+fun SyncActivity.onNeutralButtonClick(dialog: AlertDialog) {
     if (!prefData.getManualConfig()) {
         showAdditionalServers = !showAdditionalServers
         refreshServerList()
-        dialog.getActionButton(DialogAction.NEUTRAL).text =
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).text =
             if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
     } else {
         serverConfigAction = "save"
@@ -261,7 +260,7 @@ fun SyncActivity.setupFastSyncOption(binding: DialogServerUrlBinding) {
 fun SyncActivity.handleManualConfiguration(
     binding: DialogServerUrlBinding,
     configurationId: String?,
-    dialog: MaterialDialog,
+    dialog: AlertDialog,
 ) {
     if (!prefData.getManualConfig()) {
         binding.manualConfiguration.isChecked = false
@@ -294,7 +293,7 @@ fun SyncActivity.handleManualConfiguration(
     }
 }
 
-fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialog: MaterialDialog) {
+fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialog: AlertDialog) {
     prefData.setManualConfig(true)
     editor.putString("serverURL", "").apply()
     editor.putString("serverPin", "").apply()
