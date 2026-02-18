@@ -30,62 +30,6 @@ open class RealmRating : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
-            val ratings = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
-            val aggregated = aggregateRatings(ratings, userId)
-            val map = HashMap<String?, JsonObject>()
-            for ((item, aggregation) in aggregated) {
-                map[item] = aggregation.toJson()
-            }
-            return map
-        }
-
-        @JvmStatic
-        fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
-            val ratings = mRealm.where(RealmRating::class.java)
-                .equalTo("type", type)
-                .equalTo("item", id)
-                .findAll()
-            val aggregated = aggregateRatings(ratings, userid)[id]
-            return aggregated?.toJson()
-        }
-
-        private fun aggregateRatings(
-            ratings: Iterable<RealmRating>,
-            userId: String?
-        ): Map<String?, RatingAggregation> {
-            val aggregationMap = LinkedHashMap<String?, RatingAggregation>()
-            for (rating in ratings) {
-                val item = rating.item
-                val aggregation = aggregationMap.getOrPut(item) { RatingAggregation() }
-                aggregation.totalRating += rating.rate
-                aggregation.totalCount += 1
-                if (userId != null && userId == rating.userId) {
-                    aggregation.ratingByUser = rating.rate
-                }
-            }
-            return aggregationMap
-        }
-
-        private data class RatingAggregation(
-            var totalRating: Int = 0,
-            var totalCount: Int = 0,
-            var ratingByUser: Int? = null
-        ) {
-            fun toJson(): JsonObject {
-                val `object` = JsonObject()
-                if (ratingByUser != null) {
-                    `object`.addProperty("ratingByUser", ratingByUser)
-                }
-                if (totalCount > 0) {
-                    `object`.addProperty("averageRating", totalRating.toFloat() / totalCount)
-                    `object`.addProperty("total", totalCount)
-                }
-                return `object`
-            }
-        }
-
-        @JvmStatic
         fun serializeRating(realmRating: RealmRating): JsonObject {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
