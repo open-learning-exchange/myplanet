@@ -125,7 +125,7 @@ abstract class BaseResourceFragment : Fragment() {
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
                     val list = resourcesRepository.getDownloadSuggestionList(
-                        profileDbHandler.userModel?.id
+                        profileDbHandler.getUserModel()?.id
                     )
                     showDownloadDialog(list)
                 } finally {
