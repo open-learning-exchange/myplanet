@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
@@ -40,6 +42,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     private val viewModel: SurveysViewModel by viewModels()
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
+    private val adapterMutex = Mutex()
 
     override fun getLayout(): Int = R.layout.fragment_survey
 
@@ -67,17 +70,19 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
-        if (!::adapter.isInitialized) {
-            val user = profileDbHandler.getUserModel()
-            adapter = SurveysAdapter(
-                requireActivity(),
-                user?.id,
-                isTeam,
-                teamId,
-                this,
-                surveyInfoMap,
-                bindingDataMap
-            )
+        adapterMutex.withLock {
+            if (!::adapter.isInitialized) {
+                val user = profileDbHandler.getUserModel()
+                adapter = SurveysAdapter(
+                    requireActivity(),
+                    user?.id,
+                    isTeam,
+                    teamId,
+                    this,
+                    surveyInfoMap,
+                    bindingDataMap
+                )
+            }
         }
         return adapter
     }
