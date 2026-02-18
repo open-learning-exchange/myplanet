@@ -41,7 +41,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        user = profileDbHandler?.userModel
+        user = profileDbHandler.userModel
         return binding.root
     }
 
