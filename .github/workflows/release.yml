@@ -81,6 +81,15 @@ jobs:
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
 
+      - name: set playstore variables
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
+        run: |
+          echo "PLAYSTORE_PACKAGE_NAME=org.ole.planet.myplanet" >> $GITHUB_ENV
+          echo "PLAYSTORE_RELEASE_FILE=output/myPlanet.aab" >> $GITHUB_ENV
+          echo "PLAYSTORE_TRACK=internal" >> $GITHUB_ENV
+          echo "PLAYSTORE_STATUS=completed" >> $GITHUB_ENV
+          echo "PLAYSTORE_RELEASE_NAME=${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})" >> $GITHUB_ENV
+
       - name: publish AAB to playstore
         id: playstore
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
@@ -88,11 +97,11 @@ jobs:
         uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: org.ole.planet.myplanet
-          releaseFiles: output/myPlanet.aab
-          track: internal
-          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
-          status: completed
+          packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
+          releaseFiles: ${{ env.PLAYSTORE_RELEASE_FILE }}
+          track: ${{ env.PLAYSTORE_TRACK }}
+          releaseName: ${{ env.PLAYSTORE_RELEASE_NAME }}
+          status: ${{ env.PLAYSTORE_STATUS }}
 
       - name: publish AAB to playstore fallback
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
@@ -100,11 +109,11 @@ jobs:
         uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: org.ole.planet.myplanet
-          releaseFiles: output/myPlanet.aab
-          track: internal
-          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
-          status: completed
+          packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
+          releaseFiles: ${{ env.PLAYSTORE_RELEASE_FILE }}
+          track: ${{ env.PLAYSTORE_TRACK }}
+          releaseName: ${{ env.PLAYSTORE_RELEASE_NAME }}
+          status: ${{ env.PLAYSTORE_STATUS }}
           changesNotSentForReview: true
 
       - name: rename APK and AAB with version and branch for artifact
