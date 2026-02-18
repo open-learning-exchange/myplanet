@@ -126,9 +126,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val courseIds = mutableListOf<String>()
 
         itemsToAdd.forEach { item ->
-            when (val realmObject = item as? RealmObject) {
-                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
-                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+            when (item) {
+                is RealmMyLibrary -> item.resourceId?.let(resourceIds::add)
+                is RealmMyCourse -> item.courseId?.let(courseIds::add)
                 else -> {}
             }
         }
