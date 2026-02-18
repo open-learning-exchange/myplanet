@@ -45,7 +45,7 @@ jobs:
           cache-write-only: false
 
       - name: set release version
-        run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+        run: echo ANDROID_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
 
       - name: set lite version name
         if: matrix.build == 'lite'
@@ -59,7 +59,7 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
-          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          echo ANDROID_VERSION_NAME=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
           echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
       - name: sign release APK and AAB
