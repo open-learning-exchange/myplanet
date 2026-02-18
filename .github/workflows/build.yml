@@ -3,13 +3,8 @@ name: myPlanet build
 on:
   push:
     branches:
-      - '*'
+      - '**'
       - '!master'
-      - 'claude/**'
-      - 'codex/**'
-      - 'dependabot/**'
-      - 'jules/**'
-      - '*-codex/**'
 
 jobs:
   build:
