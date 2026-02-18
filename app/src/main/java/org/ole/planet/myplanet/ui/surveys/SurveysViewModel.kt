@@ -106,6 +106,15 @@ class SurveysViewModel @Inject constructor(
         applyFilterAndSort()
     }
 
+    fun toggleTitleSort() {
+        currentSortOption = if (currentSortOption == SortOption.TITLE_ASC) {
+            SortOption.TITLE_DESC
+        } else {
+            SortOption.TITLE_ASC
+        }
+        applyFilterAndSort()
+    }
+
     private fun applyFilterAndSort() {
         var list = if (currentSearchQuery.isNotEmpty()) {
             filter(currentSearchQuery, rawSurveys)

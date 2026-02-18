@@ -33,9 +33,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: wrapper
-          cache-disabled: false
-          cache-read-only: false
-          cache-write-only: false
 
       - name: build debug as test
         run: |
