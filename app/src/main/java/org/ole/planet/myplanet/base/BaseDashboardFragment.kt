@@ -267,7 +267,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.userModel
+        val user = profileDbHandler.getUserModel()
         val userId = settings.getString("userId", "--")
         val dbMylife = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
 
