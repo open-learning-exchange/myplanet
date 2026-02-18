@@ -81,7 +81,7 @@ jobs:
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
 
-      - name: Define Play Store variables
+      - name: set playstore variables
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
         run: |
           echo "PLAYSTORE_PACKAGE_NAME=org.ole.planet.myplanet" >> $GITHUB_ENV
