@@ -91,7 +91,7 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val userModel = userRepository.getUserByName(userName ?: "")
+                val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
                 if (userModel != null) {
                     try {
