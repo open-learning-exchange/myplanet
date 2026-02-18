@@ -77,7 +77,15 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
         setOpenResourceButton(downloadedResources, binding.btnOpen)
         val steps = coursesRepository.getCourseSteps(courseId ?: "")
-        setStepsList(steps)
+        val stepItems = steps.map { step ->
+            val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
+            StepItem(
+                id = step.id,
+                stepTitle = step.stepTitle,
+                questionCount = count
+            )
+        }
+        setStepsList(stepItems)
         refreshRatings()
     }
 
@@ -89,16 +97,11 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    private fun setStepsList(steps: List<RealmCourseStep>) {
+    private fun setStepsList(steps: List<StepItem>) {
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = CoursesStepsAdapter(requireActivity(), submissionsRepository, viewLifecycleOwner)
+        val adapter = CoursesStepsAdapter(requireActivity())
         binding.stepsList.adapter = adapter
-        adapter.submitList(steps.map { step ->
-            StepItem(
-                id = step.id,
-                stepTitle = step.stepTitle
-            )
-        })
+        adapter.submitList(steps)
     }
 
     override fun onRatingChanged() {
