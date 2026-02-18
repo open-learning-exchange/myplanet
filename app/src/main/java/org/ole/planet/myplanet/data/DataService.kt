@@ -21,10 +21,8 @@ import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -41,27 +39,6 @@ class DataService constructor(
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
-
-    @Deprecated("Use ConfigurationsRepository.checkCheckSum instead")
-    suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))
-            if (response.isSuccessful) {
-                val checksum = response.body()?.string()
-                if (!checksum.isNullOrEmpty()) {
-                    val f = FileUtils.getSDPathFromUrl(context, path)
-                    if (f.exists()) {
-                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                        return@withContext checksum.contains(sha256)
-                    }
-                }
-            }
-            false
-        } catch (e: IOException) {
-            e.printStackTrace()
-            false
-        }
-    }
 
     @Deprecated("Use ConfigurationsRepository.checkVersion instead")
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
