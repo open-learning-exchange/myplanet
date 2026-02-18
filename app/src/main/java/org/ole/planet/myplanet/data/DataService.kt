@@ -18,9 +18,7 @@ import org.ole.planet.myplanet.services.ConfigurationManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class DataService constructor(
@@ -36,70 +34,6 @@ class DataService constructor(
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager =
         ConfigurationManager(context, preferences, retrofitInterface)
-
-    @Deprecated("Use ConfigurationsRepository.checkHealth instead")
-    fun healthAccess(listener: OnSuccessListener) {
-        serviceScope.launch {
-            try {
-                val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
-                if (healthUrl.isBlank()) {
-                    withContext(Dispatchers.Main) { listener.onSuccess("") }
-                    return@launch
-                }
-
-                try {
-                    val response = retrofitInterface.healthAccess(healthUrl)
-                    withContext(Dispatchers.Main) {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
-                    }
-                } catch (t: Exception) {
-                    t.printStackTrace()
-                    val errorMsg = when (t) {
-                        is java.net.UnknownHostException -> "Server not reachable"
-                        is java.net.SocketTimeoutException -> "Connection timeout"
-                        is java.net.ConnectException -> "Unable to connect to server"
-                        is java.io.IOException -> "Network connection error"
-                        else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                    }
-                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
-            }
-        }
-    }
-
-    @Deprecated("Use ConfigurationsRepository.checkCheckSum instead")
-    suspend fun checkCheckSum(path: String?): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val response = retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))
-            if (response.isSuccessful) {
-                val checksum = response.body()?.string()
-                if (!checksum.isNullOrEmpty()) {
-                    val f = FileUtils.getSDPathFromUrl(context, path)
-                    if (f.exists()) {
-                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                        return@withContext checksum.contains(sha256)
-                    }
-                }
-            }
-            false
-        } catch (e: IOException) {
-            e.printStackTrace()
-            false
-        }
-    }
-
 
     suspend fun syncPlanetServers(callback: OnSuccessListener) {
         try {
