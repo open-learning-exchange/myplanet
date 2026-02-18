@@ -88,8 +88,9 @@ object ServiceModule {
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
         @ApplicationContext context: Context,
-        chatRepository: org.ole.planet.myplanet.repository.ChatRepository
+        chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
+        feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository)
+        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository, feedbackRepository)
     }
 }
