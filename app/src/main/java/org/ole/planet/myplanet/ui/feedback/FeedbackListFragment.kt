@@ -14,6 +14,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
@@ -100,11 +101,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.syncStatus.collect { status ->
                     when (status) {
-                        is FeedbackListViewModel.SyncStatus.Idle -> {
+                        is SyncManager.SyncStatus.Idle -> {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
                         }
-                        is FeedbackListViewModel.SyncStatus.Syncing -> {
+                        is SyncManager.SyncStatus.Syncing -> {
                             if (customProgressDialog == null) {
                                 customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                                 customProgressDialog?.setText(getString(R.string.syncing_feedback))
@@ -113,11 +114,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                                 customProgressDialog?.show()
                             }
                         }
-                        is FeedbackListViewModel.SyncStatus.Success -> {
+                        is SyncManager.SyncStatus.Success -> {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
                         }
-                        is FeedbackListViewModel.SyncStatus.Error -> {
+                        is SyncManager.SyncStatus.Error -> {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
                             Snackbar.make(binding.root, "Sync failed: ${status.message}", Snackbar.LENGTH_LONG)

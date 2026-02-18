@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -33,11 +32,20 @@ class FeedbackListViewModel @Inject constructor(
     private val _feedbackList = MutableStateFlow<List<RealmFeedback>>(emptyList())
     val feedbackList: StateFlow<List<RealmFeedback>> = _feedbackList.asStateFlow()
 
-    private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
-    val syncStatus: StateFlow<SyncStatus> = _syncStatus
+    private val _syncStatus = MutableStateFlow<SyncManager.SyncStatus>(SyncManager.SyncStatus.Idle)
+    val syncStatus: StateFlow<SyncManager.SyncStatus> = _syncStatus
 
     init {
         loadFeedback()
+        viewModelScope.launch {
+            syncManager.syncStatus.collect { status ->
+                _syncStatus.value = status
+                if (status is SyncManager.SyncStatus.Success) {
+                    sharedPreferences.edit().putBoolean("feedback_synced", true).apply()
+                    refreshFeedback()
+                }
+            }
+        }
     }
 
     private fun loadFeedback() {
@@ -72,27 +80,6 @@ class FeedbackListViewModel @Inject constructor(
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _syncStatus.value = SyncStatus.Syncing
-            }
-
-            override fun onSyncComplete() {
-                _syncStatus.value = SyncStatus.Success("Sync completed")
-                sharedPreferences.edit().putBoolean("feedback_synced", true).apply()
-                refreshFeedback()
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
-            }
-        }, "full", listOf("feedback"))
-    }
-
-    sealed class SyncStatus {
-        object Idle : SyncStatus()
-        object Syncing : SyncStatus()
-        data class Success(val message: String) : SyncStatus()
-        data class Error(val message: String) : SyncStatus()
+        syncManager.start(null, "full", listOf("feedback"))
     }
 }

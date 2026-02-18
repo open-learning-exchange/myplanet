@@ -127,7 +127,23 @@ class SyncManager @Inject constructor(
                     SyncMode.Standard
                 }
                 createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                manager.start(listener, syncMode, syncTables)
+                val wrapper = object : OnSyncListener {
+                    override fun onSyncStarted() {
+                        listener?.onSyncStarted()
+                        _syncStatus.value = SyncStatus.Syncing
+                    }
+
+                    override fun onSyncComplete() {
+                        listener?.onSyncComplete()
+                        _syncStatus.value = SyncStatus.Success("Sync completed")
+                    }
+
+                    override fun onSyncFailed(msg: String?) {
+                        listener?.onSyncFailed(msg)
+                        _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
+                    }
+                }
+                manager.start(wrapper, syncMode, syncTables)
             } catch (e: Exception) {
                 listener?.onSyncFailed(e.message)
                 _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
