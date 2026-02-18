@@ -55,7 +55,9 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
-          ls -alR app/build/outputs
+          if [ "$RUNNER_DEBUG" = "1" ]; then ls -alR app/build/outputs; fi
+          du -h app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab
+          du -h app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
@@ -79,7 +81,10 @@ jobs:
           cp sign/app-${FLAVOR}-release.aab output/myPlanet.aab
           sha256sum output/myPlanet.apk > output/myPlanet.apk.sha256
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
-          ls -alR output
+          du -h output/myPlanet.apk
+          du -h output/myPlanet.aab
+          du -h output/myPlanet.apk.sha256
+          du -h output/myPlanet.aab.sha256
 
       - name: publish AAB to playstore
         id: playstore
@@ -113,7 +118,9 @@ jobs:
           echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
             mv "output/myPlanet${type}" "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}${type}"
           done
-          ls -alR output
+          echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
+            du -h "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}${type}"
+          done
           echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: upload APK and AAB as build artifact
