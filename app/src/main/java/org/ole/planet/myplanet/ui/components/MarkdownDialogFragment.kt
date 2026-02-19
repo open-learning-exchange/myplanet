@@ -10,12 +10,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.mikepenz.materialdrawer.Drawer
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -23,7 +25,10 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
+@AndroidEntryPoint
 class MarkdownDialogFragment : DialogFragment() {
+    @Inject
+    lateinit var userRepository: UserRepository
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding
     private var markdownContent: String = ""
     private var courseStatus: String = ""
@@ -105,18 +110,6 @@ class MarkdownDialogFragment : DialogFragment() {
 
     private fun setupCourseButton(drawer: Drawer?) {
         dialogCampaignChallengeBinding.btnStart.apply {
-            val dashboardActivity = activity as? DashboardActivity
-            val hasSyncAction = dashboardActivity?.let { dashboard ->
-                dashboard.databaseService.withRealm { realm ->
-                    realm.where(RealmUserChallengeActions::class.java)
-                        .equalTo("userId", dashboard.user?.id)
-                        .equalTo("actionType", "sync").count() > 0
-                }
-            } ?: false
-            val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && hasSyncAction
-
-            visibility = if (isCompleted) View.GONE else View.VISIBLE
-
             val buttonText = when {
                 courseStatus.contains("no iniciado") -> context.getString(R.string.start)
                 courseStatus.contains("terminado") && voiceCount < 5 -> context.getString(R.string.next)
@@ -125,6 +118,19 @@ class MarkdownDialogFragment : DialogFragment() {
             }
 
             text = buttonText
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                val userId = userRepository.getActiveUserIdSuspending()
+                val hasSyncAction = if (userId.isNotEmpty()) {
+                    userRepository.hasUserSyncAction(userId)
+                } else {
+                    false
+                }
+
+                val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && hasSyncAction
+                visibility = if (isCompleted) View.GONE else View.VISIBLE
+            }
+
             setOnClickListener {
                 val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
                 when (buttonText) {

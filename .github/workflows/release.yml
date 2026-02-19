@@ -27,29 +27,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: check and diff the code to get lite
-        if: matrix.build == 'lite'
-        run: |
-          file="app/src/main/AndroidManifest.xml"
-          lite="app/src/lite/AndroidManifest.xml"
-          ls -al "$file" "$lite"
-          diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
-          cp "$lite" "$file"
-
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: wrapper
-          cache-disabled: false
-          cache-read-only: false
-          cache-write-only: false
 
       - name: set release version
         run: echo ANDROID_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
-
-      - name: set lite version name
-        if: matrix.build == 'lite'
-        run: sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
 
       - name: build release APK and AAB
         run: |
@@ -59,7 +43,15 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
+<<<<<<< refactor-grep-posix-17349669673689523543
           echo ANDROID_VERSION_NAME=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
+=======
+          VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)
+          if [ "$FLAVOR" == "lite" ]; then
+            VERSION="${VERSION}-lite"
+          fi
+          echo "ANDROID_VERSION_NAME=${VERSION}" >> $GITHUB_ENV
+>>>>>>> master
           echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
       - name: sign release APK and AAB
@@ -81,6 +73,15 @@ jobs:
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
 
+      - name: set playstore variables
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
+        run: |
+          echo "PLAYSTORE_PACKAGE_NAME=org.ole.planet.myplanet" >> $GITHUB_ENV
+          echo "PLAYSTORE_RELEASE_FILE=output/myPlanet.aab" >> $GITHUB_ENV
+          echo "PLAYSTORE_TRACK=internal" >> $GITHUB_ENV
+          echo "PLAYSTORE_STATUS=completed" >> $GITHUB_ENV
+          echo "PLAYSTORE_RELEASE_NAME=${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})" >> $GITHUB_ENV
+
       - name: publish AAB to playstore
         id: playstore
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
@@ -88,11 +89,11 @@ jobs:
         uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: org.ole.planet.myplanet
-          releaseFiles: output/myPlanet.aab
-          track: internal
-          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
-          status: completed
+          packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
+          releaseFiles: ${{ env.PLAYSTORE_RELEASE_FILE }}
+          track: ${{ env.PLAYSTORE_TRACK }}
+          releaseName: ${{ env.PLAYSTORE_RELEASE_NAME }}
+          status: ${{ env.PLAYSTORE_STATUS }}
 
       - name: publish AAB to playstore fallback
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
@@ -100,11 +101,11 @@ jobs:
         uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: org.ole.planet.myplanet
-          releaseFiles: output/myPlanet.aab
-          track: internal
-          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
-          status: completed
+          packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
+          releaseFiles: ${{ env.PLAYSTORE_RELEASE_FILE }}
+          track: ${{ env.PLAYSTORE_TRACK }}
+          releaseName: ${{ env.PLAYSTORE_RELEASE_NAME }}
+          status: ${{ env.PLAYSTORE_STATUS }}
           changesNotSentForReview: true
 
       - name: rename APK and AAB with version and branch for artifact
