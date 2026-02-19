@@ -62,6 +62,7 @@ class VoicesFragment : BaseVoicesFragment() {
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
+    private var labelAdapter: ArrayAdapter<String>? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -320,8 +321,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
         binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val labels = (binding.filterByLabel.adapter as ArrayAdapter<String>)
-                selectedLabel = labels.getItem(position) ?: "All"
+                selectedLabel = labelAdapter?.getItem(position) ?: "All"
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
@@ -336,6 +336,7 @@ class VoicesFragment : BaseVoicesFragment() {
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
         val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
+        labelAdapter = adapter
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.filterByLabel.adapter = adapter
 
@@ -431,6 +432,7 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onDestroyView() {
         binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
+        labelAdapter = null
         _binding = null
         super.onDestroyView()
     }
