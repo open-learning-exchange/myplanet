@@ -124,9 +124,7 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = resourcesRepository.getDownloadSuggestionList(
-                        profileDbHandler.userModel?.id
-                    )
+                    val list = resourcesRepository.getDownloadSuggestionList()
                     showDownloadDialog(list)
                 } finally {
                     pendingResult.finish()
