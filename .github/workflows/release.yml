@@ -33,7 +33,7 @@ jobs:
           gradle-version: wrapper
 
       - name: set release version
-        run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+        run: echo ANDROID_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
 
       - name: build release APK and AAB
         run: |
@@ -43,7 +43,7 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
-          VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)
+          VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle)
           if [ "$FLAVOR" == "lite" ]; then
             VERSION="${VERSION}-lite"
           fi
