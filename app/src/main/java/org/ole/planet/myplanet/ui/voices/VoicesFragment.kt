@@ -133,17 +133,22 @@ class VoicesFragment : BaseVoicesFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
+            binding.llAddNews.visibility = View.GONE
+            binding.btnNewVoice.text = getString(R.string.new_voice)
+            binding.btnSubmit.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
-                val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
-                imageList.clear()
-                llImage?.removeAllViews()
-                adapterNews?.addItem(n)
-                labelFilteredList = applyLabelFilter(filteredNewsList)
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
-                scrollToTop()
-                binding.llAddNews.visibility = View.GONE
-                binding.btnNewVoice.text = getString(R.string.new_voice)
+                try {
+                    val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
+                    imageList.clear()
+                    llImage?.removeAllViews()
+                    adapterNews?.addItem(n)
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                } finally {
+                    binding.btnSubmit.isEnabled = true
+                }
             }
         }
 
@@ -207,7 +212,7 @@ class VoicesFragment : BaseVoicesFragment() {
                 scope = viewLifecycleOwner.lifecycleScope,
                 isTeamLeaderFn = { false },
                 getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
                 deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
                 shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                     voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)

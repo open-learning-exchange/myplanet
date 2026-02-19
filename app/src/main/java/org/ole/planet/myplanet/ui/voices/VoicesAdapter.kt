@@ -27,7 +27,6 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import java.util.Locale
@@ -65,7 +64,7 @@ import org.ole.planet.myplanet.utils.makeExpandable
 class VoicesAdapter(
     var context: Context,
     private var currentUser: RealmUser?,
-    private val parentNews: RealmNews?,
+    private var parentNews: RealmNews?,
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userSessionManager: UserSessionManager,
@@ -120,6 +119,7 @@ class VoicesAdapter(
     lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUser?>()
     private val fetchingUserIds = mutableSetOf<String>()
+    private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUser.parseLeadersJson(raw)
@@ -187,31 +187,32 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
-                resetViews(viewHolder)
-                updateReplyCount(viewHolder, news, position)
-                val userModel = configureUser(viewHolder, news)
-                showShareButton(viewHolder, news)
-                setMessageAndDate(viewHolder, news, sharedTeamName)
-                configureEditDeleteButtons(viewHolder, news)
-                loadImage(viewHolder.binding, news)
-                showReplyButton(viewHolder, news, position)
+                resetViews(holder)
+                updateReplyCount(holder, news, position)
+                val userModel = configureUser(holder, news)
+                showShareButton(holder, news)
+                setMessageAndDate(holder, news, sharedTeamName)
+                configureEditDeleteButtons(holder, news)
+                loadImage(holder.binding, news)
+                showReplyButton(holder, news, position)
                 val canManageLabels = canAddLabel(news)
-                labelManager.setupAddLabelMenu(viewHolder.binding, news, canManageLabels)
-                news.let { labelManager.showChips(viewHolder.binding, it, canManageLabels) }
-                handleChat(viewHolder, news)
+                labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                news.let { labelManager.showChips(holder.binding, it, canManageLabels) }
+                handleChat(holder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
-                setMemberClickListeners(viewHolder, userModel, currentLeader)
+                setMemberClickListeners(holder, userModel, currentLeader)
             }
         }
     }
 
     fun updateReplyBadge(newsId: String?) {
         if (newsId.isNullOrEmpty()) return
-        val index = if (parentNews != null) {
+        replyCountCache.remove(newsId)
+        val localParentNews = parentNews
+        val index = if (localParentNews != null) {
             when {
-                parentNews.id == newsId -> 0
+                localParentNews.id == newsId -> 0
                 else -> currentList.indexOfFirst { it?.id == newsId }.let { if (it != -1) it + 1 else -1 }
             }
         } else {
@@ -272,11 +273,13 @@ class VoicesAdapter(
             } else {
                 holder.binding.tvName.text = news.userName
                 ImageUtils.loadImage(null, holder.binding.imgUser)
+                showHideButtons(news, holder)
             }
             return userModel
         } else {
             holder.binding.tvName.text = news.userName
             ImageUtils.loadImage(null, holder.binding.imgUser)
+            showHideButtons(news, holder)
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
                 scope.launch {
@@ -284,9 +287,12 @@ class VoicesAdapter(
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
                     withContext(Dispatchers.Main) {
+                        if (parentNews?.userId == userId) {
+                            notifyItemChanged(0)
+                        }
                         currentList.forEachIndexed { index, item ->
                             if (item?.userId == userId) {
-                                notifyItemChanged(index)
+                                notifyItemChanged(if (parentNews != null) index + 1 else index)
                             }
                         }
                     }
@@ -325,19 +331,24 @@ class VoicesAdapter(
 
         if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
             holder.binding.imgDelete.setOnClickListener {
+                val pos = holder.bindingAdapterPosition
+                val snapshotList = currentList.toMutableList()
+                val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val currentList = currentList.toMutableList()
-                        val pos = holder.bindingAdapterPosition
-                        val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
-                        if (adjustedPos >= 0 && adjustedPos < currentList.size) {
-                            val newsToDelete = currentList[adjustedPos]
+                        if (adjustedPos >= 0 && adjustedPos < snapshotList.size) {
+                            val newsToDelete = snapshotList[adjustedPos]
                             scope.launch {
                                 newsToDelete?.id?.let { deletePostFn(it) }
                                 withContext(Dispatchers.Main) {
-                                    val newList = currentList.toMutableList().apply { removeAt(adjustedPos) }
+                                    val newList = snapshotList.toMutableList().apply { removeAt(adjustedPos) }
                                     submitListSafely(newList)
+                                    parentNews?.id?.let { pid ->
+                                        val current = replyCountCache[pid]
+                                        replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
+                                        notifyItemChanged(0)
+                                    }
                                     listener?.onDataChanged()
                                 }
                             }
@@ -420,13 +431,18 @@ class VoicesAdapter(
         submitListSafely(newList)
     }
 
+    fun updateParentNews(news: RealmNews?) {
+        val contentChanged = parentNews?.message != news?.message ||
+            parentNews?.isEdited != news?.isEdited
+        parentNews = news
+        if (contentChanged) notifyItemChanged(0)
+    }
+
     fun refreshCurrentItems() {
         submitListSafely(currentList.toList())
     }
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
-        userCache.clear()
-        // The list is already detached, no need to copy from Realm
         submitList(list, commitCallback)
     }
 
@@ -485,18 +501,27 @@ class VoicesAdapter(
         fetchTeamLeaderStatus()
     }
 
+    private fun applyReplyCount(binding: RowNewsBinding, replyCount: Int, position: Int) {
+        binding.btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
+        binding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
+        val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
+        binding.btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
     private fun updateReplyCount(viewHolder: VoicesViewHolder, news: RealmNews?, position: Int) {
+        val newsId = news?.id ?: return
+        val cached = replyCountCache[newsId]
+        if (cached != null) {
+            applyReplyCount(viewHolder.binding, cached, position)
+            return
+        }
         viewHolder.job?.cancel()
         viewHolder.job = scope.launch {
             try {
-                val replyCount = news?.id?.let { getReplyCountFn(it) } ?: 0
+                val replyCount = getReplyCountFn(newsId)
+                replyCountCache[newsId] = replyCount
                 withContext(Dispatchers.Main) {
-                    with(viewHolder.binding) {
-                        btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
-                        btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-                        val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
-                        btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
-                    }
+                    applyReplyCount(viewHolder.binding, replyCount, position)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -548,7 +573,7 @@ class VoicesAdapter(
                     viewHolder,
                     voicesRepository,
                     scope
-                ) { holder, news, i -> showReplyButton(holder, news, i) }
+                ) { _, _, _ -> }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
