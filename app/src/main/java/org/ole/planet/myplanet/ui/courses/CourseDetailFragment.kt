@@ -111,6 +111,9 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private suspend fun refreshRatings() {
+        if (user == null) {
+            user = profileDbHandler.getUserModel()
+        }
         val courseId = courses?.courseId
         val userId = user?.id
         if (courseId != null && userId != null) {
