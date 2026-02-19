@@ -237,8 +237,8 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            model = profileDbHandler.getUserModel()
-            val list = submissionsRepository.getPendingSurveys(model?.id)
+            val user = profileDbHandler.getUserModel()
+            val list = submissionsRepository.getPendingSurveys(user?.id)
             if (list.isEmpty()) return@launch
             val exams = submissionsRepository.getExamMap(list)
             val arrayAdapter = createSurveyAdapter(list, exams)
@@ -372,7 +372,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun removeFromShelf(`object`: RealmObject) {
         lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: model?.id
+            val userId = profileDbHandler.getUserModel()?.id
             if (userId.isNullOrEmpty()) {
                 return@launch
             }
@@ -416,7 +416,8 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+            val user = profileDbHandler.getUserModel()
+            val userId = user?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
