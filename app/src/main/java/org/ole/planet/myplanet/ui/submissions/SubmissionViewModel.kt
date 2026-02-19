@@ -82,7 +82,7 @@ class SubmissionViewModel @Inject constructor(
             }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.flowOn(Dispatchers.Default).shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.flowOn(Dispatchers.IO).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
         uniqueSubmissions.map { viewData ->
