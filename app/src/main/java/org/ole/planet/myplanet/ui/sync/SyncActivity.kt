@@ -29,8 +29,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
-import com.afollestad.materialdialogs.DialogAction
-import com.afollestad.materialdialogs.MaterialDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.Calendar
@@ -115,7 +114,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var syncToServerText: TextView
     var selectedTeamId: String? = null
     lateinit var positiveAction: View
-    lateinit var neutralAction: View
+    lateinit var neutralAction: Button
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
@@ -123,7 +122,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var defaultPref: SharedPreferences
     @Inject
     lateinit var databaseService: DatabaseService
-    var currentDialog: MaterialDialog? = null
+    var currentDialog: AlertDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
     var showAdditionalServers = false
@@ -412,7 +411,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private fun saveConfigAndContinue(
-        dialog: MaterialDialog,
+        dialog: AlertDialog,
         binding: DialogServerUrlBinding,
         url: String,
         isAlternativeUrl: Boolean,
@@ -675,16 +674,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-        val dialog = MaterialDialog.Builder(contextWrapper)
-            .customView(binding.root, true)
-            .positiveText(R.string.sync)
-            .negativeText(R.string.txt_cancel)
-            .neutralText(R.string.btn_sync_save)
-            .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
-            .build()
+        val dialog = MaterialAlertDialogBuilder(contextWrapper)
+            .setView(binding.root)
+            .setPositiveButton(R.string.sync, null)
+            .setNegativeButton(R.string.txt_cancel, null)
+            .setNeutralButton(R.string.btn_sync_save, null)
+            .create()
 
-        positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
-        neutralAction = dialog.getActionButton(DialogAction.NEUTRAL)
+        currentDialog = dialog
+        dialog.show()
+
+        positiveAction = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        neutralAction = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+        val negativeAction = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+        positiveAction.setOnClickListener {
+            performSync(dialog)
+        }
+
+        negativeAction.setOnClickListener {
+            dialog.dismiss()
+        }
 
         handleManualConfiguration(binding, settings.getString("configurationId", null), dialog)
         setRadioProtocolListener(binding)
@@ -701,13 +711,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         neutralAction.setOnClickListener { onNeutralButtonClick(dialog) }
 
         dialog.setOnDismissListener { serverDialogBinding = null }
-        dialog.show()
         sync(binding)
         if (!prefData.getManualConfig()) {
-            dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
+            neutralAction.text = getString(R.string.show_more) // This maps correctly as neutralAction is a View (Button)
         }
     }
-    fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
+    fun continueSync(dialog: AlertDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
             dialog.dismiss()
 

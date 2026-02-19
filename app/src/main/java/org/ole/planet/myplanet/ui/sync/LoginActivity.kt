@@ -25,8 +25,8 @@ import androidx.core.content.edit
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -272,8 +272,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
                 val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
                 val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                val dialog = builder.build()
+                val builder = MaterialAlertDialogBuilder(contextWrapper).setView(dialogServerUrlBinding.root)
+                val dialog = builder.create()
                 currentDialog = dialog
                 checkMinApk(url, serverPin, "LoginActivity")
             } else {

@@ -18,8 +18,8 @@ import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -156,10 +156,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
 
-        val builder = MaterialDialog.Builder(contextWrapper)
-            .customView(dialogServerUrlBinding.root, true)
+        val builder = MaterialAlertDialogBuilder(contextWrapper)
+            .setView(dialogServerUrlBinding.root)
 
-        val dialog = builder.build()
+        val dialog = builder.create()
         currentDialog = dialog
         checkMinApk(url, serverPin, "DashboardActivity")
         lifecycleScope.launch {
