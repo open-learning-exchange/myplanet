@@ -68,11 +68,12 @@ class UploadManager @Inject constructor(
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val uploadConfigs: UploadConfigs
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(UploadConfigs.NewsActivities)
+        uploadCoordinator.upload(uploadConfigs.NewsActivities)
     }
 
     fun uploadActivities(listener: OnSuccessListener?) {
@@ -151,7 +152,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadExamResult(listener: OnSuccessListener) {
         withContext(Dispatchers.IO) {
             try {
-                val result = uploadCoordinator.upload(UploadConfigs.ExamResults)
+                val result = uploadCoordinator.upload(uploadConfigs.ExamResults)
 
                 val message = when (result) {
                     is UploadResult.Success -> "Result sync completed successfully (${result.data} processed, 0 errors)"
@@ -207,11 +208,11 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        uploadCoordinator.upload(UploadConfigs.CourseProgress)
+        uploadCoordinator.upload(uploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {
-        return when (val result = uploadCoordinator.upload(UploadConfigs.Feedback)) {
+        return when (val result = uploadCoordinator.upload(uploadConfigs.Feedback)) {
             is UploadResult.Success -> true
             is UploadResult.PartialSuccess -> result.failed.isEmpty()
             is UploadResult.Failure -> false
@@ -398,7 +399,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        uploadCoordinator.upload(UploadConfigs.TeamTask)
+        uploadCoordinator.upload(uploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
@@ -412,7 +413,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            val result = uploadCoordinator.upload(UploadConfigs.Submissions)
+            val result = uploadCoordinator.upload(uploadConfigs.Submissions)
 
             Log.d("UploadManager", when (result) {
                 is UploadResult.Success -> "Uploaded ${result.data} submissions successfully"
@@ -550,7 +551,7 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadTeamActivitiesRefactored() {
-        uploadCoordinator.upload(UploadConfigs.TeamActivitiesRefactored)
+        uploadCoordinator.upload(uploadConfigs.TeamActivitiesRefactored)
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
@@ -600,7 +601,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadRating() {
-        uploadCoordinator.upload(UploadConfigs.Rating)
+        uploadCoordinator.upload(uploadConfigs.Rating)
     }
 
     suspend fun uploadNews() {
@@ -728,31 +729,31 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadCrashLog() {
-        uploadCoordinator.upload(UploadConfigs.CrashLog)
+        uploadCoordinator.upload(uploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(UploadConfigs.SearchActivity)
+        uploadCoordinator.upload(uploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
         val config = if (type == "sync") {
-            UploadConfigs.ResourceActivitiesSync
+            uploadConfigs.ResourceActivitiesSync
         } else {
-            UploadConfigs.ResourceActivities
+            uploadConfigs.ResourceActivities
         }
         uploadCoordinator.upload(config)
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(UploadConfigs.CourseActivities)
+        uploadCoordinator.upload(uploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
-        uploadCoordinator.upload(UploadConfigs.Meetups)
+        uploadCoordinator.upload(uploadConfigs.Meetups)
     }
 
     suspend fun uploadAdoptedSurveys() {
-        uploadCoordinator.upload(UploadConfigs.AdoptedSurveys)
+        uploadCoordinator.upload(uploadConfigs.AdoptedSurveys)
     }
 }
