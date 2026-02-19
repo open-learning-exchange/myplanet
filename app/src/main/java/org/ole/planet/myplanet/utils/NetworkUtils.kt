@@ -153,9 +153,16 @@ object NetworkUtils {
         val network = connManager.activeNetwork
         val capabilities = connManager.getNetworkCapabilities(network)
         if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
-            val connectionInfo: WifiInfo? = wifiManager?.connectionInfo
-            if (!connectionInfo?.ssid.isNullOrEmpty()) {
+            val connectionInfo: WifiInfo? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                capabilities.transportInfo as? WifiInfo
+            } else {
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
+                @Suppress("DEPRECATION")
+                wifiManager?.connectionInfo
+            }
+
+            if (connectionInfo != null && !connectionInfo.ssid.isNullOrEmpty()) {
+                @Suppress("DEPRECATION")
                 ssid = connectionInfo.networkId
             }
         }
