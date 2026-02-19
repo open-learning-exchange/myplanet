@@ -22,7 +22,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
-import io.realm.RealmList
 import java.io.File
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -44,7 +43,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
-    lateinit var imageList: RealmList<String>
+    lateinit var imageList: MutableList<String>
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
@@ -54,7 +53,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        imageList = RealmList()
+        imageList = mutableListOf()
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
@@ -138,7 +137,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         openFolderLauncher.launch(openFolderIntent)
     }
 
-    override fun getCurrentImageList(): RealmList<String>? {
+    override fun getCurrentImageList(): MutableList<String>? {
         return if (::imageList.isInitialized) imageList else null
     }
 
