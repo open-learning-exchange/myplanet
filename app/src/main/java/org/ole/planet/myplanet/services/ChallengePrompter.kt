@@ -64,7 +64,7 @@ class ChallengePrompter(
                     val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                     var hasValidSync = false
                     if (prereqsMet) {
-                        hasValidSync = progressRepository.hasUserCompletedSync(user?.id ?: "")
+                        hasValidSync = progressRepository.hasUserCompletedSync(user.id ?: "")
                     }
                     challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey, hasValidSync)
                 }
