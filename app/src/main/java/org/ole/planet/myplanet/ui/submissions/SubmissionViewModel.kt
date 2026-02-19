@@ -58,7 +58,7 @@ class SubmissionViewModel @Inject constructor(
 
         if (query.isNotEmpty()) {
             val examIds = examMap.filter { (_, exam) ->
-                exam?.name?.contains(query, ignoreCase = true) == true
+                exam.name?.contains(query, ignoreCase = true) == true
             }.keys
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
