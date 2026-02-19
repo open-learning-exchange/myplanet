@@ -61,7 +61,7 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
 
     if (isUrlValid(url)) {
         currentDialog = dialog
-        service.getMinApk(this, url, pin, this, "SyncActivity")
+        checkMinApk(url, pin, "SyncActivity")
     }
 }
 
@@ -226,7 +226,7 @@ fun SyncActivity.onNeutralButtonClick(dialog: MaterialDialog) {
         url = protocol + url
         if (isUrlValid(url)) {
             currentDialog = dialog
-            service.getMinApk(this, url, pin, this, "SyncActivity")
+            checkMinApk(url, pin, "SyncActivity")
         }
     }
 }
