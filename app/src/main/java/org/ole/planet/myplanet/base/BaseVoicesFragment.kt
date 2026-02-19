@@ -84,6 +84,10 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         adapterNews?.refreshCurrentItems()
     }
 
+    override fun onReplyPosted(newsId: String?) {
+        adapterNews?.updateReplyBadge(newsId)
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) homeItemClickListener = context

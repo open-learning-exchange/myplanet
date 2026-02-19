@@ -283,6 +283,15 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getReplyCount(newsId: String?): Int {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .count()
+                .toInt()
+        }
+    }
+
     override suspend fun deleteNews(newsId: String) {
         withRealm { realm ->
             realm.executeTransaction {

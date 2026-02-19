@@ -61,6 +61,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
             } else {
+                @Suppress("DEPRECATION")
                 it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
             }
         }
@@ -86,7 +87,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
             mRealm = databaseService.createManagedRealmInstance()
-            model = profileDbHandler.userModel
+            model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -138,9 +139,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         isAddInProgress = true
         setJoinInProgress(true)
 
-        val userId = profileDbHandler.userModel?.id ?: return
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             var libraryAdded = false
             var courseAdded = false
 

@@ -186,7 +186,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     scope = viewLifecycleOwner.lifecycleScope,
                     isTeamLeaderFn = { teamsRepository.isTeamLeader(teamId, user?._id) },
                     getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
                     deletePostFn = { newsId -> voicesRepository.deletePost(newsId, getEffectiveTeamName()) },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)

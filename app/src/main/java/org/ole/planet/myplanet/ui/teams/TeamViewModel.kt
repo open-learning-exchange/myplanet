@@ -11,9 +11,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
+
+sealed class TeamActionResult {
+    object Success : TeamActionResult()
+    data class Failure(val message: String?) : TeamActionResult()
+    object NameExists : TeamActionResult()
+}
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
@@ -27,7 +34,7 @@ class TeamViewModel @Inject constructor(
     fun prepareTeamData(teams: List<RealmMyTeam>, userId: String?) {
         currentTeams = teams
         viewModelScope.launch {
-            val processedTeams = withContext(Dispatchers.Default) {
+            val processedTeams = withContext(Dispatchers.IO) {
                 val validTeams = teams.filter {
                     !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
                 }
@@ -97,5 +104,37 @@ class TeamViewModel @Inject constructor(
             teamsRepository.syncTeamActivities()
             prepareTeamData(currentTeams, userId)
         }
+    }
+
+    suspend fun createTeam(
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String,
+        isPublic: Boolean,
+        category: String?,
+        userModel: RealmUser
+    ): TeamActionResult {
+        val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
+        if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {
+            return TeamActionResult.NameExists
+        }
+
+        val teamObject = com.google.gson.JsonObject().apply {
+            addProperty("name", name)
+            addProperty("description", description)
+            addProperty("services", services)
+            addProperty("rules", rules)
+            addProperty("teamType", teamType)
+            addProperty("isPublic", isPublic)
+            addProperty("category", category)
+        }
+
+        return teamsRepository.createTeamAndAddMember(teamObject, userModel)
+            .fold(
+                onSuccess = { TeamActionResult.Success },
+                onFailure = { TeamActionResult.Failure(it.message) }
+            )
     }
 }
