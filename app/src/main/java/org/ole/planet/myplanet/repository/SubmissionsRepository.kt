@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -46,4 +47,6 @@ interface SubmissionsRepository {
     suspend fun updateSubmissionStatus(submissionId: String?, status: String)
     suspend fun getExamByStepId(stepId: String): RealmStepExam?
     suspend fun getExamById(id: String): RealmStepExam?
+    suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
+    suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
 }

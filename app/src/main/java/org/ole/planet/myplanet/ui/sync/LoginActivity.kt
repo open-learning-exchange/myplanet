@@ -268,7 +268,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
                 val dialog = builder.build()
                 currentDialog = dialog
-                service.getMinApk(this, url, serverPin, this, "LoginActivity")
+                checkMinApk(url, serverPin, "LoginActivity")
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -480,14 +480,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
-                val model = databaseService.withRealm { realm ->
-                    RealmUser.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
-                }
-                if (model == null) {
-                    toast(this, getString(R.string.unable_to_login))
-                } else {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
+                lifecycleScope.launch {
+                    val model = userRepository.createGuestUser(user.name ?: "", settings)
+                    if (model == null) {
+                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                    } else {
+                        saveUserInfoPref(settings, "", model)
+                        onLogin()
+                    }
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -512,10 +512,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = databaseService.withRealmAsync { realm ->
-                        RealmUser.createGuestUser(username, realm, settings)
-                            ?.let { realm.copyFromRealm(it) }
-                    }
+                    val model = userRepository.createGuestUser(username, settings)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true

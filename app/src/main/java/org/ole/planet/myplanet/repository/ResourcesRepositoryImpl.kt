@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -27,7 +29,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    @param:AppPreferences private val settings: SharedPreferences
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -329,13 +332,14 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
+        val targetUserId = userId ?: settings.getString("userId", null)
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
         }
         val allNeedingUpdate = filterLibrariesNeedingUpdate(results)
 
-        if (!userId.isNullOrBlank()) {
-            val userLibraries = allNeedingUpdate.filter { it.userId?.contains(userId) == true }
+        if (!targetUserId.isNullOrBlank()) {
+            val userLibraries = allNeedingUpdate.filter { it.userId?.contains(targetUserId) == true }
             if (userLibraries.isNotEmpty()) {
                 return userLibraries
             }

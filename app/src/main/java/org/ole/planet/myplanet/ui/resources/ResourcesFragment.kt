@@ -122,11 +122,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                updateServerIfNecessary(mapping)
             }
+            startSyncManager()
         }
     }
 
@@ -227,7 +227,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val allResourceIds = allLibraryItems.mapNotNull { it.id }
         tagsMap = tagsRepository.getTagsForResources(allResourceIds)
 
-        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler?.getUserModel(), emptyMap(), emptySet())
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, resourcesRepository, profileDbHandler.getUserModel(), emptyMap(), emptySet())
 
         val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
         adapterLibrary.setLibraryList(filteredList)
@@ -253,7 +253,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         hideButton()
 
         lifecycleScope.launch {
-            userModel = profileDbHandler?.getUserModel()
+            userModel = profileDbHandler.getUserModel()
             setupGuestUserRestrictions()
 
             if (userModel?.id != null) {
