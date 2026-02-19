@@ -1187,9 +1187,11 @@
     <string name="clear_retry_queue">Vider la file</string>
     <string name="retry_triggered">Réessai déclenché</string>
     <string name="retry_queue_cleared">File de réessai vidée</string>
+    <string name="passwords_do_not_match">Les mots de passe ne correspondent pas</string>
+    <string name="email_invalid_format">Veuillez saisir une adresse e-mail valide</string>
     <string name="create_new_resource">Créer un nouveau</string>
     <string name="private_resource">Ressource privée (visible uniquement par cette équipe)</string>
-    <string name="resource_added_to_team">Ressource ajoutée à l’équipe</string>
+    <string name="resource_added_to_team">Ressource ajoutée à l\'équipe</string>
     <string name="select_courses">Sélectionner des cours</string>
     <string name="untitled_course">Cours sans titre</string>
     <string name="courses_loading">Chargement des cours…</string>
