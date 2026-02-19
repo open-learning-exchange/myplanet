@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <!-- Use tools:node="remove" to remove permission during manifest merge instead of overwriting the main manifest -->
-    <uses-permission
-        android:name="android.permission.REQUEST_INSTALL_PACKAGES"
-        tools:node="remove" />
-
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
 </manifest>
