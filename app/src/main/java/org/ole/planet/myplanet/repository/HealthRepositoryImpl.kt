@@ -22,4 +22,11 @@ class HealthRepositoryImpl @Inject constructor(
             Pair(userCopy, pojoCopy)
         }
     }
+
+    override suspend fun getExaminationById(id: String): RealmHealthExamination? {
+        return withRealm { realm ->
+            val exam = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()
+            if (exam != null) realm.copyFromRealm(exam) else null
+        }
+    }
 }
