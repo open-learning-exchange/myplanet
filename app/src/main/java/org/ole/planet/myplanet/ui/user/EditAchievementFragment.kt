@@ -62,16 +62,16 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
-            achievementArray = JsonArray()
-            initializeData()
-        }
         return fragmentEditAchievementBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            achievementArray = JsonArray()
+            initializeData()
+        }
         setListeners()
     }
 
@@ -301,23 +301,21 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
     }
 
-    private fun initializeData() {
+    private suspend fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
-        lifecycleScope.launch {
-            achievement = databaseService.withRealmAsync { realm ->
-                var achievement = realm.where(RealmAchievement::class.java)
-                    .equalTo("_id", achievementId)
-                    .findFirst()
-                if (achievement == null) {
-                    realm.executeTransaction { transactionRealm ->
-                        achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-                    }
+        achievement = databaseService.withRealmAsync { realm ->
+            var achievement = realm.where(RealmAchievement::class.java)
+                .equalTo("_id", achievementId)
+                .findFirst()
+            if (achievement == null) {
+                realm.executeTransaction { transactionRealm ->
+                    achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
                 }
-                realm.copyFromRealm(achievement!!)
             }
-            if (isAdded) {
-                populateAchievementData()
-            }
+            realm.copyFromRealm(achievement!!)
+        }
+        if (isAdded) {
+            populateAchievementData()
         }
     }
 

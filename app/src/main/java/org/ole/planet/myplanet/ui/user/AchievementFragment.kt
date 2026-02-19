@@ -68,7 +68,6 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        startAchievementSync()
     }
 
     override fun onAttach(context: Context) {
@@ -213,6 +212,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        startAchievementSync()
         setupRealtimeSync()
         viewLifecycleOwner.lifecycleScope.launch {
             user = profileDbHandler.getUserModel()
