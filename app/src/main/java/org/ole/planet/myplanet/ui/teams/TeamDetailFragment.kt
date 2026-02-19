@@ -14,7 +14,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
@@ -169,13 +168,12 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                 teamsRepository.hasPendingRequest(it, user?.id)
             } ?: false
 
-            withContext(kotlinx.coroutines.Dispatchers.Main) {
-                binding.loadingIndicator?.visibility = View.GONE
-                binding.contentLayout?.visibility = View.VISIBLE
-                setupTeamDetails(isMyTeam, user, hasPendingRequest)
-                val targetPageId = arguments?.getString("navigateToPage") ?: team?._id?.let { teamLastPage[it] }
-                setupViewPager(isMyTeam, targetPageId)
-            }
+            binding.loadingIndicator?.visibility = View.GONE
+            binding.contentLayout?.visibility = View.VISIBLE
+            setupTeamDetails(isMyTeam, user, hasPendingRequest)
+            val targetPageId = arguments?.getString("navigateToPage") ?: team?._id?.let { teamLastPage[it] }
+            setupViewPager(isMyTeam, targetPageId)
+
             loadTeamJob = null
         }
 
