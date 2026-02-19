@@ -41,12 +41,15 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     private fun setupCoursesList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val courses = teamsRepository.getTeamCourses(teamId)
-            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), courses.toMutableList(), mRealm, teamId, settings)
+            val teamCreator = teamsRepository.getTeamCreator(teamId)
+            val currentUserId = settings.getString("userId", "--")
+            val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
+
+            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), canRemove)
             binding.rvCourse.layoutManager = LinearLayoutManager(activity)
             binding.rvCourse.adapter = adapterTeamCourse
-            adapterTeamCourse?.let {
-                showNoData(binding.tvNodata, it.itemCount, "teamCourses")
-            }
+            adapterTeamCourse?.submitList(courses)
+            showNoData(binding.tvNodata, courses.size, "teamCourses")
         }
     }
 
