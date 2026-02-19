@@ -25,7 +25,7 @@ interface NotificationsRepository {
         userId: String?,
     )
     suspend fun getSurveyId(relatedId: String?): String?
-    suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>?
+    suspend fun getTaskDetails(relatedId: String?): org.ole.planet.myplanet.model.TaskNotificationResult?
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
     suspend fun getTaskTeamName(taskTitle: String): String?

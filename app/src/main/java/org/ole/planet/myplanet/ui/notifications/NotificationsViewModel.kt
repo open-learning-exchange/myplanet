@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
 
 @HiltViewModel
@@ -106,7 +107,7 @@ class NotificationsViewModel @Inject constructor(
         return notificationsRepository.getSurveyId(relatedId)
     }
 
-    suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>? {
+    suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return notificationsRepository.getTaskDetails(relatedId)
     }
 

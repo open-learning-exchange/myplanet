@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
 class NotificationsRepositoryImpl @Inject constructor(
@@ -241,7 +242,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTaskDetails(relatedId: String?): Triple<String, String?, String?>? {
+    override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
             withRealm { realm ->
                 val task = realm.where(org.ole.planet.myplanet.model.RealmTeamTask::class.java)
@@ -253,7 +254,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     val teamObject = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
                         .equalTo("_id", teamId)
                         .findFirst()
-                    Triple(teamId, teamObject?.name, teamObject?.type)
+                    TaskNotificationResult(teamId, teamObject?.name, teamObject?.type)
                 } else {
                     null
                 }
