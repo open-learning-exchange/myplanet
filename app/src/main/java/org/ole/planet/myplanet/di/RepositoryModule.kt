@@ -39,6 +39,10 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.SurveysRepositoryImpl
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamMembershipRepository
+import org.ole.planet.myplanet.repository.TeamReportRepository
+import org.ole.planet.myplanet.repository.TeamResourceRepository
+import org.ole.planet.myplanet.repository.TeamTaskRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
@@ -121,6 +125,22 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindTeamsRepository(impl: TeamsRepositoryImpl): TeamsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamMembershipRepository(impl: TeamsRepositoryImpl): TeamMembershipRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamTaskRepository(impl: TeamsRepositoryImpl): TeamTaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamResourceRepository(impl: TeamsRepositoryImpl): TeamResourceRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamReportRepository(impl: TeamsRepositoryImpl): TeamReportRepository
 
     @Binds
     @Singleton

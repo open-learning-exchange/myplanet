@@ -8,7 +8,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.Calendar
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamTaskRepository
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
@@ -17,7 +17,7 @@ class TaskNotificationWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val userSessionManager: UserSessionManager,
-    private val teamsRepository: TeamsRepository
+    private val teamTaskRepository: TeamTaskRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -29,7 +29,7 @@ class TaskNotificationWorker @AssistedInject constructor(
         val userId = user?.id
         if (!userId.isNullOrBlank()) {
             val tasks = runCatching {
-                teamsRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
+                teamTaskRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
             }.getOrElse { emptyList() }
 
             if (tasks.isNotEmpty()) {
@@ -44,7 +44,7 @@ class TaskNotificationWorker @AssistedInject constructor(
 
                 val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }
                 if (taskIds.isNotEmpty()) {
-                    runCatching { teamsRepository.markTasksNotified(taskIds) }
+                    runCatching { teamTaskRepository.markTasksNotified(taskIds) }
                 }
             }
         }
