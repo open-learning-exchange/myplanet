@@ -61,7 +61,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val view = binding.root
         declareElements()
         onLoaded(view)
-        user = profileDbHandler.userModel
         return binding.root
     }
 
@@ -72,11 +71,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
-        if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
-            checkPendingSurveys()
-        }
-        if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
-            syncKeyId()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
+                checkPendingSurveys()
+            }
+            if (user?.id?.startsWith("guest") == false && TextUtils.isEmpty(user?.key)) {
+                syncKeyId()
+            }
         }
     }
 

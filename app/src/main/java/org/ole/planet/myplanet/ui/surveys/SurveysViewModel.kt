@@ -74,7 +74,7 @@ class SurveysViewModel @Inject constructor(
                     else -> surveysRepository.getIndividualSurveys()
                 }
 
-                val userModel = userSessionManager.userModel
+                val userModel = userSessionManager.getUserModel()
                 val surveyInfos = surveysRepository.getSurveyInfos(
                     isTeam,
                     teamId,
@@ -205,7 +205,7 @@ class SurveysViewModel @Inject constructor(
     fun adoptSurvey(surveyId: String) {
         viewModelScope.launch {
             try {
-                val userModel = userSessionManager.userModel
+                val userModel = userSessionManager.getUserModel()
                 surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
                 _userMessage.value = "Survey adopted successfully"
                 _isTeamShareAllowed.value = false

@@ -542,40 +542,43 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun saveUsers(name: String?, password: String?, source: String) {
-        if (source === "guest") {
-            val newUser = User("", name, password, "", "guest")
-            val existingUsers: MutableList<User> = ArrayList(
-                prefData.getSavedUsers()
-            )
-            var newUserExists = false
-            for ((_, name1) in existingUsers) {
-                if (name1 == newUser.name?.trim { it <= ' ' }) {
-                    newUserExists = true
-                    break
+        lifecycleScope.launch {
+            if (source === "guest") {
+                val newUser = User("", name, password, "", "guest")
+                val existingUsers: MutableList<User> = ArrayList(
+                    prefData.getSavedUsers()
+                )
+                var newUserExists = false
+                for ((_, name1) in existingUsers) {
+                    if (name1 == newUser.name?.trim { it <= ' ' }) {
+                        newUserExists = true
+                        break
+                    }
                 }
-            }
-            if (!newUserExists) {
-                existingUsers.add(newUser)
-                prefData.setSavedUsers(existingUsers)
-            }
-        } else if (source === "member") {
-            var userProfile = profileDbHandler.userModel?.userImage
-            val userName: String? = profileDbHandler.userModel?.name
-            if (userProfile == null) {
-                userProfile = ""
-            }
-            val newUser = User(userName, name, password, userProfile, "member")
-            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
-            var newUserExists = false
-            for ((fullName1) in existingUsers) {
-                if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
-                    newUserExists = true
-                    break
+                if (!newUserExists) {
+                    existingUsers.add(newUser)
+                    prefData.setSavedUsers(existingUsers)
                 }
-            }
-            if (!newUserExists) {
-                existingUsers.add(newUser)
-                prefData.setSavedUsers(existingUsers)
+            } else if (source === "member") {
+                val userModel = profileDbHandler.getUserModel()
+                var userProfile = userModel?.userImage
+                val userName: String? = userModel?.name
+                if (userProfile == null) {
+                    userProfile = ""
+                }
+                val newUser = User(userName, name, password, userProfile, "member")
+                val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
+                var newUserExists = false
+                for ((fullName1) in existingUsers) {
+                    if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
+                        newUserExists = true
+                        break
+                    }
+                }
+                if (!newUserExists) {
+                    existingUsers.add(newUser)
+                    prefData.setSavedUsers(existingUsers)
+                }
             }
         }
     }

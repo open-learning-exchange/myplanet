@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
@@ -30,7 +32,8 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: SurveysAdapter
+    private var adapter: SurveysAdapter? = null
+    private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private lateinit var prefManager: SharedPrefManager
@@ -57,16 +60,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = SurveysAdapter(
-            requireActivity(),
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            surveyInfoMap,
-            bindingDataMap
-        )
         prefManager = SharedPrefManager(requireContext())
         
         viewModel.startExamSync()
@@ -76,7 +69,23 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewModel.adoptSurvey(surveyId)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> = adapter
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+        mutex.withLock {
+            if (adapter == null) {
+                val userProfileModel = profileDbHandler.getUserModel()
+                adapter = SurveysAdapter(
+                    requireActivity(),
+                    userProfileModel?.id,
+                    isTeam,
+                    teamId,
+                    this@SurveyFragment,
+                    surveyInfoMap,
+                    bindingDataMap
+                )
+            }
+        }
+        return adapter!!
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -121,7 +130,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     private fun setupRecyclerView() {
         recyclerView.setHasFixedSize(true)
-        recyclerView.adapter = adapter
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
     }
 
     private fun setupListeners() {
@@ -173,7 +184,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewLifecycleOwner.lifecycleScope.launch {
             launch {
                 viewModel.surveys.collect { surveys ->
-                    adapter.submitList(surveys) {
+                    (getAdapter() as SurveysAdapter).submitList(surveys) {
                         updateUIState()
                     }
                 }
@@ -216,9 +227,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     private fun updateUIState() {
-        val itemCount = adapter.itemCount
-        _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
-        showNoData(tvMessage, itemCount, "survey")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val itemCount = getAdapter().itemCount
+            _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
+            showNoData(tvMessage, itemCount, "survey")
+        }
     }
 
     override fun getWatchedTables(): List<String> {
