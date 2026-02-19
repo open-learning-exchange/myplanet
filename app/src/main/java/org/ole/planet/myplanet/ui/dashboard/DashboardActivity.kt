@@ -141,18 +141,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
-        user = userSessionManager.userModel
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
-        checkUser()
-        updateAppTitle()
-        if (handleGuestAccess()) return
-
-        handleInitialFragment()
-        addBackPressCallback()
-        collectUiState()
 
         lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            checkUser()
+            updateAppTitle()
+            if (handleGuestAccess()) return@launch
+
+            handleInitialFragment()
+            addBackPressCallback()
+            collectUiState()
             initializeDashboard()
         }
 
@@ -329,7 +329,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this, user?.name)
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
@@ -341,7 +341,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this, user?.name)
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingsActivity::class.java))
@@ -834,7 +834,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this, user?.name)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -846,7 +846,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this, user?.name)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -974,14 +974,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this, user?.name)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this, user?.name)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }

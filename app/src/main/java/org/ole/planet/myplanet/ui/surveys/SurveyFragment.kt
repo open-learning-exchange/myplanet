@@ -57,7 +57,17 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
+        prefManager = SharedPrefManager(requireContext())
+
+        viewModel.startExamSync()
+    }
+
+    override fun onAdoptSurvey(surveyId: String) {
+        viewModel.adoptSurvey(surveyId)
+    }
+
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+        val userProfileModel = profileDbHandler.getUserModel()
         adapter = SurveysAdapter(
             requireActivity(),
             userProfileModel?.id,
@@ -67,16 +77,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
             surveyInfoMap,
             bindingDataMap
         )
-        prefManager = SharedPrefManager(requireContext())
-        
-        viewModel.startExamSync()
+        return adapter
     }
-
-    override fun onAdoptSurvey(surveyId: String) {
-        viewModel.adoptSurvey(surveyId)
-    }
-
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> = adapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

@@ -49,11 +49,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getCurrentUser(): RealmUser? {
-        return getUserModel()
-    }
-
     override suspend fun getUserByAnyId(id: String): RealmUser? {
         return findByField(RealmUser::class.java, "_id", id)
             ?: findByField(RealmUser::class.java, "id", id)
@@ -246,19 +241,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getUserModel(): RealmUser? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
-        return databaseService.withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
@@ -379,11 +361,6 @@ class UserRepositoryImpl @Inject constructor(
             e.printStackTrace()
             Result.failure(e)
         }
-    }
-
-    @Deprecated("Use getActiveUserIdSuspending() instead")
-    override fun getActiveUserId(): String {
-        return getUserModel()?.id ?: ""
     }
 
     override suspend fun getActiveUserIdSuspending(): String {

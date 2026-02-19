@@ -95,7 +95,7 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         if (model?.id?.startsWith("guest") == false) {
             action()
         } else {
-            guestDialog(requireContext(), profileDbHandler)
+            guestDialog(requireContext(), model?.name)
         }
     }
 
