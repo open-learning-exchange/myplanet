@@ -122,11 +122,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                updateServerIfNecessary(mapping)
             }
+            startSyncManager()
         }
     }
 

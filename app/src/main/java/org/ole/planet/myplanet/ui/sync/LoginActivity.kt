@@ -268,7 +268,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
                 val dialog = builder.build()
                 currentDialog = dialog
-                service.getMinApk(this, url, serverPin, this, "LoginActivity")
+                checkMinApk(url, serverPin, "LoginActivity")
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
