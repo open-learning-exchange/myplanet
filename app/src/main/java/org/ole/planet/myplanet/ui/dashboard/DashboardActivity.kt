@@ -21,7 +21,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -645,11 +644,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
         val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
-        val actionView = MenuItemCompat.getActionView(menuItem)
-        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = "$count"
-        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
-        actionView.setOnClickListener(onClickListener)
+        val actionView = menuItem.actionView
+        val smsCountTxt = actionView?.findViewById<TextView>(R.id.notification_badge)
+        smsCountTxt?.text = "$count"
+        smsCountTxt?.visibility = if (count > 0) View.VISIBLE else View.GONE
+        actionView?.setOnClickListener(onClickListener)
     }
 
     fun refreshChatHistory() {
