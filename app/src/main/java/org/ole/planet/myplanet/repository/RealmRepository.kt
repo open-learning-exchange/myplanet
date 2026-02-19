@@ -8,7 +8,6 @@ import io.realm.RealmResults
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
@@ -82,22 +81,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         }
 
         try {
-            var retryCount = 0
-            val maxRetries = 10
-            while (retryCount < maxRetries) {
-                realm = Realm.getDefaultInstance()
-                if (!realm.isInTransaction) {
-                    break
-                }
-                realm.close()
-                realm = null
-                retryCount++
-                delay(50)
-            }
-
-            if (realm == null) {
-                realm = Realm.getDefaultInstance()
-            }
+            realm = databaseService.createManagedRealmInstance()
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
             if (initialResults.isValid && initialResults.isLoaded) {

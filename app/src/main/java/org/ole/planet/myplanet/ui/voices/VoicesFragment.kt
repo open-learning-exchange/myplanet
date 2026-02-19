@@ -104,19 +104,17 @@ class VoicesFragment : BaseVoicesFragment() {
 
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        val filtered = news.map { it as RealmNews? }
-                        val labels = collectAllLabels(filtered)
-                        val labelFiltered = applyLabelFilter(filtered)
-                        val searchFiltered =
-                            applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                        if (_binding != null) {
-                            filteredNewsList = filtered
-                            labelFilteredList = labelFiltered
-                            searchFilteredList = searchFiltered
-                            setupLabelFilter(labels)
-                            setData(searchFilteredList)
-                        }
+                    val filtered = news.map { it as RealmNews? }
+                    val labels = collectAllLabels(filtered)
+                    val labelFiltered = applyLabelFilter(filtered)
+                    val searchFiltered =
+                        applySearchFilter(labelFiltered, etSearch.text.toString().trim())
+                    if (_binding != null) {
+                        filteredNewsList = filtered
+                        labelFilteredList = labelFiltered
+                        searchFilteredList = searchFiltered
+                        setupLabelFilter(labels)
+                        setData(searchFilteredList)
                     }
                 }
             }

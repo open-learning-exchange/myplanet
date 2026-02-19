@@ -138,15 +138,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                     0 -> viewModel.sort(SurveysViewModel.SortOption.DATE_DESC)
                     1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
                     2 -> {
-                        // Toggle title sort order is logic that was in adapter.
-                        // I need to track current sort in fragment or viewmodel to toggle.
-                        // For now assuming toggle means switching between ASC and DESC.
-                        // But here we can't easily toggle without state.
-                        // I'll make viewModel handle toggle or expose current sort.
-                        // Let's assume user wants TITLE_ASC first, then DESC.
-                        // But the previous implementation called adapter.toggleTitleSortOrder().
-                        // I will simplify and set TITLE_ASC for now, or improve ViewModel to handle toggle.
-                        viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+                        viewModel.toggleTitleSort()
                     }
                 }
                 recyclerView.scrollToPosition(0)
@@ -158,8 +150,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (i == 2) {
-                     // This was toggle. I'll stick to one for now or need to check state.
-                     viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
+                    viewModel.toggleTitleSort()
                 }
                 recyclerView.scrollToPosition(0)
             }
