@@ -35,10 +35,14 @@ class MembersFragment : BaseMemberFragment() {
     private suspend fun loadAndDisplayJoinedMembers() {
         val joinedMembersData = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
         cachedJoinedMembers = joinedMembersData
-        val currentUserId = user?.id
+        val currentUser = profileDbHandler.getUserModel()
+        val currentUserId = currentUser?.id
         val isLoggedInUserLeader = joinedMembersData.any { it.user.id == currentUserId && it.isLeader }
 
-        adapterJoined?.updateData(joinedMembersData, isLoggedInUserLeader)
+        if (adapterJoined != null) {
+            (adapterJoined as MembersAdapter).setUserId(currentUserId)
+            adapterJoined?.updateData(joinedMembersData, isLoggedInUserLeader)
+        }
         showNoData(binding.tvNodata, joinedMembersData.size, "members")
     }
 
