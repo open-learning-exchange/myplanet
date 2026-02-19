@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsEx
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -37,7 +38,8 @@ class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
     @param:ApplicationContext private val context: Context,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val feedbackRepository: FeedbackRepository
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -203,6 +205,27 @@ class TransactionSyncManager @Inject constructor(
                     }
 
                     chatRepository.insertNewsList(docs)
+
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "feedback") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+
+                    feedbackRepository.insertFeedbackList(docs)
 
                     val insertDuration = System.currentTimeMillis() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(

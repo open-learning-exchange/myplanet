@@ -4,14 +4,19 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
@@ -25,6 +30,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -87,6 +93,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
 
         serviceScope.launch {
+            withContext(Dispatchers.Main) {
+                callback.onCheckingVersion()
+            }
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
@@ -237,6 +246,196 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             e.printStackTrace()
             false
         }
+    }
+
+    override suspend fun getMinApk(url: String, pin: String): ConfigurationsRepository.ConfigurationResult {
+        val serverUrlMapper = ServerUrlMapper()
+        val mapping = serverUrlMapper.processUrl(url)
+        val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
+
+        return try {
+            val deferreds = urlsToTry.map { currentUrl ->
+                serviceScope.async { checkConfigurationUrl(currentUrl, pin) }
+            }
+
+            val result = try {
+                val allResults = deferreds.awaitAll()
+                allResults.firstOrNull { it is UrlCheckResult.Success }
+                    ?: allResults.firstOrNull()
+                    ?: UrlCheckResult.Failure(url)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                UrlCheckResult.Failure(url)
+            }
+
+            when (result) {
+                is UrlCheckResult.Success -> {
+                    val isAlternativeUrl = result.url != url
+                    ConfigurationsRepository.ConfigurationResult.Success(result.id, result.code, result.url, url, isAlternativeUrl)
+                }
+                is UrlCheckResult.Failure -> {
+                    val errorMessage = when (NetworkUtils.extractProtocol(url)) {
+                        context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                        else -> context.getString(R.string.device_couldn_t_reach_local_server)
+                    }
+                    ConfigurationsRepository.ConfigurationResult.Failure(errorMessage, url)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
+        }
+    }
+
+    private suspend fun checkConfigurationUrl(currentUrl: String, pin: String): UrlCheckResult {
+        return try {
+            val versionsUrl = "$currentUrl/versions"
+
+            val versionsResponse = withTimeout(15_000) {
+                apiInterface.getConfiguration(versionsUrl)
+            }
+
+            if (versionsResponse == null) {
+                return UrlCheckResult.Failure(currentUrl)
+            }
+
+            if (versionsResponse.isSuccessful) {
+                val jsonObject = versionsResponse.body()
+                val minApkVersion = jsonObject?.get("minapk")?.asString
+                val currentVersion = context.getString(R.string.app_version)
+
+                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
+                    val couchdbURL = buildCouchdbUrl(currentUrl, pin)
+
+                    fetchConfiguration(couchdbURL)?.let { (id, code) ->
+                        return UrlCheckResult.Success(id, code, currentUrl)
+                    } ?: run {}
+                }
+            }
+            UrlCheckResult.Failure(currentUrl)
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
+            UrlCheckResult.Failure(currentUrl)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            UrlCheckResult.Failure(currentUrl)
+        }
+    }
+
+    private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
+        return try {
+            val configUrl = "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
+            val configResponse = withTimeout(15_000) {
+                apiInterface.getConfiguration(configUrl)
+            }
+
+            if (configResponse == null) {
+                return null
+            }
+
+            if (configResponse.isSuccessful) {
+                val rows = configResponse.body()?.getAsJsonArray("rows")
+
+                if (rows != null && rows.size() > 0) {
+                    val firstRow = rows[0].asJsonObject
+                    val id = firstRow.getAsJsonPrimitive("id").asString
+                    val doc = firstRow.getAsJsonObject("doc")
+                    val code = doc.getAsJsonPrimitive("code").asString
+                    processConfigurationDoc(doc)
+                    return Pair(id, code)
+                }
+            }
+            null
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun processConfigurationDoc(doc: JsonObject) {
+        val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+
+        withContext(Dispatchers.IO) {
+            preferences.edit { putString("parentCode", parentCode) }
+        }
+
+        if (doc.has("preferredLang")) {
+            val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
+            val languageCode = getLanguageCodeFromName(preferredLang)
+            if (languageCode != null) {
+                withContext(Dispatchers.IO) {
+                    LocaleUtils.setLocale(context, languageCode)
+                    preferences.edit { putString("pendingLanguageChange", languageCode) }
+                }
+            }
+        }
+
+        if (doc.has("models")) {
+            val modelsMap = doc.getAsJsonObject("models").entrySet()
+                .associate { it.key to it.value.asString }
+
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
+            }
+        }
+
+        if (doc.has("planetType")) {
+            val planetType = doc.getAsJsonPrimitive("planetType").asString
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("planetType", planetType) }
+            }
+        }
+    }
+
+    private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
+        val uri = currentUrl.toUri()
+        return if (currentUrl.contains("@")) {
+            currentUrl
+        } else {
+            val urlUser = "satellite"
+            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+        }
+    }
+
+    private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
+        return compareVersions(currentVersion, minApkVersion) >= 0
+    }
+
+    private fun compareVersions(version1: String, version2: String): Int {
+        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
+        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
+
+        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
+            if (parts1[i] != parts2[i]) {
+                return parts1[i].compareTo(parts2[i])
+            }
+        }
+        return parts1.size.compareTo(parts2.size)
+    }
+
+    private fun getLanguageCodeFromName(languageName: String): String? {
+        return when (languageName.lowercase()) {
+            "english" -> "en"
+            "spanish", "español" -> "es"
+            "somali" -> "so"
+            "nepali" -> "ne"
+            "arabic", "العربية" -> "ar"
+            "french", "français" -> "fr"
+            else -> null
+        }
+    }
+
+    private fun getUrl(couchdbURL: String): String {
+        return UrlUtils.dbUrl(couchdbURL)
+    }
+
+    private sealed class UrlCheckResult {
+        data class Success(val id: String, val code: String, val url: String) : UrlCheckResult()
+        data class Failure(val url: String) : UrlCheckResult()
     }
 
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =

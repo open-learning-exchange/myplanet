@@ -29,8 +29,10 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
@@ -273,7 +275,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
                 val dialog = builder.build()
                 currentDialog = dialog
-                service.getMinApk(this, url, serverPin, this, "LoginActivity")
+                checkMinApk(url, serverPin, "LoginActivity")
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -295,9 +297,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                service.syncPlanetServers { success: String? ->
-                    toast(this@LoginActivity, success)
+                val success = withContext(Dispatchers.IO) {
+                    communityRepository.syncCommunityDocs()
                 }
+                val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
+                toast(this@LoginActivity, message)
             }
         }
         nameWatcher2 = object : TextWatcher {
@@ -533,14 +537,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
-                val model = databaseService.withRealm { realm ->
-                    RealmUser.createGuestUser(user.name, realm, settings)?.let { realm.copyFromRealm(it) }
-                }
-                if (model == null) {
-                    toast(this, getString(R.string.unable_to_login))
-                } else {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
+                lifecycleScope.launch {
+                    val model = userRepository.createGuestUser(user.name ?: "", settings)
+                    if (model == null) {
+                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                    } else {
+                        saveUserInfoPref(settings, "", model)
+                        onLogin()
+                    }
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -565,10 +569,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = databaseService.withRealmAsync { realm ->
-                        RealmUser.createGuestUser(username, realm, settings)
-                            ?.let { realm.copyFromRealm(it) }
-                    }
+                    val model = userRepository.createGuestUser(username, settings)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true

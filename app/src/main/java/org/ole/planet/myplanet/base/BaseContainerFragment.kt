@@ -121,10 +121,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = profileDbHandler.userModel
-            if (userModel?.isGuest() == false) {
-                setOnClickListener {
-                    homeItemClickListener?.showRatingDialog(type, id, title, listener)
+            val rb = this
+            viewLifecycleOwner.lifecycleScope.launch {
+                val userModel = profileDbHandler.getUserModel()
+                if (userModel?.isGuest() == false) {
+                    rb.setOnClickListener {
+                        homeItemClickListener?.showRatingDialog(type, id, title, listener)
+                    }
                 }
             }
         }
