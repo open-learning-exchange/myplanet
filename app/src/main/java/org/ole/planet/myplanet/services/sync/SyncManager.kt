@@ -2,8 +2,12 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.SupplicantState
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.Gson
@@ -528,10 +532,27 @@ class SyncManager @Inject constructor(
     }
 
     private fun initializeSync() {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-            settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+        if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            var ssid: String? = null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val wifiInfo = capabilities.transportInfo as? WifiInfo
+                ssid = wifiInfo?.ssid
+            } else {
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                @Suppress("DEPRECATION")
+                val wifiInfo = wifiManager.connectionInfo
+                if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
+                    ssid = wifiInfo.ssid
+                }
+            }
+
+            if (ssid != null) {
+                settings.edit { putString("LastWifiSSID", ssid) }
+            }
         }
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
