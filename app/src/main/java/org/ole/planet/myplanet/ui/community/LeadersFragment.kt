@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
 class LeadersFragment : Fragment() {
@@ -21,8 +20,7 @@ class LeadersFragment : Fragment() {
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentMembersBinding.inflate(inflater, container, false)
         return binding!!.root
@@ -36,7 +34,7 @@ class LeadersFragment : Fragment() {
         } else {
             val leadersList = RealmUser.parseLeadersJson(leaders)
             binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
-            val adapter = CommunityLeadersAdapter(requireActivity(), userSessionManager)
+            val adapter = CommunityLeadersAdapter(requireActivity())
             binding?.rvMember?.adapter = adapter
             adapter.submitList(leadersList)
         }
