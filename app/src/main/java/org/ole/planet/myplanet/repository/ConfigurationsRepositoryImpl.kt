@@ -296,10 +296,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 apiInterface.getConfiguration(versionsUrl)
             }
 
-            if (versionsResponse == null) {
-                return UrlCheckResult.Failure(currentUrl)
-            }
-
             if (versionsResponse.isSuccessful) {
                 val jsonObject = versionsResponse.body()
                 val minApkVersion = jsonObject?.get("minapk")?.asString
@@ -328,10 +324,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val configUrl = "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
             val configResponse = withTimeout(15_000) {
                 apiInterface.getConfiguration(configUrl)
-            }
-
-            if (configResponse == null) {
-                return null
             }
 
             if (configResponse.isSuccessful) {
