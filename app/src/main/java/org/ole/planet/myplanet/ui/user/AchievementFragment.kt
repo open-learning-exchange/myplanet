@@ -78,7 +78,6 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
-        user = profileDbHandler.userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -215,8 +214,12 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
-        setupUserData()
-        loadInitialAchievementData()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            setupUserData()
+            achievementData = loadAchievementDataAsync()
+            updateAchievementUI()
+        }
     }
 
     private fun setupUserData() {
@@ -225,12 +228,6 @@ class AchievementFragment : BaseContainerFragment() {
             String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
     }
 
-    private fun loadInitialAchievementData() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            achievementData = loadAchievementDataAsync()
-            updateAchievementUI()
-        }
-    }
 
     private fun setupRealtimeSync() {
         onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
