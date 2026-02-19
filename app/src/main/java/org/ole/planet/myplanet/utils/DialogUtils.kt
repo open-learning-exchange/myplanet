@@ -36,7 +36,7 @@ object DialogUtils {
         return prgDialog
     }
 
-    fun guestDialog(context: Context, profileDbHandler: UserSessionManager) {
+    fun guestDialog(context: Context, username: String?) {
         val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
@@ -54,12 +54,10 @@ object DialogUtils {
 
         becomeMember.setOnClickListener {
             val guest = true
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
-                val intent = Intent(context, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.getUserModel()?.name)
-                intent.putExtra("guest", guest)
-                context.startActivity(intent)
-            }
+            val intent = Intent(context, BecomeMemberActivity::class.java)
+            intent.putExtra("username", username)
+            intent.putExtra("guest", guest)
+            context.startActivity(intent)
         }
         cancel.setOnClickListener {
             dialog.dismiss()

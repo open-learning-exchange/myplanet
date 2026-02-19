@@ -91,11 +91,18 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         }
     }
 
-    private inline fun openIfLoggedIn(action: () -> Unit) {
+    private fun openIfLoggedIn(action: () -> Unit) {
         if (model?.id?.startsWith("guest") == false) {
             action()
         } else {
-            guestDialog(requireContext(), profileDbHandler)
+            if (model != null) {
+                guestDialog(requireContext(), model?.name)
+            } else {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val user = profileDbHandler.getUserModel()
+                    guestDialog(requireContext(), user?.name)
+                }
+            }
         }
     }
 
