@@ -10,7 +10,6 @@ import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UploadToShelfService
 
@@ -26,7 +25,6 @@ object DataServiceModule {
         @ApplicationScope scope: CoroutineScope,
         userRepository: UserRepository,
         uploadToShelfService: UploadToShelfService,
-        communityRepository: CommunityRepository
     ): DataService {
         return DataService(
             context,
@@ -35,7 +33,6 @@ object DataServiceModule {
             scope,
             userRepository,
             uploadToShelfService,
-            communityRepository
         )
     }
 }
