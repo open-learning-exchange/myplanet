@@ -13,6 +13,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
@@ -48,11 +49,6 @@ class UserRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         }
-    }
-
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getCurrentUser(): RealmUser? {
-        return getUserModel()
     }
 
     override suspend fun getUserByAnyId(id: String): RealmUser? {
@@ -256,19 +252,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getUserModel(): RealmUser? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
-        return databaseService.withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
@@ -392,8 +375,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     @Deprecated("Use getActiveUserIdSuspending() instead")
-    override fun getActiveUserId(): String {
-        return getUserModel()?.id ?: ""
+    override fun getActiveUserId(): String = runBlocking {
+        getActiveUserIdSuspending()
     }
 
     override suspend fun getActiveUserIdSuspending(): String {
