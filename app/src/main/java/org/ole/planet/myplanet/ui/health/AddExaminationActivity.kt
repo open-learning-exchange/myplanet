@@ -127,6 +127,12 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             if (health == null) {
                 initHealth()
             }
+            if (intent.hasExtra("id")) {
+                val id = intent.getStringExtra("id")
+                if (id != null) {
+                    examination = healthRepository.getExaminationById(id)
+                }
+            }
             initExamination()
             validateFields()
             btnSave.isEnabled = true
@@ -134,8 +140,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     private fun initExamination() {
-        if (intent.hasExtra("id")) {
-            examination = mRealm.where(RealmHealthExamination::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
+        if (examination != null) {
             binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
             binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))

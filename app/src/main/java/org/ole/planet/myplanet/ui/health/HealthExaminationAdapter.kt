@@ -106,13 +106,11 @@ class HealthExaminationAdapter(
             .setPositiveButton("OK", null).create()
         val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
         dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
-        val time = Date().time - 5000 * 60
         if (realmExamination != null) {
-            if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
+            dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, AddExaminationActivity::class.java)
                     .putExtra("id", getItem(position)._id)
                     .putExtra("userId", mh._id))
-            }
             }
         }
         dialog.show()
