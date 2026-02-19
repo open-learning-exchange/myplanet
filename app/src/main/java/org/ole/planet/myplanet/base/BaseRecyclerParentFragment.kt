@@ -66,7 +66,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
             }
             else -> {
-                val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
+                val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList()
                 RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
             }
         }
