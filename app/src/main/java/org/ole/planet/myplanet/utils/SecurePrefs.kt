@@ -7,8 +7,9 @@ import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.google.crypto.tink.Aead
-import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.KeyTemplate
 import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.aead.PredefinedAeadParameters
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import java.security.GeneralSecurityException
 
@@ -27,10 +28,12 @@ object SecurePrefs {
         }
     }
 
+    @Suppress("DEPRECATION")
+    // Tink 1.20.0 deprecates getPrimitive(Class), but Registry.getPrimitiveWrapper seems unavailable in this environment.
     private fun getAead(context: Context): Aead {
         return AndroidKeysetManager.Builder()
             .withSharedPref(context, KEYSET_NAME, PREF_FILE_NAME)
-            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+            .withKeyTemplate(KeyTemplate.createFrom(PredefinedAeadParameters.AES256_GCM))
             .withMasterKeyUri(MASTER_KEY_URI)
             .build()
             .keysetHandle
@@ -44,7 +47,7 @@ object SecurePrefs {
     @Suppress("DEPRECATION")
     private fun getLegacyEncryptedPrefs(context: Context): SharedPreferences? {
         return try {
-            val masterKey = MasterKey.Builder(context)
+            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                 .build()
             EncryptedSharedPreferences.create(
