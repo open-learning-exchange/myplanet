@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -64,7 +63,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var teamsRepository: TeamsRepository
 
-    private lateinit var imageList: RealmList<String>
+    private lateinit var imageList: MutableList<String>
     private var llImage: ViewGroup? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
 
@@ -76,7 +75,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         title = "Reply"
-        imageList = RealmList()
+        imageList = mutableListOf()
         id = intent.getStringExtra("id")
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
@@ -175,7 +174,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
     }
 
-    override fun getCurrentImageList(): RealmList<String> {
+    override fun getCurrentImageList(): MutableList<String> {
         return imageList
     }
 
