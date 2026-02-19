@@ -21,6 +21,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
@@ -219,6 +220,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         val photosToUpload = submissionsRepository.getUnuploadedPhotos()
@@ -261,6 +263,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
@@ -359,6 +362,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
@@ -427,6 +431,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         data class TeamData(
@@ -481,6 +486,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
             listener.onSuccess("Cannot upload user activities: user model is null")
@@ -603,6 +609,7 @@ class UploadManager @Inject constructor(
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
 
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
 
