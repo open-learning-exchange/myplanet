@@ -82,6 +82,7 @@ class RealtimeSyncHelper(
             when {
                 adapter is OnDiffRefreshListener -> adapter.refreshWithDiff()
                 adapter is ListAdapter<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
                     }
