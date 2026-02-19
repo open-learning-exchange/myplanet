@@ -1127,4 +1127,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
         return successorMember?.userId?.let { id -> userMap[id] }
     }
+
+    override suspend fun getTeamCreator(teamId: String): String? {
+        if (teamId.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
+    }
 }

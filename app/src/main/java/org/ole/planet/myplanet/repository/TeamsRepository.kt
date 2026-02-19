@@ -141,4 +141,5 @@ interface TeamsRepository {
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
+    suspend fun getTeamCreator(teamId: String): String?
 }
