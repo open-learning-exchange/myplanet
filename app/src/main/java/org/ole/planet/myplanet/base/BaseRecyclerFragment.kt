@@ -139,9 +139,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         isAddInProgress = true
         setJoinInProgress(true)
 
-        val userId = profileDbHandler.userModel?.id ?: return
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             var libraryAdded = false
             var courseAdded = false
 
