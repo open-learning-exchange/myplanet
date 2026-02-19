@@ -49,22 +49,24 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
                 myLife._id?.let { id ->
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        lifeRepository.updateVisibility(isVisible, id)
-                        withContext(Dispatchers.Main) {
-                            if (!isVisible) {
-                                Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
-                            } else {
-                                Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
-                            }
-                            refreshList()
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            lifeRepository.updateVisibility(isVisible, id)
                         }
+                        if (!isVisible) {
+                            Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
+                        } else {
+                            Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+                        }
+                        refreshList()
                     }
                 }
             },
             reorderCallback = { list ->
-                lifecycleScope.launch(Dispatchers.IO) {
-                    lifeRepository.updateMyLifeListOrder(list)
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        lifeRepository.updateMyLifeListOrder(list)
+                    }
                 }
             }
         )
@@ -85,7 +87,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
 
     private fun refreshList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = model?.id ?: profileDbHandler.getUserModel()?.id
+            val userId = profileDbHandler.getUserModel()?.id
             val myLifeList = lifeRepository.getMyLifeByUserId(userId)
             if (::lifeAdapter.isInitialized) {
                 lifeAdapter.submitList(myLifeList)
