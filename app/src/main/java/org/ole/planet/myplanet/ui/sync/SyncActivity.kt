@@ -50,7 +50,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
-import org.ole.planet.myplanet.data.DataService
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
@@ -122,8 +121,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
-    @Inject
-    lateinit var service: DataService
     @Inject
     lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
