@@ -221,25 +221,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        data class PhotoData(
-            val photoId: String?,
-            val serialized: JsonObject
-        )
-
-        val photosToUpload = databaseService.withRealm { realm ->
-            val data = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
-
-            if (data.isEmpty()) {
-                emptyList()
-            } else {
-                data.map { photo ->
-                    PhotoData(
-                        photoId = photo.id,
-                        serialized = RealmSubmitPhotos.serializeRealmSubmitPhotos(photo)
-                    )
-                }
-            }
-        }
+        val photosToUpload = submissionsRepository.getUnuploadedPhotos()
 
         if (photosToUpload.isEmpty()) {
             listener?.onSuccess("No photos to upload")
@@ -248,31 +230,23 @@ class UploadManager @Inject constructor(
 
         withContext(Dispatchers.IO) {
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { photoData ->
+                batch.forEach { (photoId, serialized) ->
                     try {
                         val `object` = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/submissions", photoData.serialized
+                            "${UrlUtils.getUrl()}/submissions", serialized
                         ).body()
 
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
                             val id = getString("id", `object`)
 
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmSubmitPhotos::class.java)
-                                    .equalTo("id", photoData.photoId)
-                                    .findFirst()?.let { sub ->
-                                        sub.uploaded = true
-                                        sub._rev = rev
-                                        sub._id = id
-                                    }
-                            }
+                            submissionsRepository.markPhotoUploaded(photoId, rev, id)
 
                             listener?.let {
                                 val photo = databaseService.withRealm { realm ->
                                     realm.where(RealmSubmitPhotos::class.java)
-                                        .equalTo("id", photoData.photoId).findFirst()
+                                        .equalTo("id", photoId).findFirst()
                                         ?.let { realm.copyFromRealm(it) }
                                 }
                                 photo?.let { uploadAttachment(id, rev, it, listener) }
