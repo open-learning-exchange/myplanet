@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
@@ -30,8 +29,10 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
@@ -61,6 +62,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher2: TextWatcher
+    private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
@@ -183,19 +185,24 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 return@setOnClickListener
             }
             if (getUrl() != "/db") {
-                if (TextUtils.isEmpty(binding.inputName.text.toString())) {
-                    binding.inputName.error = getString(R.string.err_msg_name)
-                } else if (TextUtils.isEmpty(binding.inputPassword.text.toString())) {
-                    binding.inputPassword.error = getString(R.string.err_msg_password)
+                val username = binding.inputName.text.toString().trim()
+                val password = binding.inputPassword.text.toString()
+
+                val usernameError = validateUsernameInput(username)
+                val passwordError = validatePasswordInput(password)
+
+                if (usernameError != null) {
+                    binding.inputName.error = usernameError
+                } else if (passwordError != null) {
+                    binding.inputPassword.error = passwordError
                 } else {
-                    val enterUserName = binding.inputName.text.toString().trimEnd()
                     binding.btnSignin.isEnabled = false
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = userRepository.getUserByName(enterUserName)
+                        val user = userRepository.getUserByName(username)
                         if (user == null || !user.isArchived) {
-                            submitForm(enterUserName, binding.inputPassword.text.toString())
+                            submitForm(username, password)
                         } else {
                             val builder = AlertDialog.Builder(this@LoginActivity)
                             builder.setMessage("member ${binding.inputName.text} is archived")
@@ -276,8 +283,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
         declareHideKeyboardElements()
         binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-        binding.inputName.doAfterTextChanged { binding.inputName.error = null }
-        binding.inputPassword.doAfterTextChanged { binding.inputPassword.error = null }
+        setupFormValidation()
         binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
             if (isFinishing || isDestroyed) {
                 return@setOnEditorActionListener false
@@ -291,9 +297,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                service.syncPlanetServers { success: String? ->
-                    toast(this@LoginActivity, success)
+                val success = withContext(Dispatchers.IO) {
+                    communityRepository.syncCommunityDocs()
                 }
+                val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
+                toast(this@LoginActivity, message)
             }
         }
         nameWatcher2 = object : TextWatcher {
@@ -313,6 +321,55 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
+    }
+
+    private fun setupFormValidation() {
+        binding.inputName.doAfterTextChanged { text ->
+            val input = text?.toString() ?: ""
+            if (input.isNotEmpty()) {
+                binding.inputName.error = validateUsernameInput(input)
+            } else {
+                binding.inputName.error = null
+            }
+            updateSignInButtonState()
+        }
+
+        passwordWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val input = s?.toString() ?: ""
+                if (input.isNotEmpty()) {
+                    binding.inputPassword.error = validatePasswordInput(input)
+                } else {
+                    binding.inputPassword.error = null
+                }
+                updateSignInButtonState()
+            }
+        }
+        binding.inputPassword.addTextChangedListener(passwordWatcher)
+    }
+
+    private fun validateUsernameInput(username: String): String? {
+        return when {
+            username.isEmpty() -> getString(R.string.err_msg_name)
+            username.contains(" ") -> getString(R.string.invalid_username)
+            else -> null
+        }
+    }
+
+    private fun validatePasswordInput(password: String): String? {
+        return when {
+            password.isEmpty() -> getString(R.string.err_msg_password)
+            else -> null
+        }
+    }
+
+    private fun updateSignInButtonState() {
+        val username = binding.inputName.text?.toString() ?: ""
+        val password = binding.inputPassword.text?.toString() ?: ""
+        val isValid = validateUsernameInput(username) == null && validatePasswordInput(password) == null
+        binding.btnSignin.alpha = if (isValid) 1.0f else 0.7f
     }
 
     fun loadTeamsAsync() {
@@ -628,6 +685,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         super.onDestroy()
         if (this::nameWatcher2.isInitialized) {
             binding.inputName.removeTextChangedListener(nameWatcher2)
+        }
+        if (this::passwordWatcher.isInitialized) {
+            binding.inputPassword.removeTextChangedListener(passwordWatcher)
         }
     }
 }

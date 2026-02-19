@@ -141,10 +141,13 @@ class VoicesFragment : BaseVoicesFragment() {
                     val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
                     imageList.clear()
                     llImage?.removeAllViews()
-                    adapterNews?.addItem(n)
-                    labelFilteredList = applyLabelFilter(filteredNewsList)
-                    searchFilteredList = applySearchFilter(labelFilteredList)
-                    setData(searchFilteredList)
+                    if (n != null) {
+                        n.sortDate = n.calculateSortDate()
+                        filteredNewsList = listOf(n) + filteredNewsList
+                        labelFilteredList = applyLabelFilter(filteredNewsList)
+                        searchFilteredList = applySearchFilter(labelFilteredList)
+                        setData(searchFilteredList)
+                    }
                     scrollToTop()
                 } finally {
                     binding.btnSubmit.isEnabled = true
@@ -428,9 +431,6 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onDestroyView() {
         binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }

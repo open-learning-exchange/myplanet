@@ -35,6 +35,8 @@ class BecomeMemberActivity : BaseActivity() {
     var guest: Boolean = false
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
+    private var rePasswordWatcher: TextWatcher? = null
+    private var emailWatcher: TextWatcher? = null
 
     private data class MemberInfo(
         val username: String,
@@ -220,8 +222,12 @@ class BecomeMemberActivity : BaseActivity() {
     override fun onDestroy() {
         activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
         activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
+        activityBecomeMemberBinding.etRePassword.removeTextChangedListener(rePasswordWatcher)
+        activityBecomeMemberBinding.etEmail.removeTextChangedListener(emailWatcher)
         usernameWatcher = null
         passwordWatcher = null
+        rePasswordWatcher = null
+        emailWatcher = null
         super.onDestroy()
     }
 
@@ -269,16 +275,51 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.etUsername.addTextChangedListener(usernameWatcher)
 
         passwordWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+
             override fun afterTextChanged(s: Editable) {
-                if (activityBecomeMemberBinding.etPassword.text.toString().isEmpty()) {
+                if (s.toString().isEmpty()) {
                     activityBecomeMemberBinding.etRePassword.setText("")
                 }
+                validatePasswordMatch()
             }
-
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
         }
         activityBecomeMemberBinding.etPassword.addTextChangedListener(passwordWatcher)
+
+        rePasswordWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                validatePasswordMatch()
+            }
+        }
+        activityBecomeMemberBinding.etRePassword.addTextChangedListener(rePasswordWatcher)
+
+        emailWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                val email = s?.toString() ?: ""
+                if (email.isNotEmpty() && !Utilities.isValidEmail(email)) {
+                    activityBecomeMemberBinding.etEmail.error = getString(R.string.email_invalid_format)
+                } else {
+                    activityBecomeMemberBinding.etEmail.error = null
+                }
+            }
+        }
+        activityBecomeMemberBinding.etEmail.addTextChangedListener(emailWatcher)
+    }
+
+    private fun validatePasswordMatch() {
+        val password = activityBecomeMemberBinding.etPassword.text.toString()
+        val rePassword = activityBecomeMemberBinding.etRePassword.text.toString()
+        if (rePassword.isNotEmpty() && password != rePassword) {
+            activityBecomeMemberBinding.etRePassword.error = getString(R.string.passwords_do_not_match)
+        } else {
+            activityBecomeMemberBinding.etRePassword.error = null
+        }
     }
 }
