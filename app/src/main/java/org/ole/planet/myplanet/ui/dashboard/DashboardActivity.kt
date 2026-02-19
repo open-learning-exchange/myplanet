@@ -686,7 +686,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
+                intent.putExtra("username", user?.name)
                 intent.putExtra("guest", guest)
                 setResult(RESULT_OK, intent)
                 startActivity(intent)
