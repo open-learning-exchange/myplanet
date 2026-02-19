@@ -65,7 +65,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
     private lateinit var selectAll: CheckBox
-    var userModel: RealmUser ?= null
     lateinit var spnGrade: Spinner
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
@@ -215,7 +214,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 adapterCourses = CoursesAdapter(
                     requireActivity(),
                     map,
-                    userModel,
+                    model,
                     tagsRepository
                 )
                 adapterCourses.submitList(sortedCourseList)
@@ -249,7 +248,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val map = HashMap<String?, com.google.gson.JsonObject>()
         val progressMap = HashMap<String?, com.google.gson.JsonObject>()
 
-        adapterCourses = CoursesAdapter(requireActivity(), map, userModel, tagsRepository)
+        adapterCourses = CoursesAdapter(requireActivity(), map, model, tagsRepository)
         adapterCourses.submitList(courseList) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
                 selectedItems?.clear()
@@ -269,7 +268,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         additionalSetup()
         setupMyProgressButton()
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userSessionManager.getUserModel()
+            model = userSessionManager.getUserModel()
             searchTags = ArrayList()
             initializeView()
             setupButtonVisibility()
@@ -440,7 +439,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun setupSelectAll() {
         selectAll = requireView().findViewById(R.id.selectAllCourse)
-        if (userModel?.isGuest() == true) {
+        if (model?.isGuest() == true) {
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
@@ -491,7 +490,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             etSearch.visibility = View.VISIBLE
             requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
             val allMyCourses = adapterCourses.currentList.all { it.isMyCourse }
-            if (userModel?.isGuest() == false) {
+            if (model?.isGuest() == false) {
                 selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
             }
         }
@@ -569,7 +568,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         builder.setMessage(msg)
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
-                if (userModel?.id?.startsWith("guest") == true) {
+                if (model?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
                     val fragment = CoursesFragment().apply {

@@ -141,18 +141,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
-        user = userSessionManager.userModel
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
-        checkUser()
-        updateAppTitle()
-        if (handleGuestAccess()) return
-
-        handleInitialFragment()
-        addBackPressCallback()
-        collectUiState()
 
         lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            checkUser()
+            updateAppTitle()
+            if (handleGuestAccess()) return@launch
+
+            handleInitialFragment()
+            addBackPressCallback()
+            collectUiState()
             initializeDashboard()
         }
 

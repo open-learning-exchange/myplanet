@@ -61,7 +61,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val view = binding.root
         declareElements()
         onLoaded(view)
-        user = profileDbHandler.userModel
         return binding.root
     }
 
@@ -71,12 +70,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
         binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        observeCompletedCourses()
-        if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
-            checkPendingSurveys()
-        }
-        if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
-            syncKeyId()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            observeCompletedCourses()
+            if ((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
+                checkPendingSurveys()
+            }
+            if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
+                syncKeyId()
+            }
         }
     }
 
