@@ -52,7 +52,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            model = userSessionManager.getUserModel()
+            model = userSessionManager.getUserModelSuspending()
             user = model?.name
         }
     }
