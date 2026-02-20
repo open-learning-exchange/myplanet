@@ -1196,5 +1196,8 @@
     <string name="untitled_course">Untitled Course</string>
     <string name="courses_loading">Loading courses…</string>
     <string name="error">Error: %1$s</string>
+    <string name="select_open_with">Open</string>
+    <string name="select_media">Media</string>
+    <string name="select_resource_type">Resource type</string>
 
 </resources>
