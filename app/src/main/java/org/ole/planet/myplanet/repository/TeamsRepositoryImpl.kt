@@ -696,7 +696,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (task.sync.isNullOrBlank()) {
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
-                addProperty("planetCode", userSessionManager.getUserModel()?.planetCode)
+                addProperty("planetCode", userSessionManager.getUserModelSuspending()?.planetCode)
             }
             task.sync = gson.toJson(syncObj)
         }
