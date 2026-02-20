@@ -34,7 +34,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
-        val userModel = userSessionManager.getUserModel()
+        val userModel = userSessionManager.getUserModelSuspending()
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->
                 val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
