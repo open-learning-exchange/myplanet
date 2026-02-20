@@ -8,6 +8,8 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
@@ -268,6 +270,7 @@ class CoursesRepositoryImpl @Inject constructor(
             course?.removeUserId(userId)
             RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
         }
+        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
     }
 
     override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {
