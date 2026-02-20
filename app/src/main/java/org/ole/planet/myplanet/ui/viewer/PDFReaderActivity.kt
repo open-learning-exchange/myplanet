@@ -119,7 +119,7 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
         cancelAll(this)
         updateTranslation(outputFile)
         lifecycleScope.launch {
-            val userModel = userSessionManager.getUserModel()
+            val userModel = userSessionManager.getUserModelSuspending()
             if (userModel != null) {
                 AddResourceFragment.showAlert(
                     this@PDFReaderActivity,

@@ -120,7 +120,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
-                    val model = userSessionManager.getUserModel()
+                    val model = userSessionManager.getUserModelSuspending()
                     databaseService.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         log.parentCode = settings.getString("parentCode", "")
