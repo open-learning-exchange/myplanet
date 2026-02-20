@@ -28,7 +28,7 @@ class FeedbackListViewModel @Inject constructor(
 
     private fun loadFeedback() {
         viewModelScope.launch {
-            val user = userSessionManager.getUserModel()
+            val user = userSessionManager.getUserModelSuspending()
             feedbackRepository.getFeedback(user).collectLatest { feedback ->
                 _feedbackList.value = feedback
             }

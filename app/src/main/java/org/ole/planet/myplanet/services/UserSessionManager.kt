@@ -50,6 +50,10 @@ class UserSessionManager @Inject constructor(
         return userRepository.getUserModelSuspending()
     }
 
+    suspend fun getUserModelSuspending(): RealmUser? {
+        return userRepository.getUserModelSuspending()
+    }
+
     fun onLogin() {
         onLoginAsync()
     }
