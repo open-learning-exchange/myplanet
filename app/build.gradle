@@ -1,6 +1,4 @@
 apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
 apply plugin: 'com.google.devtools.ksp'
 apply plugin: 'com.google.dagger.hilt.android'
 apply plugin: 'realm-android'
@@ -68,11 +66,6 @@ android {
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
-        freeCompilerArgs += ["-Xannotation-default-target=param-property"]
     }
 
     lintOptions {
@@ -193,6 +186,7 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
+    ksp(libs.realm.annotations.processor)
     implementation(libs.toggle.button.group)
     implementation(libs.materialdrawer) { transitive = true }
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
@@ -212,11 +206,18 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
+    implementation(libs.realm.android.kotlin.extensions)
 }
 realm {
     syncEnabled = true
 }
-kapt {
-    correctErrorTypes = true
-    useBuildCache = true
+ksp {
+    arg("realm.suppressjavax", "true")
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
 }
