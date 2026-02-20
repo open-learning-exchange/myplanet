@@ -74,9 +74,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     @Suppress("UNCHECKED_CAST")
     private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
         val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
         val realmResults = if (orderBy != null) {
             query.sort(orderBy).findAll()
         } else {
@@ -84,9 +81,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         }
         val results: List<T> = realmResults.toList()
         return when (c) {
-            RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getMyLibraryByUserId(model?.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
-            }
             RealmMyCourse::class.java -> {
                 RealmMyCourse.getMyCourseByUserId(model?.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
             }
