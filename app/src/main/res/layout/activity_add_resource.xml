@@ -100,8 +100,6 @@
                     android:layout_gravity="center"
                     android:layout_weight="1"
                     android:enabled="false"
-                    android:entries="@array/language"
-                    android:hint="@string/title_asterisk"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu"
                     android:textDirection="locale" />
@@ -189,7 +187,6 @@
                     android:layout_gravity="center"
                     android:layout_weight="1"
                     android:enabled="false"
-                    android:entries="@array/open_With"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
@@ -224,7 +221,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:entries="@array/media"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
@@ -234,7 +230,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:entries="@array/resource_type"
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
