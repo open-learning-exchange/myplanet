@@ -49,9 +49,10 @@ object ServiceModule {
         improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
+        loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, scope)
+        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
     }
 
     @Provides
