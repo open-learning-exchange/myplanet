@@ -1,0 +1,82 @@
+Starting a Gradle Daemon, 1 busy Daemon could not be reused, use --status for details
+Calculating task graph as configuration cache cannot be reused because environment variable 'ANDROID_HOME' has changed.
+Gradle cache: GRADLE_BUILD_CACHE_URL=http://34.134.219.48:5071/cache/
+
+> Configure project :app
+WARNING: The option setting 'android.builtInKotlin=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+w: [33m[1m⚠️ Deprecated 'org.jetbrains.kotlin.android' plugin usage[0m[0m
+The 'org.jetbrains.kotlin.android' plugin in project ':app' is no longer required for Kotlin support since AGP 9.0.
+[32m[1mSolution:[0m[0m
+[32m[3mRemove both `android.builtInKotlin=true` and `android.newDsl=false` from `gradle.properties`, then migrate to built-in Kotlin.[0m[0m
+[36mSee [0m[34mhttps://kotl.in/gradle/agp-built-in-kotlin[0m[36m for more details.[0m
+
+Problem found: Deprecated 'org.jetbrains.kotlin.android' plugin usage (id: KOTLIN:KGP:DEPRECATION:DeprecatedKotlinAndroidPlugin)
+  Deprecated 'org.jetbrains.kotlin.android' plugin usage
+    The 'org.jetbrains.kotlin.android' plugin in project ':app' is no longer required for Kotlin support since AGP 9.0.
+    Solution: Remove both `android.builtInKotlin=true` and `android.newDsl=false` from `gradle.properties`, then migrate to built-in Kotlin.
+    Documentation: https://kotl.in/gradle/agp-built-in-kotlin
+
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDefaultDebugAssets UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:mergeDefaultDebugNativeDebugMetadata NO-SOURCE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugResValues
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug
+> Task :app:generateDefaultDebugBuildConfig
+> Task :app:processDefaultDebugNavigationResources
+Could not load entry 7341ef49a8e3f08e5f304ff99f12a4bd from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:generateDefaultDebugBuildConfig
+Could not load entry 79b1617f00ec0aea0655686664aeb1a3 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:generateDefaultDebugResValues
+Could not load entry 93870aa07dfe895fe05a9a88067c2199 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:generateDefaultDebugResources
+
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug
+Could not load entry c28673994efd83c2c24d98d9464dfcb7 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:javaPreCompileDefaultDebug
+> Task :app:mergeDefaultDebugAssets
+> Task :app:compressDefaultDebugAssets
+> Task :app:packageDefaultDebugResources
+> Task :app:checkDefaultDebugAarMetadata
+> Task :app:compileDefaultDebugNavigationResources
+> Task :app:mapDefaultDebugSourceSetPaths
+> Task :app:createDefaultDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDefaultDebug
+> Task :app:parseDefaultDebugLocalResources
+> Task :app:desugarDefaultDebugFileDependencies
+> Task :app:checkDefaultDebugDuplicateClasses
+
+> Task :app:processDefaultDebugMainManifest
+/app/app/src/main/AndroidManifest.xml:48:5-158:19 Warning:
+	application@android:label was tagged at AndroidManifest.xml:48 to replace other declarations but no other declaration present
+
+> Task :app:mergeDefaultDebugResources
+> Task :app:processDefaultDebugManifest
+> Task :app:generateDefaultDebugRFile
+> Task :app:mergeExtDexDefaultDebug
+> Task :app:dataBindingGenBaseClassesDefaultDebug
+> Task :app:processDefaultDebugManifestForPackage
+> Task :app:mergeLibDexDefaultDebug
+> Task :app:mergeDefaultDebugJniLibFolders
+> Task :app:mergeDefaultDebugNativeLibs
+> Task :app:stripDefaultDebugDebugSymbols
+> Task :app:processDefaultDebugResources
+> Task :app:writeDefaultDebugAppMetadata
+> Task :app:writeDefaultDebugSigningConfigVersions
+> Task :app:validateSigningDefaultDebug
+> Task :app:kspDefaultDebugKotlin
+> Task :app:kaptGenerateStubsDefaultDebugKotlin
