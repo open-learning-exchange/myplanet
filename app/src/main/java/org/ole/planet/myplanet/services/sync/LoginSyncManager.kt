@@ -5,9 +5,10 @@ import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.JsonObject
-import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
-import kotlin.LazyThreadSafetyMode
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -16,18 +17,18 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RepositoryEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
-class LoginSyncManager private constructor(
-    private val context: Context,
+@Singleton
+class LoginSyncManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @AppPreferences private val settings: SharedPreferences,
     private val userRepository: UserRepository,
 ) {
-    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
         MainApplication.applicationScope.launch(Dispatchers.IO) {
@@ -173,7 +174,7 @@ class LoginSyncManager private constructor(
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
         if (!isManager(jsonDoc)) {
             withContext(Dispatchers.Main) {
-                listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
+                listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
             }
             return
         }
@@ -188,17 +189,5 @@ class LoginSyncManager private constructor(
         val roles = jsonDoc?.get("roles")?.asJsonArray
         val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
         return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
-    }
-
-    companion object {
-        @JvmStatic
-        val instance: LoginSyncManager by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-            val entryPoint =
-                EntryPointAccessors.fromApplication(
-                    MainApplication.context.applicationContext,
-                    RepositoryEntryPoint::class.java
-                )
-            LoginSyncManager(MainApplication.context, entryPoint.userRepository())
-        }
     }
 }

@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.ThemeManager
+import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
@@ -59,6 +60,8 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     @Inject
     lateinit var teamsRepository: TeamsRepository
+    @Inject
+    lateinit var loginSyncManager: LoginSyncManager
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher2: TextWatcher
@@ -553,7 +556,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthUtils.login(this, name, password)
+        AuthUtils.login(this, loginSyncManager, name, password)
     }
 
     internal fun showGuestDialog(username: String) {
