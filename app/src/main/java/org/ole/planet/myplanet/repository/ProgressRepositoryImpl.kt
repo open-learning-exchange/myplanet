@@ -5,6 +5,8 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -36,7 +38,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         return map
     }
 
-    override suspend fun fetchCourseData(userId: String?): JsonArray {
+    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(Dispatchers.IO) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }
@@ -63,7 +65,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             }
             arr.add(obj)
         }
-        return arr
+        arr
     }
 
     override suspend fun getCurrentProgress(
