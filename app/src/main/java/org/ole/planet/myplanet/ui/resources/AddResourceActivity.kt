@@ -5,12 +5,15 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ListView
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -88,8 +91,34 @@ class AddResourceActivity : AppCompatActivity() {
         binding.tvResourceFor.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
         }
+        setupHintSpinner(binding.spnLang, getString(R.string.language), resources.getStringArray(R.array.language))
+        setupHintSpinner(binding.spnOpenWith, getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
+        setupHintSpinner(binding.spnMedia, getString(R.string.select_media), resources.getStringArray(R.array.media))
+        setupHintSpinner(binding.spnResourceType, getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
         binding.btnSubmit.setOnClickListener { saveResource() }
         binding.btnCancel.setOnClickListener { finish() }
+    }
+
+    private fun setupHintSpinner(spinner: Spinner, hint: String, entries: Array<String>) {
+        val items = listOf(hint) + entries.toList()
+        val hintColor = ContextCompat.getColor(this, R.color.hint_color)
+        val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
+        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
+            override fun isEnabled(position: Int) = position != 0
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                view.setTextColor(if (position == 0) hintColor else textColor)
+                return view
+            }
+        }
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+        spinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
+                (view as? TextView)?.setTextColor(if (position == 0) hintColor else textColor)
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
+        })
     }
 
     private fun saveResource() {
@@ -129,10 +158,10 @@ class AddResourceActivity : AppCompatActivity() {
         resource.description = binding.etDescription.text.toString().trim { it <= ' ' }
         resource.publisher = binding.etPublisher.text.toString().trim { it <= ' ' }
         resource.linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' }
-        resource.openWith = binding.spnOpenWith.selectedItem.toString()
-        resource.language = binding.spnLang.selectedItem.toString()
-        resource.mediaType = binding.spnMedia.selectedItem.toString()
-        resource.resourceType = binding.spnResourceType.selectedItem.toString()
+        resource.openWith = if (binding.spnOpenWith.selectedItemPosition > 0) binding.spnOpenWith.selectedItem.toString() else ""
+        resource.language = if (binding.spnLang.selectedItemPosition > 0) binding.spnLang.selectedItem.toString() else ""
+        resource.mediaType = if (binding.spnMedia.selectedItemPosition > 0) binding.spnMedia.selectedItem.toString() else ""
+        resource.resourceType = if (binding.spnResourceType.selectedItemPosition > 0) binding.spnResourceType.selectedItem.toString() else ""
         resource.subject = subjects
         resource.setUserId(RealmList())
         resource.level = levels
