@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import io.realm.RealmModel
 import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
@@ -18,9 +17,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
             }
             isMyCourseLib -> {
                 getMyLibItems(c as Class<out RealmModel>)
-            }
-            c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
             }
             else -> {
                 val myLibItems = getMyLibItems(c as Class<out RealmModel>)
@@ -62,9 +58,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
             isMyCourseLib -> {
                 getMyLibItems(c as Class<out RealmModel>, orderBy)
             }
-            c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
-            }
             else -> {
                 val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList()
                 RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
@@ -74,9 +67,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     @Suppress("UNCHECKED_CAST")
     private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
         val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
         val realmResults = if (orderBy != null) {
             query.sort(orderBy).findAll()
         } else {
@@ -84,9 +74,6 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         }
         val results: List<T> = realmResults.toList()
         return when (c) {
-            RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getMyLibraryByUserId(model?.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
-            }
             RealmMyCourse::class.java -> {
                 RealmMyCourse.getMyCourseByUserId(model?.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
             }
