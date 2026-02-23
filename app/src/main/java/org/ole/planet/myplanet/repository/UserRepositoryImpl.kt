@@ -13,7 +13,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
@@ -375,8 +374,8 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     @Deprecated("Use getActiveUserIdSuspending() instead")
-    override fun getActiveUserId(): String = runBlocking {
-        getActiveUserIdSuspending()
+    override fun getActiveUserId(): String {
+        return settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: ""
     }
 
     override suspend fun getActiveUserIdSuspending(): String {
