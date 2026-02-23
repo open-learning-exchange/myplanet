@@ -24,7 +24,7 @@ class DatabaseService(context: Context) {
         }
         val config = RealmConfiguration.Builder()
             .name(Realm.DEFAULT_REALM_NAME)
-            .schemaVersion(5)
+            .schemaVersion(6)
             .migration(RealmMigrations())
             .build()
         Realm.setDefaultConfiguration(config)

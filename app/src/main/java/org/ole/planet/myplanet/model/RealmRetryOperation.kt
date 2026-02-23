@@ -4,9 +4,11 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import io.realm.annotations.RealmClass
 import java.util.UUID
 import org.ole.planet.myplanet.services.upload.UploadError
 
+@RealmClass
 open class RealmRetryOperation : RealmObject() {
     @PrimaryKey
     var id: String = ""
