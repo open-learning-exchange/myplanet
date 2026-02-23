@@ -87,6 +87,8 @@ class AchievementFragment : BaseContainerFragment() {
         if (::onRealtimeSyncListener.isInitialized) {
             syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
         _binding = null
         super.onDestroyView()
     }
@@ -112,7 +114,7 @@ class AchievementFragment : BaseContainerFragment() {
     private fun startSyncManager() {
         syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
+                lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_achievements))
@@ -122,7 +124,7 @@ class AchievementFragment : BaseContainerFragment() {
             }
 
             override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
+                lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -133,13 +135,15 @@ class AchievementFragment : BaseContainerFragment() {
             }
 
             override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
+                lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startAchievementSync() }
-                            .show()
+                        if (view != null) {
+                            Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                                .setAction("Retry") { startAchievementSync() }
+                                .show()
+                        }
                     }
                 }
             }
@@ -332,8 +336,6 @@ class AchievementFragment : BaseContainerFragment() {
 
 
     override fun onDestroy() {
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
         super.onDestroy()
     }
 }
