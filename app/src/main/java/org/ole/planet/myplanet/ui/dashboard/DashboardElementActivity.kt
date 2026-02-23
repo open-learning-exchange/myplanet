@@ -161,7 +161,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
         val dialog = builder.build()
         currentDialog = dialog
-        service.getMinApk(this, url, serverPin, this, "DashboardActivity")
+        checkMinApk(url, serverPin, "DashboardActivity")
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
             createActionAsync(databaseService, "${userModel?.id}", null, "sync")

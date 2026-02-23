@@ -23,8 +23,6 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
@@ -61,6 +59,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
             } else {
+                @Suppress("DEPRECATION")
                 it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
             }
         }
@@ -86,7 +85,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
             mRealm = databaseService.createManagedRealmInstance()
-            model = profileDbHandler.userModel
+            model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -138,9 +137,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         isAddInProgress = true
         setJoinInProgress(true)
 
-        val userId = profileDbHandler.userModel?.id ?: return
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             var libraryAdded = false
             var courseAdded = false
 
@@ -277,28 +275,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
-        var list = getData(s, RealmMyLibrary::class.java)
-        list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model?.id, list)
-        } else {
-            getOurLibrary(model?.id, list)
-        }
-
-        val libraries = if (tags.isNotEmpty()) {
-            val filteredLibraries = mutableListOf<RealmMyLibrary>()
-            for (library in list) {
-                filter(tags, library, filteredLibraries)
-            }
-            filteredLibraries
-        } else {
-            list
-        }
-
-        return libraries
-    }
-
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
@@ -326,16 +302,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
         return items.filterIsInstance<RealmMyCourse>()
-    }
-
-    private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
-        for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
-                .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
-            if (count > 0 && !libraries.contains(library)) {
-                library?.let { libraries.add(it) }
-            }
-        }
     }
 
     fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {

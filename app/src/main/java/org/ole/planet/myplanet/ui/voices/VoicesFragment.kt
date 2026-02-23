@@ -88,14 +88,6 @@ class VoicesFragment : BaseVoicesFragment() {
             binding.llAddNews.visibility = View.GONE
         }
 
-        if (mRealm.isInTransaction) {
-            try {
-                mRealm.commitTransaction()
-            } catch (_: Exception) {
-                mRealm.cancelTransaction()
-            }
-        }
-
         setupSearchTextListener()
         setupLabelFilter()
 
@@ -112,19 +104,17 @@ class VoicesFragment : BaseVoicesFragment() {
 
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        val filtered = news.map { it as RealmNews? }
-                        val labels = collectAllLabels(filtered)
-                        val labelFiltered = applyLabelFilter(filtered)
-                        val searchFiltered =
-                            applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                        if (_binding != null) {
-                            filteredNewsList = filtered
-                            labelFilteredList = labelFiltered
-                            searchFilteredList = searchFiltered
-                            setupLabelFilter(labels)
-                            setData(searchFilteredList)
-                        }
+                    val filtered = news.map { it as RealmNews? }
+                    val labels = collectAllLabels(filtered)
+                    val labelFiltered = applyLabelFilter(filtered)
+                    val searchFiltered =
+                        applySearchFilter(labelFiltered, etSearch.text.toString().trim())
+                    if (_binding != null) {
+                        filteredNewsList = filtered
+                        labelFilteredList = labelFiltered
+                        searchFilteredList = searchFiltered
+                        setupLabelFilter(labels)
+                        setData(searchFilteredList)
                     }
                 }
             }
@@ -143,18 +133,24 @@ class VoicesFragment : BaseVoicesFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
+            binding.llAddNews.visibility = View.GONE
+            binding.btnNewVoice.text = getString(R.string.new_voice)
+            binding.btnSubmit.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
-                val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                try {
+                    val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
                     imageList.clear()
                     llImage?.removeAllViews()
-                    adapterNews?.addItem(n)
-                    labelFilteredList = applyLabelFilter(filteredNewsList)
-                    searchFilteredList = applySearchFilter(labelFilteredList)
-                    setData(searchFilteredList)
+                    if (n != null) {
+                        n.sortDate = n.calculateSortDate()
+                        filteredNewsList = listOf(n) + filteredNewsList
+                        labelFilteredList = applyLabelFilter(filteredNewsList)
+                        searchFilteredList = applySearchFilter(labelFilteredList)
+                        setData(searchFilteredList)
+                    }
                     scrollToTop()
-                    binding.llAddNews.visibility = View.GONE
-                    binding.btnNewVoice.text = getString(R.string.new_voice)
+                } finally {
+                    binding.btnSubmit.isEnabled = true
                 }
             }
         }
@@ -219,7 +215,7 @@ class VoicesFragment : BaseVoicesFragment() {
                 scope = viewLifecycleOwner.lifecycleScope,
                 isTeamLeaderFn = { false },
                 getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
                 deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
                 shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                     voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
@@ -435,9 +431,6 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onDestroyView() {
         binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
-        if (isRealmInitialized()) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }

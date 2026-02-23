@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SubmissionViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
@@ -56,7 +58,7 @@ class SubmissionViewModel @Inject constructor(
 
         if (query.isNotEmpty()) {
             val examIds = examMap.filter { (_, exam) ->
-                exam?.name?.contains(query, ignoreCase = true) == true
+                exam.name?.contains(query, ignoreCase = true) == true
             }.keys
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
@@ -80,7 +82,7 @@ class SubmissionViewModel @Inject constructor(
             }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.flowOn(Dispatchers.Default).shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.flowOn(Dispatchers.IO).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
         uniqueSubmissions.map { viewData ->

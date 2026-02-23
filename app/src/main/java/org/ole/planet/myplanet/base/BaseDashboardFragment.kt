@@ -219,7 +219,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    private fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private suspend fun renderMyTeams(teams: List<RealmMyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
 
@@ -237,7 +237,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.userModel?.id
+        val userId = profileDbHandler.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -267,7 +267,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.userModel
+        val user = profileDbHandler.getUserModel()
         val userId = settings.getString("userId", "--")
         val dbMylife = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
 

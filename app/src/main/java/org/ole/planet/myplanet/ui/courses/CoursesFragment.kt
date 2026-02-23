@@ -115,7 +115,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.IO) {
+                updateServerIfNecessary(mapping)
+            }
             startSyncManager()
         }
     }
@@ -139,11 +141,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                         lifecycleScope.launch {
                             delay(3000)
-                            withContext(Dispatchers.Main) {
-                                customProgressDialog?.dismiss()
-                                customProgressDialog = null
-                                loadDataAsync()
-                            }
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            loadDataAsync()
                         }
                         prefManager.setCoursesSynced(true)
                     }

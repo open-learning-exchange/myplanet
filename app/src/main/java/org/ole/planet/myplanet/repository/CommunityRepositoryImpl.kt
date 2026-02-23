@@ -4,11 +4,13 @@ import com.google.gson.JsonArray
 import io.realm.Sort
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val apiInterface: ApiInterface
 ) : RealmRepository(databaseService), CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
@@ -36,6 +38,22 @@ class CommunityRepositoryImpl @Inject constructor(
                 .sort("weight", Sort.ASCENDING)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun syncCommunityDocs(): Boolean {
+        return try {
+            val response = apiInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
+            if (response.isSuccessful && response.body() != null) {
+                val arr = JsonUtils.getJsonArray("rows", response.body())
+                replaceAll(arr)
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }

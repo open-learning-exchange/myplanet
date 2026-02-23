@@ -98,33 +98,37 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 user = userSessionManager.getUserModel()
             }
             val (news, list) = viewModel.getNewsWithReplies(id)
-            val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
-            newsAdapter = VoicesAdapter(
-                context = this@ReplyActivity,
-                currentUser = user,
-                parentNews = news,
-                teamName = "",
-                teamId = null,
-                userSessionManager = userSessionManager,
-                scope = lifecycleScope,
-                isTeamLeaderFn = { false },
-                getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
-                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                },
-                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
-                labelManager = labelManager,
-                voicesRepository = voicesRepository
-            )
-            newsAdapter.sharedPrefManager = sharedPrefManager
-            newsAdapter.setListener(this@ReplyActivity)
-            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-            newsAdapter.setImageList(imageList)
+            if (!::newsAdapter.isInitialized) {
+                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+                newsAdapter = VoicesAdapter(
+                    context = this@ReplyActivity,
+                    currentUser = user,
+                    parentNews = news,
+                    teamName = "",
+                    teamId = null,
+                    userSessionManager = userSessionManager,
+                    scope = lifecycleScope,
+                    isTeamLeaderFn = { false },
+                    getUserFn = { userId -> userRepository.getUserById(userId) },
+                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
+                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    },
+                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    labelManager = labelManager,
+                    voicesRepository = voicesRepository
+                )
+                newsAdapter.sharedPrefManager = sharedPrefManager
+                newsAdapter.setListener(this@ReplyActivity)
+                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+                newsAdapter.setImageList(imageList)
+                activityReplyBinding.rvReply.adapter = newsAdapter
+            } else {
+                newsAdapter.updateParentNews(news)
+            }
             newsAdapter.updateList(list)
-            activityReplyBinding.rvReply.adapter = newsAdapter
         }
     }
 

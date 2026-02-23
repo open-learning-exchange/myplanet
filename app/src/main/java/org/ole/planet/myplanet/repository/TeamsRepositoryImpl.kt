@@ -299,6 +299,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
     override suspend fun getTeamTransactions(
         teamId: String,
         startDate: Long?,

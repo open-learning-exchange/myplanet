@@ -300,7 +300,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        this.settings = settings ?: appPreferences
+        this.settings = settings
         settings.edit {
             putString("userId", user?.id)
             putString("name", user?.name)

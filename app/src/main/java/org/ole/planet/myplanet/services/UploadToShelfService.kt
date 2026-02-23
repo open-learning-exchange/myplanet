@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -44,7 +45,8 @@ class UploadToShelfService @Inject constructor(
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences,
     private val resourcesRepository: ResourcesRepository,
-    private val coursesRepository: CoursesRepository
+    private val coursesRepository: CoursesRepository,
+    private val userRepository: UserRepository
 ) {
     lateinit var mRealm: Realm
 
@@ -52,13 +54,7 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val userModels = dbService.withRealm { realm ->
-                    realm.where(RealmUser::class.java)
-                        .isEmpty("_id").or().equalTo("isUpdated", true)
-                        .findAll()
-                        .take(100)
-                        .map { realm.copyFromRealm(it) }
-                }
+                val userModels = userRepository.getPendingSyncUsers(100)
 
                 if (userModels.isEmpty()) return@launch
 
@@ -95,12 +91,7 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val userModel = dbService.withRealm { realm ->
-                    realm.where(RealmUser::class.java)
-                        .equalTo("name", userName)
-                        .findFirst()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+                val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
                 if (userModel != null) {
                     try {

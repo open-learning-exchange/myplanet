@@ -50,8 +50,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
-import org.ole.planet.myplanet.data.DataService
-import org.ole.planet.myplanet.data.DataService.ConfigurationIdListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
@@ -85,8 +83,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback,
-    ConfigurationIdListener {
+abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
@@ -124,8 +121,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
-    @Inject
-    lateinit var service: DataService
     @Inject
     lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
@@ -196,9 +191,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         processedUrl = UrlUtils.getUrl()
     }
 
-    override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
-        val savedId = settings.getString("configurationId", null)
+    fun checkMinApk(url: String, pin: String, callerActivity: String) {
+        lifecycleScope.launch {
+            customProgressDialog.setText(getString(R.string.check_apk_version))
+            customProgressDialog.show()
+            val result = configurationsRepository.getMinApk(url, pin)
+            customProgressDialog.dismiss()
+            when (result) {
+                is ConfigurationsRepository.ConfigurationResult.Success -> {
+                    handleConfigurationSuccess(result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerActivity)
+                }
+                is ConfigurationsRepository.ConfigurationResult.Failure -> {
+                    syncFailed = true
+                    alertDialogOkay(result.errorMessage)
+                }
+            }
+        }
+    }
 
+    private fun handleConfigurationSuccess(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
+        val savedId = settings.getString("configurationId", null)
+        syncFailed = false
         when (callerActivity) {
             "LoginActivity", "DashboardActivity"-> {
                 if (isAlternativeUrl) {

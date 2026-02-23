@@ -246,7 +246,7 @@ class PlanFragment : BaseTeamFragment() {
         binding.tvDate.text = getString(
             R.string.two_strings,
             getString(R.string.created_on),
-            updatedTeam.createdDate?.let { formatDate(it) }
+            formatDate(updatedTeam.createdDate)
         )
     }
 

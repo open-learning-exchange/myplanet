@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import com.google.gson.JsonObject
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.Normalizer
 import java.util.Calendar
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -35,7 +37,7 @@ class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
-    private val uploadToShelfService: UploadToShelfService,
+    private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository
 ) : RealmRepository(databaseService), UserRepository {
@@ -79,6 +81,15 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
         return queryList(RealmUser::class.java) {
             sort(fieldName, sortOrder)
+        }
+    }
+
+    override suspend fun getPendingSyncUsers(limit: Int): List<RealmUser> {
+        return withRealm { realm ->
+            val results = realm.where(RealmUser::class.java)
+                .isEmpty("_id").or().equalTo("isUpdated", true)
+                .findAll()
+            realm.copyFromRealm(results.take(limit))
         }
     }
 
@@ -368,7 +379,7 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                    uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
                 } catch (keyIvException: Exception) { }
                 Result.success(userModel)
             } else {
@@ -398,6 +409,8 @@ class UserRepositoryImpl @Inject constructor(
         }
         if (mh == null) return@withRealm null
 
+        val mhCopy = realm.copyFromRealm(mh)
+
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
         val mm = if (TextUtils.isEmpty(json)) {
             null
@@ -414,7 +427,7 @@ class UserRepositoryImpl @Inject constructor(
         val healths = realm.where(RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
-            return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())
+            return@withRealm HealthRecord(mhCopy, mm, emptyList(), emptyMap())
         }
 
         val userIds = list.mapNotNull {
@@ -429,7 +442,7 @@ class UserRepositoryImpl @Inject constructor(
             val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
-        HealthRecord(mh, mm, list, userMap)
+        HealthRecord(mhCopy, mm, list, userMap)
     }
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
@@ -602,5 +615,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun hasAtLeastOneUser(): Boolean {
         return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+    }
+
+    override suspend fun hasUserSyncAction(userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+        val actions = queryList(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        }
+        return actions.isNotEmpty()
     }
 }
