@@ -185,7 +185,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-
         @JvmStatic
         fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
             return libs.filter { it.userId?.contains(userId) == false }
