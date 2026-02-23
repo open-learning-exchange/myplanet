@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.Calendar
 import java.util.HashMap
@@ -59,7 +60,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+        val realmImageList = if (imageList != null) RealmList<String>().apply { addAll(imageList) } else null
         return withRealmAsync { realm ->
             val managedNews = createNews(map, realm, user, realmImageList)
             realm.copyFromRealm(managedNews)
@@ -67,7 +68,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+        val realmImageList = if (imageList != null) RealmList<String>().apply { addAll(imageList) } else null
         return try {
             databaseService.executeTransactionAsync { realm ->
                 RealmNews.createNews(newsData, realm, user, realmImageList)
@@ -349,7 +350,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?) {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+        val realmImageList = if (imageList != null) RealmList<String>().apply { addAll(imageList) } else null
         val userId = currentUser.id
         val viewableBy = news.viewableBy
         val viewableId = news.viewableId
@@ -373,7 +374,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?) {
-        val realmImageList = newImages?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+        val realmImageList = if (newImages != null) RealmList<String>().apply { addAll(newImages) } else null
         if (message.isEmpty()) return
         executeTransaction { realm ->
             val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
