@@ -91,23 +91,7 @@ class AutoSyncWorker @AssistedInject constructor(
                 MainApplication.applicationScope.let { scope ->
                     scope.launch {
                         try {
-                            uploadManager.uploadExamResult(this@AutoSyncWorker)
-                            uploadManager.uploadFeedback()
-                            uploadManager.uploadAchievement()
-                            uploadManager.uploadResourceActivities("")
-                            uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                            uploadManager.uploadCourseActivities()
-                            uploadManager.uploadSearchActivity()
-                            uploadManager.uploadRating()
-                            uploadManager.uploadResource(this@AutoSyncWorker)
-                            uploadManager.uploadNews()
-                            uploadManager.uploadTeams()
-                            uploadManager.uploadTeamTask()
-                            uploadManager.uploadMeetups()
-                            uploadManager.uploadAdoptedSurveys()
-                            uploadManager.uploadCrashLog()
-                            uploadManager.uploadSubmissions()
-                            uploadManager.uploadActivities(null)
+                            uploadManager.uploadEverything(this@AutoSyncWorker)
                         } catch (e: CancellationException) {
                             throw e
                         } catch (e: Exception) {

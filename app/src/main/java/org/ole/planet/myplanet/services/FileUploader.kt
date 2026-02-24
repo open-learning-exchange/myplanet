@@ -3,10 +3,8 @@ package org.ole.planet.myplanet.services
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
-import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -18,7 +16,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 open class FileUploader {
-    fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: OnSuccessListener) {
+    suspend fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: OnSuccessListener) {
         val f = personal.path?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.path)
         if (f != null) {
@@ -26,7 +24,7 @@ open class FileUploader {
         }
     }
 
-    fun uploadAttachment(id: String, rev: String, personal: RealmMyLibrary, listener: OnSuccessListener) {
+    suspend fun uploadAttachment(id: String, rev: String, personal: RealmMyLibrary, listener: OnSuccessListener) {
         val f = personal.resourceLocalAddress?.let { File(it) }
         val name = FileUtils.getFileNameFromLocalAddress(personal.resourceLocalAddress)
         if (f != null) {
@@ -34,7 +32,7 @@ open class FileUploader {
         }
     }
 
-    fun uploadAttachment(id: String, rev: String, personal: RealmSubmitPhotos, listener: OnSuccessListener) {
+    suspend fun uploadAttachment(id: String, rev: String, personal: RealmSubmitPhotos, listener: OnSuccessListener) {
         val f = personal.photoLocation?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
         if (f != null) {
@@ -42,26 +40,25 @@ open class FileUploader {
         }
     }
 
-    private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
+    private suspend fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
         val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch {
-            try {
-                val connection = f.toURI().toURL().openConnection()
-                val mimeType = connection.contentType
-                val body = FileUtils.fullyReadFileToBytes(f)
-                    .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-                val url = String.format(format, UrlUtils.getUrl(), id, name)
 
-                try {
-                    val response = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body)
-                    onDataReceived(response.body(), listener)
-                } catch (t: Exception) {
-                    listener.onSuccess("Unable to upload resource")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
+        try {
+            val connection = f.toURI().toURL().openConnection()
+            val mimeType = connection.contentType
+            val body = FileUtils.fullyReadFileToBytes(f)
+                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+            val url = String.format(format, UrlUtils.getUrl(), id, name)
+
+            try {
+                val response = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body)
+                onDataReceived(response.body(), listener)
+            } catch (t: Exception) {
                 listener.onSuccess("Unable to upload resource")
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            listener.onSuccess("Unable to upload resource")
         }
     }
 

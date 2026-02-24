@@ -72,79 +72,101 @@ class UploadManager @Inject constructor(
     private val uploadConfigs: UploadConfigs
 ) : FileUploader() {
 
+    suspend fun uploadEverything(listener: OnSuccessListener?) {
+        uploadAchievement()
+        uploadNews()
+        uploadResourceActivities("")
+        uploadCourseActivities()
+        uploadSearchActivity()
+        uploadRating()
+        uploadTeamTask()
+        uploadMeetups()
+        uploadAdoptedSurveys()
+        uploadSubmissions()
+        uploadCrashLog()
+
+        val safeListener = listener ?: object : OnSuccessListener { override fun onSuccess(success: String?) {} }
+
+        uploadExamResult(safeListener)
+        uploadFeedback()
+        uploadUserActivities(safeListener)
+        uploadResource(safeListener)
+        uploadTeams()
+        uploadSubmitPhotos(safeListener)
+        uploadActivities(safeListener)
+    }
+
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
     }
 
-    fun uploadActivities(listener: OnSuccessListener?) {
+    suspend fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        MainApplication.applicationScope.launch {
-            val model = userRepository.getUserModelSuspending() ?: run {
-                withContext(Dispatchers.Main) {
-                    listener?.onSuccess("Cannot upload activities: user model is null")
-                }
-                return@launch
+        val model = userRepository.getUserModelSuspending() ?: run {
+            withContext(Dispatchers.Main) {
+                listener?.onSuccess("Cannot upload activities: user model is null")
+            }
+            return
+        }
+
+        if (model.isManager()) {
+            withContext(Dispatchers.Main) {
+                listener?.onSuccess("Skipping activities upload for manager")
+            }
+            return
+        }
+
+        try {
+            try {
+                apiInterface.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/myplanet_activities",
+                    MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model)
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            if (model.isManager()) {
-                withContext(Dispatchers.Main) {
-                    listener?.onSuccess("Skipping activities upload for manager")
-                }
-                return@launch
+            val response = try {
+                apiInterface.getJsonObject(
+                    UrlUtils.header,
+                    "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
+                )
+            } catch (e: Exception) {
+                null
+            }
+
+            var `object` = response?.body()
+
+            if (`object` != null) {
+                val usages = `object`.getAsJsonArray("usages")
+                usages.addAll(MyPlanet.getTabletUsages(context))
+                `object`.add("usages", usages)
+            } else {
+                `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
             }
 
             try {
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model)
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                val response = try {
-                    apiInterface.getJsonObject(
-                        UrlUtils.header,
-                        "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-
-                var `object` = response?.body()
-
-                if (`object` != null) {
-                    val usages = `object`.getAsJsonArray("usages")
-                    usages.addAll(MyPlanet.getTabletUsages(context))
-                    `object`.add("usages", usages)
-                } else {
-                    `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
-                }
-
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        `object`
-                    )
-                    withContext(Dispatchers.Main) {
-                        listener?.onSuccess("My planet activities uploaded successfully")
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        listener?.onSuccess("Failed to upload activities: ${e.message}")
-                    }
+                apiInterface.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/myplanet_activities",
+                    `object`
+                )
+                withContext(Dispatchers.Main) {
+                    listener?.onSuccess("My planet activities uploaded successfully")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Failed to upload activities: ${e.message}")
                 }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            withContext(Dispatchers.Main) {
+                listener?.onSuccess("Failed to upload activities: ${e.message}")
             }
         }
     }
