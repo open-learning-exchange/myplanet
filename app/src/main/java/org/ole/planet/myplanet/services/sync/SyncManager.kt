@@ -663,7 +663,11 @@ class SyncManager @Inject constructor(
                                 databaseService.withRealm { realm ->
                                     realm.executeTransaction { realmTx ->
                                         val chunkDocuments = JsonArray()
-                                        chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
+                                        chunk.forEach { (doc, _) ->
+                                            val wrapper = JsonObject()
+                                            wrapper.add("doc", doc)
+                                            chunkDocuments.add(wrapper)
+                                        }
 
                                         val chunkIds = save(chunkDocuments, realmTx)
                                         savedIds.addAll(chunkIds)
@@ -739,8 +743,6 @@ class SyncManager @Inject constructor(
                 val cleanupStartTime = System.currentTimeMillis()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    val deletedCount = newIds.size - validNewIds.size
-                    Log.d("SyncPerf", "    Resources: Removing $deletedCount deleted resources")
                     resourcesRepository.removeDeletedResources(validNewIds)
                 }
                 val cleanupDuration = System.currentTimeMillis() - cleanupStartTime
