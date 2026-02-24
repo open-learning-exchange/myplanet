@@ -56,6 +56,7 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
+    @Deprecated("Use Repositories instead")
     protected lateinit var mRealm: Realm
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -86,6 +87,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var stayOnlineDialog: AlertDialog? = null
     private var broadcastJob: Job? = null
 
+    @Deprecated("Use Repositories instead")
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
             mRealm = databaseService.createManagedRealmInstance()
@@ -93,6 +95,7 @@ abstract class BaseResourceFragment : Fragment() {
         return mRealm
     }
 
+    @Deprecated("Use Repositories instead")
     protected fun isRealmInitialized(): Boolean {
         return ::mRealm.isInitialized && !mRealm.isClosed
     }
@@ -444,6 +447,7 @@ abstract class BaseResourceFragment : Fragment() {
         super.onDestroy()
     }
 
+    @Deprecated("Use Repositories instead")
     private fun cleanupRealm() {
         if (isRealmInitialized()) {
             try {

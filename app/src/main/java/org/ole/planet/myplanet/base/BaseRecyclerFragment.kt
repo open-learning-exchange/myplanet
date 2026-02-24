@@ -115,6 +115,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use Repositories instead")
     fun addToMyList() {
         if (!isRealmInitialized() || isAddInProgress) return
 
@@ -181,6 +182,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use Repositories instead")
     private fun setJoinInProgress(inProgress: Boolean) {
         recyclerView.isEnabled = !inProgress
         recyclerView.alpha = if (inProgress) 0.6f else 1f
@@ -194,6 +196,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use Repositories instead")
     fun deleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEach { item ->
             try {
@@ -216,10 +219,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems?.clear()
     }
 
+    @Deprecated("Use Repositories instead")
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
 
+    @Deprecated("Use Repositories instead")
     private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
             mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
@@ -232,6 +237,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use Repositories instead")
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
         for (tg in tags) {
             val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
@@ -242,6 +248,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use Repositories instead")
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
         val query = mRealm.where(c)
         if (c == RealmMyLibrary::class.java) {
@@ -268,6 +275,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return startsWithQuery + containsQuery
     }
 
+    @Deprecated("Use Repositories instead")
     private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
         return when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
@@ -275,11 +283,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use Repositories instead")
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
+    @Deprecated("Use Repositories instead")
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
@@ -300,10 +310,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return applyCourseFilter(courses)
     }
 
+    @Deprecated("Use Repositories instead")
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
         return items.filterIsInstance<RealmMyCourse>()
     }
 
+    @Deprecated("Use Repositories instead")
     fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
         val newList: MutableList<RealmMyLibrary> = ArrayList()
         for (l in libraries) {
@@ -312,6 +324,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return newList
     }
 
+    @Deprecated("Use Repositories instead")
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
         val newList: MutableList<RealmMyCourse> = ArrayList()
@@ -326,6 +339,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return newList
     }
 
+    @Deprecated("Use Repositories instead")
     private fun isValidFilter(l: RealmMyLibrary): Boolean {
         val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
         val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
@@ -339,6 +353,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onDestroy()
     }
 
+    @Deprecated("Use Repositories instead")
     private fun cleanupRealm() {
         if (isRealmInitialized()) {
             try {
@@ -366,6 +381,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         cleanupReferences()
     }
 
+    @Deprecated("Use Repositories instead")
     private fun cleanupReferences() {
         selectedItems?.clear()
         list?.clear()
