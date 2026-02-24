@@ -322,8 +322,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
                     deleteSelected(true)
-                    val newFragment = ResourcesFragment()
-                    recreateFragment(newFragment)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -726,5 +724,43 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
         return filteredList
+    }
+
+    override fun deleteSelected(deleteProgress: Boolean) {
+        val userId = userModel?.id
+        val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+
+        if (userId != null && itemsToDelete.isNotEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                itemsToDelete.forEach { resourceId ->
+                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                }
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                    refreshResourcesData()
+                    selectedItems?.clear()
+                    changeButtonStatus()
+                    hideButton()
+                }
+            }
+        }
+    }
+
+    override fun addToMyList() {
+        val userId = userModel?.id
+        val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+
+        if (userId != null && itemsToAdd.isNotEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                    refreshResourcesData()
+                    selectedItems?.clear()
+                    changeButtonStatus()
+                    hideButton()
+                }
+            }
+        }
     }
 }
