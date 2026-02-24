@@ -6,10 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -19,9 +19,6 @@ import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.services.UploadManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -33,13 +30,8 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     private var personalAdapter: PersonalsAdapter? = null
+    private val viewModel: PersonalsViewModel by viewModels()
 
-    @Inject
-    lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var personalsRepository: PersonalsRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
@@ -63,18 +55,17 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         personalAdapter = PersonalsAdapter(requireActivity())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
+
         viewLifecycleOwner.lifecycleScope.launch {
-            val model = userSessionManager.getUserModel()
-            personalsRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
+            viewModel.personals.collectLatest { realmMyPersonals ->
                 personalAdapter?.submitList(realmMyPersonals)
-                showNodata()
+                showNodata(realmMyPersonals.isEmpty())
             }
         }
-        showNodata()
     }
 
-    private fun showNodata() {
-        if (binding.rvMypersonal.adapter?.itemCount == 0) {
+    private fun showNodata(isEmpty: Boolean) {
+        if (isEmpty) {
             binding.tvNodata.visibility = View.VISIBLE
             binding.tvNodata.setText(R.string.no_data_available_please_click_button_to_add_new_resource_in_mypersonal)
         } else {
@@ -94,7 +85,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val result = withContext(Dispatchers.IO) {
-                        uploadManager.uploadMyPersonal(personal)
+                        viewModel.uploadPersonal(personal)
                     }
                     Utilities.toast(activity, result)
                 } catch (e: Exception) {
@@ -107,7 +98,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     }
 
     override fun onAddedResource() {
-        // List updates are handled via repository flow
+        // List updates are handled via repository flow in ViewModel
     }
 
     override fun onEditPersonal(personal: RealmMyPersonal) {
@@ -127,14 +118,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
                 }
                 val id = personal.id ?: personal._id
                 if (id != null) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            personalsRepository.updatePersonalResource(id) { realmPersonal ->
-                                realmPersonal.description = desc
-                                realmPersonal.title = title
-                            }
-                        }
-                    }
+                    viewModel.updatePersonal(id, title, desc)
                 }
             }
             .setNegativeButton(R.string.cancel, null)
@@ -147,11 +131,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
             .setPositiveButton(R.string.ok) { _, _ ->
                 val id = personal.id ?: personal._id
                 if (id != null) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            personalsRepository.deletePersonalResource(id)
-                        }
-                    }
+                    viewModel.deletePersonal(id)
                 }
             }
             .setNegativeButton(R.string.cancel, null)
