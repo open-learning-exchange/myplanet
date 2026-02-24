@@ -60,22 +60,17 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseById(courseId: String): RealmMyCourse? {
-        return withRealm { realm ->
-            val course = realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()
-            course?.let { realm.copyFromRealm(it) }
+        if (courseId.isBlank()) {
+            return null
         }
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
     override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
         if (courseId.isBlank()) {
             return null
         }
-        return withRealm { realm ->
-            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            course?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
@@ -277,10 +272,10 @@ class CoursesRepositoryImpl @Inject constructor(
         if (userId.isNullOrBlank() || courseId.isNullOrBlank()) {
             return false
         }
-        return queryList(RealmMyCourse::class.java) {
+        return count(RealmMyCourse::class.java) {
             equalTo("courseId", courseId)
             equalTo("userId", userId)
-        }.isNotEmpty()
+        } > 0
     }
 
     override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData? {
@@ -335,11 +330,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseTitleById(courseId: String): String? {
-        return withRealm { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()?.courseTitle
+        if (courseId.isBlank()) {
+            return null
         }
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)?.courseTitle
     }
 
     override suspend fun isCourseCertified(courseId: String): Boolean {
