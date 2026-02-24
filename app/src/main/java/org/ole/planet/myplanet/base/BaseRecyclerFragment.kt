@@ -105,7 +105,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener { onDeleteSelected(false) }
         }
     }
 
@@ -116,6 +116,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
+        onAddToMyList()
+    }
+
+    open fun onAddToMyList() {
         if (!isRealmInitialized() || isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
@@ -194,7 +198,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+    @Deprecated("Use onDeleteSelected instead")
     fun deleteSelected(deleteProgress: Boolean) {
+        onDeleteSelected(deleteProgress)
+    }
+
+    open fun onDeleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEach { item ->
             try {
                 if (!mRealm.isInTransaction) {
