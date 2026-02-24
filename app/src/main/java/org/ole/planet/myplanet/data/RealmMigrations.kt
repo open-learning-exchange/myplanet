@@ -44,5 +44,8 @@ class RealmMigrations : RealmMigration {
             }
             version++
         }
+        if (version == 6L) {
+            version++
+        }
     }
 }
