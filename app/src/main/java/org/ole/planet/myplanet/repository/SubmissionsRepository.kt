@@ -49,4 +49,6 @@ interface SubmissionsRepository {
     suspend fun getExamById(id: String): RealmStepExam?
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
+    suspend fun getOrCreateSubmission(userId: String, parentId: String): RealmSubmission
+    suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam>
 }
