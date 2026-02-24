@@ -165,9 +165,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter(resources) { library ->
+        inlineResourceAdapter = InlineResourceAdapter { library ->
             openResource(library)
         }
+        inlineResourceAdapter?.submitList(resources)
         fragmentCourseStepBinding.rvInlineResources.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = inlineResourceAdapter
@@ -214,7 +215,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             val updatedResources = resourcesRepository.getAllStepResources(stepId)
             resources = updatedResources
-            inlineResourceAdapter?.updateResources(updatedResources)
+            inlineResourceAdapter?.submitList(updatedResources)
             fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
         }
     }
