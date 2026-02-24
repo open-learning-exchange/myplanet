@@ -378,7 +378,10 @@ class ResourcesRepositoryImpl @Inject constructor(
         val validCurrentIds = currentIds.filterNotNull().toSet()
         executeTransaction { realm ->
             val allResources = realm.where(RealmMyLibrary::class.java).findAll()
-            val idsToDelete = allResources.mapNotNull { it.resourceId }.filter { it !in validCurrentIds }
+            val idsToDelete = allResources
+                .filter { !it._rev.isNullOrBlank() }
+                .mapNotNull { it.resourceId }
+                .filter { it !in validCurrentIds }
 
             if (idsToDelete.isNotEmpty()) {
                 val chunkSize = 1000
