@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
+import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -120,7 +121,7 @@ class NotificationsFragment : Fragment() {
                     }
                 }
                 "task" -> {
-                    val teamDetails = result as? Triple<String, String?, String?>
+                    val teamDetails = result as? TaskNotificationResult
                     if (teamDetails != null && activity is OnHomeItemClickListener) {
                         val (teamId, teamName, teamType) = teamDetails
                         val f = TeamDetailFragment.newInstance(

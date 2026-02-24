@@ -69,7 +69,8 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id ?: "", user?._id)
+            val currentUser = profileDbHandler.getUserModel()
+            val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id ?: "", currentUser?.id)
             binding.btnAddPlan.isVisible = isMyTeam
             binding.btnAddPlan.isEnabled = isMyTeam
 
@@ -148,25 +149,26 @@ class PlanFragment : BaseTeamFragment() {
             return
         }
 
-        val userId = user?.id ?: return
-        val createdBy = userId
-        val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
-            ?: team.teamId?.takeIf { it.isNotBlank() }
-        if (teamIdentifier == null) {
-            Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
-            return
-        }
-        val servicesToSave = binding.etServices.text.toString()
-        val rulesToSave = binding.etRules.text.toString()
-        val descriptionToSave = binding.etDescription.text.toString()
-        val teamType = when (binding.spnTeamType.selectedItemPosition) {
-            0 -> "local"
-            1 -> "sync"
-            else -> ""
-        }
-        val isPublic = binding.switchPublic.isChecked
-
         viewLifecycleOwner.lifecycleScope.launch {
+            val currentUser = profileDbHandler.getUserModel()
+            val userId = currentUser?.id ?: return@launch
+            val createdBy = userId
+            val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
+                ?: team.teamId?.takeIf { it.isNotBlank() }
+            if (teamIdentifier == null) {
+                Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
+                return@launch
+            }
+            val servicesToSave = binding.etServices.text.toString()
+            val rulesToSave = binding.etRules.text.toString()
+            val descriptionToSave = binding.etDescription.text.toString()
+            val teamType = when (binding.spnTeamType.selectedItemPosition) {
+                0 -> "local"
+                1 -> "sync"
+                else -> ""
+            }
+            val isPublic = binding.switchPublic.isChecked
+
             try {
                 val teamTypeForValidation = team.type ?: "team"
                 val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
