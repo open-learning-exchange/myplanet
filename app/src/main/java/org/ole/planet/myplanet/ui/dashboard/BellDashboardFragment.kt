@@ -73,6 +73,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         observeCompletedCourses()
         viewLifecycleOwner.lifecycleScope.launch {
             user = profileDbHandler.getUserModel()
+            user?.id?.let { viewModel.loadCompletedCourses(it) }
             if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
             }
@@ -337,9 +338,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
-        user?.id?.let {
-            viewModel.loadCompletedCourses(it)
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
