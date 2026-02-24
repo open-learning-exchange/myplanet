@@ -32,7 +32,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
@@ -45,6 +44,7 @@ import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.StayOnlineWorker
 import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
