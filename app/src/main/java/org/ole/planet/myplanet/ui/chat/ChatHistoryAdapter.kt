@@ -59,7 +59,9 @@ class ChatHistoryAdapter(
     private lateinit var expandableDetailList: HashMap<String, List<String>>
 
     init {
-        chatHistory = chatHistory.sortedByDescending { it.lastUsed }
+        chatHistory = chatHistory.sortedByDescending { chat ->
+            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
+        }
         submitList(chatHistory)
     }
 
@@ -168,7 +170,9 @@ class ChatHistoryAdapter(
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
-        chatHistory = newChatHistory.sortedByDescending { it.lastUsed }
+        chatHistory = newChatHistory.sortedByDescending { chat ->
+            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
+        }
         submitList(chatHistory)
     }
 

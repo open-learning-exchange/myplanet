@@ -589,8 +589,8 @@ class ChatDetailFragment : Fragment() {
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
             addProperty("title", query)
-            addProperty("createdTime", Date().time)
-            addProperty("updatedDate", "")
+            addProperty("createdDate", Date().time)
+            addProperty("updatedDate", Date().time)
 
             val conversationsArray = JsonArray()
             val conversationObject = JsonObject().apply {
