@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
+import android.util.Log
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -61,6 +62,7 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         resourceUrl = intent.getStringExtra("resource_local_url")
         teamId = intent.getStringExtra("teamId")
+        Log.d("TeamResource", "AddResourceActivity: launched — teamId=$teamId, resourceUrl=$resourceUrl")
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
@@ -126,6 +128,7 @@ class AddResourceActivity : AppCompatActivity() {
         if (!validate(title)) return
         val id = UUID.randomUUID().toString()
         val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
+        Log.d("TeamResource", "saveResource: title='$title', isPrivateTeamResource=$isPrivateTeamResource, teamId=$teamId, resourceId=$id")
 
         val resource = RealmMyLibrary().apply {
             this.id = id
@@ -136,7 +139,9 @@ class AddResourceActivity : AppCompatActivity() {
             }
         }
         lifecycleScope.launch {
+            Log.d("TeamResource", "saveResource: calling saveLibraryItem for '$title' (id=$id, isPrivate=$isPrivateTeamResource, privateFor=$teamId)")
             resourcesRepository.saveLibraryItem(resource)
+            Log.d("TeamResource", "saveResource: saveLibraryItem completed for '$title' (id=$id) — resource is in Realm, awaiting upload")
             if (!isPrivateTeamResource) {
                 resourcesRepository.markResourceAdded(userModel?.id, id)
             }

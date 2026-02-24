@@ -309,6 +309,12 @@ open class RealmMyLibrary : RealmObject() {
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
+            val wasPrivate = resource?.isPrivate == true
+            val hadPrivateFor = resource?.privateFor
+            val hadRev = resource?._rev
+            // A locally-created private team resource has no _rev yet — protect it from being
+            // overwritten by a server doc that doesn't know about the local privacy setting.
+            val isLocalOnlyPrivate = hadRev.isNullOrBlank() && wasPrivate && !hadPrivateFor.isNullOrBlank()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
@@ -374,10 +380,17 @@ open class RealmMyLibrary : RealmObject() {
                 setSubject(JsonUtils.getJsonArray("subject", doc), this)
                 setLevel(JsonUtils.getJsonArray("level", doc), this)
                 setTag(JsonUtils.getJsonArray("tags", doc), this)
-                isPrivate = JsonUtils.getBoolean("private", doc)
-                if (isPrivate && doc.has("privateFor")) {
-                    val privateForObj = doc.getAsJsonObject("privateFor")
-                    privateFor = privateForObj.get("teams")?.asString
+                if (isLocalOnlyPrivate) {
+                    Log.d("TeamResource", "insertMyLibrary: preserving local isPrivate=true for '$title' (id=$resourceId, privateFor=$hadPrivateFor) — item not yet uploaded to server")
+                } else {
+                    isPrivate = JsonUtils.getBoolean("private", doc)
+                    if (isPrivate && doc.has("privateFor")) {
+                        val privateForObj = doc.getAsJsonObject("privateFor")
+                        privateFor = privateForObj.get("teams")?.asString
+                    }
+                    if (wasPrivate && !isPrivate) {
+                        Log.w("TeamResource", "insertMyLibrary: OVERWRITTEN — resource '$title' (id=$resourceId) was isPrivate=true/privateFor=$hadPrivateFor locally, but server doc has private=false")
+                    }
                 }
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
