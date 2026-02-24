@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
@@ -53,6 +54,7 @@ interface ResourcesRepository {
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
     suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
+    suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
 }
 
 sealed class ResourceUrlsResponse {
