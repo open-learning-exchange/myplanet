@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
-import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.StepItem
@@ -111,6 +110,9 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private suspend fun refreshRatings() {
+        if (user == null) {
+            user = profileDbHandler.getUserModel()
+        }
         val courseId = courses?.courseId
         val userId = user?.id
         if (courseId != null && userId != null) {

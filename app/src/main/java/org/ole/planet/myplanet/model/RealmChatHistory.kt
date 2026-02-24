@@ -31,8 +31,8 @@ open class RealmChatHistory : RealmObject() {
             chatHistory._rev = JsonUtils.getString("_rev", act)
             chatHistory._id = JsonUtils.getString("_id", act)
             chatHistory.title = JsonUtils.getString("title", act)
-            chatHistory.createdDate = JsonUtils.getString("createdDate", act)
-            chatHistory.updatedDate = JsonUtils.getString("updatedDate", act)
+            chatHistory.createdDate = "${JsonUtils.getLong("createdDate", act)}"
+            chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", act)}"
             chatHistory.user = JsonUtils.getString("user", act)
             chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
@@ -59,6 +59,7 @@ open class RealmChatHistory : RealmObject() {
                 conversation.query = query
                 conversation.response = response
                 chatHistory.conversations?.add(conversation)
+                chatHistory.updatedDate = "${Date().time}"
                 chatHistory.lastUsed = Date().time
                 if (!newRev.isNullOrEmpty()) {
                     chatHistory._rev = newRev
