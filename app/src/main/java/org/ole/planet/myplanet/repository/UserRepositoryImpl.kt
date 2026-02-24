@@ -167,6 +167,36 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateUserIdAndRev(localUserId: String, serverUserId: String, rev: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val managedModel = realm.where(RealmUser::class.java).equalTo("id", localUserId).findFirst()
+                managedModel?._id = serverUserId
+                managedModel?._rev = rev
+            }
+        }
+    }
+
+    override suspend fun updateUserRev(localUserId: String, rev: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val managedModel = realm.where(RealmUser::class.java).equalTo("id", localUserId).findFirst()
+                managedModel?._rev = rev
+                managedModel?.isUpdated = false
+            }
+        }
+    }
+
+    override suspend fun updateUserSecurityKeys(localUserId: String, key: String, iv: String) {
+        withRealm { realm ->
+            realm.executeTransaction {
+                val managedModel = realm.where(RealmUser::class.java).equalTo("id", localUserId).findFirst()
+                managedModel?.key = key
+                managedModel?.iv = iv
+            }
+        }
+    }
+
     override suspend fun updateSecurityData(
         name: String,
         userId: String?,

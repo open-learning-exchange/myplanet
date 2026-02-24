@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
@@ -46,9 +47,9 @@ class UploadToShelfService @Inject constructor(
     @AppPreferences private val sharedPreferences: SharedPreferences,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val healthRepository: HealthRepository
 ) {
-    lateinit var mRealm: Realm
 
     fun uploadUserData(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
@@ -141,14 +142,10 @@ class UploadToShelfService @Inject constructor(
                 model._rev = rev
                 
                 // Persist _id and _rev to database
-                dbService.executeTransactionAsync { realm ->
-                    val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
-                    if (managedModel != null) {
-                        managedModel._id = id
-                        managedModel._rev = rev
-                    } else {
-                        android.util.Log.e("UploadToShelfService", "Failed to find user model with id: ${model.id} for persisting _id and _rev")
-                    }
+                if (!TextUtils.isEmpty(id) && !TextUtils.isEmpty(rev) && model.id != null) {
+                    userRepository.updateUserIdAndRev(model.id!!, id!!, rev!!)
+                } else {
+                    android.util.Log.e("UploadToShelfService", "Failed to persist _id and _rev: id or rev is null")
                 }
                 
                 processUserAfterCreation(apiInterface, model, obj)
@@ -171,8 +168,8 @@ class UploadToShelfService @Inject constructor(
                 model.iterations = getString("iterations", fetchDataResponse.body())
                 saveKeyIv(apiInterface, model, obj)
 
-                dbService.executeTransactionAsync { realm ->
-                    updateHealthData(realm, model)
+                if (!TextUtils.isEmpty(model._id) && model.id != null) {
+                    healthRepository.updateHealthUserId(model.id!!, model._id!!)
                 }
             }
         } catch (e: Exception) {
@@ -199,10 +196,8 @@ class UploadToShelfService @Inject constructor(
 
                 if (updateResponse.isSuccessful) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
-                    dbService.executeTransactionAsync { realm ->
-                        val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
-                        managedModel?._rev = updatedRev
-                        managedModel?.isUpdated = false
+                    if (!TextUtils.isEmpty(updatedRev) && model.id != null) {
+                        userRepository.updateUserRev(model.id!!, updatedRev!!)
                     }
                 }
             }
@@ -218,13 +213,6 @@ class UploadToShelfService @Inject constructor(
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)
         return "$protocol://$replacedUrl"
-    }
-
-    private fun updateHealthData(realm: Realm, model: RealmUser) {
-        val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
-        for (p in list) {
-            p.userId = model._id
-        }
     }
 
     suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
@@ -270,10 +258,8 @@ class UploadToShelfService @Inject constructor(
         if (response?.isSuccessful == true && response.body() != null) {
             changeUserSecurity(model, obj)
 
-            dbService.executeTransactionAsync { realm ->
-                val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
-                managedModel?.key = keyString
-                managedModel?.iv = iv
+            if (!TextUtils.isEmpty(keyString) && !TextUtils.isEmpty(iv) && model.id != null) {
+                userRepository.updateUserSecurityKeys(model.id!!, keyString!!, iv!!)
             }
         } else {
             throw IOException("Failed to save key/IV after $maxAttempts attempts")
@@ -297,10 +283,8 @@ class UploadToShelfService @Inject constructor(
 
                     if (res.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
-                        dbService.executeTransactionAsync { realm ->
-                            val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
-                            managedPojo?._rev = rev
-                            managedPojo?.isUpdated = false
+                        if (!TextUtils.isEmpty(rev) && pojo._id != null) {
+                            healthRepository.updateHealthRev(pojo._id!!, rev!!)
                         }
                     }
                 } catch (e: Exception) {
@@ -335,10 +319,8 @@ class UploadToShelfService @Inject constructor(
 
                         if (res.body() != null && res.body()?.has("id") == true) {
                             val rev = res.body()?.get("rev")?.asString
-                            dbService.executeTransactionAsync { realm ->
-                                val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
-                                managedPojo?._rev = rev
-                                managedPojo?.isUpdated = false
+                            if (!TextUtils.isEmpty(rev) && pojo._id != null) {
+                                healthRepository.updateHealthRev(pojo._id!!, rev!!)
                             }
                         }
                     } catch (e: Exception) {

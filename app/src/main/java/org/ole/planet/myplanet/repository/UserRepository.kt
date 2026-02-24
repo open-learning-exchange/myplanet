@@ -26,6 +26,9 @@ interface UserRepository {
     ): Map<Int, Int>
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
+    suspend fun updateUserIdAndRev(localUserId: String, serverUserId: String, rev: String)
+    suspend fun updateUserRev(localUserId: String, rev: String)
+    suspend fun updateUserSecurityKeys(localUserId: String, key: String, iv: String)
     suspend fun updateSecurityData(
         name: String,
         userId: String?,
