@@ -903,6 +903,7 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
+                uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities(apiInterface)
             }
