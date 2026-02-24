@@ -182,6 +182,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getCoursesByUserId instead")
         fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs ?: emptyList()) {
