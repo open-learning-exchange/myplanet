@@ -30,24 +30,7 @@ class RealtimeSyncHelper(
     
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     
-    private val onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
-        override fun onTableDataUpdated(update: TableDataUpdate) {
-            if (mixin.getWatchedTables().contains(update.table)) {
-                mixin.onDataUpdated(update.table, update)
-                if (mixin.shouldAutoRefresh(update.table)) {
-                    refreshRecyclerView()
-                }
-            }
-        }
-        
-        override fun onSyncStarted() {}
-        override fun onSyncComplete() {}
-        override fun onSyncFailed(msg: String?) {}
-    }
-    
     fun setupRealtimeSync() {
-        syncManagerInstance.addListener(onRealtimeSyncListener)
-
         fragment.viewLifecycleOwner.lifecycle.addObserver(object : LifecycleEventObserver {
             override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
                 if (event == Lifecycle.Event.ON_DESTROY) {
@@ -91,6 +74,5 @@ class RealtimeSyncHelper(
     }
     
     fun cleanup() {
-        syncManagerInstance.removeListener(onRealtimeSyncListener)
     }
 }

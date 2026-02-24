@@ -35,6 +35,7 @@ class RealtimeSyncManager {
     }
 
     fun notifyTableUpdated(update: TableDataUpdate) {
+        _dataUpdateFlow.tryEmit(update)
         synchronized(listeners) {
             listeners.toList()
         }.forEach { it.onTableDataUpdated(update) }
