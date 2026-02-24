@@ -35,7 +35,21 @@ class LifeViewModel @Inject constructor(
     fun getAllMyLife() {
         viewModelScope.launch(Dispatchers.IO) {
             val user = userSessionManager.getUserModel()
-            val list = lifeRepository.getMyLifeByUserId(user?.id)
+            val userId = user?.id
+            var list = lifeRepository.getMyLifeByUserId(userId)
+            if (list.isEmpty()) {
+                val defaultList = listOf(
+                    RealmMyLife("ic_myhealth", userId, context.getString(R.string.myhealth)),
+                    RealmMyLife("my_achievement", userId, context.getString(R.string.achievements)),
+                    RealmMyLife("ic_submissions", userId, context.getString(R.string.submission)),
+                    RealmMyLife("ic_my_survey", userId, context.getString(R.string.my_survey)),
+                    RealmMyLife("ic_references", userId, context.getString(R.string.references)),
+                    RealmMyLife("ic_calendar", userId, context.getString(R.string.calendar)),
+                    RealmMyLife("ic_mypersonals", userId, context.getString(R.string.mypersonals))
+                )
+                lifeRepository.seedMyLifeIfEmpty(userId, defaultList)
+                list = lifeRepository.getMyLifeByUserId(userId)
+            }
             _myLifeList.value = list
         }
     }
