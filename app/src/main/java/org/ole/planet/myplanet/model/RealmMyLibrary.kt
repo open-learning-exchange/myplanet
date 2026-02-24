@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull

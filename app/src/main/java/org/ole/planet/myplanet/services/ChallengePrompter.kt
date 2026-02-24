@@ -5,7 +5,6 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import java.time.LocalDate
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
