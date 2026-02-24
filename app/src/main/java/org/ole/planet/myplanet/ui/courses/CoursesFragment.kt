@@ -193,16 +193,19 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     mRealm.refresh()
                 }
 
-                val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
-                val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                    copiedList.forEachIndexed { index, course ->
-                        course.isMyCourse = managedCourseList[index].isMyCourse
-                    }
+                val allCourses = coursesRepository.getAllCourses()
+                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+                val sortedCourseList = if (isMyCourseLib) {
+                    val myCourses = coursesRepository.getMyCourses(userModel?.id, validCourses)
+                    myCourses.forEach { it.isMyCourse = true }
+                    myCourses.sortedBy { it.courseTitle }
+                } else {
+                    validCourses.forEach { it.isMyCourse = it.userId?.contains(userModel?.id) == true }
+                    validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                 }
-                val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
 
                 if (isMyCourseLib) {
-                    val courseIds = courseList.mapNotNull { it.id }
+                    val courseIds = sortedCourseList.mapNotNull { it.id }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
@@ -233,17 +236,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
-        val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
-        val allCourses: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
-            copiedList.forEachIndexed { index, course ->
-                course.isMyCourse = managedCourses[index].isMyCourse
-            }
-        }
-
+        val allCourses = coursesRepository.getAllCourses()
+        val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
         val courseList = if (isMyCourseLib) {
-            allCourses.filter { it.isMyCourse }
+            val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+            myCourses.forEach { it.isMyCourse = true }
+            myCourses.sortedBy { it.courseTitle }
         } else {
-            allCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
+            validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
         }
 
         val map = HashMap<String?, com.google.gson.JsonObject>()
@@ -728,16 +729,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 lifecycleScope.launch {
                     val map = ratingsRepository.getCourseRatings(model?.id)
                     val progressMap = progressRepository.getCourseProgress(model?.id)
-                    val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
-                        .filterIsInstance<RealmMyCourse>()
-                        .filter { !it.courseTitle.isNullOrBlank() }
-                    val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                        copiedList.forEachIndexed { index, course ->
-                            course.isMyCourse = managedCourseList[index].isMyCourse
-                        }
+                    val allCourses = coursesRepository.getAllCourses()
+                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+                    val courseList = if (isMyCourseLib) {
+                        val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+                        myCourses.forEach { it.isMyCourse = true }
+                        myCourses.sortedBy { it.courseTitle }
+                    } else {
+                        validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
+                        validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
-                    val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-                    adapterCourses.updateData(sortedCourseList, map, progressMap)
+                    adapterCourses.updateData(courseList, map, progressMap)
                 }
             } else {
                 lifecycleScope.launch {
