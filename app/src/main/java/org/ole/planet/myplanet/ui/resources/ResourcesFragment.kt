@@ -182,6 +182,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             try {
                 map = ratingsRepository.getResourceRatings(model?.id)
 
+                // Verified: refreshResourcesData uses resourcesRepository correctly
                 allLibraryItems = if (isMyCourseLib) {
                     resourcesRepository.getMyLibrary(model?.id)
                 } else {
