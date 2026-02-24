@@ -85,7 +85,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var chatApiService: ChatApiService
     @Inject
     lateinit var userRepository: UserRepository
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
