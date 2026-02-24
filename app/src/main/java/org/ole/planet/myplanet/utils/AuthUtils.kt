@@ -15,7 +15,7 @@ object AuthUtils {
         return userRepository.validateUsername(username)
     }
 
-    fun login(activity: LoginActivity, name: String?, password: String?) {
+    fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?) {
         if (activity.forceSyncTrigger()) return
 
         val settings = activity.settings
@@ -29,7 +29,7 @@ object AuthUtils {
             return
         }
 
-        LoginSyncManager.instance.login(name, password, object : OnSyncListener {
+        loginSyncManager.login(name, password, object : OnSyncListener {
             override fun onSyncStarted() {
                 activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
                 activity.customProgressDialog.show()
