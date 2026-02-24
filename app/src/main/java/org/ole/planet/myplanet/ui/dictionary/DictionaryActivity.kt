@@ -5,8 +5,7 @@ import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -14,6 +13,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.RealmDictionary
+import org.ole.planet.myplanet.repository.DictionaryRepository
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -23,7 +23,11 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
+    @Inject
+    lateinit var dictionaryRepository: DictionaryRepository
+
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
@@ -50,11 +54,7 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        var isEmpty = true
-        databaseService.withRealm { realm ->
-            isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
-        }
-        if (isEmpty) {
+        if (dictionaryRepository.isDictionaryEmpty()) {
             val context = this@DictionaryActivity
             val json = try {
                 val data = withContext(Dispatchers.IO) {
@@ -68,24 +68,7 @@ class DictionaryActivity : BaseActivity() {
                 null
             }
             json?.let { jsonArray ->
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { bgRealm ->
-                        jsonArray.forEach { js ->
-                            val doc = js.asJsonObject
-                            val dict = bgRealm.createObject(
-                                RealmDictionary::class.java, UUID.randomUUID().toString()
-                            )
-                            dict.code = JsonUtils.getString("code", doc)
-                            dict.language = JsonUtils.getString("language", doc)
-                            dict.advanceCode = JsonUtils.getString("advance_code", doc)
-                            dict.word = JsonUtils.getString("word", doc)
-                            dict.meaning = JsonUtils.getString("meaning", doc)
-                            dict.definition = JsonUtils.getString("definition", doc)
-                            dict.synonym = JsonUtils.getString("synonym", doc)
-                            dict.antonym = JsonUtils.getString("antonoym", doc)
-                        }
-                    }
-                }
+                dictionaryRepository.importDictionary(jsonArray)
             }
         } else {
             setClickListener()
@@ -93,21 +76,13 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryCount(): Long {
-        return databaseService.withRealmAsync { realm ->
-            realm.where(RealmDictionary::class.java).count()
-        }
+        return dictionaryRepository.getDictionaryCount()
     }
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            databaseService.withRealm { realm ->
-                val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
-                    .findFirst()
+            lifecycleScope.launch {
+                val dict = dictionaryRepository.searchWord(fragmentDictionaryBinding.etSearch.text.toString())
                 if (dict != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
                         "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
@@ -118,7 +93,7 @@ class DictionaryActivity : BaseActivity() {
                     )
                 } else {
                     Utilities.toast(
-                        this,
+                        this@DictionaryActivity,
                         getString(R.string.word_not_available_in_our_database)
                     )
                 }
