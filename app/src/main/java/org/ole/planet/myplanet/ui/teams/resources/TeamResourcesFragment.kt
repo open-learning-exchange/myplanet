@@ -15,7 +15,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import android.util.Log
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -137,7 +136,6 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     }
 
     private fun showAddResourceFragment() {
-        Log.d("TeamResource", "showAddResourceFragment: user clicked Create New Resource for team $teamId")
         val fragment = AddResourceFragment()
         fragment.arguments = Bundle().apply {
             putInt("type", 0)

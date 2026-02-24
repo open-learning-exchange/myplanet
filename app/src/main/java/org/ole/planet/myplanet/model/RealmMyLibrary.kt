@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -185,16 +184,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
-        fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            return libs.filter { it.userId?.contains(userId) == false }
-        }
-
-        private fun getIds(mRealm: Realm): Array<String?> {
-            val list = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return list.map { it.resourceId }.toTypedArray()
-        }
-
         @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
@@ -285,25 +274,6 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                resource?.setUserId(userId)
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
-        }
-
-        @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
@@ -312,8 +282,6 @@ open class RealmMyLibrary : RealmObject() {
             val wasPrivate = resource?.isPrivate == true
             val hadPrivateFor = resource?.privateFor
             val hadRev = resource?._rev
-            // A locally-created private team resource has no _rev yet — protect it from being
-            // overwritten by a server doc that doesn't know about the local privacy setting.
             val isLocalOnlyPrivate = hadRev.isNullOrBlank() && wasPrivate && !hadPrivateFor.isNullOrBlank()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
@@ -380,16 +348,11 @@ open class RealmMyLibrary : RealmObject() {
                 setSubject(JsonUtils.getJsonArray("subject", doc), this)
                 setLevel(JsonUtils.getJsonArray("level", doc), this)
                 setTag(JsonUtils.getJsonArray("tags", doc), this)
-                if (isLocalOnlyPrivate) {
-                    Log.d("TeamResource", "insertMyLibrary: preserving local isPrivate=true for '$title' (id=$resourceId, privateFor=$hadPrivateFor) — item not yet uploaded to server")
-                } else {
+                if (!isLocalOnlyPrivate) {
                     isPrivate = JsonUtils.getBoolean("private", doc)
                     if (isPrivate && doc.has("privateFor")) {
                         val privateForObj = doc.getAsJsonObject("privateFor")
                         privateFor = privateForObj.get("teams")?.asString
-                    }
-                    if (wasPrivate && !isPrivate) {
-                        Log.w("TeamResource", "insertMyLibrary: OVERWRITTEN — resource '$title' (id=$resourceId) was isPrivate=true/privateFor=$hadPrivateFor locally, but server doc has private=false")
                     }
                 }
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)

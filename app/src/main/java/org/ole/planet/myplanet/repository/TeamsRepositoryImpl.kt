@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -595,7 +594,6 @@ class TeamsRepositoryImpl @Inject constructor(
         user: RealmUser?,
     ) {
         if (teamId.isBlank() || resources.isEmpty() || user == null) return
-        Log.d("TeamResource", "addResourceLinks: writing ${resources.size} resource link(s) for team $teamId")
         executeTransaction { realm ->
             resources.forEach { resource ->
                 val teamResource = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
@@ -610,27 +608,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 teamResource.userPlanetCode = user.planetCode
             }
         }
-        // Transaction committed — verify data actually persisted in Realm
-        val saved = databaseService.withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("docType", "resourceLink")
-                .equalTo("updated", true)
-                .findAll()
-                .map { realm.copyFromRealm(it) }
-        }
-        if (saved.size == resources.size) {
-            saved.forEach { link ->
-                Log.d("TeamResource", "addResourceLinks: SAVED — title='${link.title}', resourceId=${link.resourceId}, teamId=${link.teamId}, updated=${link.updated}")
-            }
-        } else {
-            Log.e("TeamResource", "addResourceLinks: MISMATCH — expected ${resources.size} saved, found ${saved.size} with updated=true for team $teamId")
-        }
     }
 
     override suspend fun removeResourceLink(teamId: String, resourceId: String) {
         if (teamId.isBlank() || resourceId.isBlank()) return
-        Log.d("TeamResource", "removeResourceLink: removing resource link resourceId=$resourceId from team $teamId")
         executeTransaction { realm ->
             realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -640,7 +621,6 @@ class TeamsRepositoryImpl @Inject constructor(
                 ?.let { teamResource ->
                     teamResource.resourceId = ""
                     teamResource.updated = true
-                    Log.d("TeamResource", "removeResourceLink: resource link resourceId=$resourceId cleared from team $teamId — pending sync")
                 }
         }
     }
@@ -923,16 +903,11 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
-                Log.d("TeamResource", "uploadTeamActivities: uploading private library items first")
                 uploadManager.uploadResource(null)
-                Log.d("TeamResource", "uploadTeamActivities: starting uploadTeams")
                 uploadManager.uploadTeams()
-                Log.d("TeamResource", "uploadTeamActivities: uploadTeams completed, starting uploadTeamActivities")
                 uploadManager.uploadTeamActivities(apiInterface)
-                Log.d("TeamResource", "uploadTeamActivities: upload sequence completed")
             }
         } catch (e: Exception) {
-            Log.e("TeamResource", "uploadTeamActivities: upload failed — ${e.message}", e)
             e.printStackTrace()
         }
     }

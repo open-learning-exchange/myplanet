@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -112,9 +111,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
-        Log.d("TeamResource", "saveLibraryItem: writing to Realm — title='${item.title}', _id='${item._id}', id=${item.id}, isPrivate=${item.isPrivate}, privateFor=${item.privateFor}")
         save(item)
-        Log.d("TeamResource", "saveLibraryItem: Realm write complete — title='${item.title}', _id='${item._id}', id=${item.id}")
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
@@ -381,8 +378,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         val validCurrentIds = currentIds.filterNotNull().toSet()
         executeTransaction { realm ->
             val allResources = realm.where(RealmMyLibrary::class.java).findAll()
-            // Exclude locally-created items (_rev null/blank) — they haven't been uploaded yet
-            // and won't appear in the server's list, so they must not be treated as deleted.
             val idsToDelete = allResources
                 .filter { !it._rev.isNullOrBlank() }
                 .mapNotNull { it.resourceId }

@@ -338,7 +338,6 @@ class UploadManager @Inject constructor(
                                         teamResource.teamType = "local"
                                         teamResource.teamPlanetCode = planetCode
                                         teamResource.sourcePlanet = planetCode
-                                        Log.d("TeamResource", "uploadResources: created resource link for private resource '${resourceData.title}' (resourceId=$id) in team ${resourceData.privateFor} — pending sync")
                                     }
                                 }
 
@@ -444,23 +443,6 @@ class UploadManager @Inject constructor(
         )
 
         val teamsToUpload = databaseService.withRealm { realm ->
-            val allTeams = realm.where(RealmMyTeam::class.java).findAll()
-            val allResourceLinks = allTeams.filter { it.docType == "resourceLink" }
-            val pendingResourceLinks = allResourceLinks.filter { it.updated }
-            val pendingPrivateLibraryItems = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", true)
-                .isNotNull("privateFor")
-                .findAll()
-                .filter { !it.privateFor.isNullOrBlank() }
-            Log.d("TeamResource", "uploadTeams: DB snapshot — total RealmMyTeam=${allTeams.size}, resourceLinks=${allResourceLinks.size}, resourceLinks with updated=true=${pendingResourceLinks.size}")
-            Log.d("TeamResource", "uploadTeams: DB snapshot — RealmMyLibrary with isPrivate=true: ${pendingPrivateLibraryItems.size} item(s) waiting for uploadResources() to be called")
-            pendingPrivateLibraryItems.forEach { lib ->
-                Log.d("TeamResource", "uploadTeams: unuploaded private library item — title='${lib.title}', _id='${lib._id}', id=${lib.id}, privateFor=${lib.privateFor}, _rev=${lib._rev}")
-            }
-            pendingResourceLinks.forEach { link ->
-                Log.d("TeamResource", "uploadTeams: pending resource link — _id=${link._id}, teamId=${link.teamId}, resourceId=${link.resourceId}, title=${link.title}, updated=${link.updated}")
-            }
-
             val teams = realm.where(RealmMyTeam::class.java)
                 .equalTo("updated", true).findAll()
 
@@ -473,18 +455,9 @@ class UploadManager @Inject constructor(
             }
         }
 
-        val resourceLinkCount = teamsToUpload.count { it.serialized.get("docType")?.asString == "resourceLink" }
-        Log.d("TeamResource", "uploadTeams: uploading ${teamsToUpload.size} team document(s), $resourceLinkCount resource link(s)")
-
         withContext(Dispatchers.IO) {
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
-                    val isResourceLink = teamData.serialized.get("docType")?.asString == "resourceLink"
-                    val resourceId = teamData.serialized.get("resourceId")?.asString
-                    val title = teamData.serialized.get("title")?.asString
-                    if (isResourceLink) {
-                        Log.d("TeamResource", "uploadTeams: syncing resource link '$title' (id=${teamData.teamId}, resourceId=$resourceId)")
-                    }
                     try {
                         val response = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
@@ -496,10 +469,6 @@ class UploadManager @Inject constructor(
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
 
-                            if (isResourceLink) {
-                                Log.d("TeamResource", "uploadTeams: resource link '$title' (id=${teamData.teamId}) synced successfully — rev=$rev")
-                            }
-
                             databaseService.executeTransactionAsync { transactionRealm ->
                                 transactionRealm.where(RealmMyTeam::class.java)
                                     .equalTo("_id", teamData.teamId)
@@ -508,19 +477,13 @@ class UploadManager @Inject constructor(
                                         team.updated = false
                                     }
                             }
-                        } else if (isResourceLink) {
-                            Log.w("TeamResource", "uploadTeams: resource link '$title' (id=${teamData.teamId}) — server returned empty response")
                         }
                     } catch (e: IOException) {
-                        if (isResourceLink) {
-                            Log.e("TeamResource", "uploadTeams: failed to sync resource link '$title' (id=${teamData.teamId}) — ${e.message}")
-                        }
                         e.printStackTrace()
                     }
                 }
             }
         }
-        Log.d("TeamResource", "uploadTeams: finished uploading all team documents")
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
@@ -718,7 +681,6 @@ class UploadManager @Inject constructor(
                                 fileBody
                             )
 
-                            // Build image metadata and markdown
                             val resourceObject = JsonObject()
                             resourceObject.addProperty("resourceId", resourceId)
                             resourceObject.addProperty("filename", fileName)
@@ -726,7 +688,6 @@ class UploadManager @Inject constructor(
                             resourceObject.addProperty("markdown", markdown)
                             imagesArray.add(resourceObject)
 
-                            // Append markdown to message
                             messageWithImages += "\n$markdown"
                         }
 
