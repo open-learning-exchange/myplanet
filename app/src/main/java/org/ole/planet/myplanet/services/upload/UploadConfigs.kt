@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.services.upload
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -16,8 +18,6 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ChatRepository
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class UploadConfigs @Inject constructor(

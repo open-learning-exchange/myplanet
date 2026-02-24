@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
