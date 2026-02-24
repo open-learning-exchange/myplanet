@@ -6,8 +6,11 @@ import io.realm.Sort
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
+import retrofit2.Response
 
 interface UserRepository {
+    suspend fun getUserDoc(authHeader: String, userUrl: String): Response<JsonObject>
+    suspend fun getAdminDocs(header: String, url: String, body: JsonObject): Response<JsonObject>
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 

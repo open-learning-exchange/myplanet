@@ -40,8 +40,6 @@ class LoginSyncManager @Inject constructor(
 
                 withContext(Dispatchers.Main) { listener.onSyncStarted() }
 
-                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-
                 val authHeader = try {
                     "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
                 } catch (e: Exception) {
@@ -59,7 +57,7 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.getJsonObject(authHeader, userUrl)
+                    val response = userRepository.getUserDoc(authHeader, userUrl)
                     when {
                         !response.isSuccessful -> {
                             val errorMsg = when (response.code()) {
@@ -133,8 +131,6 @@ class LoginSyncManager @Inject constructor(
                 selector.addProperty("isUserAdmin", true)
                 `object`.add("selector", selector)
 
-                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-
                 val header = UrlUtils.header
                 if (header.isBlank()) {
                     return@launch
@@ -148,7 +144,7 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.findDocs(header, "application/json", url, `object`)
+                    val response = userRepository.getAdminDocs(header, url, `object`)
                     if (response.isSuccessful && response.body() != null) {
                         val responseBody = response.body()
                         settings.edit { putString("communityLeaders", "$responseBody") }

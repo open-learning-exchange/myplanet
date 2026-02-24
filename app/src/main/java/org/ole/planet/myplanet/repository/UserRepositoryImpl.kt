@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -41,6 +42,14 @@ class UserRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository
 ) : RealmRepository(databaseService), UserRepository {
+    override suspend fun getUserDoc(authHeader: String, userUrl: String): Response<JsonObject> {
+        return apiInterface.getJsonObject(authHeader, userUrl)
+    }
+
+    override suspend fun getAdminDocs(header: String, url: String, body: JsonObject): Response<JsonObject> {
+        return apiInterface.findDocs(header, "application/json", url, body)
+    }
+
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
