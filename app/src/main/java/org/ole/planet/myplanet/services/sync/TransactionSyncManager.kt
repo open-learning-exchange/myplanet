@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
@@ -234,15 +233,33 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "chat_history") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+
+                    chatRepository.syncInsertChatHistory(docs)
+
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.withRealm { realm ->
                         realm.executeTransactionAsync { mRealm: Realm ->
                             val insertStartTime = System.currentTimeMillis()
 
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
                             insertDocs(arr, mRealm, table)
 
                             val insertDuration = System.currentTimeMillis() - insertStartTime
@@ -279,19 +296,6 @@ class TransactionSyncManager @Inject constructor(
             e.printStackTrace()
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
-        }
-    }
-
-    private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-        val chatHistoryList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            chatHistoryList.add(jsonDoc)
-        }
-
-        chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
         }
     }
 

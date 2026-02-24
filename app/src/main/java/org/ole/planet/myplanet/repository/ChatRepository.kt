@@ -12,5 +12,6 @@ interface ChatRepository {
     suspend fun continueConversation(id: String, query: String, response: String, rev: String)
     suspend fun insertNewsFromJson(doc: JsonObject)
     suspend fun insertNewsList(docs: List<JsonObject>)
+    suspend fun syncInsertChatHistory(docs: List<JsonObject>)
     fun serializeNews(news: RealmNews): JsonObject
 }

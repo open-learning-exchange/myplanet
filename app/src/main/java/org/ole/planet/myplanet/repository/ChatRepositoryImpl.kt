@@ -83,6 +83,14 @@ class ChatRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
+    override suspend fun syncInsertChatHistory(docs: List<JsonObject>) {
+        executeTransaction { mRealm ->
+            docs.forEach { doc ->
+                RealmChatHistory.insert(mRealm, doc)
+            }
+        }
+    }
+
     override suspend fun insertNewsFromJson(doc: JsonObject) {
         executeTransaction { mRealm ->
             insertNewsToRealm(mRealm, doc)
