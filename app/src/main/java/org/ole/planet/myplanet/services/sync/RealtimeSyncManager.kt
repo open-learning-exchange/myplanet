@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.callback.OnRealtimeSyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 
 class RealtimeSyncManager {
-    
     companion object {
         @Volatile
         private var INSTANCE: RealtimeSyncManager? = null
@@ -20,7 +19,7 @@ class RealtimeSyncManager {
     }
     
     private val listeners = mutableSetOf<OnRealtimeSyncListener>()
-    private val _dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()
+    private val _dataUpdateFlow = MutableSharedFlow<TableDataUpdate>(extraBufferCapacity = 1)
     val dataUpdateFlow: SharedFlow<TableDataUpdate> = _dataUpdateFlow.asSharedFlow()
     
     fun addListener(listener: OnRealtimeSyncListener) {
@@ -34,5 +33,11 @@ class RealtimeSyncManager {
             listeners.remove(listener)
         }
     }
-    
+
+    fun notifyTableUpdated(update: TableDataUpdate) {
+        synchronized(listeners) {
+            listeners.toList()
+        }.forEach { it.onTableDataUpdated(update) }
+    }
+
 }

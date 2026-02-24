@@ -269,9 +269,16 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val user = profileDbHandler.getUserModel()
         val userId = settings.getString("userId", "--")
-        val dbMylife = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
 
-        for ((itemCnt, items) in dbMylife.withIndex()) {
+        val allForUser = lifeRepository.getMyLifeByUserId(userId)
+        var visibleItems = allForUser.filter { it.isVisible }
+
+        if (allForUser.isEmpty()) {
+            lifeRepository.seedMyLifeIfEmpty(userId, getMyLifeListBase(userId))
+            visibleItems = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
+        }
+
+        for ((itemCnt, items) in visibleItems.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
         }
 
@@ -281,10 +288,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     private fun updateMyLifeSurveyCount(flexboxLayout: FlexboxLayout, surveyCount: Int) {
         // Update views with survey count if needed
-    }
-
-    private suspend fun setUpMyLife(userId: String?) {
-        lifeRepository.seedMyLifeIfEmpty(userId, getMyLifeListBase(userId))
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
@@ -333,7 +336,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         viewLifecycleOwner.lifecycleScope.launch {
-            setUpMyLife(userId)
             myLifeListInit(myLifeFlex)
         }
     }

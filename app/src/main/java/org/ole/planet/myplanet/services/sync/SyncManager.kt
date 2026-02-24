@@ -69,6 +69,7 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
+    private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
     private val isSyncing = AtomicBoolean(false)
@@ -290,7 +291,7 @@ class SyncManager @Inject constructor(
 
             // Phase 4: Admin and finalization
             logger.startProcess("admin_sync")
-            LoginSyncManager.instance.syncAdmin()
+            loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -504,7 +505,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            LoginSyncManager.instance.syncAdmin()
+            loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
