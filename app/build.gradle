@@ -1,4 +1,8 @@
-apply plugin: 'com.android.application'
+plugins {
+    id 'com.android.application'
+    alias(libs.plugins.legacy.kapt)
+}
+
 apply plugin: 'com.google.devtools.ksp'
 apply plugin: 'com.google.dagger.hilt.android'
 apply plugin: 'realm-android'
@@ -205,6 +209,7 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
+    implementation(libs.realm.android.kotlin.extensions)
 }
 realm {
     syncEnabled = true
