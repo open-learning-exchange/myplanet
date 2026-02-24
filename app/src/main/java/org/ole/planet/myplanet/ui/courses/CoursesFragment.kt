@@ -325,8 +325,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    clearAllSelections()
-                    loadDataAsync()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -341,8 +339,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    clearAllSelections()
-                    loadDataAsync()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -588,6 +584,53 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
 
         return builder.create()
+    }
+
+    override fun deleteSelected(deleteProgress: Boolean) {
+        val selected = selectedItems?.toList() ?: return
+        val userId = userModel?.id
+        if (userId.isNullOrEmpty()) return
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                selected.forEach { item ->
+                    val courseId = item?.courseId
+                    if (courseId != null) {
+                        if (deleteProgress) {
+                            coursesRepository.deleteCourseProgress(courseId)
+                        }
+                        coursesRepository.removeCourseFromShelf(courseId, userId)
+                    }
+                }
+            }
+            org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), getString(R.string.removed_from_mycourse))
+            clearAllSelections()
+            loadDataAsync()
+        }
+    }
+
+    override fun addToMyList() {
+        val selected = selectedItems?.toList() ?: return
+        val userId = userModel?.id
+        if (userId.isNullOrEmpty()) return
+
+        lifecycleScope.launch {
+            var addedCount = 0
+            withContext(Dispatchers.IO) {
+                selected.forEach { item ->
+                    val courseId = item?.courseId
+                    if (courseId != null) {
+                        if (coursesRepository.markCourseAdded(courseId, userId)) {
+                            addedCount++
+                        }
+                    }
+                }
+            }
+            if (addedCount > 0) {
+                org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), getString(R.string.added_to_my_courses))
+                loadDataAsync()
+            }
+        }
     }
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {

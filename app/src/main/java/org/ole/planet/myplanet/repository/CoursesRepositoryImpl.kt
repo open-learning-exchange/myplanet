@@ -404,4 +404,17 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
     }
+
+    override suspend fun deleteCourseProgress(courseId: String) {
+        if (courseId.isEmpty()) return
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
+            val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
+            for (exam in examList) {
+                realm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
+                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
+                    .deleteAllFromRealm()
+            }
+        }
+    }
 }
