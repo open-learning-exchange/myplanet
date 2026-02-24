@@ -84,8 +84,8 @@ myplanet/
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 12 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 34 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and 29 more |
-| `data/` | Data access and API services | 9 | DataService.kt, DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 17 | 6 modules (NetworkModule, DatabaseModule, DataServiceModule, RepositoryModule, ServiceModule, SharedPreferencesModule) + 11 entry points |
+| `data/` | Data access and API services | 8 | DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 16 | 5 modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule) + 11 entry points |
 | `model/` | Realm database models and DTOs | 67 | 40 Realm models + 27 DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
 | `repository/` | Repository pattern implementations | 38 | 19 repositories with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
 | `services/` | Background services and workers | 37 | 20 root-level + `sync/` (11), `upload/` (4), `retry/` (2) |
@@ -134,29 +134,24 @@ myplanet/
    - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`DataService.kt`** (~369 lines)
-   - Version checking and checksum validation (many methods deprecated in favor of ConfigurationsRepository)
-   - Server availability checking, community server sync, user registration
-   - Location: `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt`
-
-3. **`SyncManager.kt`** (~1058 lines)
+2. **`SyncManager.kt`** (~1058 lines)
    - Orchestrates data synchronization with server via StateFlow-based state management
    - Integrates with ImprovedSyncManager, TransactionSyncManager, RealtimeSyncManager
    - Semaphore-based concurrency control, adaptive batch processing
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-4. **`UploadManager.kt`** (~770 lines)
+3. **`UploadManager.kt`** (~770 lines)
    - File and data uploads with batch processing (BATCH_SIZE = 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-5. **`TeamsRepositoryImpl.kt`** (~1097 lines)
+4. **`TeamsRepositoryImpl.kt`** (~1097 lines)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
 
-6. **`ApiInterface.kt`** (~65 lines)
+5. **`ApiInterface.kt`** (~65 lines)
    - All REST API endpoint definitions (file downloads/uploads, document CRUD, version checking, health access, AI/chat endpoints)
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt`
 
@@ -227,7 +222,6 @@ myplanet/
                │
 ┌──────────────▼──────────────────────────┐
 │     Service Layer                       │
-│  - DataService (local operations)       │
 │  - ApiInterface (remote operations)     │
 │  - SyncManager (synchronization)        │
 │  - UploadCoordinator (upload orchestr.) │
@@ -299,7 +293,6 @@ Activities, Chat, Configurations, Courses, Events, Feedback, Life, Notifications
 **Module Structure:**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
 - `DatabaseModule.kt` - Provides Realm instances
-- `DataServiceModule.kt` - Provides DataService
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
@@ -1280,7 +1273,6 @@ git rebase --continue
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
 | Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~448 |
-| Core data service | `app/src/main/java/org/ole/planet/myplanet/data/DataService.kt` | ~369 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
 | Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1058 |
 | Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~770 |
@@ -1334,10 +1326,10 @@ git push -u origin claude/feature-id   # Push to remote
 | `repository/` | 38 | Data access abstraction (19 domains + utilities) |
 | `ui/` | 147 | User interface across 28 feature packages |
 | `services/` | 37 | Background tasks & managers (20 root + 3 sub-packages) |
-| `di/` | 17 | Dependency injection (6 modules + 11 entry points) |
+| `di/` | 16 | Dependency injection (5 modules + 11 entry points) |
 | `base/` | 12 | Reusable base classes |
 | `callback/` | 34 | Event listeners and interfaces |
-| `data/` | 9 | Data services, API, auth |
+| `data/` | 8 | Data services, API, auth |
 | `utils/` | 39 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 

@@ -38,7 +38,7 @@ class ChallengePrompter(
         val endTime = 1734307200000
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-        activity.lifecycleScope.launch(Dispatchers.Main) {
+        activity.lifecycleScope.launch {
             try {
                 val courseData = progressRepository.fetchCourseData(user?.id)
 
@@ -64,7 +64,7 @@ class ChallengePrompter(
                     val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                     var hasValidSync = false
                     if (prereqsMet) {
-                        hasValidSync = progressRepository.hasUserCompletedSync(user?.id ?: "")
+                        hasValidSync = progressRepository.hasUserCompletedSync(user.id ?: "")
                     }
                     challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey, hasValidSync)
                 }

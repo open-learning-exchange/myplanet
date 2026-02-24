@@ -21,6 +21,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
@@ -67,11 +68,12 @@ class UploadManager @Inject constructor(
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val uploadConfigs: UploadConfigs
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(UploadConfigs.NewsActivities)
+        uploadCoordinator.upload(uploadConfigs.NewsActivities)
     }
 
     fun uploadActivities(listener: OnSuccessListener?) {
@@ -150,7 +152,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadExamResult(listener: OnSuccessListener) {
         withContext(Dispatchers.IO) {
             try {
-                val result = uploadCoordinator.upload(UploadConfigs.ExamResults)
+                val result = uploadCoordinator.upload(uploadConfigs.ExamResults)
 
                 val message = when (result) {
                     is UploadResult.Success -> "Result sync completed successfully (${result.data} processed, 0 errors)"
@@ -206,11 +208,11 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        uploadCoordinator.upload(UploadConfigs.CourseProgress)
+        uploadCoordinator.upload(uploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {
-        return when (val result = uploadCoordinator.upload(UploadConfigs.Feedback)) {
+        return when (val result = uploadCoordinator.upload(uploadConfigs.Feedback)) {
             is UploadResult.Success -> true
             is UploadResult.PartialSuccess -> result.failed.isEmpty()
             is UploadResult.Failure -> false
@@ -219,27 +221,10 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
-        data class PhotoData(
-            val photoId: String?,
-            val serialized: JsonObject
-        )
-
-        val photosToUpload = databaseService.withRealm { realm ->
-            val data = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
-
-            if (data.isEmpty()) {
-                emptyList()
-            } else {
-                data.map { photo ->
-                    PhotoData(
-                        photoId = photo.id,
-                        serialized = RealmSubmitPhotos.serializeRealmSubmitPhotos(photo)
-                    )
-                }
-            }
-        }
+        val photosToUpload = submissionsRepository.getUnuploadedPhotos()
 
         if (photosToUpload.isEmpty()) {
             listener?.onSuccess("No photos to upload")
@@ -248,31 +233,23 @@ class UploadManager @Inject constructor(
 
         withContext(Dispatchers.IO) {
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                batch.forEach { photoData ->
+                batch.forEach { (photoId, serialized) ->
                     try {
                         val `object` = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/submissions", photoData.serialized
+                            "${UrlUtils.getUrl()}/submissions", serialized
                         ).body()
 
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
                             val id = getString("id", `object`)
 
-                            databaseService.executeTransactionAsync { transactionRealm ->
-                                transactionRealm.where(RealmSubmitPhotos::class.java)
-                                    .equalTo("id", photoData.photoId)
-                                    .findFirst()?.let { sub ->
-                                        sub.uploaded = true
-                                        sub._rev = rev
-                                        sub._id = id
-                                    }
-                            }
+                            submissionsRepository.markPhotoUploaded(photoId, rev, id)
 
                             listener?.let {
                                 val photo = databaseService.withRealm { realm ->
                                     realm.where(RealmSubmitPhotos::class.java)
-                                        .equalTo("id", photoData.photoId).findFirst()
+                                        .equalTo("id", photoId).findFirst()
                                         ?.let { realm.copyFromRealm(it) }
                                 }
                                 photo?.let { uploadAttachment(id, rev, it, listener) }
@@ -287,6 +264,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
@@ -385,6 +363,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
@@ -420,7 +399,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        uploadCoordinator.upload(UploadConfigs.TeamTask)
+        uploadCoordinator.upload(uploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
@@ -434,7 +413,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            val result = uploadCoordinator.upload(UploadConfigs.Submissions)
+            val result = uploadCoordinator.upload(uploadConfigs.Submissions)
 
             Log.d("UploadManager", when (result) {
                 is UploadResult.Success -> "Uploaded ${result.data} submissions successfully"
@@ -453,6 +432,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
 
         data class TeamData(
@@ -507,14 +487,19 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
-            listener.onSuccess("Cannot upload user activities: user model is null")
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("Cannot upload user activities: user model is null")
+            }
             return
         }
 
         if (model.isManager()) {
-            listener.onSuccess("Skipping user activities upload for manager")
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("Skipping user activities upload for manager")
+            }
             return
         }
 
@@ -562,15 +547,19 @@ class UploadManager @Inject constructor(
             }
 
             uploadTeamActivitiesRefactored()
-            listener.onSuccess("User activities sync completed successfully")
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("User activities sync completed successfully")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            listener.onSuccess("Failed to upload user activities: ${e.message}")
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("Failed to upload user activities: ${e.message}")
+            }
         }
     }
 
     private suspend fun uploadTeamActivitiesRefactored() {
-        uploadCoordinator.upload(UploadConfigs.TeamActivitiesRefactored)
+        uploadCoordinator.upload(uploadConfigs.TeamActivitiesRefactored)
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
@@ -620,7 +609,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadRating() {
-        uploadCoordinator.upload(UploadConfigs.Rating)
+        uploadCoordinator.upload(uploadConfigs.Rating)
     }
 
     suspend fun uploadNews() {
@@ -629,6 +618,7 @@ class UploadManager @Inject constructor(
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
 
+        ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
 
@@ -747,31 +737,31 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadCrashLog() {
-        uploadCoordinator.upload(UploadConfigs.CrashLog)
+        uploadCoordinator.upload(uploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(UploadConfigs.SearchActivity)
+        uploadCoordinator.upload(uploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
         val config = if (type == "sync") {
-            UploadConfigs.ResourceActivitiesSync
+            uploadConfigs.ResourceActivitiesSync
         } else {
-            UploadConfigs.ResourceActivities
+            uploadConfigs.ResourceActivities
         }
         uploadCoordinator.upload(config)
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(UploadConfigs.CourseActivities)
+        uploadCoordinator.upload(uploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
-        uploadCoordinator.upload(UploadConfigs.Meetups)
+        uploadCoordinator.upload(uploadConfigs.Meetups)
     }
 
     suspend fun uploadAdoptedSurveys() {
-        uploadCoordinator.upload(UploadConfigs.AdoptedSurveys)
+        uploadCoordinator.upload(uploadConfigs.AdoptedSurveys)
     }
 }

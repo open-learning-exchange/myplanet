@@ -206,7 +206,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.setText(getString(R.string.please_wait))
             customProgressDialog.show()
             try {
-                val messages = withContext(Dispatchers.Default) {
+                val messages = withContext(Dispatchers.IO) {
                     val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
@@ -589,8 +589,8 @@ class ChatDetailFragment : Fragment() {
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
             addProperty("title", query)
-            addProperty("createdTime", Date().time)
-            addProperty("updatedDate", "")
+            addProperty("createdDate", Date().time)
+            addProperty("updatedDate", Date().time)
 
             val conversationsArray = JsonArray()
             val conversationObject = JsonObject().apply {

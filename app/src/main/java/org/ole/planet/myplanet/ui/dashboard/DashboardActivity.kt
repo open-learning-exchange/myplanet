@@ -21,7 +21,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -97,6 +96,7 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
 
+    private var isReady = false
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUser? = null
@@ -141,9 +141,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
-        user = userSessionManager.userModel
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
+
+        val content: View = findViewById(android.R.id.content)
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : android.view.ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    return if (isReady) {
+                        content.viewTreeObserver.removeOnPreDrawListener(this)
+                        startPostponedEnterTransition()
+                        true
+                    } else {
+                        false
+                    }
+                }
+            }
+        )
+
+        @Suppress("DEPRECATION")
+        user = userSessionManager.userModel
         checkUser()
         updateAppTitle()
         if (handleGuestAccess()) return
@@ -154,18 +171,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch {
             initializeDashboard()
+            isReady = true
+            binding.root.invalidate()
         }
-
-        val content: View = findViewById(android.R.id.content)
-        content.viewTreeObserver.addOnPreDrawListener(
-            object : android.view.ViewTreeObserver.OnPreDrawListener {
-                override fun onPreDraw(): Boolean {
-                    content.viewTreeObserver.removeOnPreDrawListener(this)
-                    startPostponedEnterTransition()
-                    return true
-                }
-            }
-        )
     }
 
     private fun initializeDashboard() {
@@ -637,11 +645,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
         val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
-        val actionView = MenuItemCompat.getActionView(menuItem)
-        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = "$count"
-        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
-        actionView.setOnClickListener(onClickListener)
+        val actionView = menuItem.actionView
+        val smsCountTxt = actionView?.findViewById<TextView>(R.id.notification_badge)
+        smsCountTxt?.text = "$count"
+        smsCountTxt?.visibility = if (count > 0) View.VISIBLE else View.GONE
+        actionView?.setOnClickListener(onClickListener)
     }
 
     fun refreshChatHistory() {
@@ -684,12 +692,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             becomeMember.contentDescription = getString(R.string.confirm_membership)
             logout.contentDescription = getString(R.string.menu_logout)
             becomeMember.setOnClickListener {
-                val guest = true
-                val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel?.name)
-                intent.putExtra("guest", guest)
-                setResult(RESULT_OK, intent)
-                startActivity(intent)
+                lifecycleScope.launch {
+                    val guest = true
+                    val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                    intent.putExtra("username", profileDbHandler.getUserModel()?.name)
+                    intent.putExtra("guest", guest)
+                    setResult(RESULT_OK, intent)
+                    startActivity(intent)
+                }
             }
             logout.setOnClickListener {
                 dialog.dismiss()

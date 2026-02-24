@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
 import io.realm.RealmList
@@ -658,5 +659,30 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun getExamById(id: String): RealmStepExam? {
         return findByField(RealmStepExam::class.java, "id", id)
+    }
+
+    override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
+        return withRealm { realm ->
+            val data = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
+            if (data.isEmpty()) {
+                emptyList()
+            } else {
+                data.map { photo ->
+                    Pair(photo.id, RealmSubmitPhotos.serializeRealmSubmitPhotos(photo))
+                }
+            }
+        }
+    }
+
+    override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
+        executeTransaction { transactionRealm ->
+            transactionRealm.where(RealmSubmitPhotos::class.java)
+                .equalTo("id", photoId)
+                .findFirst()?.let { sub ->
+                    sub.uploaded = true
+                    sub._rev = rev
+                    sub._id = id
+                }
+        }
     }
 }

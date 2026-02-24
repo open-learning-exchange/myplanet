@@ -32,7 +32,8 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: SurveysAdapter
+    private var adapter: SurveysAdapter? = null
+    private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private lateinit var prefManager: SharedPrefManager
@@ -71,20 +72,20 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         adapterMutex.withLock {
-            if (!::adapter.isInitialized) {
-                val user = profileDbHandler.getUserModel()
+            if (adapter == null) {
+                val userProfileModel = profileDbHandler.getUserModel()
                 adapter = SurveysAdapter(
                     requireActivity(),
-                    user?.id,
+                    userProfileModel?.id,
                     isTeam,
                     teamId,
-                    this,
+                    this@SurveyFragment,
                     surveyInfoMap,
                     bindingDataMap
                 )
             }
         }
-        return adapter
+        return adapter!!
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -149,15 +150,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                     0 -> viewModel.sort(SurveysViewModel.SortOption.DATE_DESC)
                     1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
                     2 -> {
-                        // Toggle title sort order is logic that was in adapter.
-                        // I need to track current sort in fragment or viewmodel to toggle.
-                        // For now assuming toggle means switching between ASC and DESC.
-                        // But here we can't easily toggle without state.
-                        // I'll make viewModel handle toggle or expose current sort.
-                        // Let's assume user wants TITLE_ASC first, then DESC.
-                        // But the previous implementation called adapter.toggleTitleSortOrder().
-                        // I will simplify and set TITLE_ASC for now, or improve ViewModel to handle toggle.
-                        viewModel.sort(SurveysViewModel.SortOption.TITLE_ASC)
+                        viewModel.toggleTitleSort()
                     }
                 }
                 recyclerView.scrollToPosition(0)
@@ -169,8 +162,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (i == 2) {
-                     // This was toggle. I'll stick to one for now or need to check state.
-                     viewModel.sort(SurveysViewModel.SortOption.TITLE_DESC)
+                    viewModel.toggleTitleSort()
                 }
                 recyclerView.scrollToPosition(0)
             }
@@ -193,8 +185,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewLifecycleOwner.lifecycleScope.launch {
             launch {
                 viewModel.surveys.collect { surveys ->
-                    getAdapter()
-                    adapter.submitList(surveys) {
+                    (getAdapter() as SurveysAdapter).submitList(surveys) {
                         updateUIState()
                     }
                 }
@@ -237,9 +228,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     private fun updateUIState() {
-        val itemCount = adapter.itemCount
-        _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
-        showNoData(tvMessage, itemCount, "survey")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val itemCount = getAdapter().itemCount
+            _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
+            showNoData(tvMessage, itemCount, "survey")
+        }
     }
 
     override fun getWatchedTables(): List<String> {

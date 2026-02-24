@@ -4,22 +4,16 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.StepItem
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class CoursesStepsAdapter(private val context: Context, private val submissionsRepository: SubmissionsRepository, private val lifecycleOwner: LifecycleOwner) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
+class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
-    private val examQuestionCountCache = mutableMapOf<String, Int>()
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val rowStepsBinding = RowStepsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(rowStepsBinding)
@@ -47,8 +41,6 @@ class CoursesStepsAdapter(private val context: Context, private val submissionsR
     }
 
     inner class ViewHolder(private val rowStepsBinding: RowStepsBinding) : RecyclerView.ViewHolder(rowStepsBinding.root) {
-        private var loadJob: Job? = null
-
         init {
             itemView.setOnClickListener {
                 val position = bindingAdapterPosition
@@ -62,29 +54,7 @@ class CoursesStepsAdapter(private val context: Context, private val submissionsR
 
         fun bind(step: StepItem) {
             rowStepsBinding.tvTitle.text = step.stepTitle
-            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, 0)
-            loadJob?.cancel()
-
-            val stepId = step.id
-            if (!stepId.isNullOrEmpty()) {
-                val cachedCount = examQuestionCountCache[stepId]
-                if (cachedCount != null) {
-                    rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, cachedCount)
-                } else {
-                    loadJob = lifecycleOwner.lifecycleScope.launch {
-                        val size = submissionsRepository.getExamQuestionCount(stepId)
-                        examQuestionCountCache[stepId] = size
-                        if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
-                            return@launch
-                        }
-                        val adapterPosition = bindingAdapterPosition
-                        val currentStepId = getItem(adapterPosition)?.id
-                        if (currentStepId == stepId) {
-                            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
-                        }
-                    }
-                }
-            }
+            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, step.questionCount)
             updateDescriptionVisibility()
         }
 
@@ -102,10 +72,6 @@ class CoursesStepsAdapter(private val context: Context, private val submissionsR
             }
         }
 
-        fun clear() {
-            loadJob?.cancel()
-            loadJob = null
-        }
     }
 
     private fun toggleDescriptionVisibility(stepId: String) {
@@ -130,11 +96,6 @@ class CoursesStepsAdapter(private val context: Context, private val submissionsR
         if (position != -1) {
             notifyItemChanged(position, newVisibility)
         }
-    }
-
-    override fun onViewRecycled(holder: ViewHolder) {
-        super.onViewRecycled(holder)
-        holder.clear()
     }
 
     companion object {

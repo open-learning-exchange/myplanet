@@ -299,6 +299,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
     override suspend fun getTeamTransactions(
         teamId: String,
         startDate: Long?,
@@ -1125,5 +1126,10 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return successorMember?.userId?.let { id -> userMap[id] }
+    }
+
+    override suspend fun getTeamCreator(teamId: String): String? {
+        if (teamId.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
     }
 }

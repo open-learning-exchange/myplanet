@@ -106,6 +106,7 @@ open class RealmFeedback : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use FeedbackRepository.insertFromJson")
         fun insert(mRealm: Realm, act: JsonObject?) {
             var feedback = mRealm.where(RealmFeedback::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()

@@ -33,7 +33,8 @@ class ImprovedSyncManager @Inject constructor(
     private val databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
     private val transactionSyncManager: TransactionSyncManager,
-    private val standardStrategy: StandardSyncStrategy
+    private val standardStrategy: StandardSyncStrategy,
+    private val loginSyncManager: LoginSyncManager
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
@@ -125,7 +126,7 @@ class ImprovedSyncManager @Inject constructor(
 
         // Post-sync operations
         logger.startProcess("admin_sync")
-        LoginSyncManager.instance.syncAdmin()
+        loginSyncManager.syncAdmin()
         logger.endProcess("admin_sync")
 
         poolManager.useRealm { realm ->

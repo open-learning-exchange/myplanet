@@ -61,22 +61,27 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val view = binding.root
         declareElements()
         onLoaded(view)
-        user = profileDbHandler.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
-        binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
-        if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
-            checkPendingSurveys()
-        }
-        if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
-            syncKeyId()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            binding.cardProfileBell.txtCommunityName.text = user?.planetCode
+            user?.id?.let {
+                viewModel.loadCompletedCourses(it)
+            }
+            if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
+                checkPendingSurveys()
+            }
+            if (user?.id?.startsWith("guest") == false && TextUtils.isEmpty(user?.key)) {
+                syncKeyId()
+            }
         }
     }
 
@@ -335,9 +340,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
-        user?.id?.let {
-            viewModel.loadCompletedCourses(it)
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
