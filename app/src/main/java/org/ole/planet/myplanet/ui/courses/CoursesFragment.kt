@@ -591,17 +591,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val userId = userModel?.id
         if (userId.isNullOrEmpty()) return
 
+        val courseIds = selected.mapNotNull { it?.courseId }
+        if (courseIds.isEmpty()) return
+
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                selected.forEach { item ->
-                    val courseId = item?.courseId
-                    if (courseId != null) {
-                        if (deleteProgress) {
-                            coursesRepository.deleteCourseProgress(courseId)
-                        }
-                        coursesRepository.removeCourseFromShelf(courseId, userId)
-                    }
+                if (deleteProgress) {
+                    coursesRepository.deleteCourseProgress(courseIds)
                 }
+                coursesRepository.leaveCourses(courseIds, userId)
             }
             org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), getString(R.string.removed_from_mycourse))
             clearAllSelections()
