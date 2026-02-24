@@ -262,7 +262,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         customProgressDialog.setText(getString(R.string.clearing_data))
                         customProgressDialog.show()
 
-                        clearRealmDb()
+                        databaseService.clearAll()
                         prefData.setManualConfig(config)
                         clearSharedPref()
 
@@ -821,15 +821,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         lateinit var cal_last_Sync: Calendar
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
-
-        suspend fun clearRealmDb() {
-            val databaseService = (context.applicationContext as MainApplication).databaseService
-            databaseService.withRealmAsync { realm ->
-                realm.executeTransaction { transactionRealm ->
-                    transactionRealm.deleteAll()
-                }
-            }
-        }
 
         suspend fun clearSharedPref() {
             withContext(Dispatchers.IO) {
