@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -185,23 +184,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
-        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
-            val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
-        }
-
-        @Deprecated("Use ResourcesRepository.getLibraryByUserId instead")
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
-            val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
-            return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
-        }
-
-        @JvmStatic
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            return libs.filter { it.userId?.contains(userId) == true }
-        }
-
         @JvmStatic
         fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
             return libs.filter { it.userId?.contains(userId) == false }
