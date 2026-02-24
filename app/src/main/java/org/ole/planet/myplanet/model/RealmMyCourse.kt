@@ -173,6 +173,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getCoursesByUserId instead")
         fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyCourse> {
             val userId = settings?.getString("userId", "--")
             return mRealm.where(RealmMyCourse::class.java)
