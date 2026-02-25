@@ -736,6 +736,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
                 withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                     refreshResourcesData()
                     selectedItems?.clear()
@@ -754,6 +755,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             lifecycleScope.launch(Dispatchers.IO) {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
                 withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     refreshResourcesData()
                     selectedItems?.clear()
