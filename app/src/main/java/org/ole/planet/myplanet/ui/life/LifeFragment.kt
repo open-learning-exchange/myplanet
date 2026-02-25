@@ -45,7 +45,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return view
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    private fun setupAdapter() {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
                 myLife._id?.let { id ->
@@ -70,10 +70,19 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
                 }
             }
         )
+    }
+
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+        if (!::lifeAdapter.isInitialized) {
+            setupAdapter()
+        }
         return lifeAdapter
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        if (!::lifeAdapter.isInitialized) {
+            setupAdapter()
+        }
         super.onViewCreated(view, savedInstanceState)
         refreshList()
         recyclerView.setHasFixedSize(true)
