@@ -209,10 +209,13 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
-    implementation(libs.realm.android.kotlin.extensions)
 }
 realm {
     syncEnabled = true
+}
+
+kapt {
+    correctErrorTypes = true
 }
 
 kotlin {
