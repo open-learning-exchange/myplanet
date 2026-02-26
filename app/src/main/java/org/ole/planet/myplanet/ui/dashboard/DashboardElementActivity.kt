@@ -219,7 +219,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId
                 wifiManager.enableNetwork(netId, true)
-                Toast.makeText(this, R.string.you_are_now_connected + netId, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.you_are_now_connected) + netId, Toast.LENGTH_SHORT).show()
                 lifecycleScope.launch {
                     broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
                 }
