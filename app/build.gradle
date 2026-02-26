@@ -1,3 +1,138 @@
+android {
+    compileSdk = 36
+    defaultConfig {
+        applicationId "org.ole.planet.myplanet"
+        minSdk = 26
+        targetSdk = 36
+        versionCode = 4723
+        versionName = "0.47.23"
+        ndkVersion = '26.3.11579264'
+        vectorDrawables.useSupportLibrary = true
+    }
+    configurations.configureEach {
+        resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled = false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    flavorDimensions "mode"
+    productFlavors {
+        create("default") {
+            dimension "mode"
+            buildConfigField "boolean", "LITE", "false"
+            resValue "string", "app_version", "${defaultConfig.versionName}"
+        }
+        create("lite") {
+            dimension "mode"
+            buildConfigField "boolean", "LITE", "true"
+            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
+            versionNameSuffix "-lite"
+            resValue "string", "app_version", "${defaultConfig.versionName}-lite"
+        }
+    }
+    packagingOptions {
+        resources {
+            excludes += [
+                'META-INF/DEPENDENCIES',
+                'META-INF/LICENSE',
+                'META-INF/LICENSE.txt',
+                'META-INF/license.txt',
+                'META-INF/LICENSE.md',
+                'META-INF/NOTICE',
+                'META-INF/NOTICE.txt',
+                'META-INF/notice.txt',
+                'META-INF/LICENSE-notice.md',
+                'META-INF/ASL2.0'
+            ]
+        }
+        doNotStrip "**/libpl_droidsonroids_gif.so"
+        doNotStrip "**/librealm-jni.so"
+    }
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_17
+    }
+    lintOptions {
+        abortOnError = false
+    }
+    namespace = 'org.ole.planet.myplanet'
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+        dataBinding = true
+        resValues = true
+    }
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+    def planetLearningUrl = project.findProperty('PLANET_LEARNING_URL') ?: ""
+    def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
+    def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
+    def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
+    def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
+    def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
+    def planetSanPabloCloneUrl = project.findProperty('PLANET_SANPABLO_CLONE_URL') ?: ""
+    def planetSanPabloClonePin = project.findProperty('PLANET_SANPABLO_CLONE_PIN') ?: ""
+    def planetEarthUrl = project.findProperty('PLANET_EARTH_URL') ?: ""
+    def planetEarthPin = project.findProperty('PLANET_EARTH_PIN') ?: ""
+    def planetSomaliaUrl = project.findProperty('PLANET_SOMALIA_URL') ?: ""
+    def planetSomaliaPin = project.findProperty('PLANET_SOMALIA_PIN') ?: ""
+    def planetViUrl = project.findProperty('PLANET_VI_URL') ?: ""
+    def planetViPin = project.findProperty('PLANET_VI_PIN') ?: ""
+    def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
+    def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
+    def planetUriurUrl = project.findProperty('PLANET_URIUR_URL') ?: ""
+    def planetUriurPin = project.findProperty('PLANET_URIUR_PIN') ?: ""
+    def planetUriurCloneUrl = project.findProperty('PLANET_URIUR_CLONE_URL') ?: ""
+    def planetUriurClonePin = project.findProperty('PLANET_URIUR_CLONE_PIN') ?: ""
+    def planetRuiruUrl = project.findProperty('PLANET_RUIRU_URL') ?: ""
+    def planetRuiruPin = project.findProperty('PLANET_RUIRU_PIN') ?: ""
+    def planetEmbakasiUrl = project.findProperty('PLANET_EMBAKASI_URL') ?: ""
+    def planetEmbakasiPin = project.findProperty('PLANET_EMBAKASI_PIN') ?: ""
+    def planetEmbakasiCloneUrl = project.findProperty('PLANET_EMBAKASI_CLONE_URL') ?: ""
+    def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
+    def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
+    def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
+    buildTypes.each {
+        it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
+        it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
+        it.buildConfigField 'String', 'PLANET_GUATEMALA_URL', "\"${planetGuatemalaUrl}\""
+        it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_URL', "\"${planetSanPabloCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_PIN', "\"${planetSanPabloClonePin}\""
+        it.buildConfigField 'String', 'PLANET_EARTH_URL', "\"${planetEarthUrl}\""
+        it.buildConfigField 'String', 'PLANET_EARTH_PIN', "\"${planetEarthPin}\""
+        it.buildConfigField 'String', 'PLANET_SOMALIA_URL', "\"${planetSomaliaUrl}\""
+        it.buildConfigField 'String', 'PLANET_SOMALIA_PIN', "\"${planetSomaliaPin}\""
+        it.buildConfigField 'String', 'PLANET_VI_URL', "\"${planetViUrl}\""
+        it.buildConfigField 'String', 'PLANET_VI_PIN', "\"${planetViPin}\""
+        it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
+        it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_URL', "\"${planetUriurUrl}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_PIN', "\"${planetUriurPin}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_CLONE_URL', "\"${planetUriurCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_CLONE_PIN', "\"${planetUriurClonePin}\""
+        it.buildConfigField 'String', 'PLANET_RUIRU_URL', "\"${planetRuiruUrl}\""
+        it.buildConfigField 'String', 'PLANET_RUIRU_PIN', "\"${planetRuiruPin}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_URL', "\"${planetEmbakasiUrl}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_PIN', "\"${planetEmbakasiPin}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_URL', "\"${planetEmbakasiCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
+        it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
+        it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
+    }
+}
 plugins {
     alias(libs.plugins.application)
     alias(libs.plugins.legacy.kapt)
@@ -71,148 +206,4 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
-}
-android {
-    compileSdk = 36
-    defaultConfig {
-        applicationId "org.ole.planet.myplanet"
-        minSdk = 26
-        targetSdk = 36
-        versionCode = 4722
-        versionName = "0.47.22"
-        ndkVersion = '26.3.11579264'
-        vectorDrawables.useSupportLibrary = true
-    }
-    configurations.configureEach {
-        resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
-    }
-    buildTypes {
-        release {
-            minifyEnabled = false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-        debug {
-            minifyEnabled = false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    flavorDimensions "mode"
-    productFlavors {
-        create("default") {
-            dimension "mode"
-            buildConfigField "boolean", "LITE", "false"
-            resValue "string", "app_version", "${defaultConfig.versionName}"
-        }
-        create("lite") {
-            dimension "mode"
-            buildConfigField "boolean", "LITE", "true"
-            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
-            versionNameSuffix "-lite"
-            resValue "string", "app_version", "${defaultConfig.versionName}-lite"
-        }
-    }
-
-    packagingOptions {
-        resources {
-            excludes += [
-                'META-INF/DEPENDENCIES',
-                'META-INF/LICENSE',
-                'META-INF/LICENSE.txt',
-                'META-INF/license.txt',
-                'META-INF/LICENSE.md',
-                'META-INF/NOTICE',
-                'META-INF/NOTICE.txt',
-                'META-INF/notice.txt',
-                'META-INF/LICENSE-notice.md',
-                'META-INF/ASL2.0'
-            ]
-        }
-        doNotStrip "**/libpl_droidsonroids_gif.so"
-        doNotStrip "**/librealm-jni.so"
-    }
-
-    compileOptions {
-        targetCompatibility JavaVersion.VERSION_17
-        sourceCompatibility JavaVersion.VERSION_17
-    }
-
-    lintOptions {
-        abortOnError = false
-    }
-
-    namespace = 'org.ole.planet.myplanet'
-
-    buildFeatures {
-        viewBinding = true
-        buildConfig = true
-        dataBinding = true
-        resValues = true
-    }
-
-    bundle {
-        language {
-            enableSplit = false
-        }
-    }
-
-    def planetLearningUrl = project.findProperty('PLANET_LEARNING_URL') ?: ""
-    def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
-    def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
-    def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
-    def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
-    def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
-    def planetSanPabloCloneUrl = project.findProperty('PLANET_SANPABLO_CLONE_URL') ?: ""
-    def planetSanPabloClonePin = project.findProperty('PLANET_SANPABLO_CLONE_PIN') ?: ""
-    def planetEarthUrl = project.findProperty('PLANET_EARTH_URL') ?: ""
-    def planetEarthPin = project.findProperty('PLANET_EARTH_PIN') ?: ""
-    def planetSomaliaUrl = project.findProperty('PLANET_SOMALIA_URL') ?: ""
-    def planetSomaliaPin = project.findProperty('PLANET_SOMALIA_PIN') ?: ""
-    def planetViUrl = project.findProperty('PLANET_VI_URL') ?: ""
-    def planetViPin = project.findProperty('PLANET_VI_PIN') ?: ""
-    def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
-    def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
-    def planetUriurUrl = project.findProperty('PLANET_URIUR_URL') ?: ""
-    def planetUriurPin = project.findProperty('PLANET_URIUR_PIN') ?: ""
-    def planetUriurCloneUrl = project.findProperty('PLANET_URIUR_CLONE_URL') ?: ""
-    def planetUriurClonePin = project.findProperty('PLANET_URIUR_CLONE_PIN') ?: ""
-    def planetRuiruUrl = project.findProperty('PLANET_RUIRU_URL') ?: ""
-    def planetRuiruPin = project.findProperty('PLANET_RUIRU_PIN') ?: ""
-    def planetEmbakasiUrl = project.findProperty('PLANET_EMBAKASI_URL') ?: ""
-    def planetEmbakasiPin = project.findProperty('PLANET_EMBAKASI_PIN') ?: ""
-    def planetEmbakasiCloneUrl = project.findProperty('PLANET_EMBAKASI_CLONE_URL') ?: ""
-    def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
-    def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
-    def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
-
-    buildTypes.each {
-        it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
-        it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
-        it.buildConfigField 'String', 'PLANET_GUATEMALA_URL', "\"${planetGuatemalaUrl}\""
-        it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
-        it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
-        it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
-        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_URL', "\"${planetSanPabloCloneUrl}\""
-        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_PIN', "\"${planetSanPabloClonePin}\""
-        it.buildConfigField 'String', 'PLANET_EARTH_URL', "\"${planetEarthUrl}\""
-        it.buildConfigField 'String', 'PLANET_EARTH_PIN', "\"${planetEarthPin}\""
-        it.buildConfigField 'String', 'PLANET_SOMALIA_URL', "\"${planetSomaliaUrl}\""
-        it.buildConfigField 'String', 'PLANET_SOMALIA_PIN', "\"${planetSomaliaPin}\""
-        it.buildConfigField 'String', 'PLANET_VI_URL', "\"${planetViUrl}\""
-        it.buildConfigField 'String', 'PLANET_VI_PIN', "\"${planetViPin}\""
-        it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
-        it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
-        it.buildConfigField 'String', 'PLANET_URIUR_URL', "\"${planetUriurUrl}\""
-        it.buildConfigField 'String', 'PLANET_URIUR_PIN', "\"${planetUriurPin}\""
-        it.buildConfigField 'String', 'PLANET_URIUR_CLONE_URL', "\"${planetUriurCloneUrl}\""
-        it.buildConfigField 'String', 'PLANET_URIUR_CLONE_PIN', "\"${planetUriurClonePin}\""
-        it.buildConfigField 'String', 'PLANET_RUIRU_URL', "\"${planetRuiruUrl}\""
-        it.buildConfigField 'String', 'PLANET_RUIRU_PIN', "\"${planetRuiruPin}\""
-        it.buildConfigField 'String', 'PLANET_EMBAKASI_URL', "\"${planetEmbakasiUrl}\""
-        it.buildConfigField 'String', 'PLANET_EMBAKASI_PIN', "\"${planetEmbakasiPin}\""
-        it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_URL', "\"${planetEmbakasiCloneUrl}\""
-        it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
-        it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
-        it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
-    }
 }
