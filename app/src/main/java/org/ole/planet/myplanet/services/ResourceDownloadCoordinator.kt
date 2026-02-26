@@ -2,13 +2,13 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.ArrayList
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
-import javax.inject.Inject
-import javax.inject.Singleton
-import java.util.ArrayList
 
 @Singleton
 class ResourceDownloadCoordinator @Inject constructor(

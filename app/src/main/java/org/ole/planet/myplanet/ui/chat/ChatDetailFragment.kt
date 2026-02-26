@@ -85,7 +85,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var chatApiService: ChatApiService
     @Inject
     lateinit var userRepository: UserRepository
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -589,8 +590,8 @@ class ChatDetailFragment : Fragment() {
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
             addProperty("title", query)
-            addProperty("createdTime", Date().time)
-            addProperty("updatedDate", "")
+            addProperty("createdDate", Date().time)
+            addProperty("updatedDate", Date().time)
 
             val conversationsArray = JsonArray()
             val conversationObject = JsonObject().apply {

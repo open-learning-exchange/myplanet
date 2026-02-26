@@ -2,8 +2,12 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.SupplicantState
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.Gson
@@ -69,6 +73,7 @@ class SyncManager @Inject constructor(
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
+    private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
     private val isSyncing = AtomicBoolean(false)
@@ -290,7 +295,7 @@ class SyncManager @Inject constructor(
 
             // Phase 4: Admin and finalization
             logger.startProcess("admin_sync")
-            LoginSyncManager.instance.syncAdmin()
+            loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -504,7 +509,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            LoginSyncManager.instance.syncAdmin()
+            loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -528,10 +533,27 @@ class SyncManager @Inject constructor(
     }
 
     private fun initializeSync() {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-            settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+        if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            var ssid: String? = null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val wifiInfo = capabilities.transportInfo as? WifiInfo
+                ssid = wifiInfo?.ssid
+            } else {
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                @Suppress("DEPRECATION")
+                val wifiInfo = wifiManager.connectionInfo
+                if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
+                    ssid = wifiInfo.ssid
+                }
+            }
+
+            if (ssid != null) {
+                settings.edit { putString("LastWifiSSID", ssid) }
+            }
         }
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
@@ -641,7 +663,11 @@ class SyncManager @Inject constructor(
                                 databaseService.withRealm { realm ->
                                     realm.executeTransaction { realmTx ->
                                         val chunkDocuments = JsonArray()
-                                        chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
+                                        chunk.forEach { (doc, _) ->
+                                            val wrapper = JsonObject()
+                                            wrapper.add("doc", doc)
+                                            chunkDocuments.add(wrapper)
+                                        }
 
                                         val chunkIds = save(chunkDocuments, realmTx)
                                         savedIds.addAll(chunkIds)
@@ -717,8 +743,6 @@ class SyncManager @Inject constructor(
                 val cleanupStartTime = System.currentTimeMillis()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    val deletedCount = newIds.size - validNewIds.size
-                    Log.d("SyncPerf", "    Resources: Removing $deletedCount deleted resources")
                     resourcesRepository.removeDeletedResources(validNewIds)
                 }
                 val cleanupDuration = System.currentTimeMillis() - cleanupStartTime

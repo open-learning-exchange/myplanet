@@ -10,6 +10,7 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -19,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -39,7 +41,8 @@ class UserRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
-    private val configurationsRepository: ConfigurationsRepository
+    private val configurationsRepository: ConfigurationsRepository,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -320,7 +323,7 @@ class UserRepositoryImpl @Inject constructor(
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
                         val id = createResponse.body()?.get("id")?.asString ?: ""
 
-                        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                        appScope.launch {
                             uploadToShelf(obj)
                         }
 
