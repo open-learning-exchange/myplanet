@@ -377,11 +377,13 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
         val validCurrentIds = currentIds.filterNotNull().toSet()
         executeTransaction { realm ->
-            val allResources = realm.where(RealmMyLibrary::class.java).findAll()
-            val idsToDelete = allResources
-                .filter { !it._rev.isNullOrBlank() }
+            val idsToDelete = realm.where(RealmMyLibrary::class.java)
+                .isNotNull("_rev")
+                .notEqualTo("_rev", "")
+                .equalTo("isPrivate", false)
+                .findAll()
+                .filter { it.resourceId !in validCurrentIds }
                 .mapNotNull { it.resourceId }
-                .filter { it !in validCurrentIds }
 
             if (idsToDelete.isNotEmpty()) {
                 val chunkSize = 1000
