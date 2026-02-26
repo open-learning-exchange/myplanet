@@ -17,7 +17,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <LinearLayout
         android:id="@+id/lt1"
         android:layout_width="match_parent"
@@ -206,7 +205,6 @@
             android:text="@string/birth_date"
             android:textColor="@color/hint_color"
             android:textSize="12sp" />
-
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ltInputName"
             android:layout_width="match_parent"
@@ -241,7 +239,6 @@
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ltDob" />
-
     <RadioGroup
         android:id="@+id/rdGender"
         android:layout_width="match_parent"
@@ -260,7 +257,6 @@
             android:buttonTint="@color/daynight_textColor"
             android:text="@string/male"
             android:textColor="@color/daynight_textColor" />
-
         <RadioButton
             android:id="@+id/rbFemale"
             android:layout_width="wrap_content"
@@ -296,7 +292,6 @@
                 android:text="@string/language"
                 android:textColor="@color/hint_color"
                 android:textSize="12sp" />
-
             <Spinner
                 android:id="@+id/language"
                 android:layout_width="match_parent"
@@ -320,7 +315,6 @@
                 android:text="@string/level"
                 android:textColor="@color/hint_color"
                 android:textSize="12sp" />
-
             <Spinner
                 android:id="@+id/level"
                 android:layout_width="wrap_content"
@@ -351,7 +345,6 @@
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.MaterialComponents.Button"
