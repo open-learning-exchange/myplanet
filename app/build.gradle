@@ -1,3 +1,10 @@
+plugins {
+    alias(libs.plugins.application)
+    alias(libs.plugins.legacy.kapt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.realm.android)
+}
 android {
     compileSdk = 36
     defaultConfig {
@@ -132,13 +139,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
-}
-plugins {
-    alias(libs.plugins.application)
-    alias(libs.plugins.legacy.kapt)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.dagger.hilt.android)
-    alias(libs.plugins.realm.android)
 }
 realm {
     syncEnabled = true
