@@ -176,11 +176,12 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
+        val countView = view?.findViewById<TextView>(R.id.count_library)
         if (dbMylibrary.isEmpty()) {
-            view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
+            countView?.visibility = View.GONE
         } else {
-            view?.findViewById<TextView>(R.id.count_library)?.text =
-                getString(R.string.number_placeholder, dbMylibrary.size)
+            countView?.visibility = View.VISIBLE
+            countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding =
