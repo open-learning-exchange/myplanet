@@ -67,10 +67,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
-        if (courseId.isBlank()) {
-            return null
-        }
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
+        return getCourseById(courseId)
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
