@@ -206,8 +206,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     adapterLibrary.setRatingMap(map!!)
                     adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
                 }
-                checkList()
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                checkList(filteredLibraryList.size)
+                showNoData(tvMessage, filteredLibraryList.size, "resources")
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -259,8 +259,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
 
-        checkList()
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        checkList(filteredList.size)
+        showNoData(tvMessage, filteredList.size, "resources")
         changeButtonStatus()
         return adapterLibrary
     }
@@ -381,7 +381,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
             hideButton()
-            val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
+            val allSelected = adapterLibrary.areAllSelected()
             adapterLibrary.selectAllItems(!allSelected)
             if (allSelected) {
                 selectAll.isChecked = false
@@ -422,8 +422,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun checkList() {
-        if (adapterLibrary.getLibraryList().isEmpty()) {
+    private fun checkList(listSize: Int = adapterLibrary.getLibraryList().size) {
+        if (listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE

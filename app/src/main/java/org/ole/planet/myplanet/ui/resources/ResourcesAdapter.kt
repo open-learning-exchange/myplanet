@@ -149,7 +149,7 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return selectedItems.size == currentList.size
+        return currentList.isNotEmpty() && selectedItems.size == currentList.size
     }
 
     fun selectAllItems(selectAll: Boolean) {
