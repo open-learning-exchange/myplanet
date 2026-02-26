@@ -36,10 +36,12 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
+import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -55,7 +57,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
-class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
+class CoursesFragment : BaseRecyclerFragment<Course?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -203,10 +205,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             .filterIsInstance<RealmMyCourse>()
             .filter { !it.courseTitle.isNullOrBlank() }
 
-        val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
-            copiedList.forEachIndexed { index, course ->
-                course.isMyCourse = if (isMyCourseLib) true else managedCourses[index].isMyCourse
-            }
+        val courseList: List<Course> = managedCourses.map { realmCourse ->
+            Course(
+                realmCourse.id,
+                realmCourse.courseId,
+                realmCourse.courseTitle,
+                realmCourse.description,
+                realmCourse.gradeLevel,
+                realmCourse.subjectLevel,
+                realmCourse.createdDate,
+                if (isMyCourseLib) true else realmCourse.isMyCourse,
+                realmCourse.getNumberOfSteps()
+            )
         }
 
         val sortedCourseList = if (isMyCourseLib) {
@@ -227,7 +237,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             Pair(ratingsDeferred.await(), progressDeferred.await())
         }
 
-        adapterCourses = CoursesAdapter(requireActivity(), map, userModel, tagsRepository, isMyCourseLib)
+        adapterCourses = CoursesAdapter(
+            requireActivity(),
+            map,
+            userModel?.isGuest() ?: true,
+            isMyCourseLib
+        ) { courseId ->
+            tagsRepository.getTagsForCourse(courseId).map { Tag(it.id, it.name) }
+        }
         adapterCourses.submitList(sortedCourseList) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
                 selectedItems?.clear()
@@ -526,7 +543,22 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
                 val ratings = ratingsRepository.getCourseRatings(userId)
                 val progress = progressRepository.getCourseProgress(userId)
-                Triple(finalCourses, ratings, progress)
+
+                val pojoCourses = finalCourses.map { realmCourse ->
+                    Course(
+                        realmCourse.id,
+                        realmCourse.courseId,
+                        realmCourse.courseTitle,
+                        realmCourse.description,
+                        realmCourse.gradeLevel,
+                        realmCourse.subjectLevel,
+                        realmCourse.createdDate,
+                        realmCourse.isMyCourse,
+                        realmCourse.getNumberOfSteps()
+                    )
+                }
+
+                Triple(pojoCourses, ratings, progress)
             }
             adapterCourses.updateData(filteredCourses, map, progressMap)
             scrollToTop()
@@ -572,15 +604,19 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return builder.create()
     }
 
-    override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
+    override fun onSelectedListChange(list: MutableList<Course?>) {
         selectedItems = list
         changeButtonStatus()
         hideButtons()
     }
 
-    override fun onTagClicked(tag: RealmTag) {
+    override fun onTagClicked(tag: Tag) {
+        val realmTag = RealmTag()
+        realmTag.name = tag.name
+        realmTag.id = tag.id
+
         if (!searchTags.any { it.name == tag.name }) {
-            searchTags.add(tag)
+            searchTags.add(realmTag)
         }
         filterCoursesAndUpdateUi()
         showTagText(searchTags, tvSelected)
@@ -713,10 +749,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
                         .filterIsInstance<RealmMyCourse>()
                         .filter { !it.courseTitle.isNullOrBlank() }
-                    val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
-                        copiedList.forEachIndexed { index, course ->
-                            course.isMyCourse = if (isMyCourseLib) true else managedCourseList[index].isMyCourse
-                        }
+                    val courseList: List<Course> = managedCourseList.map { realmCourse ->
+                        Course(
+                            realmCourse.id,
+                            realmCourse.courseId,
+                            realmCourse.courseTitle,
+                            realmCourse.description,
+                            realmCourse.gradeLevel,
+                            realmCourse.subjectLevel,
+                            realmCourse.createdDate,
+                            if (isMyCourseLib) true else realmCourse.isMyCourse,
+                            realmCourse.getNumberOfSteps()
+                        )
                     }
                     val sortedCourseList = if (isMyCourseLib) {
                         courseList.sortedBy { it.courseTitle }
