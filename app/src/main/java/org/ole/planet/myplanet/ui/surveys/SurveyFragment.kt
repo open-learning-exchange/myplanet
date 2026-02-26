@@ -43,6 +43,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     private val viewModel: SurveysViewModel by viewModels()
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
+    private val adapterMutex = Mutex()
 
     override fun getLayout(): Int = R.layout.fragment_survey
 
@@ -70,7 +71,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
-        mutex.withLock {
+        adapterMutex.withLock {
             if (adapter == null) {
                 val userProfileModel = profileDbHandler.getUserModel()
                 adapter = SurveysAdapter(
@@ -101,6 +102,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
             override fun afterTextChanged(s: Editable) {}
         }
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
         setupRecyclerView()
         setupListeners()
         viewModel.loadSurveys(isTeam, teamId, false)
@@ -130,9 +134,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     private fun setupRecyclerView() {
         recyclerView.setHasFixedSize(true)
-        viewLifecycleOwner.lifecycleScope.launch {
-            recyclerView.adapter = getAdapter()
-        }
     }
 
     private fun setupListeners() {

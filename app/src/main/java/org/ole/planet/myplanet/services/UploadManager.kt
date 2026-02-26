@@ -658,7 +658,6 @@ class UploadManager @Inject constructor(
                                 fileBody
                             )
 
-                            // Build image metadata and markdown
                             val resourceObject = JsonObject()
                             resourceObject.addProperty("resourceId", resourceId)
                             resourceObject.addProperty("filename", fileName)
@@ -666,7 +665,6 @@ class UploadManager @Inject constructor(
                             resourceObject.addProperty("markdown", markdown)
                             imagesArray.add(resourceObject)
 
-                            // Append markdown to message
                             messageWithImages += "\n$markdown"
                         }
 
