@@ -87,7 +87,7 @@ object SyncTimeLogger {
                 mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
 
             if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl?.let { alternativeUrl ->
+                mapping.alternativeUrl!!.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = settings.edit()
 
