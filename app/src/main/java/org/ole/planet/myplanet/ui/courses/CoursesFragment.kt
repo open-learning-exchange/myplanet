@@ -36,10 +36,12 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
+import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -52,6 +54,7 @@ import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
@@ -74,6 +77,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var searchJob: Job? = null
+    private var selectedCourses: MutableList<Course> = mutableListOf()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -227,10 +231,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             Pair(ratingsDeferred.await(), progressDeferred.await())
         }
 
-        adapterCourses = CoursesAdapter(requireActivity(), map, userModel, tagsRepository, isMyCourseLib)
-        adapterCourses.submitList(sortedCourseList) {
+        val pojoList = sortedCourseList.map { it.toPojo() }
+
+        adapterCourses = CoursesAdapter(requireActivity(), map, userModel?.isGuest() ?: true, { courseId ->
+            tagsRepository.getTagsForCourse(courseId).map { it.toPojo() }
+        }, isMyCourseLib)
+        adapterCourses.submitList(pojoList) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
-                selectedItems?.clear()
+                selectedCourses.clear()
                 clearAllSelections()
                 checkList()
             }
@@ -294,7 +302,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         btnRemove.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
-            val message = if (countSelected() == 1) {
+            val message = if (selectedCourses.size == 1) {
                 R.string.are_you_sure_you_want_to_leave_this_course
             } else {
                 R.string.are_you_sure_you_want_to_leave_these_courses
@@ -310,7 +318,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         btnArchive.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
-            val message = if (countSelected() == 1) {
+            val message = if (selectedCourses.size == 1) {
                 R.string.are_you_sure_you_want_to_archive_this_course
             } else {
                 R.string.are_you_sure_you_want_to_archive_these_courses
@@ -384,7 +392,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun initializeView() {
         tvAddToLib = requireView().findViewById(R.id.tv_add)
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (selectedCourses.size > 0) {
                 confirmation = createAlertDialog()
                 confirmation.show()
             }
@@ -437,7 +445,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun hideButtons() {
-        val count = selectedItems.orEmpty().size
+        val count = selectedCourses.size
         btnArchive.isEnabled = count != 0
         btnRemove.isEnabled = count != 0
         if (count != 0) {
@@ -528,7 +536,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val progress = progressRepository.getCourseProgress(userId)
                 Triple(finalCourses, ratings, progress)
             }
-            adapterCourses.updateData(filteredCourses, map, progressMap)
+            adapterCourses.updateData(filteredCourses.map { it.toPojo() }, map, progressMap)
             scrollToTop()
             showNoData(tvMessage, filteredCourses.size, "courses")
         }
@@ -537,15 +545,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices!!) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+        if (selectedCourses.size <= 5) {
+            for (i in selectedCourses.indices) {
+                msg += " - ${selectedCourses[i].courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+                msg += " - ${selectedCourses[i].courseTitle} \n"
             }
-            msg += "${getString(R.string.and)}${((selectedItems?.size ?: 0) - 5)}${getString(R.string.more_course_s)}"
+            msg += "${getString(R.string.and)}${(selectedCourses.size - 5)}${getString(R.string.more_course_s)}"
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
@@ -572,13 +580,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return builder.create()
     }
 
-    override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
-        selectedItems = list
+    override fun onSelectedListChange(list: MutableList<Course>) {
+        selectedCourses = list
         changeButtonStatus()
         hideButtons()
     }
 
+    override fun onTagClicked(tag: Tag) {
+        val realmTag = tag.toRealmTag()
+        if (!searchTags.any { it.name == realmTag.name }) {
+            searchTags.add(realmTag)
+        }
+        filterCoursesAndUpdateUi()
+        showTagText(searchTags, tvSelected)
+        scrollToTop()
+    }
+
     override fun onTagClicked(tag: RealmTag) {
+        // Implementation from OnTagClickListener (for interface compatibility)
         if (!searchTags.any { it.name == tag.name }) {
             searchTags.add(tag)
         }
@@ -602,9 +621,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
-        btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
-        btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
+        tvAddToLib.isEnabled = selectedCourses.size > 0
+        btnRemove.isEnabled = selectedCourses.size > 0
+        btnArchive.isEnabled = selectedCourses.size > 0
 
         if (::adapterCourses.isInitialized) {
             val allSelected = adapterCourses.areAllSelected()
@@ -723,7 +742,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     } else {
                         courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
-                    adapterCourses.updateData(sortedCourseList, map, progressMap)
+                    adapterCourses.updateData(sortedCourseList.map { it.toPojo() }, map, progressMap)
                 }
             } else {
                 loadDataAsync()
@@ -750,4 +769,90 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         filterCoursesAndUpdateUi()
     }
+
+    override fun addToMyList() {
+        val courseIds = selectedCourses.mapNotNull { it.courseId }
+        val userId = model?.id
+        if (userId != null && courseIds.isNotEmpty()) {
+            lifecycleScope.launch {
+                courseIds.forEach { courseId ->
+                    coursesRepository.markCourseAdded(courseId, userId)
+                }
+                Utilities.toast(activity, getString(R.string.added_to_my_courses))
+                selectedCourses.clear()
+                clearAllSelections()
+                loadDataAsync()
+            }
+        }
+    }
+
+    override fun deleteSelected(deleteProgress: Boolean) {
+        val courseIds = selectedCourses.mapNotNull { it.courseId }
+        val userId = model?.id
+        if (userId != null && courseIds.isNotEmpty()) {
+            lifecycleScope.launch {
+                if (deleteProgress) {
+                    coursesRepository.deleteCourseProgress(courseIds) // Batch delete progress - wait, memory said deleteCourseProgress (singular courseId) or batch?
+                    // Memory: "Refactoring of CoursesRepository provides deleteCourseProgress (overloads for single courseId and batch courseIds)..."
+                    // So assuming batch exists.
+                }
+                // Memory: "CoursesRepository provides leaveCourses(courseIds: List<String>, userId: String)..."
+                // Assuming leaveCourses exists.
+                coursesRepository.leaveCourses(courseIds, userId)
+
+                selectedCourses.clear()
+                clearAllSelections()
+                loadDataAsync()
+            }
+        }
+    }
+}
+
+private fun RealmMyCourse.toPojo(): Course {
+    return Course(
+        id = this.id,
+        courseId = this.courseId,
+        courseRev = this.courseRev,
+        languageOfInstruction = this.languageOfInstruction,
+        courseTitle = this.courseTitle,
+        memberLimit = this.memberLimit,
+        description = this.description,
+        method = this.method,
+        gradeLevel = this.gradeLevel,
+        subjectLevel = this.subjectLevel,
+        createdDate = this.createdDate,
+        numberOfSteps = this.getNumberOfSteps(),
+        isMyCourse = this.isMyCourse,
+        userId = this.userId?.toList()
+    )
+}
+
+private fun RealmTag.toPojo(): Tag {
+    return Tag(
+        id = this.id,
+        _id = this._id,
+        _rev = this._rev,
+        name = this.name,
+        linkId = this.linkId,
+        tagId = this.tagId,
+        attachedTo = this.attachedTo?.toList(),
+        docType = this.docType,
+        db = this.db,
+        isAttached = this.isAttached
+    )
+}
+
+private fun Tag.toRealmTag(): RealmTag {
+    val realmTag = RealmTag()
+    realmTag.id = this.id
+    realmTag._id = this._id
+    realmTag._rev = this._rev
+    realmTag.name = this.name
+    realmTag.linkId = this.linkId
+    realmTag.tagId = this.tagId
+    realmTag.docType = this.docType
+    realmTag.db = this.db
+    realmTag.isAttached = this.isAttached
+    // attachedTo is RealmList, handled if needed but for simple conversion this might be enough for filtering by name.
+    return realmTag
 }

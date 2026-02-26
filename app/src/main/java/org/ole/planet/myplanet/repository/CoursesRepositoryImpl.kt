@@ -404,4 +404,44 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
     }
+
+    override suspend fun leaveCourses(courseIds: List<String>, userId: String) {
+        if (courseIds.isEmpty()) return
+        executeTransaction { realm ->
+            val courses = realm.where(RealmMyCourse::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .findAll()
+            courses.forEach { course ->
+                course.removeUserId(userId)
+                RealmRemovedLog.onRemove(realm, "courses", userId, course.courseId)
+            }
+        }
+        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+    }
+
+    override suspend fun deleteCourseProgress(courseIds: List<String>) {
+        if (courseIds.isEmpty()) return
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .findAll()
+                .deleteAllFromRealm()
+
+            val exams = realm.where(RealmStepExam::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .findAll()
+
+            if (exams.isNotEmpty()) {
+                val examIds = exams.mapNotNull { it.id }.toTypedArray()
+                if (examIds.isNotEmpty()) {
+                    realm.where(RealmSubmission::class.java)
+                        .`in`("parentId", examIds)
+                        .notEqualTo("type", "survey")
+                        .equalTo("uploaded", false)
+                        .findAll()
+                        .deleteAllFromRealm()
+                }
+            }
+        }
+    }
 }
