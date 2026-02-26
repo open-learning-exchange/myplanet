@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.android.application)
+    alias(libs.plugins.application)
     alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
