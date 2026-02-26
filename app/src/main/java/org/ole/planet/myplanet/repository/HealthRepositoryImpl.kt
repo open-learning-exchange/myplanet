@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -33,13 +35,15 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun initHealth(): RealmMyHealth {
-        val health = RealmMyHealth()
-        val profile = RealmMyHealth.RealmMyHealthProfile()
-        health.lastExamination = Date().time
-        health.userKey = AndroidDecrypter.generateKey()
-        health.profile = profile
-        return health
+    override suspend fun initHealth(): RealmMyHealth {
+        return withContext(Dispatchers.Default) {
+            val health = RealmMyHealth()
+            val profile = RealmMyHealth.RealmMyHealthProfile()
+            health.lastExamination = Date().time
+            health.userKey = AndroidDecrypter.generateKey()
+            health.profile = profile
+            health
+        }
     }
 
     override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
