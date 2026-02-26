@@ -44,7 +44,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
 
     @Inject
     lateinit var syncManager: SyncManager
