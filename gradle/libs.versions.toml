@@ -18,7 +18,7 @@ recyclerview = "1.4.0"
 securityCrypto = "1.1.0"
 slidingpanelayout = "1.2.0"
 workRuntime = "2.11.1"
-materialDialogs = "0.9.6.0"
+materialDialogs = "3.3.0"
 materialCalendarView = "1.9.2"
 glide = "5.0.5"
 photoView = "2.3.0"
@@ -71,7 +71,7 @@ recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "r
 security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 slidingpanelayout = { module = "androidx.slidingpanelayout:slidingpanelayout", version.ref = "slidingpanelayout" }
 work-runtime = { module = "androidx.work:work-runtime", version.ref = "workRuntime" }
-material-dialogs-commons = { module = "com.afollestad.material-dialogs:commons", version.ref = "materialDialogs" }
+material-dialogs-core = { module = "com.afollestad.material-dialogs:core", version.ref = "materialDialogs" }
 material-calendar-view = { module = "com.applandeo:material-calendar-view", version.ref = "materialCalendarView" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 glide-ksp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
