@@ -1,9 +1,9 @@
 plugins {
-    id 'com.android.application'
+    alias(libs.plugins.application)
     alias(libs.plugins.legacy.kapt)
-    id 'com.google.devtools.ksp'
-    id 'com.google.dagger.hilt.android'
-    id 'realm-android'
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.realm.android)
 }
 realm {
     syncEnabled = true
