@@ -271,6 +271,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupMyProgressButton()
         viewLifecycleOwner.lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
+            model = userModel
             searchTags = ArrayList()
             initializeView()
             setupButtonVisibility()
@@ -732,11 +733,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val allCourses = coursesRepository.getAllCourses()
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
                     val courseList = if (isMyCourseLib) {
-                        val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+                    val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
                         myCourses.forEach { it.isMyCourse = true }
                         myCourses.sortedBy { it.courseTitle }
                     } else {
-                        validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
+                    validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
                         validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
                     adapterCourses.updateData(courseList, map, progressMap)
