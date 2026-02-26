@@ -62,7 +62,8 @@ class ChatHistoryFragment : Fragment() {
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null

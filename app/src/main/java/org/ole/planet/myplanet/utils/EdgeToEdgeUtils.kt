@@ -37,8 +37,7 @@ object EdgeToEdgeUtils {
      * Extension function to set transparent system bars with proper SDK handling
      */
     private fun Window.setTransparentSystemBars() {
-        statusBarColor = Color.TRANSPARENT
-        navigationBarColor = Color.TRANSPARENT
+        WindowCompat.setDecorFitsSystemWindows(this, false)
     }
 
     /**
@@ -72,7 +71,6 @@ object EdgeToEdgeUtils {
         lightStatusBar: Boolean,
         lightNavigationBar: Boolean
     ) {
-        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
         activity.window.setTransparentSystemBars()
 
         val controller = WindowCompat.getInsetsController(activity.window, rootView)

@@ -10,7 +10,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
@@ -76,7 +78,8 @@ object SyncTimeLogger {
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             MainApplication.createLog("sync summary", summary)
             val updateUrl = "${settings.getString("serverURL", "")}"
-            val serverUrlMapper = ServerUrlMapper()
+            val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, ServerUrlMapperEntryPoint::class.java)
+            val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
