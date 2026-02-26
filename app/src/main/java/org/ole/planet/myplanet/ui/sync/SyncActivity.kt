@@ -25,6 +25,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.edit
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
@@ -655,7 +656,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (isConnected) {
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    lifecycleScope.launch {
+                    ProcessLifecycleOwner.get().lifecycleScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
@@ -666,7 +667,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
                 }
             }
-        }.launchIn(lifecycleScope)
+        }.launchIn(ProcessLifecycleOwner.get().lifecycleScope)
     }
 
     fun settingDialog() {
@@ -740,16 +741,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
-            customProgressDialog.dismiss()
-        }
-        if (::btnSignIn.isInitialized) {
-            showSnack(btnSignIn, success)
+        if (!isFinishing && !isDestroyed) {
+            if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
+                customProgressDialog.dismiss()
+            }
+            if (::btnSignIn.isInitialized) {
+                showSnack(btnSignIn, success)
+            }
+            if (::lblLastSyncDate.isInitialized) {
+                lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))} >>")
+            }
         }
         editor.putLong("lastUsageUploaded", Date().time).apply()
-        if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))} >>")
-        }
         syncFailed = false
     }
 
