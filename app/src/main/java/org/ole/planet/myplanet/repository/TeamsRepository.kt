@@ -30,7 +30,14 @@ data class JoinRequestNotification(
     val requestId: String
 )
 
+data class TeamUploadData(
+    val teamId: String?,
+    val serialized: JsonObject
+)
+
 interface TeamsRepository {
+    suspend fun getTeamsForUpload(): List<TeamUploadData>
+    suspend fun markTeamUploaded(teamId: String?, rev: String)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getShareableTeams(): List<RealmMyTeam>

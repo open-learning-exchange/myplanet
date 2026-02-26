@@ -184,43 +184,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
-        @JvmStatic
-        fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
-            val startTime = System.currentTimeMillis()
-            val syncedResources = mRealm.where(RealmMyLibrary::class.java)
-                .isNotNull("_rev")
-                .equalTo("isPrivate", false)
-                .findAll()
-            val ids = syncedResources.map { it.resourceId }.toTypedArray()
-
-            val idsToDelete = ids.filterNot { it in newIds }
-
-            if (idsToDelete.isEmpty()) {
-                Log.d("PerformanceTest", "removeDeletedResource: No resources to delete")
-                return
-            }
-
-            Log.d("PerformanceTest", "removeDeletedResource: Starting batch delete of ${idsToDelete.size} resources")
-
-            // Single transaction for all deletes - massive performance improvement
-            val deleteStartTime = System.currentTimeMillis()
-            mRealm.executeTransaction { realm ->
-                idsToDelete.forEach { id ->
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceId", id)
-                        .findAll()
-                        .deleteAllFromRealm()
-                }
-            }
-            val deleteEndTime = System.currentTimeMillis()
-
-            val totalTime = deleteEndTime - startTime
-            val transactionTime = deleteEndTime - deleteStartTime
-            Log.d("PerformanceTest", "removeDeletedResource: Completed in ${totalTime}ms (transaction: ${transactionTime}ms) for ${idsToDelete.size} items")
-            Log.d("PerformanceTest", "removeDeletedResource: Average ${totalTime / idsToDelete.size.coerceAtLeast(1)}ms per item")
-        }
-
         @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
