@@ -17,6 +17,7 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
     <LinearLayout
         android:id="@+id/lt1"
         android:layout_width="match_parent"
@@ -49,13 +50,13 @@
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:autofillHints=""
+                android:backgroundTint="@color/daynight_textColor"
                 android:drawablePadding="12dp"
                 android:hint="@string/first_name"
                 android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -80,13 +81,13 @@
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:autofillHints=""
+                android:backgroundTint="@color/daynight_textColor"
                 android:drawablePadding="12dp"
                 android:hint="@string/middle_name"
                 android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -111,13 +112,13 @@
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:autofillHints=""
+                android:backgroundTint="@color/daynight_textColor"
                 android:drawablePadding="12dp"
                 android:hint="@string/last_name"
                 android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
@@ -135,8 +136,8 @@
             android:id="@+id/ltEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1.2"
             android:layout_marginEnd="4dp"
+            android:layout_weight="1.2"
             android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
@@ -150,13 +151,13 @@
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:autofillHints=""
+                android:backgroundTint="@color/daynight_textColor"
                 android:drawablePadding="12dp"
                 android:hint="@string/email"
                 android:inputType="textEmailAddress"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -205,6 +206,7 @@
             android:text="@string/birth_date"
             android:textColor="@color/hint_color"
             android:textSize="12sp" />
+
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ltInputName"
             android:layout_width="match_parent"
@@ -239,6 +241,7 @@
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/ltDob" />
+
     <RadioGroup
         android:id="@+id/rdGender"
         android:layout_width="match_parent"
@@ -254,17 +257,18 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:buttonTint="@color/daynight_textColor"
             android:text="@string/male"
-            android:textColor="@color/daynight_textColor"
-            android:buttonTint="@color/daynight_textColor" />
+            android:textColor="@color/daynight_textColor" />
+
         <RadioButton
             android:id="@+id/rbFemale"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:buttonTint="@color/daynight_textColor"
             android:text="@string/female"
-            android:textColor="@color/daynight_textColor"
-            android:buttonTint="@color/daynight_textColor" />
+            android:textColor="@color/daynight_textColor" />
     </RadioGroup>
 
     <LinearLayout
@@ -280,18 +284,19 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:layout_marginStart="10dp"
+            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/languageTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
                 android:text="@string/language"
                 android:textColor="@color/hint_color"
-                android:layout_marginBottom="4dp"
                 android:textSize="12sp" />
+
             <Spinner
                 android:id="@+id/language"
                 android:layout_width="match_parent"
@@ -303,18 +308,19 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="8dp">
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/levelTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/gender"
+                android:layout_marginBottom="4dp"
+                android:text="@string/level"
                 android:textColor="@color/hint_color"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
+                android:textSize="12sp" />
+
             <Spinner
                 android:id="@+id/level"
                 android:layout_width="wrap_content"
@@ -345,6 +351,7 @@
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.MaterialComponents.Button"
@@ -352,11 +359,11 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
+            android:backgroundTint="@color/disable_color"
             android:contentDescription="@string/save"
             android:text="@string/cancel"
             android:textAllCaps="false"
             android:textColor="@color/md_black_1000"
-            android:textSize="12sp"
-            android:backgroundTint="@color/disable_color"/>
+            android:textSize="12sp" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
