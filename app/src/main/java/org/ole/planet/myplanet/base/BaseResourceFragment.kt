@@ -238,7 +238,7 @@ abstract class BaseResourceFragment : Fragment() {
             val user = profileDbHandler.getUserModel()
             val list = submissionsRepository.getPendingSurveys(user?.id)
             if (list.isEmpty()) return@launch
-            val exams = submissionsRepository.getExamMapForSubmissions(list)
+            val exams = submissionsRepository.getExamMap(list)
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")

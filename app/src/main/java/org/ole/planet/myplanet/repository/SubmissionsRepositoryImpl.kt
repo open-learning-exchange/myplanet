@@ -210,29 +210,15 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
-        executeTransaction { realm ->
+        val parentId = withRealm { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
-            val parentId = if (!courseId.isNullOrEmpty()) {
+            if (!courseId.isNullOrEmpty()) {
                 examId + "@" + courseId
             } else {
                 examId
             }
-            var sub = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo(
-                    "parentId",
-                    parentId,
-                )
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst()
-            sub = createSubmissionInternal(sub, realm)
-            sub.parentId = parentId
-            sub.userId = userId
-            sub.type = "survey"
-            sub.status = "pending"
-            sub.startTime = Date().time
         }
+        getOrCreateSubmission(userId, parentId)
     }
 
     override suspend fun saveSubmission(submission: RealmSubmission) {
@@ -685,26 +671,28 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getOrCreateSubmission(userId: String, parentId: String): RealmSubmission {
+    override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
         return databaseService.withRealmAsync { realm ->
-            val sub = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("parentId", parentId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst()
-
             var detachedSub: RealmSubmission? = null
             realm.executeTransaction { r ->
+                val sub = r.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", parentId)
+                    .sort("lastUpdateTime", Sort.DESCENDING)
+                    .equalTo("status", "pending")
+                    .findFirst()
+
                 val managedSub = createSubmissionInternal(sub, r)
+                if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
+                if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
+                if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
+                if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
+                if (managedSub.startTime == 0L) managedSub.startTime = Date().time
+
                 detachedSub = r.copyFromRealm(managedSub)
             }
             detachedSub!!
         }
-    }
-
-    override suspend fun getExamMapForSubmissions(submissions: List<RealmSubmission>): Map<String?, RealmStepExam> {
-        return getExamMap(submissions)
     }
 
     private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {

@@ -210,7 +210,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use SubmissionsRepository.getExamMapForSubmissions instead")
+        @Deprecated("Use SubmissionsRepository.getExamMap instead")
         fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
             val exams = HashMap<String?, RealmStepExam>()
             for (sub in submissions ?: emptyList()){
