@@ -54,6 +54,33 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        return withRealm { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .equalTo("updated", true)
+                .findAll()
+
+            teams.map { team ->
+                TeamUploadData(
+                    teamId = team._id,
+                    serialized = RealmMyTeam.serialize(team, realm)
+                )
+            }
+        }
+    }
+
+    override suspend fun markTeamUploaded(teamId: String?, rev: String) {
+        if (teamId.isNullOrBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()?.let { team ->
+                    team._rev = rev
+                    team.updated = false
+                }
+        }
+    }
+
     override suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String> {
         return runCatching {
             val teamId = AndroidDecrypter.generateIv()
