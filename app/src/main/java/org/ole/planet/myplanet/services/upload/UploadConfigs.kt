@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.services.upload
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -15,8 +17,12 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.ChatRepository
 
-object UploadConfigs {
+@Singleton
+class UploadConfigs @Inject constructor(
+    private val chatRepository: ChatRepository
+) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
         endpoint = "myplanet_activities",
@@ -210,7 +216,7 @@ object UploadConfigs {
         modelClass = RealmNews::class,
         endpoint = "news",
         queryBuilder = { query -> query },  // Upload all news items
-        serializer = UploadSerializer.Simple(RealmNews::serializeNews),
+        serializer = UploadSerializer.Simple(chatRepository::serializeNews),
         idExtractor = { it.id },
         dbIdExtractor = { it._id }  // Enables POST/PUT logic
     )

@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.PorterDuff
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.ContextThemeWrapper
@@ -173,10 +175,19 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val resIcon = ContextCompat.getDrawable(this, R.drawable.goonline)
         val connManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         val wifi = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+        val activeNetwork = connManager.activeNetwork
+        val capabilities = connManager.getNetworkCapabilities(activeNetwork)
+        val isWifiConnected = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val intent = Intent(Settings.Panel.ACTION_WIFI)
+            startActivity(intent)
+            return
+        }
+
         val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
         startActivity(intent)
-        if (mWifi?.isConnected == true) {
+        if (isWifiConnected) {
             wifi.isWifiEnabled = false
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
@@ -200,6 +211,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     private fun connectToWifi() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return
         val id = settings.getInt("LastWifiID", -1)
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         val netId: Int
