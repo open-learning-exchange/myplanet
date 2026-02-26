@@ -1,18 +1,11 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'com.google.devtools.ksp'
-apply plugin: 'com.google.dagger.hilt.android'
-apply plugin: 'realm-android'
-
 android {
     compileSdk = 36
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4724
-        versionName = "0.47.24"
+        versionCode = 4725
+        versionName = "0.47.25"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -29,7 +22,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
     flavorDimensions "mode"
     productFlavors {
         create("default") {
@@ -45,7 +37,6 @@ android {
             resValue "string", "app_version", "${defaultConfig.versionName}-lite"
         }
     }
-
     packagingOptions {
         resources {
             excludes += [
@@ -64,36 +55,25 @@ android {
         doNotStrip "**/libpl_droidsonroids_gif.so"
         doNotStrip "**/librealm-jni.so"
     }
-
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = '17'
-        freeCompilerArgs += ["-Xannotation-default-target=param-property"]
-    }
-
     lintOptions {
         abortOnError = false
     }
-
     namespace = 'org.ole.planet.myplanet'
-
     buildFeatures {
         viewBinding = true
         buildConfig = true
         dataBinding = true
         resValues = true
     }
-
     bundle {
         language {
             enableSplit = false
         }
     }
-
     def planetLearningUrl = project.findProperty('PLANET_LEARNING_URL') ?: ""
     def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
     def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
@@ -122,7 +102,6 @@ android {
     def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
     def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
-
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
         it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
@@ -154,18 +133,33 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-
+plugins {
+    alias(libs.plugins.application)
+    alias(libs.plugins.legacy.kapt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.realm.android)
+}
+realm {
+    syncEnabled = true
+}
+kapt {
+    correctErrorTypes = true
+}
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
+}
 repositories {
     mavenCentral()
     maven { url = uri("https://jitpack.io") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
     maven { url = uri("https://maven.google.com") }
 }
-
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
-
     implementation(libs.annotation)
     implementation(libs.appcompat)
     implementation(libs.cardview)
@@ -212,11 +206,4 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
-}
-realm {
-    syncEnabled = true
-}
-kapt {
-    correctErrorTypes = true
-    useBuildCache = true
 }
