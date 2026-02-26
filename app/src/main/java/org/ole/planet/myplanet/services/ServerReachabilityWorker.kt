@@ -35,7 +35,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     @AppPreferences private val preferences: SharedPreferences,
     private val uploadManager: UploadManager,
-    private val submissionsRepository: SubmissionsRepository
+    private val submissionsRepository: SubmissionsRepository,
+    private val serverUrlMapper: ServerUrlMapper
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -90,7 +91,6 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
     private suspend fun tryServerSwitch(serverUrl: String, isNetworkReconnection: Boolean) {
         try {
-            val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(serverUrl)
 
             if (mapping.alternativeUrl != null) {
@@ -155,7 +155,6 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
     private suspend fun checkAvailableServerAndUpload() {
         val updateUrl = "${preferences.getString("serverURL", "")}"
-        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         try {

@@ -41,7 +41,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     @param:AppPreferences private val preferences: SharedPreferences,
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val serverUrlMapper: ServerUrlMapper
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -172,7 +173,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         withContext(Dispatchers.IO) {
@@ -249,7 +249,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMinApk(url: String, pin: String): ConfigurationsRepository.ConfigurationResult {
-        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(url)
         val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
 
