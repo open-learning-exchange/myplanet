@@ -80,7 +80,8 @@ class MyHealthFragment : Fragment() {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var textWatcher: TextWatcher? = null

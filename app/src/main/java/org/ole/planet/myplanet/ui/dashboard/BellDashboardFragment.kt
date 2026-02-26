@@ -28,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
+import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
@@ -52,6 +53,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
 
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
+
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
     }
@@ -67,12 +71,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
-        binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
         viewLifecycleOwner.lifecycleScope.launch {
             user = profileDbHandler.getUserModel()
+            binding.cardProfileBell.txtCommunityName.text = user?.planetCode
+            user?.id?.let {
+                viewModel.loadCompletedCourses(it)
+            }
             if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
             }
@@ -118,7 +125,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
         val updateUrl = settings.getString("serverURL", "") ?: return
-        val mapping = ServerUrlMapper().processUrl(updateUrl)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
@@ -337,9 +344,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
-        user?.id?.let {
-            viewModel.loadCompletedCourses(it)
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {

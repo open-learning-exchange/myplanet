@@ -128,11 +128,11 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         adapter.submitList(currentTagDataList.toList())
     }
 
-    override fun onCheckboxTagSelected(tags: RealmTag) {
-        if (selectedItemsList.contains(tags)) {
-            selectedItemsList.remove(tags)
+    override fun onCheckboxTagSelected(tag: RealmTag) {
+        if (selectedItemsList.contains(tag)) {
+            selectedItemsList.remove(tag)
         } else {
-            selectedItemsList.add(tags)
+            selectedItemsList.add(tag)
         }
         currentTagDataList = buildTagDataList(list).toMutableList()
         adapter.submitList(currentTagDataList)
