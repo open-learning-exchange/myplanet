@@ -16,6 +16,62 @@ kotlin {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
+repositories {
+    mavenCentral()
+    maven { url = uri("https://jitpack.io") }
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+    maven { url = uri("https://maven.google.com") }
+}
+dependencies {
+    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation platform(libs.kotlin.bom)
+    implementation(libs.annotation)
+    implementation(libs.appcompat)
+    implementation(libs.cardview)
+    implementation(libs.constraintlayout)
+    implementation(libs.core.ktx)
+    implementation(libs.hilt.work)
+    ksp(libs.hilt.compiler)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.common)
+    implementation(libs.preference.ktx)
+    implementation(libs.recyclerview)
+    implementation(libs.security.crypto)
+    implementation(libs.slidingpanelayout)
+    implementation(libs.work.runtime)
+    implementation(libs.material.dialogs.commons)
+    implementation(libs.material.calendar.view)
+    implementation(libs.glide)
+    ksp(libs.glide.ksp)
+    implementation(libs.photoView)
+    implementation(libs.fab)
+    implementation(libs.mpAndroidChart)
+    implementation(libs.circular.progress.view)
+    implementation(libs.material)
+    implementation(libs.gson)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.toggle.button.group)
+    implementation(libs.materialdrawer) { transitive = true }
+    implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.circleimageview)
+    implementation(libs.pbkdf2)
+    implementation(libs.markwon.editor)
+    implementation(libs.markwon.image)
+    implementation(libs.markwon.html)
+    implementation(libs.markwon.ext.tables)
+    implementation(libs.osmdroid.android)
+    implementation(libs.kotlin.stdlib)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.android.gif.drawable)
+    implementation(libs.tink.android)
+    implementation(libs.webkit)
+}
 android {
     compileSdk = 36
     defaultConfig {
@@ -159,62 +215,4 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
-}
-
-repositories {
-    mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    maven { url = uri("https://maven.google.com") }
-}
-dependencies {
-    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
-    implementation platform(libs.kotlin.bom)
-
-    implementation(libs.annotation)
-    implementation(libs.appcompat)
-    implementation(libs.cardview)
-    implementation(libs.constraintlayout)
-    implementation(libs.core.ktx)
-    implementation(libs.hilt.work)
-    ksp(libs.hilt.compiler)
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.ui)
-    implementation(libs.media3.common)
-    implementation(libs.preference.ktx)
-    implementation(libs.recyclerview)
-    implementation(libs.security.crypto)
-    implementation(libs.slidingpanelayout)
-    implementation(libs.work.runtime)
-    implementation(libs.material.dialogs.commons)
-    implementation(libs.material.calendar.view)
-    implementation(libs.glide)
-    ksp(libs.glide.ksp)
-    implementation(libs.photoView)
-    implementation(libs.fab)
-    implementation(libs.mpAndroidChart)
-    implementation(libs.circular.progress.view)
-    implementation(libs.material)
-    implementation(libs.gson)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.android.compiler)
-    implementation(libs.toggle.button.group)
-    implementation(libs.materialdrawer) { transitive = true }
-    implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
-    implementation(libs.okhttp)
-    implementation(libs.circleimageview)
-    implementation(libs.pbkdf2)
-    implementation(libs.markwon.editor)
-    implementation(libs.markwon.image)
-    implementation(libs.markwon.html)
-    implementation(libs.markwon.ext.tables)
-    implementation(libs.osmdroid.android)
-    implementation(libs.kotlin.stdlib)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.android.gif.drawable)
-    implementation(libs.tink.android)
-    implementation(libs.webkit)
 }
