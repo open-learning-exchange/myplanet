@@ -42,7 +42,8 @@ class CoursesAdapter(
     private val context: Context,
     private val map: HashMap<String?, JsonObject>,
     private val isGuest: Boolean,
-    private val tagsProvider: suspend (String) -> List<Tag>
+    private val tagsProvider: suspend (String) -> List<Tag>,
+    var isMyCourseLib: Boolean = false
 ) : ListAdapter<Course, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<Course>(
         areItemsTheSame = { old, new -> old.courseId == new.courseId },
@@ -204,12 +205,17 @@ class CoursesAdapter(
     }
 
     private fun updateVisibilityForMyCourse(holder: CoursesViewHolder, course: Course) {
-        if (course.isMyCourse) {
-            holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
-            holder.rowCourseBinding.checkbox.visibility = View.GONE
-        } else {
+        if (isMyCourseLib) {
             holder.rowCourseBinding.isMyCourse.visibility = View.GONE
             holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
+        } else {
+            if (course.isMyCourse) {
+                holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
+                holder.rowCourseBinding.checkbox.visibility = View.GONE
+            } else {
+                holder.rowCourseBinding.isMyCourse.visibility = View.GONE
+                holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -271,9 +277,8 @@ class CoursesAdapter(
 
     private fun setupCheckbox(holder: CoursesViewHolder, course: Course, position: Int, isGuest: Boolean) {
         if (!isGuest) {
-            if (course.isMyCourse) {
-                holder.rowCourseBinding.checkbox.visibility = View.GONE
-            } else {
+            val showCheckbox = isMyCourseLib || !course.isMyCourse
+            if (showCheckbox) {
                 holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
                 holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
@@ -285,6 +290,8 @@ class CoursesAdapter(
                         listener?.onSelectedListChange(selectedItems)
                     }
                 }
+            } else {
+                holder.rowCourseBinding.checkbox.visibility = View.GONE
             }
         } else {
             holder.rowCourseBinding.checkbox.visibility = View.GONE

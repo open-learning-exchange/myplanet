@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -114,6 +114,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var settings: SharedPreferences
         @Inject
         lateinit var retryQueue: RetryQueue
+        @Inject
+        lateinit var databaseService: DatabaseService
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -279,7 +281,7 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             lifecycleScope.launch(Dispatchers.IO) {
-                                clearRealmDb()
+                                databaseService.clearAll()
                                 clearSharedPref()
                                 withContext(Dispatchers.Main) {
                                     restartApp()

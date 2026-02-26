@@ -239,7 +239,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             uploadManager.uploadResourceActivities("")
             uploadManager.uploadCourseActivities()
             uploadManager.uploadSearchActivity()
-            uploadManager.uploadTeams()
             uploadManager.uploadRating()
             uploadManager.uploadTeamTask()
             uploadManager.uploadMeetups()
