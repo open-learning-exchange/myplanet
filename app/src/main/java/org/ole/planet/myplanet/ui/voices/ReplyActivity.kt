@@ -156,6 +156,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
+    override fun addVideo(llVideo: ViewGroup?) {
+        // Video selection not supported in replies for now
+    }
+
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUser?) {
@@ -177,6 +181,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun getCurrentImageList(): RealmList<String> {
         return imageList
+    }
+
+    override fun getCurrentVideoList(): RealmList<String>? {
+        return null // Video selection not supported in replies for now
     }
 
     private fun handleImageSelection(url: Uri?) {

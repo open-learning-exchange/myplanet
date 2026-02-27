@@ -61,7 +61,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/add_image"
+            android:text="@string/add_media"
             android:theme="@style/PrimaryButton" />
     </LinearLayout>
 </LinearLayout>
