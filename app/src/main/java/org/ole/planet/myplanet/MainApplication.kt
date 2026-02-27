@@ -11,6 +11,8 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration as WorkManagerConfiguration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -30,21 +32,22 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.di.RetryQueueEntryPoint
+import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.StayOnlineWorker
 import org.ole.planet.myplanet.services.TaskNotificationWorker
-import org.ole.planet.myplanet.di.RetryQueueEntryPoint
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.ANRWatchdog
@@ -58,7 +61,10 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
     @Inject
     lateinit var databaseServiceProvider: Provider<DatabaseService>
     val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
@@ -75,6 +81,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+
+    @Inject
+    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
+
+    override val workManagerConfiguration: WorkManagerConfiguration
+        get() = WorkManagerConfiguration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
@@ -107,9 +121,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
+                    val model = userSessionManager.getUserModel()
                     databaseService.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = userSessionManager.userModel
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
                         model?.let { log.userId = it.id }
@@ -136,7 +150,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
-            val serverUrlMapper = ServerUrlMapper()
+            val entryPoint = EntryPointAccessors.fromApplication(context, ServerUrlMapperEntryPoint::class.java)
+            val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
@@ -326,9 +341,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         applicationScope.launch {
                             val canReachServer = isServerReachable(serverUrl)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                backgroundDownload(
-                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync()),
-                                    applicationContext
+                                resourceDownloadCoordinator.startBackgroundDownload(
+                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
                                 )
                             }
                         }

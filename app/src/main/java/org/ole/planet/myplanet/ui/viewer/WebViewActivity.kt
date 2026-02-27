@@ -6,8 +6,10 @@ import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
+import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -16,16 +18,37 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import java.io.File
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.WebViewSafety
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
     private lateinit var link: String
+    private val trustedHosts by lazy {
+        listOfNotNull(
+            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,8 +96,6 @@ class WebViewActivity : AppCompatActivity() {
             // File access settings - only allow for local resources
             allowFileAccess = isLocalResource
             allowContentAccess = false
-            allowFileAccessFromFileURLs = false
-            allowUniversalAccessFromFileURLs = false
             
             // Safe settings
             domStorageEnabled = true
@@ -89,24 +110,29 @@ class WebViewActivity : AppCompatActivity() {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
-            
-            // Disable save password
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                setSavePassword(false)
-            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
                 when (nightModeFlags) {
                     android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
-                        forceDark = WebSettings.FORCE_DARK_ON
+                        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, true)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            forceDark = WebSettings.FORCE_DARK_ON
+                        }
                         activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
                         activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
                         activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                     }
 
                     android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
-                        forceDark = WebSettings.FORCE_DARK_OFF
+                        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                            WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, false)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            forceDark = WebSettings.FORCE_DARK_OFF
+                        }
                         activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                         activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                     }
@@ -121,7 +147,7 @@ class WebViewActivity : AppCompatActivity() {
                 super.onPageStarted(view, url, favicon)
                 
                 // Validate URL before loading
-                if (!isUrlSafe(url)) {
+                if (!checkUrlSafety(url)) {
                     view.stopLoading()
                     finish()
                     return
@@ -142,7 +168,7 @@ class WebViewActivity : AppCompatActivity() {
                 val url = request?.url?.toString() ?: return true
                 
                 // Use our comprehensive URL safety check
-                return !isUrlSafe(url) // Block unsafe URLs, allow safe ones
+                return !checkUrlSafety(url) // Block unsafe URLs, allow safe ones
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -186,8 +212,8 @@ class WebViewActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
-                super.onReceivedError(view, errorCode, description, failingUrl)
+            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                super.onReceivedError(view, request, error)
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -202,57 +228,10 @@ class WebViewActivity : AppCompatActivity() {
         cookieManager.flush()
     }
     
-    private fun isUrlSafe(url: String): Boolean {
-        return try {
-            val uri = url.toUri()
-            when {
-                // Allow HTTPS URLs
-                uri.scheme == "https" -> true
-                
-                // Allow HTTP URLs only for trusted Planet servers
-                uri.scheme == "http" -> isTrustedPlanetServer(uri.host)
-                
-                // Allow file URLs only for local resources and only from app's directory
-                uri.scheme == "file" -> {
-                    val resourceId = intent.getStringExtra("RESOURCE_ID")
-                    if (resourceId != null) {
-                        val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
-                        url.startsWith("file://$appDir")
-                    } else {
-                        false
-                    }
-                }
-                // Block everything else
-                else -> false
-            }
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-    private fun isTrustedPlanetServer(host: String?): Boolean {
-        if (host == null) return false
-
-        val trustedUrls = listOfNotNull(
-            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
-        )
-
-        return trustedUrls.any { url ->
-            host == url || host.endsWith(".$url")
-        }
+    private fun checkUrlSafety(url: String): Boolean {
+        val resourceId = intent.getStringExtra("RESOURCE_ID")
+        val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
+        return WebViewSafety.isUrlSafe(url, trustedHosts, resourceId, appDir)
     }
 
     private fun setListeners() {
@@ -274,10 +253,11 @@ class WebViewActivity : AppCompatActivity() {
                 super.onReceivedTitle(view, sanitizedTitle)
             }
 
-            override fun onConsoleMessage(message: String?, lineNumber: Int, sourceID: String?) {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                 if (BuildConfig.DEBUG) {
-                    super.onConsoleMessage(message, lineNumber, sourceID)
+                    return super.onConsoleMessage(consoleMessage)
                 }
+                return true
             }
 
             override fun onShowFileChooser(

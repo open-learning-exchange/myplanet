@@ -2,8 +2,12 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.SupplicantState
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.Gson
@@ -14,6 +18,8 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -59,17 +65,18 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
-class SyncManager constructor(
-    @ApplicationContext private val context: Context,
+class SyncManager @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
-    @ApplicationScope private val syncScope: CoroutineScope
+    private val loginSyncManager: LoginSyncManager,
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
-    private var isSyncing = false
+    private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
@@ -84,7 +91,7 @@ class SyncManager constructor(
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
-        if (!isSyncing) {
+        if (isSyncing.compareAndSet(false, true)) {
             _syncStatus.value = SyncStatus.Idle
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
@@ -140,7 +147,7 @@ class SyncManager constructor(
         }
         cancelBackgroundSync()
         cancel(context, 111)
-        isSyncing = false
+        isSyncing.set(false)
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         listener = null
@@ -288,7 +295,7 @@ class SyncManager constructor(
 
             // Phase 4: Admin and finalization
             logger.startProcess("admin_sync")
-            LoginSyncManager.instance.syncAdmin()
+            loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -502,7 +509,7 @@ class SyncManager constructor(
             }
 
             logger.startProcess("admin_sync")
-            LoginSyncManager.instance.syncAdmin()
+            loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
             databaseService.withRealm { realm ->
@@ -522,16 +529,32 @@ class SyncManager constructor(
 
     private fun cleanupMainSync() {
         cancel(context, 111)
-        isSyncing = false
+        isSyncing.set(false)
     }
 
     private fun initializeSync() {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val wifiInfo = wifiManager.connectionInfo
-        if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-            settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+
+        if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+            var ssid: String? = null
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val wifiInfo = capabilities.transportInfo as? WifiInfo
+                ssid = wifiInfo?.ssid
+            } else {
+                val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                @Suppress("DEPRECATION")
+                val wifiInfo = wifiManager.connectionInfo
+                if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
+                    ssid = wifiInfo.ssid
+                }
+            }
+
+            if (ssid != null) {
+                settings.edit { putString("LastWifiSSID", ssid) }
+            }
         }
-        isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
 
@@ -627,67 +650,18 @@ class SyncManager constructor(
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        try {
-                            val chunkSize = 50  // Increased from 10 to reduce transaction count
-                            val chunks = validDocuments.chunked(chunkSize)
-                            val idsWeAreProcessing = validDocuments.map { it.second }
+                        val idsWeAreProcessing = validDocuments.map { it.second }
+                        val docs = validDocuments.map { it.first }
 
-                            val savedIds = mutableListOf<String>()
-                            val realmInsertStartTime = System.currentTimeMillis()
+                        val realmInsertStartTime = System.currentTimeMillis()
+                        val savedIds = resourcesRepository.batchInsertResources(docs)
+                        val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
+                        logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
 
-                            for ((chunkIndex, chunk) in chunks.withIndex()) {
-                                val chunkStartTime = System.currentTimeMillis()
-                                databaseService.withRealm { realm ->
-                                    realm.executeTransaction { realmTx ->
-                                        val chunkDocuments = JsonArray()
-                                        chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
-
-                                        val chunkIds = save(chunkDocuments, realmTx)
-                                        savedIds.addAll(chunkIds)
-                                    }
-                                }
-                                val chunkDuration = System.currentTimeMillis() - chunkStartTime
-                                if (chunkDuration > 500) {
-                                    logger.logDetail("resource_sync", "Batch $batchCount chunk $chunkIndex: Realm insert took ${chunkDuration}ms for ${chunk.size} docs")
-                                }
-                            }
-
-                            val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
-                            logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
-
-                            if (savedIds.isNotEmpty()) {
-                                val validIds = savedIds.filter { it.isNotBlank() }
-                                if (validIds.isNotEmpty()) {
-                                    newIds.addAll(validIds)
-                                    processedItems += validIds.size
-                                } else {
-                                    newIds.addAll(idsWeAreProcessing)
-                                    processedItems += idsWeAreProcessing.size
-                                }
-                            } else {
-                                newIds.addAll(idsWeAreProcessing)
-                                processedItems += idsWeAreProcessing.size
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-
-                            for ((doc, _) in validDocuments) {
-                                try {
-                                    databaseService.withRealm { realm ->
-                                        realm.executeTransaction { realmTx ->
-                                            val singleDocArray = JsonArray()
-                                            singleDocArray.add(doc)
-                                            val singleIds = save(singleDocArray, realmTx)
-                                            if (singleIds.isNotEmpty()) {
-                                                newIds.addAll(singleIds)
-                                                processedItems++
-                                            }
-                                        }
-                                    }
-                                } catch (e2: Exception) {
-                                    e2.printStackTrace()
-                                }
-                            }
+                        if (savedIds.isNotEmpty()) {
+                            val validIds = savedIds.filter { it.isNotBlank() }
+                            newIds.addAll(validIds)
+                            processedItems += validIds.size
                         }
                     }
 
@@ -716,8 +690,6 @@ class SyncManager constructor(
                 val cleanupStartTime = System.currentTimeMillis()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    val deletedCount = newIds.size - validNewIds.size
-                    Log.d("SyncPerf", "    Resources: Removing $deletedCount deleted resources")
                     resourcesRepository.removeDeletedResources(validNewIds)
                 }
                 val cleanupDuration = System.currentTimeMillis() - cleanupStartTime
@@ -746,7 +718,7 @@ class SyncManager constructor(
 
     private fun handleException(message: String?) {
         if (listener != null) {
-            isSyncing = false
+            isSyncing.set(false)
             MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
             _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")

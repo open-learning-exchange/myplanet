@@ -210,7 +210,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             })
             return
         } else if (source == "login") {
-            applicationScope.launch(Dispatchers.Main) {
+            applicationScope.launch(Dispatchers.IO) {
                 uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
             }
             return
@@ -218,14 +218,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        applicationScope.launch(Dispatchers.Main) {
+        applicationScope.launch(Dispatchers.IO) {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
             val activity = this@ProcessUserDataActivity
 
-            fun checkAllOperationsComplete() {
+            suspend fun checkAllOperationsComplete() {
                 if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    activity.runOnUiThread {
+                    withContext(Dispatchers.Main) {
                         if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()
                             Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
@@ -239,7 +239,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             uploadManager.uploadResourceActivities("")
             uploadManager.uploadCourseActivities()
             uploadManager.uploadSearchActivity()
-            uploadManager.uploadTeams()
             uploadManager.uploadRating()
             uploadManager.uploadTeamTask()
             uploadManager.uploadMeetups()
@@ -249,43 +248,54 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
             uploadToShelfService.uploadUserData {
                 uploadToShelfService.uploadHealth()
-                checkAllOperationsComplete()
+                applicationScope.launch {
+                    checkAllOperationsComplete()
+                }
             }
 
             uploadManager.uploadUserActivities(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
+                    applicationScope.launch {
+                        checkAllOperationsComplete()
+                    }
                 }
             })
 
             uploadManager.uploadExamResult(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
+                    applicationScope.launch {
+                        checkAllOperationsComplete()
+                    }
                 }
             })
 
             applicationScope.launch(Dispatchers.IO) {
                 val success = uploadManager.uploadFeedback()
-                withContext(Dispatchers.Main) {
-                    checkAllOperationsComplete()
-                }
+                checkAllOperationsComplete()
             }
 
             uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
+                    applicationScope.launch(Dispatchers.IO) {
+                        uploadManager.uploadTeams()
+                        checkAllOperationsComplete()
+                    }
                 }
             })
 
             uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
+                    applicationScope.launch {
+                        checkAllOperationsComplete()
+                    }
                 }
             })
 
             uploadManager.uploadActivities(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    checkAllOperationsComplete()
+                    applicationScope.launch {
+                        checkAllOperationsComplete()
+                    }
                 }
             })
         }
@@ -297,7 +307,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        this.settings = settings ?: appPreferences
+        this.settings = settings
         settings.edit {
             putString("userId", user?.id)
             putString("name", user?.name)
@@ -343,11 +353,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
-                val apiInterface = client?.create(ApiInterface::class.java)
+                val apiInterface = client.create(ApiInterface::class.java)
                 val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObject(UrlUtils.header, userDocUrl)
+                val response = apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
 
-                if (response?.isSuccessful == true && response.body() != null) {
+                if (response.isSuccessful && response.body() != null) {
                     val userDoc = response.body()
                     val derivedKey = userDoc?.get("derived_key")?.asString
                     val salt = userDoc?.get("salt")?.asString

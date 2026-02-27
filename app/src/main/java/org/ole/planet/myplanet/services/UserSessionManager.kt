@@ -38,10 +38,16 @@ class UserSessionManager @Inject constructor(
         }
     }
 
+    @Deprecated("Use getUserModel() suspend function instead")
     val userModel: RealmUser? get() = userRepository.getUserModel()
 
+    @Deprecated("Use getUserModel() suspend function instead")
     fun getUserModelCopy(): RealmUser? {
         return userRepository.getUserModel()
+    }
+
+    suspend fun getUserModel(): RealmUser? {
+        return userRepository.getUserModelSuspending()
     }
 
     fun onLogin() {
@@ -51,7 +57,7 @@ class UserSessionManager @Inject constructor(
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
         applicationScope.launch(Dispatchers.IO) {
             try {
-                val model = getUserModelCopy()
+                val model = getUserModel()
                 activitiesRepository.logLogin(
                     userId = model?.id,
                     userName = model?.name,
@@ -72,7 +78,8 @@ class UserSessionManager @Inject constructor(
     fun logoutAsync() {
         applicationScope.launch(Dispatchers.IO) {
             try {
-                activitiesRepository.logLogout(userModel?.name)
+                val model = getUserModel()
+                activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -107,7 +114,7 @@ class UserSessionManager @Inject constructor(
 
         applicationScope.launch(Dispatchers.IO) {
             try {
-                val model = getUserModelCopy()
+                val model = getUserModel()
                 if (model?.id?.startsWith("guest") == true) {
                     return@launch
                 }

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.submissions
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,8 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
-import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepositoryExporter
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -27,6 +26,8 @@ class SubmissionListFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
+    lateinit var submissionsRepositoryExporter: SubmissionsRepositoryExporter
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
@@ -91,7 +92,7 @@ class SubmissionListFragment : Fragment() {
     private fun generateSubmissionPdf(submissionId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
-            val file = submissionsRepository.generateSubmissionPdf(requireContext(), submissionId)
+            val file = submissionsRepositoryExporter.generateSubmissionPdf(requireContext(), submissionId)
             binding.progressBar.visibility = View.GONE
 
             if (file != null) {
@@ -106,7 +107,7 @@ class SubmissionListFragment : Fragment() {
     private fun generateReport(submissionIds: List<String>) {
         viewLifecycleOwner.lifecycleScope.launch {
             binding.progressBar.visibility = View.VISIBLE
-            val file = submissionsRepository.generateMultipleSubmissionsPdf(
+            val file = submissionsRepositoryExporter.generateMultipleSubmissionsPdf(
                 requireContext(),
                 submissionIds,
                 examTitle ?: "Submissions"

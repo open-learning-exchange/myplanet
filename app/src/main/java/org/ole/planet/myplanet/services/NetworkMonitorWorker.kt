@@ -1,18 +1,22 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-class NetworkMonitorWorker(
-    context: Context,
-    params: WorkerParameters
+@HiltWorker
+class NetworkMonitorWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -39,13 +43,13 @@ class NetworkMonitorWorker(
                 }
                 wasConnected = isConnected
             }
-            
+
             Result.success()
         } catch (e: Exception) {
             Result.retry()
         }
     }
-    
+
     private fun scheduleServerReachabilityCheck() {
         val inputData = Data.Builder()
             .putBoolean("network_reconnection_trigger", true)

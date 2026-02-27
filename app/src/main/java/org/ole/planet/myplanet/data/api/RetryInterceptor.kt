@@ -4,7 +4,6 @@ import android.content.Intent
 import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
@@ -35,9 +34,7 @@ class RetryInterceptor @Inject constructor(
                 putExtra("delay", delay)
             }
 
-            runBlocking {
-                broadcastService.sendBroadcast(intent)
-            }
+            broadcastService.trySendBroadcast(intent)
 
             try {
                 Thread.sleep(delay)

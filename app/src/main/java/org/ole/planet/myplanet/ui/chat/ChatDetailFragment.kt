@@ -43,8 +43,8 @@ import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ChatRequest
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
@@ -85,7 +85,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var chatApiService: ChatApiService
     @Inject
     lateinit var userRepository: UserRepository
-    private val serverUrlMapper = ServerUrlMapper()
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -206,7 +207,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.setText(getString(R.string.please_wait))
             customProgressDialog.show()
             try {
-                val messages = withContext(Dispatchers.Default) {
+                val messages = withContext(Dispatchers.IO) {
                     val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     val list = mutableListOf<ChatMessage>()
                     val limit = 20
@@ -589,8 +590,8 @@ class ChatDetailFragment : Fragment() {
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
             addProperty("title", query)
-            addProperty("createdTime", Date().time)
-            addProperty("updatedDate", "")
+            addProperty("createdDate", Date().time)
+            addProperty("updatedDate", Date().time)
 
             val conversationsArray = JsonArray()
             val conversationObject = JsonObject().apply {

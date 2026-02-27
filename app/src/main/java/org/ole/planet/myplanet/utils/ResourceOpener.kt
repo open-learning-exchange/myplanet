@@ -90,6 +90,18 @@ object ResourceOpener {
         activity.startActivity(intent)
     }
 
+    fun getResourceTypeIcon(localAddress: String?): Int {
+        val mimeType = Utilities.getMimeType(localAddress)
+        return when {
+            mimeType == null -> R.drawable.ic_folder
+            mimeType.startsWith("video") -> R.drawable.ic_play
+            mimeType.startsWith("image") -> R.drawable.ic_camera
+            mimeType.startsWith("audio") -> R.drawable.ic_mic
+            mimeType.contains("pdf") -> R.drawable.ic_folder
+            else -> R.drawable.ic_folder
+        }
+    }
+
     fun openFileType(activity: Activity, items: RealmMyLibrary, videoType: String, profileDbHandler: UserSessionManager) {
         val mimetype = Utilities.getMimeType(resourcePath(items))
         if (mimetype == null) {

@@ -11,7 +11,9 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlin.OptIn
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -22,6 +24,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -40,7 +43,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
-    @AppPreferences private val preferences: SharedPreferences,
+    @param:AppPreferences private val preferences: SharedPreferences,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
@@ -48,6 +51,33 @@ class TeamsRepositoryImpl @Inject constructor(
             notEqualTo("status", "archived")
                 .equalTo("completed", false)
                 .equalTo("assignee", userId)
+        }
+    }
+
+    override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        return withRealm { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .equalTo("updated", true)
+                .findAll()
+
+            teams.map { team ->
+                TeamUploadData(
+                    teamId = team._id,
+                    serialized = RealmMyTeam.serialize(team, realm)
+                )
+            }
+        }
+    }
+
+    override suspend fun markTeamUploaded(teamId: String?, rev: String) {
+        if (teamId.isNullOrBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()?.let { team ->
+                    team._rev = rev
+                    team.updated = false
+                }
         }
     }
 
@@ -107,6 +137,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
         return queryListFlow(RealmMyTeam::class.java) {
             equalTo("userId", userId)
@@ -142,12 +173,51 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
-        return if (resourceIds.isEmpty()) {
+        val linkedResources = if (resourceIds.isEmpty()) {
             emptyList()
         } else {
             queryList(RealmMyLibrary::class.java) {
                 `in`("resourceId", resourceIds.toTypedArray())
             }
+        }
+
+        // Also get private resources belonging to this team
+        val privateResources = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+            equalTo("privateFor", teamId)
+        }
+
+        return (linkedResources + privateResources).distinctBy { it.id }
+    }
+
+    override suspend fun getTeamCourses(teamId: String): List<RealmMyCourse> {
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId) ?: return emptyList()
+        val courseIds = team.courses?.toList() ?: return emptyList()
+
+        if (courseIds.isEmpty()) return emptyList()
+        val courses = queryList(RealmMyCourse::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+        }
+        return courses
+    }
+
+    override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>) {
+        if (courseIds.isEmpty()) {
+            return
+        }
+        executeTransaction { realm ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+            if (team == null) {
+                return@executeTransaction
+            }
+            courseIds.forEach { courseId ->
+                if (team.courses?.contains(courseId) != true) {
+                    team.courses?.add(courseId)
+                }
+            }
+            team.updated = true
         }
     }
 
@@ -256,6 +326,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
     override suspend fun getTeamTransactions(
         teamId: String,
         startDate: Long?,
@@ -652,7 +723,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (task.sync.isNullOrBlank()) {
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
-                addProperty("planetCode", userSessionManager.userModel?.planetCode)
+                addProperty("planetCode", userSessionManager.getUserModel()?.planetCode)
             }
             task.sync = gson.toJson(syncObj)
         }
@@ -859,6 +930,7 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
+                uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities(apiInterface)
             }
@@ -1082,5 +1154,21 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return successorMember?.userId?.let { id -> userMap[id] }
+    }
+
+    override suspend fun getTeamCreator(teamId: String): String? {
+        if (teamId.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
+    }
+
+    override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
+        val existing = getTeamResources(teamId)
+        val existingIds = existing.mapNotNull { it._id }
+
+        val allLibraryItems = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+
+        return allLibraryItems.filter { it._id !in existingIds }
     }
 }

@@ -4,11 +4,13 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import com.google.gson.JsonObject
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -18,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -25,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -33,10 +37,12 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    @param:AppPreferences private val settings: SharedPreferences,
     private val apiInterface: ApiInterface,
-    private val uploadToShelfService: UploadToShelfService,
-    @ApplicationContext private val context: Context
+    private val uploadToShelfService: Lazy<UploadToShelfService>,
+    @param:ApplicationContext private val context: Context,
+    private val configurationsRepository: ConfigurationsRepository,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -47,6 +53,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getUserModelSuspending() instead")
     override fun getCurrentUser(): RealmUser? {
         return getUserModel()
     }
@@ -77,6 +84,15 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
         return queryList(RealmUser::class.java) {
             sort(fieldName, sortOrder)
+        }
+    }
+
+    override suspend fun getPendingSyncUsers(limit: Int): List<RealmUser> {
+        return withRealm { realm ->
+            val results = realm.where(RealmUser::class.java)
+                .isEmpty("_id").or().equalTo("isUpdated", true)
+                .findAll()
+            realm.copyFromRealm(results.take(limit))
         }
     }
 
@@ -138,6 +154,19 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             managedUser?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun ensureUserSecurityKeys(userId: String): RealmUser? {
+        return withRealm { realm ->
+            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            if (user != null && (user.key == null || user.iv == null)) {
+                realm.executeTransaction {
+                    if (user.key == null) user.key = AndroidDecrypter.generateKey()
+                    if (user.iv == null) user.iv = AndroidDecrypter.generateIv()
+                }
+            }
+            if (user != null) realm.copyFromRealm(user) else null
         }
     }
 
@@ -230,6 +259,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getUserModelSuspending() instead")
     override fun getUserModel(): RealmUser? {
         val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
         return databaseService.withRealm { realm ->
@@ -265,17 +295,14 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
+    override suspend fun createMember(user: JsonObject): Pair<Boolean, String> {
+        return becomeMember(user)
+    }
+
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
         val userName = obj["name"]?.asString ?: "unknown"
 
-        val isAvailable = withContext(Dispatchers.IO) {
-            try {
-                val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(settings))
-                response.code() == 200
-            } catch (e: Exception) {
-                false
-            }
-        }
+        val isAvailable = configurationsRepository.checkServerAvailability()
 
         if (isAvailable) {
             return try {
@@ -296,7 +323,7 @@ class UserRepositoryImpl @Inject constructor(
                     if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
                         val id = createResponse.body()?.get("id")?.asString ?: ""
 
-                        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                        appScope.launch {
                             uploadToShelf(obj)
                         }
 
@@ -355,7 +382,7 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    uploadToShelfService.saveKeyIv(apiInterface, userModel, obj)
+                    uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
                 } catch (keyIvException: Exception) { }
                 Result.success(userModel)
             } else {
@@ -367,8 +394,13 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getActiveUserIdSuspending() instead")
     override fun getActiveUserId(): String {
         return getUserModel()?.id ?: ""
+    }
+
+    override suspend fun getActiveUserIdSuspending(): String {
+        return getUserModelSuspending()?.id ?: ""
     }
     override suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
@@ -379,6 +411,8 @@ class UserRepositoryImpl @Inject constructor(
             mh = realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
         }
         if (mh == null) return@withRealm null
+
+        val mhCopy = realm.copyFromRealm(mh)
 
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
         val mm = if (TextUtils.isEmpty(json)) {
@@ -396,7 +430,7 @@ class UserRepositoryImpl @Inject constructor(
         val healths = realm.where(RealmHealthExamination::class.java).equalTo("profileId", mm.userKey).findAll()
         val list = realm.copyFromRealm(healths)
         if (list.isEmpty()) {
-            return@withRealm HealthRecord(mh, mm, emptyList(), emptyMap())
+            return@withRealm HealthRecord(mhCopy, mm, emptyList(), emptyMap())
         }
 
         val userIds = list.mapNotNull {
@@ -411,7 +445,7 @@ class UserRepositoryImpl @Inject constructor(
             val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
             realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
         }
-        HealthRecord(mh, mm, list, userMap)
+        HealthRecord(mhCopy, mm, list, userMap)
     }
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
@@ -467,11 +501,11 @@ class UserRepositoryImpl @Inject constructor(
                 if (myHealth == null) {
                     myHealth = RealmMyHealth()
                 }
-                if (TextUtils.isEmpty(myHealth?.userKey)) {
-                    myHealth?.userKey = AndroidDecrypter.generateKey()
+                if (TextUtils.isEmpty(myHealth.userKey)) {
+                    myHealth.userKey = AndroidDecrypter.generateKey()
                 }
 
-                val profile = myHealth?.profile ?: RealmMyHealthProfile().also { myHealth?.profile = it }
+                val profile = myHealth.profile ?: RealmMyHealthProfile().also { myHealth.profile = it }
 
                 profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
                 val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
@@ -584,5 +618,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override fun hasAtLeastOneUser(): Boolean {
         return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+    }
+
+    override suspend fun hasUserSyncAction(userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+        val actions = queryList(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        }
+        return actions.isNotEmpty()
     }
 }

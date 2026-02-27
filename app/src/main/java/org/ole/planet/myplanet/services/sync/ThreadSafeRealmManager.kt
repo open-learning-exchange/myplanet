@@ -11,14 +11,14 @@ object ThreadSafeRealmManager {
         return try {
             // Get or create Realm instance for current thread
             val realm = threadLocalRealm.get() ?: run {
-                val newRealm = databaseService.realmInstance
+                val newRealm = databaseService.createManagedRealmInstance()
                 threadLocalRealm.set(newRealm)
                 newRealm
             }
-            
+
             if (realm.isClosed) {
                 // If realm is closed, create a new one
-                val newRealm = databaseService.realmInstance
+                val newRealm = databaseService.createManagedRealmInstance()
                 threadLocalRealm.set(newRealm)
                 operation(newRealm)
             } else {

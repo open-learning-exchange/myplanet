@@ -1,31 +1,29 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.FileUtils
 
-class FreeSpaceWorker(
-    context: Context,
-    workerParams: WorkerParameters
+@HiltWorker
+class FreeSpaceWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val resourcesRepository: ResourcesRepository
 ) : CoroutineWorker(context, workerParams) {
 
-    private lateinit var resourcesRepository: ResourcesRepository
-    private var totalFiles = 0
     private var deletedFiles = 0
     private var freedBytes = 0L
 
     override suspend fun doWork(): Result {
-        val entryPoint = EntryPointAccessors.fromApplication(applicationContext, WorkerDependenciesEntryPoint::class.java)
-        resourcesRepository = entryPoint.resourcesRepository()
-
         return try {
             setProgress(workDataOf("progress" to 0, "status" to "Starting cleanup..."))
 
@@ -33,9 +31,6 @@ class FreeSpaceWorker(
             resourcesRepository.markAllResourcesOffline(false)
 
             val rootFile = File(FileUtils.getOlePath(applicationContext))
-
-            // First count total files for progress calculation (optional, but good for percentage)
-            // For now, we will just report deleted count and size.
 
             withContext(Dispatchers.IO) {
                 deleteRecursive(rootFile)

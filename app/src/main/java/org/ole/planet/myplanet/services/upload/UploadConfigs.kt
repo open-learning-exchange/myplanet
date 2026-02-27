@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.services.upload
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -15,8 +17,12 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.ChatRepository
 
-object UploadConfigs {
+@Singleton
+class UploadConfigs @Inject constructor(
+    private val chatRepository: ChatRepository
+) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
         endpoint = "myplanet_activities",
@@ -98,7 +104,9 @@ object UploadConfigs {
     val Meetups = UploadConfig(
         modelClass = RealmMeetup::class,
         endpoint = "meetups",
-        queryBuilder = { query -> query },
+        queryBuilder = { query ->
+            query.isNull("meetupId").or().isEmpty("meetupId")
+        },
         serializer = UploadSerializer.Simple(RealmMeetup::serialize),
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
@@ -121,9 +129,14 @@ object UploadConfigs {
     val Feedback = UploadConfig(
         modelClass = RealmFeedback::class,
         endpoint = "feedback",
-        queryBuilder = { query -> query },
+        queryBuilder = { query ->
+            query.equalTo("isUploaded", false)
+        },
         serializer = UploadSerializer.Simple(RealmFeedback::serializeFeedback),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, feedback, _ ->
+            feedback.isUploaded = true
+        }
     )
 
     val CrashLog = UploadConfig(
@@ -203,7 +216,7 @@ object UploadConfigs {
         modelClass = RealmNews::class,
         endpoint = "news",
         queryBuilder = { query -> query },  // Upload all news items
-        serializer = UploadSerializer.Simple(RealmNews::serializeNews),
+        serializer = UploadSerializer.Simple(chatRepository::serializeNews),
         idExtractor = { it.id },
         dbIdExtractor = { it._id }  // Enables POST/PUT logic
     )

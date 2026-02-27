@@ -4,15 +4,22 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -21,16 +28,21 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 class ConfigurationsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
-    @ApplicationScope private val serviceScope: CoroutineScope,
-    @AppPreferences private val preferences: SharedPreferences
+    @param:ApplicationScope private val serviceScope: CoroutineScope,
+    @param:AppPreferences private val preferences: SharedPreferences,
+    private val databaseService: DatabaseService,
+    private val serverUrlMapper: ServerUrlMapper
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -44,7 +56,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.healthAccess(healthUrl)
+                    val response = withContext(Dispatchers.IO) { apiInterface.healthAccess(healthUrl) }
                     withContext(Dispatchers.Main) {
                         when (response.code()) {
                             200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
@@ -63,7 +75,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         is java.net.UnknownHostException -> "Server not reachable"
                         is java.net.SocketTimeoutException -> "Connection timeout"
                         is java.net.ConnectException -> "Unable to connect to server"
-                        is java.io.IOException -> "Network connection error"
+                        is IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
                     withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
@@ -76,7 +88,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, settings: SharedPreferences) {
+        val baseUrl = UrlUtils.baseUrl(settings)
+        if (baseUrl.isEmpty()) {
+            return
+        }
+
         serviceScope.launch {
+            withContext(Dispatchers.Main) {
+                callback.onCheckingVersion()
+            }
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
@@ -97,7 +117,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = fetchVersionInfo(settings)
+                val planetInfo = withContext(Dispatchers.IO) { fetchVersionInfo(settings) }
                 if (planetInfo == null) {
                     withContext(Dispatchers.Main) {
                         callback.onError(context.getString(R.string.version_not_found), true)
@@ -145,61 +165,268 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun checkServerAvailability(callback: ConfigurationsRepository.PlanetAvailableListener?) {
+    override suspend fun checkServerAvailability(): Boolean {
         val updateUrl = "${preferences.getString("serverURL", "")}"
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
-                if (available) {
-                    callback?.isAvailable()
-                } else {
-                    callback?.notAvailable()
-                }
-                return
+                return available
             }
         }
 
-        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        serviceScope.launch {
-            withContext(Dispatchers.IO) {
-                val primaryReachable = isServerReachable(mapping.primaryUrl)
-                val alternativeReachable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        withContext(Dispatchers.IO) {
+            val primaryReachable = checkServerAvailability(mapping.primaryUrl)
+            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
 
-                if (!primaryReachable && alternativeReachable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = preferences.edit()
+            if (!primaryReachable && alternativeReachable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = preferences.edit()
 
-                        serverUrlMapper.updateUrlPreferences(
-                            editor,
-                            uri,
-                            alternativeUrl,
-                            mapping.primaryUrl,
-                            preferences
-                        )
-                    }
-                }
-            }
-
-            try {
-                val response = apiInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))
-                val isAvailable = callback != null && response.code() == 200
-                serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                withContext(Dispatchers.Main) {
-                    if (isAvailable) {
-                        callback.isAvailable()
-                    } else {
-                        callback?.notAvailable()
-                    }
-                }
-            } catch (e: Exception) {
-                serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-                withContext(Dispatchers.Main) {
-                    callback?.notAvailable()
+                    serverUrlMapper.updateUrlPreferences(
+                        editor,
+                        uri,
+                        alternativeUrl,
+                        mapping.primaryUrl,
+                        preferences
+                    )
                 }
             }
         }
+
+        return try {
+            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(preferences))
+            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+            isAvailable
+        } catch (e: Exception) {
+            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+            false
+        }
+    }
+
+    override suspend fun clearAllData() {
+        databaseService.executeTransactionAsync { it.deleteAll() }
+    }
+
+    override suspend fun checkServerAvailability(url: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiInterface.isPlanetAvailable(url)
+                val code = response.code()
+                if (response.isSuccessful) {
+                    val ss = response.body()?.string()
+                    val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                    val dbCount = myList?.size ?: 0
+                    dbCount >= 8
+                } else {
+                    code == 401
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+
+    override suspend fun checkCheckSum(path: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))
+            if (response.isSuccessful) {
+                val checksum = response.body()?.string()
+                if (!checksum.isNullOrEmpty()) {
+                    val f = FileUtils.getSDPathFromUrl(context, path)
+                    if (f.exists()) {
+                        val sha256 = Sha256Utils().getCheckSumFromFile(f)
+                        return@withContext checksum.contains(sha256)
+                    }
+                }
+            }
+            false
+        } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override suspend fun getMinApk(url: String, pin: String): ConfigurationsRepository.ConfigurationResult {
+        val mapping = serverUrlMapper.processUrl(url)
+        val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
+
+        return try {
+            val deferreds = urlsToTry.map { currentUrl ->
+                serviceScope.async { checkConfigurationUrl(currentUrl, pin) }
+            }
+
+            val result = try {
+                val allResults = deferreds.awaitAll()
+                allResults.firstOrNull { it is UrlCheckResult.Success }
+                    ?: allResults.firstOrNull()
+                    ?: UrlCheckResult.Failure(url)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                UrlCheckResult.Failure(url)
+            }
+
+            when (result) {
+                is UrlCheckResult.Success -> {
+                    val isAlternativeUrl = result.url != url
+                    ConfigurationsRepository.ConfigurationResult.Success(result.id, result.code, result.url, url, isAlternativeUrl)
+                }
+                is UrlCheckResult.Failure -> {
+                    val errorMessage = when (NetworkUtils.extractProtocol(url)) {
+                        context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                        else -> context.getString(R.string.device_couldn_t_reach_local_server)
+                    }
+                    ConfigurationsRepository.ConfigurationResult.Failure(errorMessage, url)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
+        }
+    }
+
+    private suspend fun checkConfigurationUrl(currentUrl: String, pin: String): UrlCheckResult {
+        return try {
+            val versionsUrl = "$currentUrl/versions"
+
+            val versionsResponse = withTimeout(15_000) {
+                apiInterface.getConfiguration(versionsUrl)
+            }
+
+            if (versionsResponse.isSuccessful) {
+                val jsonObject = versionsResponse.body()
+                val minApkVersion = jsonObject?.get("minapk")?.asString
+                val currentVersion = context.getString(R.string.app_version)
+
+                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
+                    val couchdbURL = buildCouchdbUrl(currentUrl, pin)
+
+                    fetchConfiguration(couchdbURL)?.let { (id, code) ->
+                        return UrlCheckResult.Success(id, code, currentUrl)
+                    } ?: run {}
+                }
+            }
+            UrlCheckResult.Failure(currentUrl)
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
+            UrlCheckResult.Failure(currentUrl)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            UrlCheckResult.Failure(currentUrl)
+        }
+    }
+
+    private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
+        return try {
+            val configUrl = "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
+            val configResponse = withTimeout(15_000) {
+                apiInterface.getConfiguration(configUrl)
+            }
+
+            if (configResponse.isSuccessful) {
+                val rows = configResponse.body()?.getAsJsonArray("rows")
+
+                if (rows != null && rows.size() > 0) {
+                    val firstRow = rows[0].asJsonObject
+                    val id = firstRow.getAsJsonPrimitive("id").asString
+                    val doc = firstRow.getAsJsonObject("doc")
+                    val code = doc.getAsJsonPrimitive("code").asString
+                    processConfigurationDoc(doc)
+                    return Pair(id, code)
+                }
+            }
+            null
+        } catch (e: TimeoutCancellationException) {
+            e.printStackTrace()
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun processConfigurationDoc(doc: JsonObject) {
+        val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+
+        withContext(Dispatchers.IO) {
+            preferences.edit { putString("parentCode", parentCode) }
+        }
+
+        if (doc.has("preferredLang")) {
+            val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
+            val languageCode = getLanguageCodeFromName(preferredLang)
+            if (languageCode != null) {
+                withContext(Dispatchers.IO) {
+                    LocaleUtils.setLocale(context, languageCode)
+                    preferences.edit { putString("pendingLanguageChange", languageCode) }
+                }
+            }
+        }
+
+        if (doc.has("models")) {
+            val modelsMap = doc.getAsJsonObject("models").entrySet()
+                .associate { it.key to it.value.asString }
+
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
+            }
+        }
+
+        if (doc.has("planetType")) {
+            val planetType = doc.getAsJsonPrimitive("planetType").asString
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("planetType", planetType) }
+            }
+        }
+    }
+
+    private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
+        val uri = currentUrl.toUri()
+        return if (currentUrl.contains("@")) {
+            currentUrl
+        } else {
+            val urlUser = "satellite"
+            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+        }
+    }
+
+    private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
+        return compareVersions(currentVersion, minApkVersion) >= 0
+    }
+
+    private fun compareVersions(version1: String, version2: String): Int {
+        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
+        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
+
+        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
+            if (parts1[i] != parts2[i]) {
+                return parts1[i].compareTo(parts2[i])
+            }
+        }
+        return parts1.size.compareTo(parts2.size)
+    }
+
+    private fun getLanguageCodeFromName(languageName: String): String? {
+        return when (languageName.lowercase()) {
+            "english" -> "en"
+            "spanish", "español" -> "es"
+            "somali" -> "so"
+            "nepali" -> "ne"
+            "arabic", "العربية" -> "ar"
+            "french", "français" -> "fr"
+            else -> null
+        }
+    }
+
+    private fun getUrl(couchdbURL: String): String {
+        return UrlUtils.dbUrl(couchdbURL)
+    }
+
+    private sealed class UrlCheckResult {
+        data class Success(val id: String, val code: String, val url: String) : UrlCheckResult()
+        data class Failure(val url: String) : UrlCheckResult()
     }
 
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
@@ -261,17 +488,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 withContext(Dispatchers.Main) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                 }
-            }
-        }
-    }
-
-    private suspend fun isServerReachable(url: String): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = apiInterface.isPlanetAvailable(url)
-                response.isSuccessful
-            } catch (e: Exception) {
-                false
             }
         }
     }

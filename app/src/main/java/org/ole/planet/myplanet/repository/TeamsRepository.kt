@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -29,12 +30,21 @@ data class JoinRequestNotification(
     val requestId: String
 )
 
+data class TeamUploadData(
+    val teamId: String?,
+    val serialized: JsonObject
+)
+
 interface TeamsRepository {
+    suspend fun getTeamsForUpload(): List<TeamUploadData>
+    suspend fun markTeamUploaded(teamId: String?, rev: String)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getShareableTeams(): List<RealmMyTeam>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
+    suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
+    suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>)
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
@@ -138,4 +148,6 @@ interface TeamsRepository {
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
+    suspend fun getTeamCreator(teamId: String): String?
+    suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
 }

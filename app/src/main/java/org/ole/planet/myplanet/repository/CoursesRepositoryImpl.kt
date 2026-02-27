@@ -12,23 +12,29 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
+
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return queryList(RealmMyCourse::class.java) {}
+    }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
@@ -107,17 +113,17 @@ class CoursesRepositoryImpl @Inject constructor(
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val steps = course?.courseSteps
-            if (steps != null) realm.copyFromRealm(steps) else emptyList()
+            if (steps != null) java.util.Collections.unmodifiableList(realm.copyFromRealm(steps)) else emptyList()
         }
     }
 
-    override suspend fun getCourseStepIds(courseId: String): Array<String?> {
+    override suspend fun getCourseStepIds(courseId: String): List<String?> {
         if (courseId.isBlank()) {
-            return emptyArray()
+            return emptyList()
         }
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
+            course?.courseSteps?.map { it.id } ?: emptyList()
         }
     }
 
@@ -264,6 +270,7 @@ class CoursesRepositoryImpl @Inject constructor(
             course?.removeUserId(userId)
             RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
         }
+        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
     }
 
     override suspend fun isMyCourse(userId: String?, courseId: String?): Boolean {
@@ -380,23 +387,21 @@ class CoursesRepositoryImpl @Inject constructor(
         return intermediate.copy(userHasCourse = userHasCourse)
     }
 
-    override suspend fun deleteCourseProgress(courseId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", courseId)
+    override suspend fun getMyCourseIds(userId: String): JsonArray {
+        return withRealm { realm ->
+            val myCourses = realm.where(RealmMyCourse::class.java)
+                .equalTo("userId", userId)
                 .findAll()
-                .deleteAllFromRealm()
-            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java)
-                .equalTo("courseId", courseId)
-                .findAll()
-            for (exam in examList) {
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
+
+            val ids = JsonArray()
+            for (course in myCourses) {
+                ids.add(course.courseId)
             }
+            ids
         }
+    }
+
+    override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
+        leaveCourse(courseId, userId)
     }
 }

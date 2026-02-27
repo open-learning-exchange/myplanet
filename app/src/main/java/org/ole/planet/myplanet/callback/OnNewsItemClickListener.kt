@@ -13,6 +13,7 @@ interface OnNewsItemClickListener {
     fun clearImages()
     fun clearVideos() {}
     fun onDataChanged()
+    fun onReplyPosted(newsId: String?) { onDataChanged() }
     fun onMemberSelected(userModel: RealmUser?)
     fun getCurrentImageList(): RealmList<String>?
     fun getCurrentVideoList(): RealmList<String>?

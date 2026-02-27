@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
@@ -197,7 +197,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     scope = viewLifecycleOwner.lifecycleScope,
                     isTeamLeaderFn = { teamsRepository.isTeamLeader(teamId, user?._id) },
                     getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
                     deletePostFn = { newsId -> voicesRepository.deletePost(newsId, getEffectiveTeamName()) },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)

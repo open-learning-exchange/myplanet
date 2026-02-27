@@ -27,7 +27,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -36,6 +35,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
@@ -43,13 +43,10 @@ import org.ole.planet.myplanet.utils.FileUtils.getImagePath
 import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
     var user: RealmUser? = null
@@ -81,7 +78,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = userSessionManager.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -98,8 +94,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         id ?: return
         lifecycleScope.launch {
+            if (user == null) {
+                user = userSessionManager.getUserModel()
+            }
             val (news, list) = viewModel.getNewsWithReplies(id)
-            databaseService.withRealm { realm ->
+            if (!::newsAdapter.isInitialized) {
                 val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
                 newsAdapter = VoicesAdapter(
                     context = this@ReplyActivity,
@@ -111,7 +110,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     scope = lifecycleScope,
                     isTeamLeaderFn = { false },
                     getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplies(newsId).size },
+                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
                     deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                         voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
@@ -125,9 +124,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
-                newsAdapter.updateList(list)
                 activityReplyBinding.rvReply.adapter = newsAdapter
+            } else {
+                newsAdapter.updateParentNews(news)
             }
+            newsAdapter.updateList(list)
         }
     }
 

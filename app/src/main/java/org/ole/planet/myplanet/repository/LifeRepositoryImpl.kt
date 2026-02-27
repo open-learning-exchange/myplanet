@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
@@ -24,8 +25,26 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) :
     }
 
     override suspend fun getMyLifeByUserId(userId: String?): List<RealmMyLife> {
-        return queryList(RealmMyLife::class.java) {
+        return queryList(RealmMyLife::class.java, true) {
             equalTo("userId", userId)
         }.sortedBy { it.weight }
+    }
+
+    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<RealmMyLife>) {
+        executeTransaction { realm ->
+            val existing = realm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
+            if (existing.isEmpty()) {
+                var weight = 1
+                for (item in items) {
+                    val ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                    ml.title = item.title
+                    ml.imageId = item.imageId
+                    ml.weight = weight
+                    ml.userId = item.userId
+                    ml.isVisible = true
+                    weight++
+                }
+            }
+        }
     }
 }

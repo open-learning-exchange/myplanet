@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private lateinit var lifeAdapter: LifeAdapter
-    private var mItemTouchHelper: ItemTouchHelper? = null
+    private var itemTouchHelper: ItemTouchHelper? = null
     @Inject
     lateinit var lifeRepository: LifeRepository
     private var _binding: FragmentLifeBinding? = null
@@ -45,29 +45,34 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return view
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
                 myLife._id?.let { id ->
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        lifeRepository.updateVisibility(isVisible, id)
-                        withContext(Dispatchers.Main) {
-                            if (!isVisible) {
-                                Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
-                            } else {
-                                Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
-                            }
-                            refreshList()
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            lifeRepository.updateVisibility(isVisible, id)
                         }
+                        if (!isVisible) {
+                            Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
+                        } else {
+                            Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+                        }
+                        refreshList()
                     }
                 }
             },
             reorderCallback = { list ->
-                lifecycleScope.launch(Dispatchers.IO) {
-                    lifeRepository.updateMyLifeListOrder(list)
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        lifeRepository.updateMyLifeListOrder(list)
+                    }
                 }
             }
         )
+        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+        itemTouchHelper = ItemTouchHelper(callback)
+        itemTouchHelper?.attachToRecyclerView(recyclerView)
         return lifeAdapter
     }
 
@@ -76,18 +81,17 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         refreshList()
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        mItemTouchHelper = ItemTouchHelper(callback)
-        mItemTouchHelper?.attachToRecyclerView(recyclerView)
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
 
     private fun refreshList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = model?.id ?: profileDbHandler.userModel?.id
+            val userId = profileDbHandler.getUserModel()?.id
             val myLifeList = lifeRepository.getMyLifeByUserId(userId)
-            lifeAdapter.submitList(myLifeList)
+            if (::lifeAdapter.isInitialized) {
+                lifeAdapter.submitList(myLifeList)
+            }
         }
     }
 
@@ -97,6 +101,6 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {
-        viewHolder?.let { mItemTouchHelper?.startDrag(it) }
+        viewHolder?.let { itemTouchHelper?.startDrag(it) }
     }
 }

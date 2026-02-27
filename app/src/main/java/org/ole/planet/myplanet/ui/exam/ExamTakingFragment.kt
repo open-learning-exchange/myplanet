@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,8 +25,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
@@ -60,14 +57,14 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentExamTakingBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        user = userSessionManager.userModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initExam()
         viewLifecycleOwner.lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            initExam()
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
             val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
@@ -90,19 +87,25 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 if (type == "exam") {
                     clearAllExistingAnswers {
                         viewLifecycleOwner.lifecycleScope.launch {
-                            sub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, exam, type, if (isTeam) teamId else null
-                            )
-                            startExam(questions?.get(currentIndex))
-                            updateNavButtons()
+                            val currentExam = exam
+                            if (currentExam != null) {
+                                sub = submissionsRepository.createExamSubmission(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
+                                startExam(questions?.get(currentIndex))
+                                updateNavButtons()
+                            }
                         }
                     }
                 } else {
-                    sub = submissionsRepository.createExamSubmission(
-                        user?.id, user?.dob, user?.gender, exam, type, if (isTeam) teamId else null
-                    )
-                    startExam(questions?.get(currentIndex))
-                    updateNavButtons()
+                    val currentExam = exam
+                    if (currentExam != null) {
+                        sub = submissionsRepository.createExamSubmission(
+                            user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                        )
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    }
                 }
             } else {
                 binding.container.visibility = View.GONE

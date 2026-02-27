@@ -31,8 +31,8 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -70,7 +70,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        userModel = userSessionManager.userModel
         return binding.root
     }
 
@@ -80,6 +79,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         binding.contentLayout.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
+            userModel = userSessionManager.getUserModel()
             val course: RealmMyCourse? = courseId?.let { coursesRepository.getCourseById(it) }
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
@@ -368,7 +368,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private suspend fun getCourseProgress(): Int {
-        val user = userSessionManager.userModel
+        val user = userSessionManager.getUserModel()
         val courseProgressMap = progressRepository.getCourseProgress(user?.id)
         return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }

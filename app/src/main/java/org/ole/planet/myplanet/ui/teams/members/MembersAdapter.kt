@@ -21,15 +21,20 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class MembersAdapter(
     private val context: Context,
-    private val currentUserId: String?,
+    private var currentUserId: String?,
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
+
+    fun setUserId(userId: String?) {
+        this.currentUserId = userId
+        notifyDataSetChanged()
+    }
 
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(

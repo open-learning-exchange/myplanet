@@ -14,7 +14,7 @@ import retrofit2.Response
 @Singleton
 class ChatApiService @Inject constructor(
     private val apiInterface: ApiInterface,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
     suspend fun fetchAiProviders(): Map<String, Boolean>? {
         return try {

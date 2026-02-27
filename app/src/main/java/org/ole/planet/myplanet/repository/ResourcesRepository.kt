@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
@@ -15,6 +16,7 @@ interface ResourcesRepository {
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary>
     suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
     suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
+    suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary>
     suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
@@ -39,16 +41,20 @@ interface ResourcesRepository {
         mediums: Set<String>
     )
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
+    suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String)
     suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String)
     suspend fun getOpenedResourceIds(userId: String): Set<String>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
-    suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary>
+    suspend fun getDownloadSuggestionList(userId: String? = null): List<RealmMyLibrary>
     suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
     suspend fun removeDeletedResources(currentIds: List<String?>)
     suspend fun getMyLibIds(userId: String): JsonArray
+    suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
+    suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
+    suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
 }
 
 sealed class ResourceUrlsResponse {

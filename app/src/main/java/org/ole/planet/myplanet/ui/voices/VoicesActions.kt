@@ -143,6 +143,9 @@ object VoicesActions {
             return
         }
         val imagesToRemoveCopy = imagesToRemove.toSet()
+        imagesToRemove.clear()
+        dialog.dismiss()
+        listener?.clearImages()
         scope.launch {
             try {
                 if (isEdit) {
@@ -155,10 +158,7 @@ object VoicesActions {
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    imagesToRemove.clear()
-                    dialog.dismiss()
-                    listener?.clearImages()
-                    listener?.onDataChanged()
+                    if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
                     onSuccess()
                 }
             } catch (e: Exception) {

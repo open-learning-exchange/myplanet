@@ -1,17 +1,18 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
-apply plugin: 'com.google.devtools.ksp'
-apply plugin: 'dagger.hilt.android.plugin'
-apply plugin: 'realm-android'
+plugins {
+    alias(libs.plugins.application)
+    alias(libs.plugins.legacy.kapt)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.realm.android)
+}
 android {
     compileSdk = 36
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4540
-        versionName = "0.45.40"
+        versionCode = 4740
+        versionName = "0.47.40"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -28,19 +29,21 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-
     flavorDimensions "mode"
     productFlavors {
         create("default") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "false"
+            resValue "string", "app_version", "${defaultConfig.versionName}"
         }
         create("lite") {
             dimension "mode"
             buildConfigField "boolean", "LITE", "true"
+            // Use versionNameSuffix and resValue to avoid editing build.gradle and versions.xml in CI
+            versionNameSuffix "-lite"
+            resValue "string", "app_version", "${defaultConfig.versionName}-lite"
         }
     }
-
     packagingOptions {
         resources {
             excludes += [
@@ -56,35 +59,28 @@ android {
                 'META-INF/ASL2.0'
             ]
         }
+        doNotStrip "**/libpl_droidsonroids_gif.so"
+        doNotStrip "**/librealm-jni.so"
     }
-
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
         sourceCompatibility JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-
     lintOptions {
         abortOnError = false
     }
-
     namespace = 'org.ole.planet.myplanet'
-
     buildFeatures {
         viewBinding = true
         buildConfig = true
         dataBinding = true
+        resValues = true
     }
-
     bundle {
         language {
             enableSplit = false
         }
     }
-
     def planetLearningUrl = project.findProperty('PLANET_LEARNING_URL') ?: ""
     def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
     def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
@@ -113,7 +109,6 @@ android {
     def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
     def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
-
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
         it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
@@ -145,41 +140,33 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-
-tasks.register('generateVersionsXml') {
-    def versionNameProvider = project.provider { android.defaultConfig.versionName }
-    def versionsXmlFile = file('src/main/res/values/versions.xml')
-
-    inputs.property("versionName", versionNameProvider)
-    outputs.file(versionsXmlFile)
-
-    doLast {
-        versionsXmlFile.text = """<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_version">${versionNameProvider.get()}</string>
-</resources>"""
+realm {
+    syncEnabled = true
+}
+kapt {
+    correctErrorTypes = true
+}
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
-preBuild.dependsOn generateVersionsXml
-
 repositories {
     mavenCentral()
     maven { url = uri("https://jitpack.io") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
     maven { url = uri("https://maven.google.com") }
 }
-
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
-
     implementation(libs.annotation)
     implementation(libs.appcompat)
     implementation(libs.cardview)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
     implementation(libs.hilt.work)
-    kapt(libs.hilt.compiler)
+    ksp(libs.hilt.compiler)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)
     implementation(libs.media3.common)
@@ -199,8 +186,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.gson)
     implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
-    kapt(libs.kotlin.metadata.jvm)
+    ksp(libs.hilt.android.compiler)
     implementation(libs.toggle.button.group)
     implementation(libs.materialdrawer) { transitive = true }
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
@@ -218,11 +204,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.android.gif.drawable)
-}
-realm {
-    syncEnabled = true
-}
-kapt {
-    correctErrorTypes = true
-    useBuildCache = true
+    implementation(libs.tink.android)
+    implementation(libs.webkit)
 }

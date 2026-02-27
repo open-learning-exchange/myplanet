@@ -13,7 +13,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import io.realm.kotlin.where
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -146,19 +145,6 @@ open class RealmMyCourse : RealmObject() {
             settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 
-        @Deprecated("Use CoursesRepository.getCourseSteps instead")
-        fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
-            val myCourse = mRealm.where<RealmMyCourse>().equalTo("id", courseId).findFirst()
-            val courseSteps = myCourse?.courseSteps ?: emptyList()
-            return courseSteps
-        }
-
-        @Deprecated("Use CoursesRepository.getCourseStepIds instead")
-        fun getCourseStepIds(mRealm: Realm, courseId: String?): Array<String?> {
-            val course = mRealm.where<RealmMyCourse>().equalTo("courseId", courseId).findFirst()
-            val stepIds = course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
-            return stepIds
-        }
 
         private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
             if (stepContainer.has("exam")) {
@@ -281,6 +267,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
         fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
             val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
             val ids = JsonArray()
@@ -288,6 +275,44 @@ open class RealmMyCourse : RealmObject() {
                 ids.add(lib.courseId)
             }
             return ids
+        }
+
+        @JvmStatic
+        fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
+            val obj = JsonObject()
+            obj.addProperty("_id", course.courseId)
+            obj.addProperty("_rev", course.courseRev)
+            obj.addProperty("courseTitle", course.courseTitle)
+            obj.addProperty("description", course.description)
+            obj.addProperty("languageOfInstruction", course.languageOfInstruction)
+            obj.addProperty("gradeLevel", course.gradeLevel)
+            obj.addProperty("subjectLevel", course.subjectLevel)
+            obj.addProperty("createdDate", course.createdDate)
+            obj.addProperty("method", course.method)
+            obj.addProperty("memberLimit", course.memberLimit)
+
+            val stepsArray = JsonArray()
+            course.courseSteps?.forEach { step ->
+                val stepObj = JsonObject()
+                stepObj.addProperty("stepTitle", step.stepTitle)
+                stepObj.addProperty("description", step.description)
+                stepObj.addProperty("id", step.id)
+
+                val resourcesArray = JsonArray()
+                val stepResources = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("stepId", step.id)
+                    .equalTo("courseId", course.courseId)
+                    .findAll()
+
+                stepResources.forEach { resource ->
+                    resourcesArray.add(resource.serializeResource())
+                }
+                stepObj.add("resources", resourcesArray)
+                stepsArray.add(stepObj)
+            }
+            obj.add("steps", stepsArray)
+            obj.add("images", JsonArray())
+            return obj
         }
     }
 }

@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
-    private var mAdapter: FeedbackReplyAdapter? = null
+    private var replyAdapter: FeedbackReplyAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private var feedback: RealmFeedback? = null
     private lateinit var feedbackId: String
@@ -69,9 +69,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        mAdapter = FeedbackReplyAdapter(applicationContext)
-                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-                        mAdapter!!.submitList(it.messageList)
+                        replyAdapter = FeedbackReplyAdapter(applicationContext)
+                        activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
+                        replyAdapter!!.submitList(it.messageList)
                         updateForClosed()
                     }
                 }

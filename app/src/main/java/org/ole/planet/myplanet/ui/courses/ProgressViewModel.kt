@@ -22,7 +22,7 @@ class ProgressViewModel @Inject constructor(
 
     fun loadCourseData() {
         viewModelScope.launch {
-            val user = userSessionManager.userModel
+            val user = userSessionManager.getUserModel()
             _courseData.value = progressRepository.fetchCourseData(user?.id)
         }
     }

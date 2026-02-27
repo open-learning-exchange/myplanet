@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.util.Date
 import java.util.UUID
@@ -11,17 +13,15 @@ import javax.inject.Provider
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.QuestionAnswer
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmUser
-import io.realm.RealmList
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamReference
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
-    private val submissionsRepositoryExporter: SubmissionsRepositoryExporter,
     private val teamsRepositoryProvider: Provider<TeamsRepository>
 ) : RealmRepository(databaseService), SubmissionsRepository {
 
@@ -118,7 +117,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getExamMapForSubmissions(
+    override suspend fun getExamMap(
         submissions: List<RealmSubmission>
     ): Map<String?, RealmStepExam> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }.distinct()
@@ -427,18 +426,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return false
     }
 
-    override suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File? {
-        return submissionsRepositoryExporter.generateSubmissionPdf(context, submissionId)
-    }
-
-    override suspend fun generateMultipleSubmissionsPdf(
-        context: android.content.Context,
-        submissionIds: List<String>,
-        examTitle: String
-    ): java.io.File? {
-        return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
-    }
-
     override suspend fun addSubmissionPhoto(
         submissionId: String?,
         examId: String?,
@@ -460,7 +447,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam?, type: String?, teamId: String?): RealmSubmission? {
+    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam, type: String?, teamId: String?): RealmSubmission? {
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
         } else {
@@ -473,10 +460,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 val managedSub = createSubmission(null, r)
 
                 val parentId = when {
-                    !exam?.id.isNullOrEmpty() -> if (!exam?.courseId.isNullOrEmpty()) {
-                        "${exam?.id}@${exam?.courseId}"
+                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                        "${exam.id}@${exam.courseId}"
                     } else {
-                        exam?.id
+                        exam.id
                     }
                     else -> managedSub.parentId
                 }
@@ -484,13 +471,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
                 try {
                     val parentJsonString = com.google.gson.JsonObject().apply {
-                        addProperty("_id", exam?.id ?: "")
-                        addProperty("name", exam?.name ?: "")
-                        addProperty("courseId", exam?.courseId ?: "")
-                        addProperty("sourcePlanet", exam?.sourcePlanet ?: "")
-                        addProperty("teamShareAllowed", exam?.isTeamShareAllowed ?: false)
-                        addProperty("noOfQuestions", exam?.noOfQuestions ?: 0)
-                        addProperty("isFromNation", exam?.isFromNation ?: false)
+                        addProperty("_id", exam.id ?: "")
+                        addProperty("name", exam.name ?: "")
+                        addProperty("courseId", exam.courseId ?: "")
+                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                        addProperty("noOfQuestions", exam.noOfQuestions)
+                        addProperty("isFromNation", exam.isFromNation)
                     }.toString()
                     managedSub.parent = parentJsonString
                 } catch (e: Exception) {
@@ -650,6 +637,39 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         if (submissionId.isNullOrEmpty()) return
         update(RealmSubmission::class.java, "id", submissionId) { submission ->
             submission.status = status
+        }
+    }
+
+    override suspend fun getExamByStepId(stepId: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "stepId", stepId)
+    }
+
+    override suspend fun getExamById(id: String): RealmStepExam? {
+        return findByField(RealmStepExam::class.java, "id", id)
+    }
+
+    override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
+        return withRealm { realm ->
+            val data = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
+            if (data.isEmpty()) {
+                emptyList()
+            } else {
+                data.map { photo ->
+                    Pair(photo.id, RealmSubmitPhotos.serializeRealmSubmitPhotos(photo))
+                }
+            }
+        }
+    }
+
+    override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
+        executeTransaction { transactionRealm ->
+            transactionRealm.where(RealmSubmitPhotos::class.java)
+                .equalTo("id", photoId)
+                .findFirst()?.let { sub ->
+                    sub.uploaded = true
+                    sub._rev = rev
+                    sub._id = id
+                }
         }
     }
 }

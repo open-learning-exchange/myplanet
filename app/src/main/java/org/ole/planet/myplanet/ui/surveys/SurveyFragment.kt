@@ -8,56 +8,42 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
-import org.ole.planet.myplanet.utils.DialogUtils
 
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
-    private lateinit var adapter: SurveysAdapter
+    private var adapter: SurveysAdapter? = null
+    private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
-    private var currentIsTeamShareAllowed: Boolean = false
-    lateinit var prefManager: SharedPrefManager
-    private val serverUrlMapper = ServerUrlMapper()
-    private var loadSurveysJob: Job? = null
-    private var currentSurveys: List<RealmStepExam> = emptyList()
+    private lateinit var prefManager: SharedPrefManager
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
     private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private var textWatcher: TextWatcher? = null
+    private val viewModel: SurveysViewModel by viewModels()
 
-    @Inject
-    lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
-    private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
-    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    private val adapterMutex = Mutex()
 
     override fun getLayout(): Int = R.layout.fragment_survey
 
@@ -75,101 +61,32 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        val userProfileModel = profileDbHandler.userModel
-        adapter = SurveysAdapter(
-            requireActivity(),
-            userProfileModel?.id,
-            isTeam,
-            teamId,
-            this,
-            surveyInfoMap,
-            bindingDataMap
-        )
         prefManager = SharedPrefManager(requireContext())
         
-        startExamSync()
-    }
-
-    private fun startExamSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isExamsSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                launchWhenViewIsReady {
-                    if (!requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing surveys...")
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                prefManager.setExamsSynced(true)
-                val job = launchWhenViewIsReady {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
-                    updateAdapterData(isTeamShareAllowed = false)
-                }
-                if (job == null) {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                val job = launchWhenViewIsReady {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
-                    _binding?.let { binding ->
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startExamSync() }
-                            .show()
-                    }
-                }
-                if (job == null) {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
-                }
-            }
-        }, "full", listOf("exams"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
-        }
+        viewModel.startExamSync()
     }
 
     override fun onAdoptSurvey(surveyId: String) {
-        val userProfileModel = profileDbHandler.userModel
-        lifecycleScope.launch {
-            try {
-                surveysRepository.adoptSurvey(surveyId, userProfileModel?.id, teamId, isTeam)
-                Snackbar.make(binding.root, getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-                binding.rbTeamSurvey.isChecked = true
-                updateAdapterData(isTeamShareAllowed = false)
-            } catch (e: Exception) {
-                Snackbar.make(binding.root, getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-            }
-        }
+        viewModel.adoptSurvey(surveyId)
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> = adapter
+    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+        adapterMutex.withLock {
+            if (adapter == null) {
+                val userProfileModel = profileDbHandler.getUserModel()
+                adapter = SurveysAdapter(
+                    requireActivity(),
+                    userProfileModel?.id,
+                    isTeam,
+                    teamId,
+                    this@SurveyFragment,
+                    surveyInfoMap,
+                    bindingDataMap
+                )
+            }
+        }
+        return adapter!!
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -179,21 +96,25 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                applySearchFilter()
+                viewModel.search(s.toString())
             }
 
             override fun afterTextChanged(s: Editable) {}
         }
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
+        viewLifecycleOwner.lifecycleScope.launch {
+            recyclerView.adapter = getAdapter()
+        }
         setupRecyclerView()
         setupListeners()
-        updateAdapterData(isTeamShareAllowed = false)
+        viewModel.loadSurveys(isTeam, teamId, false)
         showHideRadioButton()
+        setupObservers()
     }
 
     override fun onResume() {
         super.onResume()
-        updateAdapterData(currentIsTeamShareAllowed)
+        viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
     }
 
     private fun showHideRadioButton() {
@@ -213,7 +134,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     private fun setupRecyclerView() {
         recyclerView.setHasFixedSize(true)
-        recyclerView.adapter = adapter
     }
 
     private fun setupListeners() {
@@ -227,9 +147,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                     return
                 }
                 when (i) {
-                    0 -> adapter.sortByDate(false)
-                    1 -> adapter.sortByDate(true)
-                    2 -> adapter.toggleTitleSortOrder()
+                    0 -> viewModel.sort(SurveysViewModel.SortOption.DATE_DESC)
+                    1 -> viewModel.sort(SurveysViewModel.SortOption.DATE_ASC)
+                    2 -> {
+                        viewModel.toggleTitleSort()
+                    }
                 }
                 recyclerView.scrollToPosition(0)
             }
@@ -239,7 +161,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
         binding.spnSort.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                if (i == 2) adapter.toggleTitleSortOrder()
+                if (i == 2) {
+                    viewModel.toggleTitleSort()
+                }
                 recyclerView.scrollToPosition(0)
             }
 
@@ -247,94 +171,68 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         })
 
         binding.rbAdoptSurvey.setOnClickListener {
-            updateAdapterData(isTeamShareAllowed = true)
+            viewModel.loadSurveys(isTeam, teamId, true)
             recyclerView.scrollToPosition(0)
         }
 
         binding.rbTeamSurvey.setOnClickListener {
-            updateAdapterData(isTeamShareAllowed = false)
+            viewModel.loadSurveys(isTeam, teamId, false)
             recyclerView.scrollToPosition(0)
         }
     }
 
-    private fun search(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmStepExam>()
-        val containsQuery = mutableListOf<RealmStepExam>()
-
-        for (item in list) {
-            val title = item.name?.let { normalizeText(it) } ?: continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(item)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
-                containsQuery.add(item)
-            }
-        }
-        return startsWithQuery + containsQuery
-    }
-
-    fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
-        val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
-        currentIsTeamShareAllowed = useTeamShareAllowed
-        val userProfileModel = profileDbHandler.userModel
-        loadSurveysJob?.cancel()
-        loadSurveysJob = viewLifecycleOwner.lifecycleScope.launch {
-            binding.loadingSpinner.visibility = View.VISIBLE
-            try {
-                val currentSurveysList = when {
-                    isTeam && useTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
-                    else -> surveysRepository.getIndividualSurveys()
-                }
-                val surveyInfos = surveysRepository.getSurveyInfos(
-                    isTeam,
-                    teamId,
-                    userProfileModel?.id,
-                    currentSurveysList
-                )
-                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
-
-                currentSurveys = currentSurveysList.sortedByDescending { survey ->
-                    if (survey.sourceSurveyId != null) {
-                        if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
-                    } else {
-                        survey.createdDate
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            launch {
+                viewModel.surveys.collect { surveys ->
+                    (getAdapter() as SurveysAdapter).submitList(surveys) {
+                        updateUIState()
                     }
                 }
-                surveyInfoMap.clear()
-                surveyInfoMap.putAll(surveyInfos)
-                bindingDataMap.clear()
-                bindingDataMap.putAll(bindingData)
-                binding.spnSort.setSelection(0, false)
-                applySearchFilter()
-            } finally {
-                if (isAdded && _binding != null) {
-                    binding.loadingSpinner.visibility = View.GONE
+            }
+            launch {
+                viewModel.surveyInfos.collect { infos ->
+                    surveyInfoMap.clear()
+                    surveyInfoMap.putAll(infos)
                 }
             }
-        }
-    }
-
-    private fun applySearchFilter() {
-        val searchText = _binding?.layoutSearch?.etSearch?.text?.toString().orEmpty()
-        val list = if (searchText.isNotEmpty()) {
-            search(searchText, currentSurveys)
-        } else {
-            currentSurveys
-        }
-        adapter.submitList(list) {
-            updateUIState()
-            if (searchText.isNotEmpty()) {
-                recyclerView.scrollToPosition(0)
+            launch {
+                viewModel.bindingData.collect { data ->
+                    bindingDataMap.clear()
+                    bindingDataMap.putAll(data)
+                }
+            }
+            launch {
+                viewModel.isLoading.collect { isLoading ->
+                    binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+                }
+            }
+            launch {
+                viewModel.errorMessage.collect { message ->
+                    message?.let {
+                        Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                    }
+                }
+            }
+            launch {
+                viewModel.userMessage.collect { message ->
+                    message?.let {
+                        Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                        if (it == "Survey adopted successfully") {
+                             binding.rbTeamSurvey.isChecked = true
+                        }
+                    }
+                }
             }
         }
     }
 
     private fun updateUIState() {
-        val itemCount = adapter.itemCount
-        _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
-        showNoData(tvMessage, itemCount, "survey")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val itemCount = getAdapter().itemCount
+            _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
+            showNoData(tvMessage, itemCount, "survey")
+        }
     }
 
     override fun getWatchedTables(): List<String> {
@@ -343,7 +241,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "exams" && update.shouldRefreshUI) {
-            updateAdapterData(currentIsTeamShareAllowed)
+            viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
         }
     }
 
@@ -354,21 +252,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override fun onDestroyView() {
-        loadSurveysJob?.cancel()
-        loadSurveysJob = null
-        currentSurveys = emptyList()
         _binding?.layoutSearch?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
         super.onDestroyView()
         _binding = null
-    }
-
-    private fun launchWhenViewIsReady(block: suspend CoroutineScope.() -> Unit): Job? {
-        val owner = viewLifecycleOwnerLiveData.value ?: return null
-        return owner.lifecycleScope.launch {
-            if (!isAdded || _binding == null) return@launch
-            block()
-        }
     }
 
 }

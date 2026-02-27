@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.databinding.VideoThumbBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
@@ -42,7 +43,6 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
@@ -120,6 +120,10 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
     override fun onDataChanged() {
         adapterNews?.refreshCurrentItems()
+    }
+
+    override fun onReplyPosted(newsId: String?) {
+        adapterNews?.updateReplyBadge(newsId)
     }
 
     override fun onAttach(context: Context) {

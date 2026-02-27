@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 
 class RequestsAdapter(
     private val context: Context,
-    private val currentUser: RealmUser,
+    private var currentUser: RealmUser,
     private val onAction: (RealmUser, Boolean) -> Unit
 ) : ListAdapter<RealmUser, RequestsAdapter.ViewHolderUser>(MWC_DIFF_CALLBACK) {
     companion object {
@@ -32,6 +32,11 @@ class RequestsAdapter(
         teamLeader = isLeader
         joinedTeamMembers = memberCount
         submitList(members)
+    }
+
+    fun setUser(user: RealmUser) {
+        this.currentUser = user
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {

@@ -22,10 +22,10 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 class SurveysRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val userSessionManager: UserSessionManager,
-    @DefaultPreferences private val settings: SharedPreferences,
+    @param:DefaultPreferences private val settings: SharedPreferences,
 ) : RealmRepository(databaseService), SurveysRepository {
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
@@ -34,12 +34,12 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
+        val userModel = userSessionManager.getUserModel()
         databaseService.withRealmAsync { realm ->
             realm.executeTransaction { transactionRealm ->
                 val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
                     .findFirst() ?: return@executeTransaction
 
-                val userModel = userSessionManager.userModel
                 val sParentCode = settings.getString("parentCode", "")
                 val planetCode = settings.getString("planetCode", "")
 

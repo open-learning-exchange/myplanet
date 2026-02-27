@@ -3,10 +3,12 @@ package org.ole.planet.myplanet.services
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,24 +18,20 @@ import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils
 
-class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
+    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService
+) : CoroutineWorker(context, workerParams) {
+
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-    private val apiInterface: ApiInterface by lazy {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
-    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -48,7 +46,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             val urls = urlSet.toTypedArray()
             DownloadUtils.createChannels(context)
 
-            showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads))
+            showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads), -1)
 
             var completedCount = 0
             val results = mutableListOf<Boolean>()
@@ -59,7 +57,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                     results.add(success)
                     completedCount++
 
-                    showProgressNotification(completedCount, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"))
+                    showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -97,6 +95,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         val fileSize = body.contentLength()
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
         var totalBytes: Long = 0
+        var lastUpdateTime = 0L
 
         outputFile.sink().buffer().use { sink ->
             body.source().use { source ->
@@ -107,11 +106,13 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                     sink.write(buffer, read)
                     totalBytes += read
 
-                    if (totalBytes % (1024 * 100) == 0L) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
                         val progress = if (fileSize > 0) {
                             (totalBytes * 100 / fileSize).toInt()
-                        } else 0
-                        showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
+                        } else -1
+                        showProgressNotification(index, total, getFileNameFromUrl(url), progress)
+                        lastUpdateTime = now
                     }
                 }
                 sink.flush()
@@ -120,24 +121,21 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         DownloadUtils.updateResourceOfflineStatus(url)
     }
 
-    private suspend fun showProgressNotification(current: Int, total: Int, text: String) {
+    private suspend fun showProgressNotification(current: Int, total: Int, fileName: String, fileProgress: Int = -1) {
+        val text = if (fileProgress in 0..100) {
+            "$fileName ($fileProgress%)"
+        } else {
+            fileName
+        }
         val notification = DownloadUtils.buildProgressNotification(
-            context,
-            current,
-            total,
-            text,
-            forWorker = true
+            context, current + 1, total, text, forWorker = true, fileProgress = fileProgress
         )
         setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
     }
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {
         val notification = DownloadUtils.buildCompletionNotification(
-            context,
-            completed,
-            total,
-            hadErrors,
-            forWorker = true
+            context, completed, total, hadErrors, forWorker = true
         )
 
         notificationManager.notify(COMPLETION_NOTIFICATION_ID, notification)
@@ -159,13 +157,12 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        val broadcastService = getBroadcastService(applicationContext)
         broadcastService.sendBroadcast(intent)
     }
-
 
     companion object {
         const val WORKER_NOTIFICATION_ID = 3
         const val COMPLETION_NOTIFICATION_ID = 4
+        private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
     }
 }

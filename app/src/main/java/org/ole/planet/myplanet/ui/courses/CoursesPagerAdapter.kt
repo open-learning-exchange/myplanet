@@ -15,6 +15,9 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?, private v
             f = CourseStepFragment()
             b.putString("stepId", steps[position - 1])
             b.putInt("stepNumber", position)
+            if (position < steps.size) {
+                b.putString("nextStepId", steps[position])
+            }
         }
         f.arguments = b
         return f

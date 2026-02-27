@@ -6,7 +6,6 @@ import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import androidx.recyclerview.widget.LinearLayoutManager
 import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -15,13 +14,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -33,10 +32,9 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
@@ -63,6 +61,9 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
+
+    @Inject
+    lateinit var lifeRepository: LifeRepository
 
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
@@ -175,11 +176,12 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
+        val countView = view?.findViewById<TextView>(R.id.count_library)
         if (dbMylibrary.isEmpty()) {
-            view?.findViewById<TextView>(R.id.count_library)?.visibility = View.GONE
+            countView?.visibility = View.GONE
         } else {
-            view?.findViewById<TextView>(R.id.count_library)?.text =
-                getString(R.string.number_placeholder, dbMylibrary.size)
+            countView?.visibility = View.VISIBLE
+            countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding =
@@ -218,7 +220,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    private fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private suspend fun renderMyTeams(teams: List<RealmMyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
 
@@ -236,7 +238,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
         setCountText(teams.size, RealmMyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.userModel?.id
+        val userId = profileDbHandler.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -266,14 +268,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.userModel
+        val user = profileDbHandler.getUserModel()
+        val userId = settings.getString("userId", "--")
 
-        val dbMylife = databaseService.withRealmAsync { realmInstance ->
-            val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(realmInstance, settings)
-            rawMylife.filter { it.isVisible }.map { realmInstance.copyFromRealm(it) }
+        val allForUser = lifeRepository.getMyLifeByUserId(userId)
+        var visibleItems = allForUser.filter { it.isVisible }
+
+        if (allForUser.isEmpty()) {
+            lifeRepository.seedMyLifeIfEmpty(userId, getMyLifeListBase(userId))
+            visibleItems = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
         }
 
-        for ((itemCnt, items) in dbMylife.withIndex()) {
+        for ((itemCnt, items) in visibleItems.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
         }
 
@@ -283,26 +289,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     private fun updateMyLifeSurveyCount(flexboxLayout: FlexboxLayout, surveyCount: Int) {
         // Update views with survey count if needed
-    }
-
-    private suspend fun setUpMyLife(userId: String?) {
-        databaseService.executeTransactionAsync { realm ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realm, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                var ml: RealmMyLife
-                var weight = 1
-                for (item in myLifeListBase) {
-                    ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
-            }
-        }
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
@@ -341,7 +327,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
 
-        val userId = settings?.getString("userId", "--")
+        val userId = settings.getString("userId", "--")
         viewModel.loadUserContent(userId)
         observeUiState()
 
@@ -351,14 +337,13 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         myLifeFlex.flexDirection = FlexDirection.ROW
 
         viewLifecycleOwner.lifecycleScope.launch {
-            setUpMyLife(userId)
             myLifeListInit(myLifeFlex)
         }
     }
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = settings?.getString("userId", "--")
+            val userId = settings.getString("userId", "--")
             val libraryList = viewModel.getLibraryListForUser(userId)
             showDownloadDialog(libraryList)
         }
@@ -415,9 +400,9 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            settings?.let { transactionSyncManager.syncAllHealthData(it, this) }
+            transactionSyncManager.syncAllHealthData(settings, this)
         } else {
-            settings?.let { transactionSyncManager.syncKeyIv(it, this, profileDbHandler) }
+            transactionSyncManager.syncKeyIv(settings, this, profileDbHandler)
         }
     }
 

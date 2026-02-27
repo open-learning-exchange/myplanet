@@ -8,6 +8,8 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import kotlinx.coroutines.Dispatchers
@@ -30,13 +32,21 @@ object Utilities {
         return null
     }
 
+    private fun isAppInForeground(): Boolean {
+        return ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+    }
+
     @JvmStatic
     fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         MainApplication.applicationScope.launch(Dispatchers.Main) {
+            if (!isAppInForeground()) {
+                return@launch
+            }
+
             val visualContext = getActivityFromContext(context)
 
-            if (visualContext != null) {
+            if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
                 try {
                     Toast.makeText(visualContext, message, duration).show()
                 } catch (e: IllegalAccessException) {
