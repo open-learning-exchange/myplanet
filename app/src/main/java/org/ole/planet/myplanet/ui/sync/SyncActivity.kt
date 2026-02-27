@@ -29,10 +29,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
+import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
-import com.afollestad.materialdialogs.WhichButton
-import com.afollestad.materialdialogs.actions.getActionButton
-import com.afollestad.materialdialogs.customview.customView
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.Calendar
@@ -677,15 +675,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-        val dialog = MaterialDialog(contextWrapper)
-            .customView(view = binding.root, scrollable = true)
-            .positiveButton(R.string.sync) { performSync(it) }
-            .negativeButton(R.string.txt_cancel) { it.dismiss() }
-            .neutralButton(R.string.btn_sync_save) { onNeutralButtonClick(it) }
-            .noAutoDismiss()
+        val dialog = MaterialDialog.Builder(contextWrapper)
+            .customView(binding.root, true)
+            .positiveText(R.string.sync)
+            .negativeText(R.string.txt_cancel)
+            .neutralText(R.string.btn_sync_save)
+            .onPositive { d: MaterialDialog, _: DialogAction? -> performSync(d) }
+            .build()
 
-        positiveAction = dialog.getActionButton(WhichButton.POSITIVE)
-        neutralAction = dialog.getActionButton(WhichButton.NEUTRAL)
+        positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
+        neutralAction = dialog.getActionButton(DialogAction.NEUTRAL)
 
         handleManualConfiguration(binding, settings.getString("configurationId", null), dialog)
         setRadioProtocolListener(binding)
@@ -699,13 +698,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             refreshServerList()
         }
 
-        // neutralAction listener is already set via neutralButton
+        neutralAction.setOnClickListener { onNeutralButtonClick(dialog) }
 
         dialog.setOnDismissListener { serverDialogBinding = null }
         dialog.show()
         sync(binding)
         if (!prefData.getManualConfig()) {
-            dialog.getActionButton(WhichButton.NEUTRAL).text = getString(R.string.show_more)
+            dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
