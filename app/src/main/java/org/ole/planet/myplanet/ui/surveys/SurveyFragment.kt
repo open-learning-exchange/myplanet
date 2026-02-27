@@ -186,6 +186,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
             launch {
                 viewModel.surveys.collect { surveys ->
                     (getAdapter() as SurveysAdapter).submitList(surveys) {
+                        recyclerView.scrollToPosition(0)
                         updateUIState()
                     }
                 }
