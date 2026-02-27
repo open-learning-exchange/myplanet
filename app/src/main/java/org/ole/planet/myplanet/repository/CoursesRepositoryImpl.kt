@@ -404,36 +404,4 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
     }
-
-    override suspend fun deleteCourseProgress(courseId: String) {
-        deleteCourseProgress(listOf(courseId))
-    }
-
-    override suspend fun deleteCourseProgress(courseIds: List<String>) {
-        if (courseIds.isEmpty()) return
-        executeTransaction { realm ->
-            realm.where(RealmCourseProgress::class.java).`in`("courseId", courseIds.toTypedArray()).findAll().deleteAllFromRealm()
-            val examList = realm.where(RealmStepExam::class.java).`in`("courseId", courseIds.toTypedArray()).findAll()
-            for (exam in examList) {
-                realm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
-        }
-    }
-
-    override suspend fun leaveCourses(courseIds: List<String>, userId: String) {
-        if (courseIds.isEmpty()) return
-        executeTransaction { realm ->
-            val courses = realm.where(RealmMyCourse::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .findAll()
-
-            courses.forEach { course ->
-                course.removeUserId(userId)
-                RealmRemovedLog.onRemove(realm, "courses", userId, course.courseId)
-            }
-        }
-        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
-    }
 }

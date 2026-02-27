@@ -115,7 +115,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun addToMyList() {
+    fun addToMyList() {
         if (!isRealmInitialized() || isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
@@ -194,7 +194,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun deleteSelected(deleteProgress: Boolean) {
+    fun deleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEach { item ->
             try {
                 if (!mRealm.isInTransaction) {
