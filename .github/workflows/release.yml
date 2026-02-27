@@ -115,7 +115,7 @@ jobs:
 
       - name: upload APK and AAB as build artifact
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
           path: output/*
