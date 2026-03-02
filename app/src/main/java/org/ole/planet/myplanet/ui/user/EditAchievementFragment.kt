@@ -58,9 +58,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
 
-    @Inject
-    lateinit var userRepository: UserRepository
-
     var user: RealmUser? = null
     private var achievement: RealmAchievement? = null
     private var referenceArray: JsonArray? = null
