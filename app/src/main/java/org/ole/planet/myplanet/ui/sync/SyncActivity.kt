@@ -130,6 +130,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var serverAddressAdapter: ServerAddressAdapter? = null
     var serverListAddresses: List<ServerAddress> = emptyList()
     private var isProgressDialogShowing = false
+
+    lateinit var syncConfigurationCoordinator: SyncConfigurationCoordinator
+
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
 
@@ -154,6 +157,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        editor = settings.edit()
+        syncConfigurationCoordinator = SyncConfigurationCoordinator(configurationsRepository, settings, editor)
         lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 syncManager.syncStatus.collect { status ->
@@ -183,8 +189,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         }
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        editor = settings.edit()
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -193,60 +197,56 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun checkMinApk(url: String, pin: String, callerActivity: String) {
         lifecycleScope.launch {
-            customProgressDialog.setText(getString(R.string.check_apk_version))
-            customProgressDialog.show()
-            val result = configurationsRepository.getMinApk(url, pin)
-            customProgressDialog.dismiss()
-            when (result) {
-                is ConfigurationsRepository.ConfigurationResult.Success -> {
-                    handleConfigurationSuccess(result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerActivity)
-                }
-                is ConfigurationsRepository.ConfigurationResult.Failure -> {
-                    syncFailed = true
-                    alertDialogOkay(result.errorMessage)
-                }
-            }
-        }
-    }
-
-    private fun handleConfigurationSuccess(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
-        val savedId = settings.getString("configurationId", null)
-        syncFailed = false
-        when (callerActivity) {
-            "LoginActivity", "DashboardActivity"-> {
-                if (isAlternativeUrl) {
-                    ServerConfigUtils.saveAlternativeUrl(url, settings.getString("serverPin", "") ?: "", settings, editor)
-                }
-                isSync = false
-                forceSync = true
-                configurationsRepository.checkVersion(this, settings)
-            }
-            else -> {
-                if (serverConfigAction == "sync") {
-                    if (savedId == null) {
-                        editor.putString("configurationId", id).apply()
-                        editor.putString("communityName", code).apply()
-                        currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl, defaultUrl)
-                        }
-                    } else if (id == savedId) {
-                        currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl, defaultUrl)
-                        }
-                    } else {
-                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+            syncConfigurationCoordinator.checkMinApk(
+                url = url,
+                pin = pin,
+                callerActivity = callerActivity,
+                serverConfigAction = serverConfigAction,
+                hasCurrentDialog = currentDialog != null,
+                callback = object : SyncConfigurationCoordinator.Callback {
+                    override fun onCheckStarted() {
+                        customProgressDialog.setText(getString(R.string.check_apk_version))
+                        customProgressDialog.show()
                     }
-                } else if (serverConfigAction == "save") {
-                    if (savedId == null || id == savedId) {
+
+                    override fun onCheckComplete() {
+                        customProgressDialog.dismiss()
+                    }
+
+                    override fun onCheckFailed(errorMessage: String) {
+                        syncFailed = true
+                        alertDialogOkay(errorMessage)
+                    }
+
+                    override fun onVersionCheckRequired(isAlternativeUrl: Boolean, url: String) {
+                        syncFailed = false
+                        isSync = false
+                        forceSync = true
+                        configurationsRepository.checkVersion(this@SyncActivity, settings)
+                    }
+
+                    override fun onContinueSync(id: String, code: String, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
+                        syncFailed = false
+                        currentDialog?.let {
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
+                        }
+                    }
+
+                    override fun onSaveConfigAndContinue(id: String, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
+                        syncFailed = false
                         currentDialog?.let {
                             val binding = serverDialogBinding ?: return@let
                             saveConfigAndContinue(it, binding, "", false, defaultUrl)
                         }
-                    } else {
-                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                    }
+
+                    override fun onClearDataRequested(message: String, config: Boolean) {
+                        syncFailed = false
+                        val localizedMessage = if (message == "You want to connect to a different server") getString(R.string.you_want_to_connect_to_a_different_server) else message
+                        clearDataDialog(localizedMessage, config)
                     }
                 }
-            }
+            )
         }
     }
 
