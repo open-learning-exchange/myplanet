@@ -72,7 +72,8 @@ class UploadManager @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
@@ -599,28 +600,7 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
 
-        data class NewsUploadData(
-            val id: String?,
-            val _id: String?,
-            val message: String?,
-            val imageUrls: List<String>,
-            val newsJson: JsonObject
-        )
-
-        val newsItems = databaseService.withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .findAll()
-                .mapNotNull { news ->
-                    if (news.userId?.startsWith("guest") == true) null
-                    else NewsUploadData(
-                        id = news.id,
-                        _id = news._id,
-                        message = news.message,
-                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = chatRepository.serializeNews(news)
-                    )
-                }
-        }
+        val newsItems = voicesRepository.getPendingNews(chatRepository)
 
         withContext(Dispatchers.IO) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
@@ -691,16 +671,13 @@ class UploadManager @Inject constructor(
 
                         // Update database on success
                         if (newsResponse.isSuccessful && newsResponse.body() != null) {
-                            databaseService.executeTransactionAsync { realm ->
-                                realm.where(RealmNews::class.java)
-                                    .equalTo("id", news.id)
-                                    .findFirst()?.let { managedNews ->
-                                        managedNews.imageUrls?.clear()
-                                        managedNews._id = getString("id", newsResponse.body())
-                                        managedNews._rev = getString("rev", newsResponse.body())
-                                        managedNews.images = gson.toJson(imagesArray)
-                                    }
-                            }
+                            val responseBody = newsResponse.body()
+                            voicesRepository.markNewsUploaded(
+                                news.id!!,
+                                getString("id", responseBody),
+                                getString("rev", responseBody),
+                                gson.toJson(imagesArray)
+                            )
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

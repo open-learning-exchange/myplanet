@@ -421,4 +421,34 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun getDateFromTimestamp(timestamp: Long): String {
         return dateFormat.get()!!.format(java.util.Date(timestamp))
     }
+
+    override suspend fun getPendingNews(chatRepository: ChatRepository): List<NewsUploadData> {
+        return databaseService.withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .findAll()
+                .mapNotNull { news ->
+                    if (news.userId?.startsWith("guest") == true) null
+                    else NewsUploadData(
+                        id = news.id,
+                        _id = news._id,
+                        message = news.message,
+                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                        newsJson = chatRepository.serializeNews(news)
+                    )
+                }
+        }
+    }
+
+    override suspend fun markNewsUploaded(newsId: String, responseId: String, responseRev: String, imagesJson: String) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("id", newsId)
+                .findFirst()?.let { managedNews ->
+                    managedNews.imageUrls?.clear()
+                    managedNews._id = responseId
+                    managedNews._rev = responseRev
+                    managedNews.images = imagesJson
+                }
+        }
+    }
 }

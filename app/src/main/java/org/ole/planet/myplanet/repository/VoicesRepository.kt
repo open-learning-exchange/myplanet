@@ -6,6 +6,15 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 
+
+data class NewsUploadData(
+    val id: String?,
+    val _id: String?,
+    val message: String?,
+    val imageUrls: List<String>,
+    val newsJson: com.google.gson.JsonObject
+)
+
 interface VoicesRepository {
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
@@ -28,4 +37,6 @@ interface VoicesRepository {
     suspend fun getNewsById(id: String): RealmNews?
     suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: io.realm.RealmList<String>?)
     suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: io.realm.RealmList<String>?)
+    suspend fun getPendingNews(chatRepository: ChatRepository): List<NewsUploadData>
+    suspend fun markNewsUploaded(newsId: String, responseId: String, responseRev: String, imagesJson: String)
 }
