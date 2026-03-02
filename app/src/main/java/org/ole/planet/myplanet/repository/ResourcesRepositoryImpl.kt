@@ -254,7 +254,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return try {
             val urls = resources.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
-                DownloadUtils.openDownloadService(context, ArrayList(urls), false)
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
             true
         } catch (e: Exception) {
