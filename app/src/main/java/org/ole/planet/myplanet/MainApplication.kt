@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.RetryQueueEntryPoint
+import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
 import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -149,7 +150,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
-            val serverUrlMapper = ServerUrlMapper()
+            val entryPoint = EntryPointAccessors.fromApplication(context, ServerUrlMapperEntryPoint::class.java)
+            val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }

@@ -79,7 +79,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
-            DownloadUtils.openDownloadService(requireContext(), urls, false)
+            DownloadUtils.openPriorityDownloadService(requireContext(), urls)
         }
     }
     fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
@@ -87,7 +87,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             pendingAutoOpenLibrary = libraryToOpen
             shouldAutoOpenAfterDownload = true
         }
+        trackDownloadUrls(urls)
         startDownload(urls)
+        showProgressDialog()
     }
     override fun onDownloadComplete() {
         super.onDownloadComplete()

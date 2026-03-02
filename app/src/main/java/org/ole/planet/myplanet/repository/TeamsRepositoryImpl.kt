@@ -54,6 +54,33 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        return withRealm { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .equalTo("updated", true)
+                .findAll()
+
+            teams.map { team ->
+                TeamUploadData(
+                    teamId = team._id,
+                    serialized = RealmMyTeam.serialize(team, realm)
+                )
+            }
+        }
+    }
+
+    override suspend fun markTeamUploaded(teamId: String?, rev: String) {
+        if (teamId.isNullOrBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()?.let { team ->
+                    team._rev = rev
+                    team.updated = false
+                }
+        }
+    }
+
     override suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String> {
         return runCatching {
             val teamId = AndroidDecrypter.generateIv()
@@ -903,6 +930,7 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             val apiInterface = client.create(ApiInterface::class.java)
             withContext(Dispatchers.IO) {
+                uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities(apiInterface)
             }
@@ -1131,5 +1159,16 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamCreator(teamId: String): String? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
+    }
+
+    override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
+        val existing = getTeamResources(teamId)
+        val existingIds = existing.mapNotNull { it._id }
+
+        val allLibraryItems = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+
+        return allLibraryItems.filter { it._id !in existingIds }
     }
 }

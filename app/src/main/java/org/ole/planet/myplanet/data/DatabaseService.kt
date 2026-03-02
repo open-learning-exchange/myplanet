@@ -68,6 +68,10 @@ class DatabaseService(context: Context) {
         }
     }
 
+    suspend fun clearAll() {
+        executeTransactionAsync { it.deleteAll() }
+    }
+
 }
 
 fun <T : RealmModel> Realm.queryList(

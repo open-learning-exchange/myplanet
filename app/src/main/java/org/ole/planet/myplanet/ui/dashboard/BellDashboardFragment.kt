@@ -28,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
+import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
@@ -52,6 +53,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
 
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
+
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
     }
@@ -71,12 +75,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
         viewLifecycleOwner.lifecycleScope.launch {
+            val wasUserNull = user == null
             user = profileDbHandler.getUserModel()
             binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
                 viewModel.loadCompletedCourses(it)
             }
-            if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
+            if (wasUserNull && (user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
             }
             if (user?.id?.startsWith("guest") == false && TextUtils.isEmpty(user?.key)) {
@@ -121,7 +126,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
         val updateUrl = settings.getString("serverURL", "") ?: return
-        val mapping = ServerUrlMapper().processUrl(updateUrl)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
@@ -270,6 +275,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
             val submissionsById = submissions.associateBy { it.id }
             val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }
+                .filter { it.status == "pending" }
 
             if (pendingSurveys.isNotEmpty()) {
                 showPendingSurveysReminder(pendingSurveys)
@@ -324,8 +330,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .create()
 
         val adapter = DashboardSurveysAdapter({ position ->
-            val selectedSurvey = pendingSurveys[position].id
-            SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+            val selectedSurvey = pendingSurveys[position]
+            SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey.id, true, false, "")
         }, surveyListDialog!!)
         recyclerView.adapter = adapter
         adapter.submitList(surveyTitles)
@@ -428,6 +434,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
         homeItemClickListener?.openCallFragment(f)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        user?.let { u ->
+            if (u.id?.startsWith("guest") != true && !DashboardActivity.isFromNotificationAction) {
+                checkPendingSurveys()
+            }
+        }
     }
 
     override fun onPause() {

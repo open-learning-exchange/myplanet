@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
@@ -28,7 +27,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
-    private val submissionsRepositoryExporter: SubmissionsRepositoryExporter,
     private val teamsRepositoryProvider: Provider<TeamsRepository>
 ) : RealmRepository(databaseService), SubmissionsRepository {
 
@@ -230,12 +228,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
-        Log.d("SubmissionsRepository", "markSubmissionComplete called for ID: $id")
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
             sub.isUpdated = true // Mark for upload
-            Log.d("SubmissionsRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }
 
@@ -410,18 +406,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             }
         }
         return false
-    }
-
-    override suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File? {
-        return submissionsRepositoryExporter.generateSubmissionPdf(context, submissionId)
-    }
-
-    override suspend fun generateMultipleSubmissionsPdf(
-        context: android.content.Context,
-        submissionIds: List<String>,
-        examTitle: String
-    ): java.io.File? {
-        return submissionsRepositoryExporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 
     override suspend fun addSubmissionPhoto(
@@ -611,6 +595,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     isFinal && isExplicitSubmission && type == "survey" -> "complete"
                     isFinal && isExplicitSubmission -> "requires grading"
                     else -> "pending"
+                }
+
+                if (realmSubmission.status == "complete" && type == "survey") {
+                    val orphans = r.where(RealmSubmission::class.java)
+                        .equalTo("parentId", realmSubmission.parentId)
+                        .equalTo("userId", realmSubmission.userId)
+                        .equalTo("status", "pending")
+                        .equalTo("type", "survey")
+                        .isNull("membershipDoc")
+                        .findAll()
+                    orphans.deleteAllFromRealm()
                 }
             }
         }
