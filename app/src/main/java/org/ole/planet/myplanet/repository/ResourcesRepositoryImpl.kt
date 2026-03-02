@@ -30,7 +30,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val activitiesRepository: ActivitiesRepository,
-    @param:AppPreferences private val settings: SharedPreferences
+    @param:AppPreferences private val settings: SharedPreferences,
+    private val ratingsRepository: RatingsRepository,
+    private val tagsRepository: TagsRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -480,5 +482,13 @@ class ResourcesRepositoryImpl @Inject constructor(
                 savedIds
             }
         }
+    }
+
+    override suspend fun getResourceRatings(resourceId: String): JsonObject? {
+        return ratingsRepository.getRatingsById("resource", resourceId, null)
+    }
+
+    override suspend fun getResourceTags(resourceId: String): List<RealmTag> {
+        return tagsRepository.getTagsForResource(resourceId)
     }
 }
