@@ -104,7 +104,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
+
+    @Inject
     lateinit var prefData: SharedPrefManager
+
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     lateinit var spnCloud: Spinner
@@ -186,7 +189,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
         requestAllPermissions()
-        prefData = SharedPrefManager(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = UrlUtils.getUrl()
     }

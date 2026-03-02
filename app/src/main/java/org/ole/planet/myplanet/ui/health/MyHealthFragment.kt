@@ -78,7 +78,10 @@ class MyHealthFragment : Fragment() {
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
+
     lateinit var settings: SharedPreferences
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -89,7 +92,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startHealthSync()
     }

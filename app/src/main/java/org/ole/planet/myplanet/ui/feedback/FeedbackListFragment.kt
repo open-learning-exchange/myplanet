@@ -38,7 +38,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
+
     private val viewModel: FeedbackListViewModel by viewModels()
 
     @Inject
@@ -58,7 +61,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
 
         startFeedbackSync()
     }

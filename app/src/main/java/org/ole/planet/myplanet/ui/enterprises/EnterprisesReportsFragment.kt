@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import javax.inject.Inject
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -48,12 +49,15 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
+
+    @Inject
+    lateinit var prefData: SharedPrefManager
+
     private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
     private val viewModel: EnterprisesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
-        prefData = SharedPrefManager(requireContext())
         binding.addReports.isVisible = false
         binding.addReports.setOnClickListener{
             showAddReportDialog()

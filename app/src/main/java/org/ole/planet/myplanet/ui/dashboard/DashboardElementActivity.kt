@@ -24,6 +24,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -42,18 +43,23 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utils.NotificationUtils
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utils.SecurePrefs
 
+@AndroidEntryPoint
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
     var c = 0
 
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        prefData = SharedPrefManager(this)
+        prefData = sharedPrefManager
         supportFragmentManager.addOnBackStackChangedListener(this)
     }
 

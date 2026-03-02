@@ -58,7 +58,10 @@ class ChatHistoryFragment : Fragment() {
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
+
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -89,7 +92,6 @@ class ChatHistoryFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
-        prefManager = SharedPrefManager(requireContext())
         startChatHistorySync()
     }
 

@@ -19,14 +19,18 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.MapTileUtils.copyAssets
+import javax.inject.Inject
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utils.SecurePrefs
 
+@AndroidEntryPoint
 class OnboardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnboardingBinding
     private lateinit var mAdapter: OnboardingAdapter
     private val onBoardItems = ArrayList<OnboardingItem>()
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
+    @Inject
     lateinit var prefData: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +38,6 @@ class OnboardingActivity : AppCompatActivity() {
         binding = ActivityOnboardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
-        prefData = SharedPrefManager(this)
 
         copyAssets(this)
         val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)

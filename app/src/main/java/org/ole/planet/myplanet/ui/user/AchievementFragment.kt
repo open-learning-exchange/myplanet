@@ -55,7 +55,10 @@ class AchievementFragment : BaseContainerFragment() {
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
+
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     
@@ -68,7 +71,6 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         startAchievementSync()
     }
 

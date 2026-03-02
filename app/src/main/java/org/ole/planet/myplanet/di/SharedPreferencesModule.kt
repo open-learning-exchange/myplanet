@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 @Qualifier
@@ -36,5 +37,11 @@ object SharedPreferencesModule {
     @DefaultPreferences
     fun provideDefaultSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return PreferenceManager.getDefaultSharedPreferences(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSharedPrefManager(@ApplicationContext context: Context): SharedPrefManager {
+        return SharedPrefManager(context)
     }
 }

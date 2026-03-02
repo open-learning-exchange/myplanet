@@ -69,7 +69,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     private var directTeamType: String? = null
     private var directTeamId: String? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
+
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val teamLastPage = mutableMapOf<String, String>()
@@ -114,7 +117,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         startTeamSync()
     }
 
