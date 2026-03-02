@@ -43,12 +43,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var progressRepository: ProgressRepository
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
@@ -182,7 +176,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
 
         lifecycleScope.launch {
-            val currentProgress = progressRepository.getCurrentProgress(steps, userModel?.id, courseId)
+            val currentProgress = coursesRepository.getCourseProgress().getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
             if (currentProgress < steps.size) {
                 binding.courseProgress.secondaryProgress = currentProgress + 1
@@ -221,7 +215,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 detachedCurrentCourse?.courseId?.let { courseId ->
                     detachedCurrentCourse.courseTitle?.let { courseTitle ->
                         detachedUserModel?.name?.let { userName ->
-                            activitiesRepository.logCourseVisit(
+                            coursesRepository.getCourseActivities().logCourseVisit(
                                 courseId,
                                 courseTitle,
                                 userName
@@ -265,7 +259,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun changeNextButtonState(position: Int) {
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             lifecycleScope.launch {
-                if (submissionsRepository.isStepCompleted(steps[position - 1]?.id, userModel?.id)) {
+                if (coursesRepository.getCourseSubmissions().isStepCompleted(steps[position - 1]?.id, userModel?.id)) {
                     binding.nextStep.isClickable = true
                     binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 } else {
@@ -369,13 +363,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private suspend fun getCourseProgress(): Int {
         val user = userSessionManager.getUserModel()
-        val courseProgressMap = progressRepository.getCourseProgress(user?.id)
+        val courseProgressMap = coursesRepository.getCourseProgress().getCourseProgress(user?.id)
         return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 
     private fun checkSurveyCompletion() = viewLifecycleOwner.lifecycleScope.launch {
         val hasUnfinishedSurvey = courseId?.let {
-            submissionsRepository.hasUnfinishedSurveys(it, userModel?.id)
+            coursesRepository.getCourseSubmissions().hasUnfinishedSurveys(it, userModel?.id)
         } ?: false
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {

@@ -47,4 +47,7 @@ interface CoursesRepository {
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
+    fun getCourseActivities(): ActivitiesRepository
+    fun getCourseProgress(): ProgressRepository
+    fun getCourseSubmissions(): SubmissionsRepository
 }
