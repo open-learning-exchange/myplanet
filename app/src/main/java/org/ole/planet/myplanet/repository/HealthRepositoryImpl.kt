@@ -13,6 +13,19 @@ import java.util.Date
 class HealthRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), HealthRepository {
+
+    override suspend fun updateHealthData(userId: String) {
+        databaseService.executeTransactionAsync { realm ->
+            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            if (user != null) {
+                val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findAll()
+                for (p in list) {
+                    p.userId = user._id
+                }
+            }
+        }
+    }
+
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
         return withRealm { realm ->
             val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()

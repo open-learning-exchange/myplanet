@@ -170,6 +170,20 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateUserEncryption(userId: String, keyIv: Pair<String, String>) {
+        update(RealmUser::class.java, "id", userId) { managedModel ->
+            managedModel.key = keyIv.first
+            managedModel.iv = keyIv.second
+        }
+    }
+
+    override suspend fun updateUserRev(userId: String, rev: String?) {
+        update(RealmUser::class.java, "id", userId) { managedModel ->
+            managedModel._rev = rev
+            managedModel.isUpdated = false
+        }
+    }
+
     override suspend fun updateSecurityData(
         name: String,
         userId: String?,

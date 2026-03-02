@@ -5,6 +5,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 
 interface HealthRepository {
+    suspend fun updateHealthData(userId: String)
     suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?>
     suspend fun getExaminationById(id: String): RealmHealthExamination?
     suspend fun initHealth(): RealmMyHealth
