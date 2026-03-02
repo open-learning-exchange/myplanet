@@ -1,7 +1,15 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmOfflineActivity
+
+data class ActivityData(
+    val activityId: String?,
+    val userId: String?,
+    val serialized: JsonObject
+)
 
 interface ActivitiesRepository {
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity>
@@ -17,4 +25,6 @@ interface ActivitiesRepository {
     suspend fun logResourceOpen(userName: String?, parentCode: String?, planetCode: String?, title: String?, resourceId: String?, type: String?)
     suspend fun getResourceOpenCount(userName: String, type: String): Long
     suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>?
+    suspend fun getPendingLoginActivities(context: Context): List<ActivityData>
+    suspend fun markActivityUploaded(activityId: String?, responseJson: JsonObject?)
 }

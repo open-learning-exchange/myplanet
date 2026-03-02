@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -168,6 +170,33 @@ class ActivitiesRepositoryImpl @Inject constructor(
             } else {
                 Pair(maxEntry.value.second!!, maxEntry.value.first)
             }
+        }
+    }
+
+    override suspend fun getPendingLoginActivities(context: Context): List<ActivityData> {
+        return withRealm { realm ->
+            val activities = realm.where(RealmOfflineActivity::class.java)
+                .isNull("_rev").equalTo("type", "login").findAll()
+
+            activities.mapNotNull { activity ->
+                if (activity.userId?.startsWith("guest") == true) {
+                    null
+                } else {
+                    ActivityData(
+                        activityId = activity.id,
+                        userId = activity.userId,
+                        serialized = RealmOfflineActivity.serializeLoginActivities(activity, context)
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun markActivityUploaded(activityId: String?, responseJson: JsonObject?) {
+        executeTransaction { transactionRealm ->
+            transactionRealm.where(RealmOfflineActivity::class.java)
+                .equalTo("id", activityId)
+                .findFirst()?.changeRev(responseJson)
         }
     }
 }

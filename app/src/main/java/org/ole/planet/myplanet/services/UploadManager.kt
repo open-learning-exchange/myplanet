@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -72,7 +73,8 @@ class UploadManager @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val activitiesRepository: ActivitiesRepository
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
@@ -481,28 +483,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            data class ActivityData(
-                val activityId: String?,
-                val userId: String?,
-                val serialized: JsonObject
-            )
-
-            val activitiesToUpload = databaseService.withRealm { realm ->
-                val activities = realm.where(RealmOfflineActivity::class.java)
-                    .isNull("_rev").equalTo("type", "login").findAll()
-
-                activities.mapNotNull { activity ->
-                    if (activity.userId?.startsWith("guest") == true) {
-                        null
-                    } else {
-                        ActivityData(
-                            activityId = activity.id,
-                            userId = activity.userId,
-                            serialized = RealmOfflineActivity.serializeLoginActivities(activity, context)
-                        )
-                    }
-                }
-            }
+            val activitiesToUpload = activitiesRepository.getPendingLoginActivities(context)
 
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { activityData ->
@@ -512,11 +493,7 @@ class UploadManager @Inject constructor(
                             "${UrlUtils.getUrl()}/login_activities", activityData.serialized
                         ).body()
 
-                        databaseService.executeTransactionAsync { transactionRealm ->
-                            transactionRealm.where(RealmOfflineActivity::class.java)
-                                .equalTo("id", activityData.activityId)
-                                .findFirst()?.changeRev(`object`)
-                        }
+                        activitiesRepository.markActivityUploaded(activityData.activityId, `object`)
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
