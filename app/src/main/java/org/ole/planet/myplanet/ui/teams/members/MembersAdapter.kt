@@ -33,7 +33,7 @@ class MembersAdapter(
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
-        notifyDataSetChanged()
+        submitList(currentList.toList())
     }
 
     companion object {
