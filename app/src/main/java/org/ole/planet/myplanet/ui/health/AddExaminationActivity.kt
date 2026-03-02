@@ -9,6 +9,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.CheckBox
 import android.widget.CompoundButton
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -17,7 +18,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import io.realm.Realm
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -56,8 +55,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     lateinit var healthRepository: HealthRepository
     @Inject
     lateinit var userRepository: UserRepository
+
+    private val viewModel: AddExaminationViewModel by viewModels()
     private lateinit var binding: ActivityAddExaminationBinding
-    lateinit var mRealm: Realm
     var userId: String? = null
     var user: RealmUser? = null
     private var currentUser: RealmUser? = null
@@ -91,7 +91,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             currentUser = userSessionManager.getUserModel()
         }
         mapConditions = HashMap()
-        mRealm = databaseService.createManagedRealmInstance()
         userId = intent.getStringExtra("userId")
         val btnSave = findViewById<View>(R.id.btn_save)
         btnSave.isEnabled = false
@@ -125,7 +124,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 }
             }
             if (health == null) {
-                initHealth()
+                health = healthRepository.initHealth()
             }
             if (intent.hasExtra("id")) {
                 val id = intent.getStringExtra("id")
@@ -136,6 +135,23 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             initExamination()
             validateFields()
             btnSave.isEnabled = true
+        }
+
+        lifecycleScope.launch {
+            viewModel.isSaving.collect { isSaving ->
+                btnSave.isEnabled = !isSaving
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.saveResult.collect { success ->
+                if (success) {
+                    Utilities.toast(this@AddExaminationActivity, getString(R.string.added_successfully))
+                    closeActivity()
+                } else {
+                    Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
+                }
+            }
         }
     }
 
@@ -258,33 +274,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             }
         }
 
-    private fun initHealth() {
-        val startedTransaction = !mRealm.isInTransaction
-        if (startedTransaction) {
-            mRealm.beginTransaction()
-        }
-        try {
-            health = RealmMyHealth()
-            val profile = RealmMyHealthProfile()
-            health?.lastExamination = Date().time
-            health?.userKey = generateKey()
-            health?.profile = profile
-            if (startedTransaction) {
-                mRealm.commitTransaction()
-            }
-        } catch (e: Exception) {
-            if (startedTransaction && mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
-        }
-    }
-
     private fun saveData() {
-        val startedTransaction = !mRealm.isInTransaction
-        if (startedTransaction) {
-            mRealm.beginTransaction()
-        }
+        // Prepare data synchronously (or in a lightweight way)
         try {
             createPojo()
             if (examination == null) {
@@ -332,20 +323,17 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 e.printStackTrace()
             }
 
-            pojo?.let { mRealm.copyToRealmOrUpdate(it) }
-            examination?.let { mRealm.copyToRealmOrUpdate(it) }
+            // Delegate save to ViewModel
+            viewModel.saveExamination(examination, pojo, user)
 
-            if (startedTransaction) {
-                mRealm.commitTransaction()
-            }
-            Utilities.toast(this, getString(R.string.added_successfully))
-            super.finish()
         } catch (e: Exception) {
-            if (startedTransaction && mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
+            e.printStackTrace()
+            Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
+    }
+
+    private fun closeActivity() {
+        super.finish()
     }
 
     private fun scrollToView(view: View) {
@@ -462,9 +450,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         binding.etBloodpressure.removeTextChangedListener(textWatcher)
         textWatcher = null
         super.onDestroy()
