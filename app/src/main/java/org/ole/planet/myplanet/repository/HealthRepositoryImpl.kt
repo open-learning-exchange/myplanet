@@ -53,4 +53,20 @@ class HealthRepositoryImpl @Inject constructor(
             examination?.let { realm.copyToRealmOrUpdate(it) }
         }
     }
+
+    override suspend fun updateHealthUserId(modelId: String, userId: String?) {
+        executeTransaction { realm ->
+            val list = realm.where(RealmHealthExamination::class.java).equalTo("_id", modelId).findAll()
+            for (p in list) {
+                p.userId = userId
+            }
+        }
+    }
+
+    override suspend fun updateHealthRevAndUpdatedStatus(pojoId: String, rev: String?, isUpdated: Boolean) {
+        update(RealmHealthExamination::class.java, "_id", pojoId) { managedPojo ->
+            managedPojo._rev = rev
+            managedPojo.isUpdated = isUpdated
+        }
+    }
 }
