@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -221,10 +222,17 @@ class ChatHistoryAdapter(
                         if (section == context.getString(R.string.teams)) {
                             showGrandChildRecyclerView(shareTargets.teams, context.getString(R.string.teams), item)
                         } else {
-                            showGrandChildRecyclerView(shareTargets.enterprises, context.getString(R.string.enterprises), item)
+                            val enterpriseSummaries = shareTargets.enterprises.mapNotNull { t ->
+                                val id = t._id ?: return@mapNotNull null
+                                TeamSummary(id, t.name ?: "", t.teamType, t.teamPlanetCode)
+                            }
+                            showGrandChildRecyclerView(enterpriseSummaries, context.getString(R.string.enterprises), item)
                         }
                     } else {
-                        showEditTextAndShareButton(shareTargets.community, context.getString(R.string.community), item)
+                        val communitySummary = shareTargets.community?.let { t ->
+                            t._id?.let { TeamSummary(it, t.name ?: "", t.teamType, t.teamPlanetCode) }
+                        }
+                        showEditTextAndShareButton(communitySummary, context.getString(R.string.community), item)
                     }
                     dialog?.dismiss()
                     false
@@ -245,7 +253,7 @@ class ChatHistoryAdapter(
         }
     }
 
-    private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, section: String, realmChatHistory: RealmChatHistory) {
+    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 
@@ -274,7 +282,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
+    private fun showEditTextAndShareButton(team: TeamSummary? = null, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)

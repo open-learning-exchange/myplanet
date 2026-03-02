@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -155,11 +156,19 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    @Deprecated("Use getTeamSummaries instead", ReplaceWith("getTeamSummaries()"))
     override suspend fun getShareableTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
             notEqualTo("status", "archived")
             equalTo("type", "team")
+        }
+    }
+
+    override suspend fun getTeamSummaries(): List<TeamSummary> {
+        return getShareableTeams().mapNotNull { team ->
+            val id = team._id ?: return@mapNotNull null
+            TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
         }
     }
 
