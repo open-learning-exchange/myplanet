@@ -169,6 +169,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    private suspend fun loadRatingsAndTags(allResourceIds: List<String>, userId: String?) {
+        map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, userId))
+        tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
+    }
+
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -184,21 +189,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
                 val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
 
-                val fetchedMap = HashMap<String?, JsonObject>()
-                val fetchedTagsMap = mutableMapOf<String, List<RealmTag>>()
-
-                for (resId in allResourceIds) {
-                    val rating = resourcesRepository.getResourceRatings(resId)
-                    if (rating != null) {
-                        fetchedMap[resId] = rating
-                    }
-                    val tags = resourcesRepository.getResourceTags(resId)
-                    if (tags.isNotEmpty()) {
-                        fetchedTagsMap[resId] = tags
-                    }
-                }
-                map = fetchedMap
-                tagsMap = fetchedTagsMap
+                loadRatingsAndTags(allResourceIds, model?.id)
 
                 val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
                 val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
@@ -250,21 +241,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
 
-        val fetchedMap = HashMap<String?, JsonObject>()
-        val fetchedTagsMap = mutableMapOf<String, List<RealmTag>>()
-
-        for (resId in allResourceIds) {
-            val rating = resourcesRepository.getResourceRatings(resId)
-            if (rating != null) {
-                fetchedMap[resId] = rating
-            }
-            val tags = resourcesRepository.getResourceTags(resId)
-            if (tags.isNotEmpty()) {
-                fetchedTagsMap[resId] = tags
-            }
-        }
-        map = fetchedMap
-        tagsMap = fetchedTagsMap
+        loadRatingsAndTags(allResourceIds, model?.id)
 
         val user = profileDbHandler.getUserModel()
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())

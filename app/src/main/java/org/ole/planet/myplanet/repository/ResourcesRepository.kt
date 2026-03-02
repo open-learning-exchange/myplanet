@@ -57,6 +57,8 @@ interface ResourcesRepository {
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun getResourceRatings(resourceId: String): JsonObject?
     suspend fun getResourceTags(resourceId: String): List<RealmTag>
+    suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
+    suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
 }
 
 sealed class ResourceUrlsResponse {

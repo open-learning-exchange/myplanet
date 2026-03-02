@@ -491,4 +491,19 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getResourceTags(resourceId: String): List<RealmTag> {
         return tagsRepository.getTagsForResource(resourceId)
     }
+
+    override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
+        val allRatings = ratingsRepository.getResourceRatings(userId)
+        val filteredRatings = HashMap<String?, JsonObject>()
+        for (id in ids) {
+            allRatings[id]?.let {
+                filteredRatings[id] = it
+            }
+        }
+        return filteredRatings
+    }
+
+    override suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
+        return tagsRepository.getTagsForResources(ids)
+    }
 }
