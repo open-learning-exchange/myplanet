@@ -19,6 +19,8 @@ interface UserRepository {
     suspend fun getAllUsers(): List<RealmUser>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
     suspend fun getPendingSyncUsers(limit: Int): List<RealmUser>
+    suspend fun getAllSyncableUsers(): List<RealmUser>
+    suspend fun buildShelfData(userId: String, jsonDoc: JsonObject?, myLibs: com.google.gson.JsonArray, myCourseIds: com.google.gson.JsonArray): JsonObject
     suspend fun getMonthlyLoginCounts(
         userId: String,
         startMillis: Long,

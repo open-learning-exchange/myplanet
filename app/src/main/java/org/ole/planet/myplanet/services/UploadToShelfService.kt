@@ -359,11 +359,7 @@ class UploadToShelfService @Inject constructor(
     private fun uploadToShelf(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
-            val unmanagedUsers = dbService.withRealm { realm ->
-                realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().let {
-                    realm.copyFromRealm(it)
-                }
-            }
+            val unmanagedUsers = userRepository.getAllSyncableUsers()
 
             if (unmanagedUsers.isEmpty()) {
                 withContext(Dispatchers.Main) {
@@ -379,9 +375,7 @@ class UploadToShelfService @Inject constructor(
                         val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                         val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                        val shelfData = dbService.withRealm { backgroundRealm ->
-                            getShelfData(backgroundRealm, model.id, jsonDoc, myLibs, myCourseIds)
-                        }
+                        val shelfData = userRepository.buildShelfData(model.id ?: "", jsonDoc, myLibs, myCourseIds)
                         shelfData.addProperty("_rev", getString("_rev", jsonDoc))
                         apiInterface.putDoc(
                             UrlUtils.header,
@@ -409,23 +403,15 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val model = dbService.withRealm { realm ->
-                    realm.where(RealmUser::class.java)
-                        .equalTo("name", userName)
-                        .isNotEmpty("_id")
-                        .findFirst()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+                val model = if (userName != null) userRepository.getUserByName(userName) else null
 
-                if (model != null) {
+                if (model != null && model._id?.isNotEmpty() == true) {
                     if (model.id?.startsWith("guest") != true) {
                         val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
                         val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                         val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                        val shelfObject = dbService.withRealm { realm ->
-                            getShelfData(realm, model.id, jsonDoc, myLibs, myCourseIds)
-                        }
+                        val shelfObject = userRepository.buildShelfData(model.id ?: "", jsonDoc, myLibs, myCourseIds)
                         shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
                         val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
@@ -442,31 +428,6 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
-        val myMeetups = getMyMeetUpIds(realm, userId)
-        val removedResources = listOf(*removedIds(realm, "resources", userId))
-        val removedCourses = listOf(*removedIds(realm, "courses", userId))
-        val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCourseIds = mergeJsonArray(myCourseIds, getJsonArray("courseIds", jsonDoc), removedCourses)
-        val `object` = JsonObject()
-        `object`.addProperty("_id", sharedPreferences.getString("userId", ""))
-        `object`.add("meetupIds", mergeJsonArray(myMeetups, getJsonArray("meetupIds", jsonDoc), removedResources))
-        `object`.add("resourceIds", mergedResourceIds)
-        `object`.add("courseIds", mergedCourseIds)
-        return `object`
-    }
-
-    private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
-        val array = JsonArray()
-        array.addAll(array1)
-        for (e in array2) {
-            if (!array.contains(e) && !removedIds.contains(e.asString)) {
-                array.add(e)
-            }
-        }
-        return array
     }
 
     companion object {
