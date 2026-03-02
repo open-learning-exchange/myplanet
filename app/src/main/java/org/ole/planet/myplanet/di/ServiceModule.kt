@@ -45,6 +45,7 @@ object ServiceModule {
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
+        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
@@ -52,7 +53,7 @@ object ServiceModule {
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
         @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
+        return SyncManager(context, databaseService, preferences, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
     }
 
     @Provides
