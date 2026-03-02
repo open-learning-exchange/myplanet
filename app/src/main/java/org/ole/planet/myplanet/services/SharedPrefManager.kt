@@ -15,20 +15,15 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 class SharedPrefManager @Inject constructor(@ApplicationContext context: Context) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
-
-    // Escape hatch for callers that need raw pref access (e.g. clearSharedPref, string-set ops)
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
-        // Original keys
         private const val SAVED_USERS = "savedUsers"
         private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
         private const val SELECTED_TEAM_ID = "selectedTeamId"
         const val FIRST_LAUNCH = "firstLaunch"
         private const val TEAM_NAME = "teamName"
-
-        // Server config
         private const val SERVER_URL = "serverURL"
         private const val SERVER_PIN = "serverPin"
         private const val SERVER_PROTOCOL = "serverProtocol"
@@ -45,8 +40,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         private const val IS_ALTERNATIVE_URL = "isAlternativeUrl"
         private const val PINNED_SERVER_URL = "pinnedServerUrl"
         private const val SWITCH_CLOUD_URL = "switchCloudUrl"
-
-        // User session
         private const val USER_ID = "userId"
         private const val PARENT_CODE = "parentCode"
         private const val PLANET_CODE = "planetCode"
@@ -54,8 +47,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         private const val PENDING_LANGUAGE_CHANGE = "pendingLanguageChange"
         private const val USER_NAME = "name"
         private const val COMMUNITY_LEADERS = "communityLeaders"
-
-        // Sync config
         private const val AUTO_SYNC = "autoSync"
         private const val FAST_SYNC = "fastSync"
         private const val USE_IMPROVED_SYNC = "useImprovedSync"
@@ -66,8 +57,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         private const val LAST_SYNC = "LastSync"
         private const val LAST_WIFI_ID = "LastWifiID"
         private const val LAST_WIFI_SSID = "LastWifiSSID"
-
-        // Misc
         private const val HAS_SHOWN_CONGRATS = "has_shown_congrats"
         const val KEY_LOGIN = "isLoggedIn"
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
@@ -85,10 +74,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         RESOURCES("resources_synced"),
         EXAMS("exams_synced")
     }
-
-    // -------------------------------------------------------------------------
-    // Original API
-    // -------------------------------------------------------------------------
 
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(SAVED_USERS, null)
@@ -185,10 +170,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
     fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
 
-    // -------------------------------------------------------------------------
-    // Server Config
-    // -------------------------------------------------------------------------
-
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
 
@@ -237,10 +218,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getSwitchCloudUrl(): Boolean = pref.getBoolean(SWITCH_CLOUD_URL, false)
     fun setSwitchCloudUrl(value: Boolean) = pref.edit { putBoolean(SWITCH_CLOUD_URL, value) }
 
-    // -------------------------------------------------------------------------
-    // User Session
-    // -------------------------------------------------------------------------
-
     fun getUserId(): String = pref.getString(USER_ID, "") ?: ""
     fun setUserId(id: String) = pref.edit { putString(USER_ID, id) }
 
@@ -264,10 +241,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
 
     fun getCommunityLeaders(): String = pref.getString(COMMUNITY_LEADERS, "") ?: ""
     fun setCommunityLeaders(json: String) = pref.edit { putString(COMMUNITY_LEADERS, json) }
-
-    // -------------------------------------------------------------------------
-    // Sync Config
-    // -------------------------------------------------------------------------
 
     fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, true)
     fun setAutoSync(value: Boolean) = pref.edit { putBoolean(AUTO_SYNC, value) }
@@ -299,13 +272,8 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getLastWifiSsid(): String? = pref.getString(LAST_WIFI_SSID, null)
     fun setLastWifiSsid(ssid: String) = pref.edit { putString(LAST_WIFI_SSID, ssid) }
 
-    // Delegates to SyncKey.EXAMS to avoid duplicating the key
     fun getIsExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
     fun setIsExamsSynced(value: Boolean) = setSynced(SyncKey.EXAMS, value)
-
-    // -------------------------------------------------------------------------
-    // Misc
-    // -------------------------------------------------------------------------
 
     fun getHasShownCongrats(): Boolean = pref.getBoolean(HAS_SHOWN_CONGRATS, false)
     fun setHasShownCongrats(value: Boolean) = pref.edit { putBoolean(HAS_SHOWN_CONGRATS, value) }
@@ -321,10 +289,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
 
     fun getConcatenatedLinks(): String? = pref.getString(CONCATENATED_LINKS, null)
     fun setConcatenatedLinks(json: String) = pref.edit { putString(CONCATENATED_LINKS, json) }
-
-    // -------------------------------------------------------------------------
-    // Escape hatches for dynamic keys
-    // -------------------------------------------------------------------------
 
     fun getRawString(key: String, default: String = ""): String = pref.getString(key, default) ?: default
     fun setRawString(key: String, value: String) = pref.edit { putString(key, value) }
