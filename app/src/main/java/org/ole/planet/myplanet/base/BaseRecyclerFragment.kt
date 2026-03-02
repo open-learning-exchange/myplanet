@@ -304,14 +304,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return items.filterIsInstance<RealmMyCourse>()
     }
 
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
         val newList: MutableList<RealmMyCourse> = ArrayList()
@@ -324,14 +316,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
         return newList
-    }
-
-    private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-        val lan = languages.isEmpty() || languages.contains(l.language)
-        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-        return sub && lev && lan && med
     }
 
     override fun onDestroy() {
