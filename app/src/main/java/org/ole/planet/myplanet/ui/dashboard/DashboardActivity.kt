@@ -97,7 +97,7 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
 
     private var isReady = false
-    private lateinit var binding: ActivityDashboardBinding
+    internal lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUser? = null
     var result: Drawer? = null
@@ -127,8 +127,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, user, settings, editor, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
     }
-    private lateinit var notificationManager: NotificationUtils.NotificationManager
+    internal lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
+    private lateinit var navigationCoordinator: DashboardNavigationCoordinator
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
@@ -143,6 +144,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         postponeEnterTransition()
         initViews()
         notificationManager = NotificationUtils.getInstance(this)
+        navigationCoordinator = DashboardNavigationCoordinator(this, surveysRepository, teamsRepository, notificationManager)
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
@@ -165,7 +167,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         updateAppTitle()
         if (handleGuestAccess()) return
 
-        handleInitialFragment()
+        navigationCoordinator.handleInitialFragment(intent)
         addBackPressCallback()
         collectUiState()
 
@@ -180,7 +182,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupNavigation()
         setupToolbarActions()
         hideWifi()
-        handleNotificationIntent(intent)
+        navigationCoordinator.handleNotificationIntent(intent)
         setupDashboardDataObserver()
 
         binding.root.post {
@@ -307,18 +309,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun handleInitialFragment() {
-        if (intent != null && intent.hasExtra("fragmentToOpen")) {
-            val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
-            }
-        } else {
-            openCallFragment(BellDashboardFragment())
-            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
-        }
-    }
-
     private fun setupToolbarActions() {
         binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
         binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
@@ -389,140 +379,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
-    }
-
-    private fun handleNotificationIntent(intent: Intent?) {
-        val fromNotification = intent?.getBooleanExtra("from_notification", false) ?: false
-        if (fromNotification) {
-            val notificationType = intent.getStringExtra("notification_type")
-            val notificationId = intent.getStringExtra("notification_id")
-
-            notificationId?.let {
-                notificationManager.clearNotification(it)
-                markDatabaseNotificationAsRead(it)
-            }
-
-            when (notificationType) {
-                NotificationUtils.TYPE_SURVEY -> {
-                    val surveyId = intent.getStringExtra("surveyId")
-                    if (surveyId != null) {
-                        openCallFragment(SurveyFragment().apply {
-                            arguments = Bundle().apply {
-                                putString("surveyId", surveyId)
-                            }
-                        })
-                    } else {
-                        openNotificationsList(user?.id ?: "")
-                    }
-                }
-                NotificationUtils.TYPE_TASK -> {
-                    val taskId = intent.getStringExtra("taskId")
-                    if (taskId != null) {
-                        openMyFragment(TeamFragment().apply {
-                            arguments = Bundle().apply {
-                                putString("taskId", taskId)
-                            }
-                        })
-                    } else {
-                        openNotificationsList(user?.id ?: "")
-                    }
-                }
-                NotificationUtils.TYPE_STORAGE -> {
-                    startActivity(Intent(this, SettingsActivity::class.java))
-                }
-                NotificationUtils.TYPE_JOIN_REQUEST -> {
-                    val teamName = intent.getStringExtra("teamName")
-                    openMyFragment(TeamFragment().apply {
-                        arguments = Bundle().apply {
-                            teamName?.let { putString("teamName", it) }
-                        }
-                    })
-                }
-                else -> {
-                    openNotificationsList(user?.id ?: "")
-                }
-            }
-        }
-
-        if (intent?.getBooleanExtra("auto_navigate", false) == true) {
-            isFromNotificationAction = true
-            result?.closeDrawer()
-            
-            val notificationType = intent.getStringExtra("notification_type")
-            val relatedId = intent.getStringExtra("related_id")
-            
-            when (notificationType) {
-                NotificationUtils.TYPE_SURVEY -> {
-                    lifecycleScope.launch {
-                        handleSurveyNavigation(relatedId)
-                    }
-                }
-                NotificationUtils.TYPE_TASK -> {
-                    lifecycleScope.launch {
-                        handleTaskNavigation(relatedId)
-                    }
-                }
-                NotificationUtils.TYPE_JOIN_REQUEST -> {
-                    lifecycleScope.launch {
-                        handleJoinRequestNavigation(relatedId)
-                    }
-                }
-                NotificationUtils.TYPE_RESOURCE -> {
-                    openCallFragment(ResourcesFragment(), "Resources")
-                }
-            }
-
-            lifecycleScope.launch {
-                delay(1000)
-                isFromNotificationAction = false
-            }
-        }
-    }
-    
-    private suspend fun handleSurveyNavigation(surveyId: String?) {
-        if (surveyId != null) {
-            val currentStepExam = surveysRepository.getSurvey(surveyId)
-            SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
-        }
-    }
-    
-    private suspend fun handleTaskNavigation(taskId: String?) {
-        if (taskId == null) return
-
-        val teamData = teamsRepository.getTaskTeamInfo(taskId)
-
-        teamData?.let { (teamId, teamName, teamType) ->
-            val f = TeamDetailFragment.newInstance(
-                teamId = teamId,
-                teamName = teamName,
-                teamType = teamType,
-                isMyTeam = true,
-                navigateToPage = TasksPage
-            )
-            openCallFragment(f)
-        }
-    }
-
-    private suspend fun handleJoinRequestNavigation(requestId: String?) {
-        if (requestId != null) {
-            val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
-                requestId.removePrefix("join_request_")
-            } else {
-                requestId
-            }
-
-            val teamId = teamsRepository.getJoinRequestTeamId(actualJoinRequestId)
-
-            if (teamId?.isNotEmpty() == true) {
-                val f = TeamDetailFragment()
-                val b = Bundle()
-                b.putString("id", teamId)
-                b.putBoolean("isMyTeam", true)
-                b.putString("navigateToPage", JoinRequestsPage.id)
-                f.arguments = b
-                openCallFragment(f)
-            }
-        }
     }
 
     private suspend fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
@@ -619,7 +475,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun markDatabaseNotificationAsRead(notificationId: String) {
+    internal fun markDatabaseNotificationAsRead(notificationId: String) {
         lifecycleScope.launch {
             try {
                 notificationsRepository.markNotificationAsRead(notificationId, user?.id)
@@ -629,7 +485,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun openNotificationsList(userId: String) {
+    internal fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
                 putString("userId", userId)
@@ -723,12 +579,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
         tabSelectedListener = object : OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                onClickTabItems(tab.position)
+                navigationCoordinator.onClickTabItems(tab.position)
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {}
             override fun onTabReselected(tab: TabLayout.Tab) {
-                onClickTabItems(tab.position)
+                navigationCoordinator.onClickTabItems(tab.position)
             }
         }
         tabLayout.addOnTabSelectedListener(tabSelectedListener)
@@ -1021,7 +877,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleNotificationIntent(intent)
+        navigationCoordinator.handleNotificationIntent(intent)
 
         if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
             val userId = user?.id

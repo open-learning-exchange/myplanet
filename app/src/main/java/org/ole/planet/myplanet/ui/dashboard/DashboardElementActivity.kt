@@ -57,19 +57,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         supportFragmentManager.addOnBackStackChangedListener(this)
     }
 
-    fun onClickTabItems(position: Int) {
-        when (position) {
-            0 -> openCallFragment(BellDashboardFragment(), "dashboard")
-            1 -> openCallFragment(ResourcesFragment(), "library")
-            2 -> openCallFragment(CoursesFragment(), "course")
-            4 -> openEnterpriseFragment()
-            3 -> openCallFragment(TeamFragment(), "survey")
-            5 -> {
-                openCallFragment(CommunityTabFragment(), "community")
-            }
-        }
-    }
-
     protected fun bindGoOnlineMenu(menu: Menu) {
         goOnline = menu.findItem(R.id.menu_goOnline)
         updateGoOnlineVisibility()
