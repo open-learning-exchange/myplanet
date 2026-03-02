@@ -121,17 +121,17 @@ class TeamViewModel @Inject constructor(
             return TeamActionResult.NameExists
         }
 
-        val teamObject = com.google.gson.JsonObject().apply {
-            addProperty("name", name)
-            addProperty("description", description)
-            addProperty("services", services)
-            addProperty("rules", rules)
-            addProperty("teamType", teamType)
-            addProperty("isPublic", isPublic)
-            addProperty("category", category)
-        }
+        val request = org.ole.planet.myplanet.repository.CreateTeamRequest(
+            name = name,
+            description = description,
+            services = services,
+            rules = rules,
+            teamType = teamType,
+            isPublic = isPublic,
+            category = category
+        )
 
-        return teamsRepository.createTeamAndAddMember(teamObject, userModel)
+        return teamsRepository.createTeamAndAddMember(request, userModel)
             .fold(
                 onSuccess = { TeamActionResult.Success },
                 onFailure = { TeamActionResult.Failure(it.message) }

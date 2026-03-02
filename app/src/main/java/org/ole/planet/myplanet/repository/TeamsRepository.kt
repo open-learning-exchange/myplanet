@@ -35,6 +35,16 @@ data class TeamUploadData(
     val serialized: JsonObject
 )
 
+data class CreateTeamRequest(
+    val name: String,
+    val description: String,
+    val services: String,
+    val rules: String,
+    val teamType: String,
+    val isPublic: Boolean,
+    val category: String?
+)
+
 interface TeamsRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)
@@ -88,6 +98,7 @@ interface TeamsRepository {
     )
 
     suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String>
+    suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String>
     suspend fun updateTeam(
         teamId: String,
         name: String,

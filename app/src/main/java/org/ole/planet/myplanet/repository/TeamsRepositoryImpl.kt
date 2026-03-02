@@ -81,6 +81,19 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String> {
+        val teamObject = JsonObject().apply {
+            addProperty("name", request.name)
+            addProperty("description", request.description)
+            addProperty("services", request.services)
+            addProperty("rules", request.rules)
+            addProperty("teamType", request.teamType)
+            addProperty("isPublic", request.isPublic)
+            addProperty("category", request.category)
+        }
+        return createTeamAndAddMember(teamObject, user)
+    }
+
     override suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String> {
         return runCatching {
             val teamId = AndroidDecrypter.generateIv()
