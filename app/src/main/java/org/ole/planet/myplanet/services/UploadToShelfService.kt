@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
@@ -46,7 +47,8 @@ class UploadToShelfService @Inject constructor(
     @AppPreferences private val sharedPreferences: SharedPreferences,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val healthRepository: HealthRepository
 ) {
     lateinit var mRealm: Realm
 
@@ -283,13 +285,7 @@ class UploadToShelfService @Inject constructor(
     fun uploadHealth() {
         val apiInterface = client.create(ApiInterface::class.java)
         MainApplication.applicationScope.launch(Dispatchers.IO) {
-            val myHealths = dbService.withRealm { realm ->
-                realm.where(RealmHealthExamination::class.java)
-                    .equalTo("isUpdated", true)
-                    .notEqualTo("userId", "")
-                    .findAll()
-                    .map { realm.copyFromRealm(it) }
-            }
+            val myHealths = healthRepository.getUpdatedHealthExaminations()
 
             myHealths.forEach { pojo ->
                 try {
@@ -297,10 +293,9 @@ class UploadToShelfService @Inject constructor(
 
                     if (res.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
-                        dbService.executeTransactionAsync { realm ->
-                            val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
-                            managedPojo?._rev = rev
-                            managedPojo?.isUpdated = false
+                        val id = pojo._id
+                        if (rev != null && id != null) {
+                            healthRepository.markHealthUploaded(id, rev)
                         }
                     }
                 } catch (e: Exception) {
@@ -316,13 +311,7 @@ class UploadToShelfService @Inject constructor(
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
-                val myHealths = dbService.withRealm { realm ->
-                    realm.where(RealmHealthExamination::class.java)
-                        .equalTo("isUpdated", true)
-                        .equalTo("userId", userId)
-                        .findAll()
-                        .map { realm.copyFromRealm(it) }
-                }
+                val myHealths = healthRepository.getUpdatedHealthExaminations(userId)
 
                 myHealths.forEach { pojo ->
                     try {
@@ -335,10 +324,9 @@ class UploadToShelfService @Inject constructor(
 
                         if (res.body() != null && res.body()?.has("id") == true) {
                             val rev = res.body()?.get("rev")?.asString
-                            dbService.executeTransactionAsync { realm ->
-                                val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
-                                managedPojo?._rev = rev
-                                managedPojo?.isUpdated = false
+                            val id = pojo._id
+                            if (rev != null && id != null) {
+                                healthRepository.markHealthUploaded(id, rev)
                             }
                         }
                     } catch (e: Exception) {

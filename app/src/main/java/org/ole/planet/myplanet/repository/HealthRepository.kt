@@ -9,4 +9,6 @@ interface HealthRepository {
     suspend fun getExaminationById(id: String): RealmHealthExamination?
     suspend fun initHealth(): RealmMyHealth
     suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?)
+    suspend fun getUpdatedHealthExaminations(userId: String? = null): List<RealmHealthExamination>
+    suspend fun markHealthUploaded(examinationId: String, rev: String)
 }
