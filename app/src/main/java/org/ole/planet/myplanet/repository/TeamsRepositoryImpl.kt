@@ -1171,4 +1171,15 @@ class TeamsRepositoryImpl @Inject constructor(
 
         return allLibraryItems.filter { it._id !in existingIds }
     }
+
+    override suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long {
+        if (userName == null || teamId == null) return 0
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmTeamLog::class.java)
+                .equalTo("type", "teamVisit")
+                .equalTo("user", userName)
+                .equalTo("teamId", teamId)
+                .count()
+        } ?: 0
+    }
 }
