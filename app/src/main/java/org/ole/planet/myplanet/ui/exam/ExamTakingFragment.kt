@@ -72,10 +72,12 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             } else {
                 id
             }
-            val submissions = submissionsRepository.getSubmissionsByParentId(
-                parentId, user?.id, if (type == "exam") "pending" else null
-            )
-            sub = submissions.firstOrNull()
+            if (sub == null) {
+                val submissions = submissionsRepository.getSubmissionsByParentId(
+                    parentId, user?.id, "pending"
+                )
+                sub = submissions.firstOrNull()
+            }
             val courseId = exam?.courseId
             isCertified = if (!courseId.isNullOrEmpty()) {
                 coursesRepository.isCourseCertified(courseId)
@@ -100,9 +102,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 } else {
                     val currentExam = exam
                     if (currentExam != null) {
-                        sub = submissionsRepository.createExamSubmission(
-                            user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
-                        )
+                        if (sub == null || isTeam) {
+                            sub = submissionsRepository.createExamSubmission(
+                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                            )
+                        }
                         startExam(questions?.get(currentIndex))
                         updateNavButtons()
                     }

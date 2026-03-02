@@ -313,9 +313,7 @@ class AchievementFragment : BaseContainerFragment() {
                 openResource(lib)
             } else {
                 lifecycleScope.launch {
-                    if (resourcesRepository.downloadResources(listOf(lib))) {
-                        showProgressDialog()
-                    }
+                    resourcesRepository.downloadResources(listOf(lib))
                 }
             }
         }

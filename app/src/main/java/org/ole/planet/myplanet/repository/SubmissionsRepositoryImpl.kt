@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
@@ -18,7 +17,6 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamReference
 import org.ole.planet.myplanet.model.RealmUser
@@ -210,29 +208,15 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
-        executeTransaction { realm ->
+        val parentId = withRealm { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
-            val parentId = if (!courseId.isNullOrEmpty()) {
+            if (!courseId.isNullOrEmpty()) {
                 examId + "@" + courseId
             } else {
                 examId
             }
-            var sub = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo(
-                    "parentId",
-                    parentId,
-                )
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst()
-            sub = createSubmission(sub, realm)
-            sub.parentId = parentId
-            sub.userId = userId
-            sub.type = "survey"
-            sub.status = "pending"
-            sub.startTime = Date().time
         }
+        getOrCreateSubmission(userId, parentId)
     }
 
     override suspend fun saveSubmission(submission: RealmSubmission) {
@@ -244,12 +228,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
-        Log.d("SubmissionsRepository", "markSubmissionComplete called for ID: $id")
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
             sub.isUpdated = true // Mark for upload
-            Log.d("SubmissionsRepository", "Submission marked: status=complete, isUpdated=true, _id=${sub._id}")
         }
     }
 
@@ -457,7 +439,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return databaseService.withRealmAsync { realm ->
             var detachedSub: RealmSubmission? = null
             realm.executeTransaction { r ->
-                val managedSub = createSubmission(null, r)
+                val managedSub = createSubmissionInternal(null, r)
 
                 val parentId = when {
                     !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
@@ -614,6 +596,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     isFinal && isExplicitSubmission -> "requires grading"
                     else -> "pending"
                 }
+
+                if (realmSubmission.status == "complete" && type == "survey") {
+                    val orphans = r.where(RealmSubmission::class.java)
+                        .equalTo("parentId", realmSubmission.parentId)
+                        .equalTo("userId", realmSubmission.userId)
+                        .equalTo("status", "pending")
+                        .equalTo("type", "survey")
+                        .isNull("membershipDoc")
+                        .findAll()
+                    orphans.deleteAllFromRealm()
+                }
             }
         }
 
@@ -671,5 +664,38 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     sub._id = id
                 }
         }
+    }
+
+    override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
+        return databaseService.withRealmAsync { realm ->
+            var detachedSub: RealmSubmission? = null
+            realm.executeTransaction { r ->
+                val sub = r.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", parentId)
+                    .sort("lastUpdateTime", Sort.DESCENDING)
+                    .equalTo("status", "pending")
+                    .findFirst()
+
+                val managedSub = createSubmissionInternal(sub, r)
+                if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
+                if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
+                if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
+                if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
+                if (managedSub.startTime == 0L) managedSub.startTime = Date().time
+
+                detachedSub = r.copyFromRealm(managedSub)
+            }
+            detachedSub!!
+        }
+    }
+
+    private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {
+        var submission = sub
+        if (submission == null || (submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))) {
+            submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
+        }
+        submission!!.lastUpdateTime = Date().time
+        return submission
     }
 }
