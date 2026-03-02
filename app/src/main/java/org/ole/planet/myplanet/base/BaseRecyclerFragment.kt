@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -202,7 +203,26 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 }
                 val `object` = item as RealmObject
                 deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
+
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userId = profileDbHandler.getUserModel()?.id
+                    if (!userId.isNullOrEmpty()) {
+                        if (`object` is RealmMyLibrary) {
+                            val resourceId = `object`.resourceId
+                            if (resourceId != null) {
+                                resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                                Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                            }
+                        } else if (`object` is RealmMyCourse) {
+                            val courseId = `object`.courseId
+                            if (courseId != null) {
+                                coursesRepository.removeCourseFromShelf(courseId, userId)
+                                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                            }
+                        }
+                    }
+                }
+
                 if (mRealm.isInTransaction) {
                     mRealm.commitTransaction()
                 }

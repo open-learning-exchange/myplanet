@@ -58,8 +58,6 @@ abstract class BaseResourceFragment : Fragment() {
     var model: RealmUser? = null
     protected lateinit var mRealm: Realm
     var editor: SharedPreferences.Editor? = null
-    var lv: CheckboxListView? = null
-    var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var userRepository: UserRepository
@@ -81,7 +79,6 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
-    private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
     private var broadcastJob: Job? = null
@@ -118,20 +115,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val pendingResult = goAsync()
-            this@BaseResourceFragment.lifecycleScope.launch {
-                try {
-                    val list = resourcesRepository.getDownloadSuggestionList()
-                    showDownloadDialog(list)
-                } finally {
-                    pendingResult.finish()
-                }
-            }
-        }
-    }
-
     private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val pendingResult = goAsync()
@@ -164,7 +147,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
     private val pendingDownloadUrls = mutableSetOf<String>()
 
-    protected fun trackDownloadUrls(urls: Collection<String>) {
+    fun trackDownloadUrls(urls: Collection<String>) {
         pendingDownloadUrls.clear()
         pendingDownloadUrls.addAll(urls)
     }
@@ -193,66 +176,6 @@ abstract class BaseResourceFragment : Fragment() {
                     prgDialog.dismiss()
                     download?.message?.let { showError(prgDialog, it) }
                 }
-            }
-        }
-    }
-
-    protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
-        if (!isAdded) return
-        val librariesForDialog = dbMyLibrary
-
-        if (librariesForDialog.isEmpty()) {
-            return
-        }
-
-        activity?.let { fragmentActivity ->
-            val inflater = fragmentActivity.layoutInflater
-            val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
-            convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
-
-            val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
-            alertDialogBuilder.setView(convertView)
-                .setTitle(R.string.download_suggestion)
-                .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                    lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            lv?.selectedItemsList?.let {
-                                addToLibrary(librariesForDialog, it)
-                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
-                                val filtered = selectedLibraries.filterNotNull()
-                                if (resourcesRepository.downloadResources(filtered)) {
-                                    trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
-                                    showProgressDialog()
-                                }
-                            }
-                        } else {
-                            showNotConnectedToast()
-                        }
-                    }
-                }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                    lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(librariesForDialog)
-                            val filtered = librariesForDialog.filterNotNull()
-                            if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
-                                showProgressDialog()
-                            }
-                        } else {
-                            showNotConnectedToast()
-                        }
-                    }
-                }.setNegativeButton(R.string.txt_cancel, null)
-            downloadSuggestionDialog?.dismiss()
-            downloadSuggestionDialog = alertDialogBuilder.create()
-            downloadSuggestionDialog?.let { dialog ->
-                createListView(librariesForDialog, dialog)
-                dialog.setOnDismissListener {
-                    downloadSuggestionDialog = null
-                }
-                dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
-                    ?: 0) > 0
             }
         }
     }
@@ -343,17 +266,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
-        lv = convertView?.findViewById(R.id.alertDialog_listView)
-        val names = dbMyLibrary.map { it?.title }
-        val adapter = ArrayAdapter(requireActivity().baseContext, R.layout.rowlayout, R.id.checkBoxRowLayout, names)
-        lv?.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        lv?.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
-        }
-        lv?.adapter = adapter
-    }
-
     private fun registerReceiver() {
         broadcastJob?.cancel()
         broadcastJob = lifecycleScope.launch {
@@ -361,7 +273,6 @@ abstract class BaseResourceFragment : Fragment() {
                 if (isActive) {
                     when (intent.action) {
                         DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
-                        "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
                         "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
                         DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                     }
@@ -388,29 +299,6 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
-        lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
-            if (userId.isNullOrEmpty()) {
-                return@launch
-            }
-
-            if (`object` is RealmMyLibrary) {
-                val resourceId = `object`.resourceId
-                if (resourceId != null) {
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                }
-            } else {
-                val courseId = (`object` as RealmMyCourse).courseId
-                if (courseId != null) {
-                    coursesRepository.removeCourseFromShelf(courseId, userId)
-                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
-                }
-            }
-        }
-    }
-
     override fun onResume() {
         super.onResume()
         registerReceiver()
@@ -421,37 +309,13 @@ abstract class BaseResourceFragment : Fragment() {
         tvSelected?.text = selected
     }
 
-    fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
-            val resourceIds = selectedItems.mapNotNull { index ->
-                libraryItems.getOrNull(index)?.resourceId
-            }
-            resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
-        }
-    }
-
-    fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
-            val userId = user?.id ?: return@launch
-            val validLibraryItems = libraryItems.filterNotNull()
-            resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
-        }
-    }
-
     override fun onDestroyView() {
-        downloadSuggestionDialog?.dismiss()
-        downloadSuggestionDialog = null
         pendingSurveyDialog?.dismiss()
         pendingSurveyDialog = null
         stayOnlineDialog?.dismiss()
         stayOnlineDialog = null
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
-        convertView = null
         broadcastJob?.cancel()
         super.onDestroyView()
     }
@@ -484,15 +348,5 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
-        }
     }
 }

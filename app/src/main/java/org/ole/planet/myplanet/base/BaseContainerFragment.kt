@@ -25,6 +25,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallPermission
@@ -55,6 +56,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
+
+    private var networkReceiverJob: kotlinx.coroutines.Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         hasInstallPermissionValue = hasInstallPermission(requireContext())
@@ -138,6 +142,23 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        networkReceiverJob?.cancel()
+        networkReceiverJob = lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (isActive && intent.action == "ACTION_NETWORK_CHANGED") {
+                    try {
+                        val list = resourcesRepository.getDownloadSuggestionList()
+                        showDownloadDialog(list)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
     }
 
@@ -339,6 +360,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     override fun onPause() {
         super.onPause()
+        networkReceiverJob?.cancel()
         dismissProgressDialog()
     }
 
