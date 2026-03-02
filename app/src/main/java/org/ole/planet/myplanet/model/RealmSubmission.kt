@@ -63,12 +63,19 @@ open class RealmSubmission : RealmObject() {
 
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
                 val isNewSubmission = sub == null
+                val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+                val serverStatus = JsonUtils.getString("status", submission)
+                val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
+                    (sub?.status == "complete" || sub?.status == "requires grading")
+                val skipOverwrite = hadLocalChanges || isStatusDowngrade
 
                 if (sub == null) {
                     sub = mRealm.createObject(RealmSubmission::class.java, id)
                 }
                 sub?._id = id
-                sub?.status = JsonUtils.getString("status", submission)
+                if (!skipOverwrite) {
+                    sub?.status = serverStatus
+                }
                 sub?._rev = JsonUtils.getString("_rev", submission)
                 sub?.grade = JsonUtils.getLong("grade", submission)
                 sub?.type = JsonUtils.getString("type", submission)
@@ -91,7 +98,9 @@ open class RealmSubmission : RealmObject() {
                     sub.teamObject = teamRef
                 }
 
-                sub.isUpdated = false
+                if (!skipOverwrite) {
+                    sub.isUpdated = false
+                }
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
@@ -111,7 +120,7 @@ open class RealmSubmission : RealmObject() {
                     userId
                 }
 
-                if (submission.has("answers")) {
+                if (!skipOverwrite && submission.has("answers")) {
                     val answersArray = submission.get("answers").asJsonArray
                     sub?.answers = RealmList<RealmAnswer>()
 
@@ -200,6 +209,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use SubmissionsRepository.getOrCreateSubmission instead")
         fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
             var submission = sub
             if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
@@ -209,6 +219,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
+        @Deprecated("Use SubmissionsRepository.getExamMap instead")
         fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
             val exams = HashMap<String?, RealmStepExam>()
             for (sub in submissions ?: emptyList()){

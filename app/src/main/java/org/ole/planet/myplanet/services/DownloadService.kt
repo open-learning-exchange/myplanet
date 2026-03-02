@@ -57,6 +57,7 @@ class DownloadService : Service() {
     private val processedUrls = mutableSetOf<String>()
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
+    private var isCurrentDownloadPriority = false
 
     private val downloadJob = SupervisorJob()
     private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
@@ -102,6 +103,7 @@ class DownloadService : Service() {
             sessionTotalCount++
             totalDownloadsCount = getRemainingCount() + 1
 
+            isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
             initDownload(nextUrl.url, fromSync)
 
@@ -380,13 +382,14 @@ class DownloadService : Service() {
             DownloadUtils.updateResourceOfflineStatus(url)
         }
 
+        val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0
         val remaining = getRemainingCount()
 
         val download = Download().apply {
             fileName = getFileNameFromUrl(url)
             fileUrl = url
             progress = 100
-            completeAll = (remaining == 0)
+            completeAll = (remaining == 0) || (isCurrentDownloadPriority && remainingPriority == 0)
         }
 
         sendIntent(download, fromSync)

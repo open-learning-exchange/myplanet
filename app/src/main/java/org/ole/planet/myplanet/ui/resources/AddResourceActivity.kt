@@ -113,12 +113,13 @@ class AddResourceActivity : AppCompatActivity() {
         }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
-        spinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+        spinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, position: Int, id: Long) {
                 (view as? TextView)?.setTextColor(if (position == 0) hintColor else textColor)
             }
+
             override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
-        })
+        }
     }
 
     private fun saveResource() {

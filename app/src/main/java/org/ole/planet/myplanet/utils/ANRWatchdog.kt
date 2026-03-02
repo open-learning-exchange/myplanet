@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -51,10 +52,17 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
                     val duration = currentTime - lastTick
                     val mainThread = Looper.getMainLooper().thread
 
+                    val threadId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        mainThread.threadId()
+                    } else {
+                        @Suppress("DEPRECATION")
+                        mainThread.id
+                    }
+
                     val message = StringBuilder("ANR detected on thread ")
                         .append(mainThread.name)
                         .append(" (")
-                        .append(mainThread.id)
+                        .append(threadId)
                         .append(")\n")
 
                     for (element in mainThread.stackTrace) {

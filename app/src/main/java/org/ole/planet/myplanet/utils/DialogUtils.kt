@@ -278,6 +278,10 @@ object DialogUtils {
             return dialog?.isShowing == true
         }
 
+        fun setIndeterminateMode(indeterminate: Boolean) {
+            progressBar.isIndeterminate = indeterminate
+        }
+
         fun disableNegativeButton() {
             binding.buttonNegative.isEnabled = false
         }

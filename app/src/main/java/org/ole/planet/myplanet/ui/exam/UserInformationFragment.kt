@@ -58,6 +58,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var uploadManager: UploadManager
     @Inject
     lateinit var submissionUploadExecutor: SubmissionUploadExecutor
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -321,7 +323,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         Log.d("UserInformationFragment", "checkAvailableServer started, syncStartTime: $syncStartTime")
         val updateUrl = "${settings.getString("serverURL", "")}"
         Log.d("UserInformationFragment", "Server URL: $updateUrl")
-        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         // Capture syncStartTime before launching coroutine to preserve it across lifecycle changes

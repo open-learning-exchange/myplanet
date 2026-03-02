@@ -38,8 +38,6 @@ interface SubmissionsRepository {
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
-    suspend fun generateSubmissionPdf(context: android.content.Context, submissionId: String): java.io.File?
-    suspend fun generateMultipleSubmissionsPdf(context: android.content.Context, submissionIds: List<String>, examTitle: String): java.io.File?
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
     suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: org.ole.planet.myplanet.model.RealmStepExam, type: String?, teamId: String?): RealmSubmission?
     suspend fun saveExamAnswer(submission: RealmSubmission?, question: org.ole.planet.myplanet.model.RealmExamQuestion, ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean, type: String, index: Int, total: Int, isExplicitSubmission: Boolean): Boolean
@@ -49,4 +47,5 @@ interface SubmissionsRepository {
     suspend fun getExamById(id: String): RealmStepExam?
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
+    suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission
 }

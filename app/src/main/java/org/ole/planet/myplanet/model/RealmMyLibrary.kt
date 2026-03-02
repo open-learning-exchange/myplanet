@@ -185,53 +185,6 @@ open class RealmMyLibrary : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            return libs.filter { it.userId?.contains(userId) == false }
-        }
-
-        private fun getIds(mRealm: Realm): Array<String?> {
-            val list = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return list.map { it.resourceId }.toTypedArray()
-        }
-
-        @Deprecated("Use ResourcesRepository.removeDeletedResources instead")
-        @JvmStatic
-        fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
-            val startTime = System.currentTimeMillis()
-            val syncedResources = mRealm.where(RealmMyLibrary::class.java)
-                .isNotNull("_rev")
-                .equalTo("isPrivate", false)
-                .findAll()
-            val ids = syncedResources.map { it.resourceId }.toTypedArray()
-
-            val idsToDelete = ids.filterNot { it in newIds }
-
-            if (idsToDelete.isEmpty()) {
-                Log.d("PerformanceTest", "removeDeletedResource: No resources to delete")
-                return
-            }
-
-            Log.d("PerformanceTest", "removeDeletedResource: Starting batch delete of ${idsToDelete.size} resources")
-
-            // Single transaction for all deletes - massive performance improvement
-            val deleteStartTime = System.currentTimeMillis()
-            mRealm.executeTransaction { realm ->
-                idsToDelete.forEach { id ->
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceId", id)
-                        .findAll()
-                        .deleteAllFromRealm()
-                }
-            }
-            val deleteEndTime = System.currentTimeMillis()
-
-            val totalTime = deleteEndTime - startTime
-            val transactionTime = deleteEndTime - deleteStartTime
-            Log.d("PerformanceTest", "removeDeletedResource: Completed in ${totalTime}ms (transaction: ${transactionTime}ms) for ${idsToDelete.size} items")
-            Log.d("PerformanceTest", "removeDeletedResource: Average ${totalTime / idsToDelete.size.coerceAtLeast(1)}ms per item")
-        }
-
-        @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
@@ -284,30 +237,15 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                resource?.setUserId(userId)
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
-        }
-
-        @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
+            val wasPrivate = resource?.isPrivate == true
+            val hadPrivateFor = resource?.privateFor
+            val hadRev = resource?._rev
+            val isLocalOnlyPrivate = hadRev.isNullOrBlank() && wasPrivate && !hadPrivateFor.isNullOrBlank()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
@@ -373,10 +311,12 @@ open class RealmMyLibrary : RealmObject() {
                 setSubject(JsonUtils.getJsonArray("subject", doc), this)
                 setLevel(JsonUtils.getJsonArray("level", doc), this)
                 setTag(JsonUtils.getJsonArray("tags", doc), this)
-                isPrivate = JsonUtils.getBoolean("private", doc)
-                if (isPrivate && doc.has("privateFor")) {
-                    val privateForObj = doc.getAsJsonObject("privateFor")
-                    privateFor = privateForObj.get("teams")?.asString
+                if (!isLocalOnlyPrivate) {
+                    isPrivate = JsonUtils.getBoolean("private", doc)
+                    if (isPrivate && doc.has("privateFor")) {
+                        val privateForObj = doc.getAsJsonObject("privateFor")
+                        privateFor = privateForObj.get("teams")?.asString
+                    }
                 }
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
