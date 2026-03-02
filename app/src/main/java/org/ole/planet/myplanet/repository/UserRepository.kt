@@ -6,8 +6,10 @@ import io.realm.Sort
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.AchievementData
 
 interface UserRepository {
+    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 

@@ -27,6 +27,9 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.AchievementData
+import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -44,6 +47,42 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope
 ) : RealmRepository(databaseService), UserRepository {
+    override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData = databaseService.withRealmAsync { realm ->
+        val achievement = realm.where(RealmAchievement::class.java)
+            .equalTo("_id", "$userId@$planetCode")
+            .findFirst()
+
+        if (achievement != null) {
+            val achievementCopy = realm.copyFromRealm(achievement)
+            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
+                JsonUtils.gson.fromJson(json, JsonObject::class.java)
+                    ?.getAsJsonArray("resources")
+                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
+            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
+
+            val resources = if (resourceIds.isNotEmpty()) {
+                realm.copyFromRealm(
+                    realm.where(RealmMyLibrary::class.java)
+                        .`in`("id", resourceIds)
+                        .findAll()
+                )
+            } else {
+                emptyList()
+            }
+
+            AchievementData(
+                goals = achievementCopy.goals ?: "",
+                purpose = achievementCopy.purpose ?: "",
+                achievementsHeader = achievementCopy.achievementsHeader ?: "",
+                achievements = achievementCopy.achievements ?: emptyList(),
+                achievementResources = resources,
+                references = achievementCopy.references ?: emptyList()
+            )
+        } else {
+            AchievementData()
+        }
+    }
+
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
