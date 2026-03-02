@@ -50,9 +50,6 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private var endTimeStamp: String? = null
     lateinit var teamType: String
 
-    @Inject
-    lateinit var prefData: SharedPrefManager
-
     private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
     private val viewModel: EnterprisesViewModel by viewModels()
 

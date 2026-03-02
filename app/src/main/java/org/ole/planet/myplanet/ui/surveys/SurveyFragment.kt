@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
+import javax.inject.Inject
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 
