@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.TableDataUpdate
+import android.content.SharedPreferences
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.TagsRepository
