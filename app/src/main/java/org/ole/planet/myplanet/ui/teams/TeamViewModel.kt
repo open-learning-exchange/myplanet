@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
 
@@ -121,7 +122,7 @@ class TeamViewModel @Inject constructor(
             return TeamActionResult.NameExists
         }
 
-        val request = org.ole.planet.myplanet.repository.CreateTeamRequest(
+        val request = CreateTeamRequest(
             name = name,
             description = description,
             services = services,
