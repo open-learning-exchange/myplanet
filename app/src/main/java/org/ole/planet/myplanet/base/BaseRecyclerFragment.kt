@@ -41,8 +41,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
-    var resources: List<RealmMyLibrary>? = null
-    var courseLib: String? = null
     private var isAddInProgress = false
 
 
@@ -54,14 +52,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onCreate(savedInstanceState)
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
-            courseLib = it.getString("courseLib")
-            @Suppress("UNCHECKED_CAST")
-            resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
-            } else {
-                @Suppress("DEPRECATION")
-                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
-            }
         }
     }
 
@@ -88,15 +78,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
-            if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-                resources?.let { showDownloadDialog(it) }
-            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = settings.getString("userId", "--")
-                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
-                }
-            }
             startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()
         }
@@ -242,22 +223,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
+    @Deprecated("Use Repositories instead")
+    private fun getData(s: String): List<RealmMyCourse> {
+        val query = mRealm.where(RealmMyCourse::class.java)
         if (s.isEmpty()) return query.findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = query.findAll()
+        val data: RealmResults<RealmMyCourse> = query.findAll()
         val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<LI>()
-        val containsQuery = mutableListOf<LI>()
+        val startsWithQuery = mutableListOf<RealmMyCourse>()
+        val containsQuery = mutableListOf<RealmMyCourse>()
 
         for (item in data) {
-            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
+            val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
@@ -268,23 +247,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return startsWithQuery + containsQuery
     }
 
-    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
-        return when {
-            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-            else -> (item as RealmMyCourse).courseTitle
-        }
-    }
-
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
+    @Deprecated("Use Repositories instead")
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }
-        var list = getData(s, RealmMyCourse::class.java)
+        var list = getData(s)
         list = if (isMyCourseLib) {
             coursesRepository.getMyCourses(model?.id, list)
         } else {
@@ -304,14 +277,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return items.filterIsInstance<RealmMyCourse>()
     }
 
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
         val newList: MutableList<RealmMyCourse> = ArrayList()
@@ -324,14 +289,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
         return newList
-    }
-
-    private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-        val lan = languages.isEmpty() || languages.contains(l.language)
-        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-        return sub && lev && lan && med
     }
 
     override fun onDestroy() {
@@ -371,7 +328,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list?.clear()
         selectedItems = null
         list = null
-        resources = null
     }
 
     companion object {

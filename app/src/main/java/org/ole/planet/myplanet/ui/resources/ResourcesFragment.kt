@@ -271,6 +271,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
+        if (isMyCourseLib && !isSurvey) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                val userId = settings.getString("userId", "--")
+                val libraryList = resourcesRepository.getLibraryListForUser(userId)
+                showDownloadDialog(libraryList)
+            }
+        }
+
         initializeViews()
         setupEventListeners()
         initArrays()
@@ -738,6 +746,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
+    }
+
+    private fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
+        val newList: MutableList<RealmMyLibrary> = ArrayList()
+        for (l in libraries) {
+            if (isValidFilter(l)) newList.add(l)
+        }
+        return newList
+    }
+
+    private fun isValidFilter(l: RealmMyLibrary): Boolean {
+        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
+        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
+        val lan = languages.isEmpty() || languages.contains(l.language)
+        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
+        return sub && lev && lan && med
     }
 
     private fun filterLocalLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {

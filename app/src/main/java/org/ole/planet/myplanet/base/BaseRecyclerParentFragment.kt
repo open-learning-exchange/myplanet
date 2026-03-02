@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     var isMyCourseLib: Boolean = false
 
+    @Deprecated("Use Repositories instead")
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>): List<LI> {
         return when {
@@ -49,6 +50,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         }
     }
 
+    @Deprecated("Use Repositories instead")
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
