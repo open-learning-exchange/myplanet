@@ -29,15 +29,6 @@ open class RealmTeamLog : RealmObject() {
         }
 
         @JvmStatic
-        fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long? {
-            return realm.where(RealmTeamLog::class.java)
-                .equalTo("type", "teamVisit")
-                .equalTo("user", userName)
-                .equalTo("teamId", teamId)
-                .max("time")?.toLong()
-        }
-
-        @JvmStatic
         fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.user)

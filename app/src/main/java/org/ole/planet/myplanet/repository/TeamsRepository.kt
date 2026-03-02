@@ -150,4 +150,5 @@ interface TeamsRepository {
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
+    suspend fun getLastTeamVisit(userName: String?, teamId: String?): Long?
 }

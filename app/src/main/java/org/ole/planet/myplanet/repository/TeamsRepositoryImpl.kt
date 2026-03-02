@@ -1171,4 +1171,14 @@ class TeamsRepositoryImpl @Inject constructor(
 
         return allLibraryItems.filter { it._id !in existingIds }
     }
+
+    override suspend fun getLastTeamVisit(userName: String?, teamId: String?): Long? {
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmTeamLog::class.java)
+                .equalTo("type", "teamVisit")
+                .equalTo("user", userName)
+                .equalTo("teamId", teamId)
+                .max("time")?.toLong()
+        }
+    }
 }
