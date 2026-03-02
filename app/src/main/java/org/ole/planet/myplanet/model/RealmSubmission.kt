@@ -209,16 +209,6 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use SubmissionsRepository.getOrCreateSubmission instead")
-        fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
-            var submission = sub
-            if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
-                submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            submission!!.lastUpdateTime = Date().time
-            return submission
-        }
-
-        @JvmStatic
         @Deprecated("Use SubmissionsRepository.getExamMap instead")
         fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
             val exams = HashMap<String?, RealmStepExam>()

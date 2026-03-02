@@ -33,8 +33,6 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
@@ -46,7 +44,6 @@ import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
@@ -82,7 +79,6 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
-    private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
     private var broadcastJob: Job? = null
 
@@ -257,40 +253,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun showPendingSurveyDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
-            val list = submissionsRepository.getPendingSurveys(user?.id)
-            if (list.isEmpty()) return@launch
-            val exams = submissionsRepository.getExamMap(list)
-            val arrayAdapter = createSurveyAdapter(list, exams)
-            pendingSurveyDialog?.dismiss()
-            pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
-                .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                    SubmissionsAdapter.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-                }.setPositiveButton(R.string.dismiss, null).create()
-            pendingSurveyDialog?.setOnDismissListener {
-                pendingSurveyDialog = null
-            }
-            pendingSurveyDialog?.show()
-        }
-    }
-
-    private fun createSurveyAdapter(
-        list: List<RealmSubmission>,
-        exams: Map<String?, RealmStepExam>
-    ): ArrayAdapter<RealmSubmission> {
-        return object : ArrayAdapter<RealmSubmission>(requireActivity(), android.R.layout.simple_list_item_1, list) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: LayoutInflater.from(activity)
-                    .inflate(android.R.layout.simple_list_item_1, parent, false)
-                val text = exams[list[position].parentId]?.name ?: getString(R.string.n_a)
-                (view as TextView).text = text
-                return view
-            }
-        }
-    }
-
     private val resourceNotFoundReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             showResourceNotFoundDialog()
@@ -445,8 +407,6 @@ abstract class BaseResourceFragment : Fragment() {
     override fun onDestroyView() {
         downloadSuggestionDialog?.dismiss()
         downloadSuggestionDialog = null
-        pendingSurveyDialog?.dismiss()
-        pendingSurveyDialog = null
         stayOnlineDialog?.dismiss()
         stayOnlineDialog = null
         resourceNotFoundDialog?.dismiss()

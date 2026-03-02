@@ -119,23 +119,5 @@ open class RealmStepExam : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
-        fun getIds(list: List<RealmStepExam>): Array<String?> {
-            val ids = arrayOfNulls<String>(list.size)
-            for ((i, e) in list.withIndex()) {
-                if (e.type?.startsWith("survey") == true) {
-                    ids[i] = e.id
-                } else {
-                    ids[i] = e.id + "@" + e.courseId
-                }
-            }
-            return ids
-        }
-
-        @JvmStatic
-        fun getSurveyCreationTime(surveyId: String, mRealm: Realm): Long? {
-            val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", surveyId).findFirst()
-            return survey?.createdDate
-        }
     }
 }

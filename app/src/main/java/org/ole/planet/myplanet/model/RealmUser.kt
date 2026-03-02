@@ -422,13 +422,6 @@ open class RealmUser : RealmObject() {
             }
         }
 
-        @JvmStatic
-        fun isUserExists(realm: Realm, name: String?): Boolean {
-            return realm.where(RealmUser::class.java)
-                .equalTo("name", name)
-                .not().beginsWith("_id", "guest").count() > 0
-        }
-
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
         middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
         gender: String?, dob: String?, onSuccess: () -> Unit) {

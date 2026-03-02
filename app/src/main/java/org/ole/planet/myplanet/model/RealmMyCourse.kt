@@ -10,7 +10,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -172,14 +171,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyCourse> {
-            val userId = settings?.getString("userId", "--")
-            return mRealm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
-        }
-
-        @JvmStatic
         fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs ?: emptyList()) {
@@ -212,18 +203,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.isMyCourse instead")
-        fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean {
-            return getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findAll()).isNotEmpty()
-        }
-
-        @JvmStatic
-        @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
-        fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
-            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-        }
-
-        @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
@@ -240,41 +219,6 @@ open class RealmMyCourse : RealmObject() {
                 }
                 throw e
             }
-        }
-
-        @JvmStatic
-        fun getMyCourse(mRealm: Realm, id: String?): RealmMyCourse? {
-            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
-        }
-
-        @JvmStatic
-        fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                course?.setUserId(id)
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
-        }
-
-        @JvmStatic
-        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
-        fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
-            val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
-            val ids = JsonArray()
-            for (lib in myCourses) {
-                ids.add(lib.courseId)
-            }
-            return ids
         }
 
         @JvmStatic

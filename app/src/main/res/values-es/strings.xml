@@ -29,7 +29,6 @@
     <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
-    <string name="title_activity_dashboard">Panel de control</string>
     <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
@@ -488,7 +487,6 @@
     <string name="recording_audio">Grabando audio…</string>
     <string name="selected">"Seleccionado: "</string>
     <string name="last_sync">Última sincronización con el servidor: %s</string>
-    <string name="last_syncs">Última sincronización</string>
     <string name="no_team_available">No hay equipo/empresa disponible</string>
     <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
@@ -577,7 +575,6 @@
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
-    <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
     <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
     <string name="removed_from_mycourse">Eliminado de misCursos.</string>
     <string name="please_allow_usages_permission_to_myplanet_app">Por favor, permite los permisos de uso a la aplicación myPlanet.</string>
@@ -712,7 +709,6 @@
     <string name="invalid_url">URL inválida</string>
     <string name="please_enter_valid_url_to_continue">Por favor ingresa una URL válida para continuar.</string>
     <string name="uploading_data_to_server_please_wait">Cargando datos al servidor, por favor espera.....</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica de nuevo la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
     <string name="device_couldn_t_reach_local_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
     <string name="device_couldn_t_reach_nation_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a Internet e inténtelo de nuevo.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">El servidor no está configurado correctamente. Conecta este dispositivo con el servidor de Planet</string>
@@ -950,7 +946,6 @@
     <string name="share_chat">compartir chat</string>
     <string name="shared_chat">chat compartido</string>
     <string name="check_apk_version">verificando versión de la aplicación</string>
-    <string name="checking_server">verificando el servidor</string>
     <string name="add_note">Agregar una nota (opcional)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
@@ -1064,7 +1059,6 @@
     <string name="no_reports">No hay informes disponibles</string>
     <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
     <string name="adopt_survey">Adoptar encuesta</string>
-    <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
     <string name="beta_fast_sync">sincronización rápida beta</string>
     <string name="beta_improved_sync">beta improved sync</string>
     <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
@@ -1151,7 +1145,6 @@
     <string name="is_available">%1$s está disponible. Toca para continuar aprendiendo</string>
     <string name="failed_to_add_please_retry">Error al agregar. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_remove_resource">Error al eliminar el recurso. Por favor, inténtalo de nuevo</string>
-    <string name="failed_to_adopt_survey">No se pudo adoptar la encuesta. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_save_chat">Error al guardar el chat. Por favor, inténtalo de nuevo.</string>
     <string name="failed_to_delete_report">Error al eliminar el informe. Por favor, inténtalo de nuevo</string>
     <string name="delete_report">Eliminar informe</string>

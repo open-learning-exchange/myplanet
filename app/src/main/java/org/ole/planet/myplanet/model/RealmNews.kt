@@ -309,19 +309,6 @@ open class RealmNews : RealmObject() {
             return news
         }
 
-        @JvmStatic
-        fun getViewInJson(map: HashMap<String?, String>): String {
-            val viewInArray = JsonArray()
-            if (!TextUtils.isEmpty(map["viewInId"])) {
-                val `object` = JsonObject()
-                `object`.addProperty("_id", map["viewInId"])
-                `object`.addProperty("section", map["viewInSection"])
-                `object`.addProperty("name", map["name"])
-                viewInArray.add(`object`)
-            }
-            return JsonUtils.gson.toJson(viewInArray)
-        }
-
         fun saveConcatenatedLinksToPrefs() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)

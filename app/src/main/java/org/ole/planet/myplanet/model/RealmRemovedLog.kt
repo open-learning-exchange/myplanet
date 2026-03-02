@@ -14,29 +14,6 @@ open class RealmRemovedLog : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun onAdd(mRealm: Realm, type: String?, userId: String?, docId: String?) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                mRealm.where(RealmRemovedLog::class.java)
-                    .equalTo("type", type)
-                    .equalTo("userId", userId)
-                    .equalTo("docId", docId)
-                    .findAll().deleteAllFromRealm()
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
-        }
-
-        @JvmStatic
         fun onRemove(mRealm: Realm, type: String, userId: String?, docId: String?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {

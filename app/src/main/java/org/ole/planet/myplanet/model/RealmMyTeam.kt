@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -182,30 +180,6 @@ open class RealmMyTeam : RealmObject() {
             return ids
         }
 
-        @JvmStatic
-        fun getResourceIdsByUser(userId: String?, realm: Realm): MutableList<String> {
-            val list = realm.where(RealmMyTeam::class.java)
-                .equalTo("userId", userId)
-                .equalTo("docType", "membership")
-                .findAll()
-            val teamIds = mutableListOf<String>()
-            for (team in list) {
-                if (!team.teamId.isNullOrBlank()) {
-                    teamIds.add(team.teamId!!)
-                }
-            }
-            val l2 = realm.where(RealmMyTeam::class.java)
-                .`in`("teamId", teamIds.toTypedArray())
-                .equalTo("docType", "resourceLink")
-                .findAll()
-            val ids = mutableListOf<String>()
-            for (team in l2) {
-                if (!team.resourceId.isNullOrBlank()) {
-                    ids.add(team.resourceId!!)
-                }
-            }
-            return ids
-        }
 
         @JvmStatic
         fun getTeamCreator(teamId: String?, realm: Realm?): String {
@@ -346,19 +320,6 @@ open class RealmMyTeam : RealmObject() {
             return `object`
         }
 
-        fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {
-            val userId = settings?.getString("userId", "--") ?: "--"
-            val list = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("userId", userId)
-                .equalTo("docType", "membership")
-                .findAll()
-
-            val teamIds = list.map { it.teamId }.toTypedArray()
-            return mRealm.where(RealmMyTeam::class.java)
-                .`in`("_id", teamIds)
-                .notEqualTo("status", "archived")
-                .findAll()
-        }
     }
 
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {
