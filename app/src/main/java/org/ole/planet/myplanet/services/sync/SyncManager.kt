@@ -650,71 +650,18 @@ class SyncManager @Inject constructor(
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        try {
-                            val chunkSize = 50  // Increased from 10 to reduce transaction count
-                            val chunks = validDocuments.chunked(chunkSize)
-                            val idsWeAreProcessing = validDocuments.map { it.second }
+                        val idsWeAreProcessing = validDocuments.map { it.second }
+                        val docs = validDocuments.map { it.first }
 
-                            val savedIds = mutableListOf<String>()
-                            val realmInsertStartTime = System.currentTimeMillis()
+                        val realmInsertStartTime = System.currentTimeMillis()
+                        val savedIds = resourcesRepository.batchInsertResources(docs)
+                        val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
+                        logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
 
-                            for ((chunkIndex, chunk) in chunks.withIndex()) {
-                                val chunkStartTime = System.currentTimeMillis()
-                                databaseService.withRealm { realm ->
-                                    realm.executeTransaction { realmTx ->
-                                        val chunkDocuments = JsonArray()
-                                        chunk.forEach { (doc, _) ->
-                                            val wrapper = JsonObject()
-                                            wrapper.add("doc", doc)
-                                            chunkDocuments.add(wrapper)
-                                        }
-
-                                        val chunkIds = save(chunkDocuments, realmTx)
-                                        savedIds.addAll(chunkIds)
-                                    }
-                                }
-                                val chunkDuration = System.currentTimeMillis() - chunkStartTime
-                                if (chunkDuration > 500) {
-                                    logger.logDetail("resource_sync", "Batch $batchCount chunk $chunkIndex: Realm insert took ${chunkDuration}ms for ${chunk.size} docs")
-                                }
-                            }
-
-                            val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
-                            logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
-
-                            if (savedIds.isNotEmpty()) {
-                                val validIds = savedIds.filter { it.isNotBlank() }
-                                if (validIds.isNotEmpty()) {
-                                    newIds.addAll(validIds)
-                                    processedItems += validIds.size
-                                } else {
-                                    newIds.addAll(idsWeAreProcessing)
-                                    processedItems += idsWeAreProcessing.size
-                                }
-                            } else {
-                                newIds.addAll(idsWeAreProcessing)
-                                processedItems += idsWeAreProcessing.size
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-
-                            for ((doc, _) in validDocuments) {
-                                try {
-                                    databaseService.withRealm { realm ->
-                                        realm.executeTransaction { realmTx ->
-                                            val singleDocArray = JsonArray()
-                                            singleDocArray.add(doc)
-                                            val singleIds = save(singleDocArray, realmTx)
-                                            if (singleIds.isNotEmpty()) {
-                                                newIds.addAll(singleIds)
-                                                processedItems++
-                                            }
-                                        }
-                                    }
-                                } catch (e2: Exception) {
-                                    e2.printStackTrace()
-                                }
-                            }
+                        if (savedIds.isNotEmpty()) {
+                            val validIds = savedIds.filter { it.isNotBlank() }
+                            newIds.addAll(validIds)
+                            processedItems += validIds.size
                         }
                     }
 

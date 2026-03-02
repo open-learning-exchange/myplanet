@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamCoursesAdapter(
     private val context: Context,
@@ -51,15 +52,12 @@ class TeamCoursesAdapter(
     class ViewHolder(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val DiffCallback = object : DiffUtil.ItemCallback<RealmMyCourse>() {
-            override fun areItemsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
-                return oldItem.courseTitle == newItem.courseTitle &&
+        private val DiffCallback = DiffUtils.itemCallback<RealmMyCourse>(
+            { oldItem, newItem -> oldItem.id == newItem.id },
+            { oldItem, newItem ->
+                oldItem.courseTitle == newItem.courseTitle &&
                         oldItem.description == newItem.description
             }
-        }
+        )
     }
 }

@@ -7,8 +7,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -16,17 +14,13 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
@@ -36,18 +30,17 @@ import org.ole.planet.myplanet.utils.Utilities
 class ResourcesAdapter(
     private val context: Context,
     private var ratingMap: HashMap<String?, JsonObject>,
-    private val resourcesRepository: ResourcesRepository,
-    private val userModel: RealmUser?,
-    private var tagsMap: Map<String, List<RealmTag>>,
+    private val isGuest: Boolean,
+    private var tagsMap: Map<String, List<TagItem>>,
     private var openedResourceIds: Set<String>
-) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(
+) : ListAdapter<ResourceItem, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
         { oldItem, newItem -> oldItem.id == newItem.id },
         { oldItem, newItem -> oldItem._rev == newItem._rev && oldItem.uploadDate == newItem.uploadDate }
     )
-), OnDiffRefreshListener {
+) {
 
-    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
+    private val selectedItems: MutableList<ResourceItem> = ArrayList()
     private var listener: OnLibraryItemSelectedListener? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -72,11 +65,11 @@ class ResourcesAdapter(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun getLibraryList(): List<RealmMyLibrary> {
+    fun getLibraryList(): List<ResourceItem> {
         return currentList
     }
 
-    fun setLibraryList(libraryList: List<RealmMyLibrary?>, onComplete: (() -> Unit)? = null) {
+    fun setLibraryList(libraryList: List<ResourceItem?>, onComplete: (() -> Unit)? = null) {
         val filteredList = libraryList.filterNotNull()
         if (onComplete != null) {
             submitList(filteredList) { onComplete() }
@@ -122,20 +115,20 @@ class ResourcesAdapter(
                 openLibrary(library)
             }
             val isResourceOpened = openedResourceIds.contains(library.id)
-            if (library.isResourceOffline() || isResourceOpened) {
+            if (library.isOffline || isResourceOpened) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
             }
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (library.isResourceOffline()) {
+                if (library.isOffline) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
                 }
             bindRating(holder, library)
 
-            if (userModel?.isGuest() == false) {
+            if (!isGuest) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowLibraryBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, library.title ?: "")
@@ -156,7 +149,7 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return selectedItems.size == currentList.size
+        return currentList.isNotEmpty() && selectedItems.size == currentList.size
     }
 
     fun selectAllItems(selectAll: Boolean) {
@@ -172,8 +165,8 @@ class ResourcesAdapter(
         }
     }
 
-    private fun openLibrary(library: RealmMyLibrary?) {
-        homeItemClickListener?.openLibraryDetailFragment(library)
+    private fun openLibrary(library: ResourceItem) {
+        listener?.onResourceClicked(library)
     }
 
     override fun onBindViewHolder(
@@ -194,7 +187,7 @@ class ResourcesAdapter(
             }
             if (payloads.contains(OPENED_RESOURCE_PAYLOAD)) {
                 val isResourceOpened = openedResourceIds.contains(library.id)
-                if (library.isResourceOffline() || isResourceOpened) {
+                if (library.isOffline || isResourceOpened) {
                     holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
                 } else {
                     holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
@@ -209,7 +202,7 @@ class ResourcesAdapter(
         }
     }
 
-    fun setTagsMap(tagsMap: Map<String, List<RealmTag>>) {
+    fun setTagsMap(tagsMap: Map<String, List<TagItem>>) {
         this.tagsMap = tagsMap
         notifyItemRangeChanged(0, currentList.size, TAGS_PAYLOAD)
     }
@@ -237,7 +230,7 @@ class ResourcesAdapter(
         renderTagCloud(flexboxDrawable, tags)
     }
 
-    private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {
+    private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<TagItem>) {
         flexboxDrawable.removeAllViews()
         if (tags.isEmpty()) {
             return
@@ -269,7 +262,7 @@ class ResourcesAdapter(
         setLibraryList(sortLibraryList(), onComplete)
     }
 
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary> {
+    private fun sortLibraryListByTitle(): List<ResourceItem> {
         return if (isTitleAscending) {
             currentList.sortedBy { it.title?.lowercase(Locale.ROOT) }
         } else {
@@ -277,7 +270,7 @@ class ResourcesAdapter(
         }
     }
 
-    private fun sortLibraryList(): List<RealmMyLibrary> {
+    private fun sortLibraryList(): List<ResourceItem> {
         return if (isAscending) {
             currentList.sortedBy { it.createdDate }
         } else {
@@ -312,7 +305,7 @@ class ResourcesAdapter(
         }
     }
 
-    private fun bindRating(holder: ResourcesViewHolder, library: RealmMyLibrary) {
+    private fun bindRating(holder: ResourcesViewHolder, library: ResourceItem) {
         if (ratingMap.containsKey(library.resourceId)) {
             val ratingData = ratingMap[library.resourceId]
             CourseRatingUtils.showRating(
@@ -340,7 +333,7 @@ class ResourcesAdapter(
                         if (adapterPosition != RecyclerView.NO_POSITION) {
                             if (adapterPosition < currentList.size) {
                                 val library = getItem(adapterPosition)
-                                if (userModel?.isGuest() == false) {
+                                if (!isGuest) {
                                     homeItemClickListener?.showRatingDialog(
                                         "resource",
                                         library?.resourceId,
@@ -356,12 +349,5 @@ class ResourcesAdapter(
             }
 
         fun bind() {}
-    }
-
-    override fun refreshWithDiff() {
-        (context as? LifecycleOwner)?.lifecycleScope?.launch {
-            val newLibraryList = resourcesRepository.getAllLibraryItems()
-            setLibraryList(newLibraryList)
-        }
     }
 }

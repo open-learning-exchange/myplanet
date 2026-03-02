@@ -67,9 +67,10 @@ object ServiceModule {
         personalsRepository: PersonalsRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
-        uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs
+        uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
+        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository)
     }
 
     @Provides

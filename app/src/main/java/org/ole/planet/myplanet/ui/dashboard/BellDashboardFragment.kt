@@ -28,6 +28,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
+import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
@@ -51,6 +52,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     var user: RealmUser? = null
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
+
+    @Inject
+    lateinit var serverUrlMapper: ServerUrlMapper
 
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
@@ -122,7 +126,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
         val updateUrl = settings.getString("serverURL", "") ?: return
-        val mapping = ServerUrlMapper().processUrl(updateUrl)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
