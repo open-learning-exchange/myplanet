@@ -47,27 +47,25 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: OnSuccessListener) {
-        serviceScope.launch {
+        serviceScope.launch(Dispatchers.IO) {
             try {
                 val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
                 if (healthUrl.isBlank()) {
-                    withContext(Dispatchers.Main) { listener.onSuccess("") }
+                    listener.onSuccess("")
                     return@launch
                 }
 
                 try {
-                    val response = withContext(Dispatchers.IO) { apiInterface.healthAccess(healthUrl) }
-                    withContext(Dispatchers.Main) {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
+                    val response = apiInterface.healthAccess(healthUrl)
+                    when (response.code()) {
+                        200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
+                        401 -> listener.onSuccess("Unauthorized - Invalid credentials")
+                        404 -> listener.onSuccess("Server endpoint not found")
+                        500 -> listener.onSuccess("Server internal error")
+                        502 -> listener.onSuccess("Bad gateway - Server unavailable")
+                        503 -> listener.onSuccess("Service temporarily unavailable")
+                        504 -> listener.onSuccess("Gateway timeout")
+                        else -> listener.onSuccess("Server error: ${response.code()}")
                     }
                 } catch (t: Exception) {
                     t.printStackTrace()
@@ -78,11 +76,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         is IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
-                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
+                    listener.onSuccess(errorMsg)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
+                listener.onSuccess("Health access initialization failed")
             }
         }
     }
@@ -93,10 +91,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             return
         }
 
-        serviceScope.launch {
-            withContext(Dispatchers.Main) {
-                callback.onCheckingVersion()
-            }
+        serviceScope.launch(Dispatchers.IO) {
+            callback.onCheckingVersion()
             val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
