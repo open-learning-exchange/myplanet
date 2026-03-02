@@ -36,10 +36,12 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
+import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -181,7 +183,51 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isAdded || requireActivity().isFinishing) return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                recyclerView.adapter = getAdapter()
+                // Run independent queries in parallel
+                val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
+                val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+
+                if (!mRealm.isInTransaction) {
+                    mRealm.refresh()
+                }
+
+                val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
+                val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
+                    copiedList.forEachIndexed { index, course ->
+                        course.isMyCourse = if (isMyCourseLib) true else managedCourseList[index].isMyCourse
+                    }
+                }
+                val sortedCourseList = if (isMyCourseLib) {
+                    courseList.sortedBy { it.courseTitle }
+                } else {
+                    courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+                }
+
+                if (isMyCourseLib) {
+                    val courseIds = courseList.mapNotNull { it.id }
+                    resources = coursesRepository.getCourseOfflineResources(courseIds)
+                    courseLib = "courses"
+                }
+
+                // Wait for parallel queries to complete
+                val map = ratingsDeferred.await()
+                val progressMap = progressDeferred.await()
+
+                recyclerView.adapter = null
+                val courses = sortedCourseList.map { it.toCourse() }
+
+                adapterCourses = CoursesAdapter(
+                    requireActivity(),
+                    map,
+                    userModel?.isGuest() ?: true,
+                    { courseId -> tagsRepository.getTagsForCourse(courseId).map { it.toTag() } },
+                    isMyCourseLib
+                )
+                adapterCourses.submitList(courses)
+                adapterCourses.setProgressMap(progressMap)
+                adapterCourses.setListener(this@CoursesFragment)
+                adapterCourses.setRatingChangeListener(this@CoursesFragment)
+                recyclerView.adapter = adapterCourses
                 checkList()
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             } catch (e: Exception) {
@@ -227,8 +273,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             Pair(ratingsDeferred.await(), progressDeferred.await())
         }
 
-        adapterCourses = CoursesAdapter(requireActivity(), map, userModel, tagsRepository, isMyCourseLib)
-        adapterCourses.submitList(sortedCourseList) {
+        val courses = sortedCourseList.map { it.toCourse() }
+
+        adapterCourses = CoursesAdapter(
+            requireActivity(),
+            map,
+            userModel?.isGuest() ?: true,
+            { courseId -> tagsRepository.getTagsForCourse(courseId).map { it.toTag() } },
+            isMyCourseLib
+        )
+        adapterCourses.submitList(courses) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
                 selectedItems?.clear()
                 clearAllSelections()
@@ -528,7 +582,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val progress = progressRepository.getCourseProgress(userId)
                 Triple(finalCourses, ratings, progress)
             }
-            adapterCourses.updateData(filteredCourses, map, progressMap)
+            val courses = filteredCourses.map { it.toCourse() }
+            adapterCourses.updateData(courses, map, progressMap)
             scrollToTop()
             showNoData(tvMessage, filteredCourses.size, "courses")
         }
@@ -572,11 +627,44 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         return builder.create()
     }
 
-    override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
-        selectedItems = list
+    override fun onSelectedListChange(list: MutableList<Course?>) {
+        val realmCourses = list.mapNotNull { course ->
+            course?.let {
+                // Find managed RealmMyCourse or use a dummy one for addToMyList/deletion?
+                // For addToMyList, we need managed object if we want to add relation?
+                // Actually addToMyList just extracts IDs.
+                // But deleteSelected uses `mRealm.beginTransaction()`.
+                // And `deleteCourseProgress` uses `object.courseId`.
+                // `removeFromShelf`?
+                // `BaseRecyclerFragment.removeFromShelf` checks `object is RealmMyCourse`.
+                // And calls `coursesRepository.removeCourseFromShelf(courseId, userId)`.
+
+                // So I can create an unmanaged RealmMyCourse with just ID and Title.
+                // But safer to try finding it.
+                var rc = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", it.courseId).findFirst()
+                if (rc == null) {
+                    // Create unmanaged
+                    rc = RealmMyCourse()
+                    rc.courseId = it.courseId
+                    rc.courseTitle = it.courseTitle
+                    rc.isMyCourse = it.isMyCourse
+                }
+                rc
+            }
+        }.toMutableList<RealmMyCourse?>()
+        selectedItems = realmCourses
         changeButtonStatus()
         hideButtons()
     }
+
+    override fun onTagClicked(tag: Tag) {
+        val realmTag = RealmTag()
+        realmTag.name = tag.name
+        realmTag.id = tag.id
+        onTagClicked(realmTag)
+    }
+
+    // Existing onTagClicked(tag: RealmTag) handles logic.
 
     override fun onTagClicked(tag: RealmTag) {
         if (!searchTags.any { it.name == tag.name }) {
@@ -723,7 +811,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     } else {
                         courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
-                    adapterCourses.updateData(sortedCourseList, map, progressMap)
+                    val courses = sortedCourseList.map { it.toCourse() }
+                    adapterCourses.updateData(courses, map, progressMap)
                 }
             } else {
                 loadDataAsync()
@@ -749,5 +838,25 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             return
         }
         filterCoursesAndUpdateUi()
+    }
+
+    private fun RealmMyCourse.toCourse(): Course {
+        return Course(
+            courseId = this.courseId ?: "",
+            courseTitle = this.courseTitle ?: "",
+            description = this.description ?: "",
+            gradeLevel = this.gradeLevel ?: "",
+            subjectLevel = this.subjectLevel ?: "",
+            createdDate = this.createdDate,
+            numberOfSteps = this.getNumberOfSteps(),
+            isMyCourse = this.isMyCourse
+        )
+    }
+
+    private fun RealmTag.toTag(): Tag {
+        return Tag(
+            id = this.id,
+            name = this.name
+        )
     }
 }
