@@ -54,7 +54,6 @@ import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -68,6 +67,7 @@ class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
@@ -92,12 +92,12 @@ class SyncManager @Inject constructor(
         this.listener = listener
         if (isSyncing.compareAndSet(false, true)) {
             _syncStatus.value = SyncStatus.Idle
-            settings.edit { remove("concatenated_links") }
+            sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
             _syncStatus.value = SyncStatus.Syncing
 
             // Use improved sync manager if beta sync is enabled
-            val useImproved = settings.getBoolean("useImprovedSync", false)
+            val useImproved = sharedPrefManager.getUseImprovedSync()
             val isSyncRequest = type.equals("sync", ignoreCase = true)
             if (useImproved && isSyncRequest) {
                 initializeAndStartImprovedSync(listener, syncTables)
@@ -125,7 +125,7 @@ class SyncManager @Inject constructor(
                 initializationJob.join()
 
                 val manager = improvedSyncManager.get()
-                val syncMode = if (settings.getBoolean("fastSync", false)) {
+                val syncMode = if (sharedPrefManager.getFastSync()) {
                     SyncMode.Fast
                 } else {
                     SyncMode.Standard
@@ -147,7 +147,7 @@ class SyncManager @Inject constructor(
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
-        settings.edit { putLong("LastSync", Date().time) }
+        sharedPrefManager.setLastSync(Date().time)
         listener?.onSyncComplete()
         listener = null
         _syncStatus.value = SyncStatus.Success("Sync completed")
@@ -165,7 +165,7 @@ class SyncManager @Inject constructor(
     }
 
     private suspend fun startSync(type: String, syncTables: List<String>?) {
-        val isFastSync = settings.getBoolean("fastSync", false)
+        val isFastSync = sharedPrefManager.getFastSync()
         if (!isFastSync || type == "upload") {
             startFullSync()
         } else {
@@ -551,7 +551,7 @@ class SyncManager @Inject constructor(
             }
 
             if (ssid != null) {
-                settings.edit { putString("LastWifiSSID", ssid) }
+                sharedPrefManager.setLastWifiSsid(ssid)
             }
         }
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
@@ -671,8 +671,7 @@ class SyncManager @Inject constructor(
                     if (batchCount % 10 == 0) {
                         Log.d("SyncPerf", "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
                         logger.logDetail("resource_sync", "Batch $batchCount progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
-                        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        settings.edit {
+                        sharedPrefManager.rawPreferences.edit {
                             putLong("ResourceLastSyncTime", System.currentTimeMillis())
                             putInt("ResourceSyncPosition", skip)
                         }
@@ -795,11 +794,11 @@ class SyncManager @Inject constructor(
         val cacheTimeKey = "shelves_cache_time"
         val cacheValidityHours = 6
 
-        val cacheTime = settings.getLong(cacheTimeKey, 0)
+        val cacheTime = sharedPrefManager.getRawLong(cacheTimeKey, 0)
         val now = System.currentTimeMillis()
 
         if (now - cacheTime < cacheValidityHours * 60 * 60 * 1000) {
-            val cachedData = settings.getString(cacheKey, "") ?: ""
+            val cachedData = sharedPrefManager.getRawString(cacheKey, "")
             if (cachedData.isNotEmpty()) {
                 return cachedData.split(",").filter { it.isNotBlank() }
             }
@@ -811,10 +810,8 @@ class SyncManager @Inject constructor(
         val cacheKey = "shelves_with_data"
         val cacheTimeKey = "shelves_cache_time"
 
-        settings.edit {
-            putString(cacheKey, shelves.joinToString(","))
-            putLong(cacheTimeKey, System.currentTimeMillis())
-        }
+        sharedPrefManager.setRawString(cacheKey, shelves.joinToString(","))
+        sharedPrefManager.setRawLong(cacheTimeKey, System.currentTimeMillis())
     }
 
     private suspend fun myLibraryTransactionSync() {
