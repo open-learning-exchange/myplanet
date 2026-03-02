@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -31,7 +32,11 @@ class RatingsFragment : DialogFragment() {
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
+
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
+
     private var ratingListener: OnRatingChangeListener? = null
     private var isUserReady = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
@@ -51,7 +56,6 @@ class RatingsFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return binding.root
     }
 

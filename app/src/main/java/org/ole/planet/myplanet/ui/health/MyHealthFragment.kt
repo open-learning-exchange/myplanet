@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -79,7 +80,11 @@ class MyHealthFragment : Fragment() {
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
+
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
@@ -90,7 +95,6 @@ class MyHealthFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startHealthSync()
     }
 

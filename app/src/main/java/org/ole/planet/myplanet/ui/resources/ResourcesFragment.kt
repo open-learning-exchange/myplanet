@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -93,6 +94,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
+
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     
@@ -100,7 +106,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startResourcesSync()
     }
 

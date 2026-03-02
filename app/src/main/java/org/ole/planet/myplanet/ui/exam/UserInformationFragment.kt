@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.services.SubmissionUploadExecutor
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -60,6 +61,11 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var submissionUploadExecutor: SubmissionUploadExecutor
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
+
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -310,7 +316,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
             val activity = requireActivity()
             if (activity is AppCompatActivity) {

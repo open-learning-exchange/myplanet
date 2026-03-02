@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
-import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,14 +10,22 @@ import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
+@AndroidEntryPoint
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
+
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -77,7 +85,6 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         binding.llActionButtons.visibility = View.GONE
-        val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, settings)

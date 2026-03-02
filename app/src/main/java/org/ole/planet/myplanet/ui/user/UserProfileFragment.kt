@@ -60,6 +60,7 @@ import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -72,7 +73,11 @@ class UserProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: UserProfileViewModel by viewModels()
     private lateinit var rowStatBinding: RowStatBinding
-    private lateinit var settings: SharedPreferences
+
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
+
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private var model: RealmUser? = null
@@ -194,7 +199,6 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun initializeDependencies() {
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
     }
