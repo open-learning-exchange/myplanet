@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
@@ -627,5 +628,19 @@ class UserRepositoryImpl @Inject constructor(
             equalTo("actionType", "sync")
         }
         return actions.isNotEmpty()
+    }
+
+    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
+        return withRealm { realm ->
+            var achievement = realm.where(RealmAchievement::class.java)
+                .equalTo("_id", achievementId)
+                .findFirst()
+            if (achievement == null) {
+                realm.executeTransaction { transactionRealm ->
+                    achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
+                }
+            }
+            achievement?.let { realm.copyFromRealm(it) }
+        }
     }
 }

@@ -18,9 +18,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.Array
 import kotlin.Int
 import kotlin.String
@@ -40,12 +42,14 @@ import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
+@AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
     private lateinit var editAttachmentBinding: EditAttachementBinding
@@ -53,6 +57,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertReferenceBinding: AlertReferenceBinding
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
+
+    @Inject
+    lateinit var userRepository: UserRepository
+
     var user: RealmUser? = null
     private var achievement: RealmAchievement? = null
     private var referenceArray: JsonArray? = null
@@ -304,17 +312,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = databaseService.withRealmAsync { realm ->
-                var achievement = realm.where(RealmAchievement::class.java)
-                    .equalTo("_id", achievementId)
-                    .findFirst()
-                if (achievement == null) {
-                    realm.executeTransaction { transactionRealm ->
-                        achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-                    }
-                }
-                realm.copyFromRealm(achievement!!)
-            }
+            achievement = userRepository.initializeAchievement(achievementId)
             if (isAdded) {
                 populateAchievementData()
             }
