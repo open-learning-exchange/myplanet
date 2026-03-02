@@ -105,6 +105,7 @@ abstract class BaseResourceFragment : Fragment() {
     internal fun showProgressDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             if (isFragmentActive()) {
+                prgDialog.setIndeterminateMode(true)
                 prgDialog.show()
             }
         }
@@ -161,6 +162,13 @@ abstract class BaseResourceFragment : Fragment() {
             stayOnlineDialog?.show()
         }
     }
+    private val pendingDownloadUrls = mutableSetOf<String>()
+
+    protected fun trackDownloadUrls(urls: Collection<String>) {
+        pendingDownloadUrls.clear()
+        pendingDownloadUrls.addAll(urls)
+    }
+
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -171,8 +179,17 @@ abstract class BaseResourceFragment : Fragment() {
                     intent.getParcelableExtra("download")
                 }
                 if (download?.failed == false) {
-                    setProgress(download)
+                    if (pendingDownloadUrls.isNotEmpty()) {
+                        val fileUrl = download.fileUrl
+                        if (!fileUrl.isNullOrEmpty() && download.progress == 100) {
+                            pendingDownloadUrls.remove(fileUrl)
+                        }
+                        setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
+                    } else {
+                        setProgress(download)
+                    }
                 } else {
+                    pendingDownloadUrls.clear()
                     prgDialog.dismiss()
                     download?.message?.let { showError(prgDialog, it) }
                 }
@@ -202,7 +219,9 @@ abstract class BaseResourceFragment : Fragment() {
                             lv?.selectedItemsList?.let {
                                 addToLibrary(librariesForDialog, it)
                                 val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
-                                if (resourcesRepository.downloadResources(selectedLibraries.filterNotNull())) {
+                                val filtered = selectedLibraries.filterNotNull()
+                                if (resourcesRepository.downloadResources(filtered)) {
+                                    trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
                                     showProgressDialog()
                                 }
                             }
@@ -214,7 +233,9 @@ abstract class BaseResourceFragment : Fragment() {
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
                             addAllToLibrary(librariesForDialog)
-                            if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
+                            val filtered = librariesForDialog.filterNotNull()
+                            if (resourcesRepository.downloadResources(filtered)) {
+                                trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
                                 showProgressDialog()
                             }
                         } else {
@@ -307,16 +328,12 @@ abstract class BaseResourceFragment : Fragment() {
             prgDialog.setTitle(download.fileName)
         }
         if (download.completeAll) {
-            showError(prgDialog, getString(R.string.all_files_downloaded_successfully))
             onDownloadComplete()
         }
     }
 
     open fun onDownloadComplete() {
-        prgDialog.setPositiveButton("Finish", isVisible = true){
-            prgDialog.dismiss()
-        }
-        prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
+        prgDialog.dismiss()
 
         if (settings.getBoolean("isAlternativeUrl", false)) {
             editor?.putString("alternativeUrl", "")
