@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -16,4 +17,5 @@ interface AutoSyncEntryPoint {
     fun uploadToShelfService(): UploadToShelfService
     @AppPreferences
     fun sharedPreferences(): SharedPreferences
+    fun sharedPrefManager(): SharedPrefManager
 }

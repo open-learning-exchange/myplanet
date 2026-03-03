@@ -39,8 +39,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
-import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager

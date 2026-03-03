@@ -12,8 +12,8 @@ interface VoicesRepository {
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
     suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
-    suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?): RealmNews
-    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: io.realm.RealmList<String>?): Boolean
+    suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)
@@ -26,6 +26,6 @@ interface VoicesRepository {
     suspend fun removeLabel(newsId: String, label: String)
     suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String>
     suspend fun getNewsById(id: String): RealmNews?
-    suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: io.realm.RealmList<String>?)
-    suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: io.realm.RealmList<String>?)
+    suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?)
+    suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?)
 }
