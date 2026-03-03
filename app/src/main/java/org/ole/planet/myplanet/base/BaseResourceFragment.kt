@@ -85,7 +85,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
-            mRealm = databaseService.createManagedRealmInstance()
+            // mRealm initialized in onViewCreated
         }
         return mRealm
     }
@@ -284,7 +284,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.createManagedRealmInstance()
+        // mRealm initialized in onViewCreated
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
