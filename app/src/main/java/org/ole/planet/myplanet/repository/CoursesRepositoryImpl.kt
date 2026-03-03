@@ -291,46 +291,78 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val title = course?.courseTitle
 
+            // Pre-fetch all step exams for this course
+            val stepIds = stepsList.mapNotNull { it.id }.toTypedArray()
+            val exams = if (stepIds.isNotEmpty()) {
+                realm.where(RealmStepExam::class.java).`in`("stepId", stepIds).findAll()
+            } else {
+                emptyList()
+            }
+
+            // Pre-fetch all submissions for these exams and user
+            val submissions = if (exams.isNotEmpty() && userId != null) {
+                val examIds = exams.mapNotNull { it.id }.toTypedArray()
+                val allUserSubmissions = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("type", "exam")
+                    .findAll()
+
+                allUserSubmissions.filter { sub ->
+                    examIds.any { eId -> sub.parentId?.contains(eId) == true }
+                }
+            } else {
+                emptyList()
+            }
+
+            // Pre-fetch all answers for these submissions
+            val submissionIds = submissions.mapNotNull { it.id }.toTypedArray()
+            val answers = if (submissionIds.isNotEmpty()) {
+                realm.where(RealmAnswer::class.java).`in`("submissionId", submissionIds).findAll()
+            } else {
+                emptyList()
+            }
+            val answersBySubmissionId = answers.groupBy { it.submissionId }
+
+            // Pre-fetch all questions for these exams
+            val examIdsForQuestions = submissions.mapNotNull { sub ->
+                if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@")[0] else sub.parentId
+            }.distinct().toTypedArray()
+            val questions = if (examIdsForQuestions.isNotEmpty()) {
+                realm.where(RealmExamQuestion::class.java).`in`("examId", examIdsForQuestions).findAll()
+            } else {
+                emptyList()
+            }
+            val questionsByExamId = questions.groupBy { it.examId }
+
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
-                val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()
-                getExamObject(realm, exams, ob, userId)
+
+                val stepExams = exams.filter { it.stepId == step.id }
+                stepExams.forEach { exam ->
+                    val examSubmissions = submissions.filter { it.parentId?.contains(exam.id ?: "") == true }
+                    examSubmissions.forEach { sub ->
+                        val subAnswers = answersBySubmissionId[sub.id] ?: emptyList()
+                        val examIdForQuestion = if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@")[0] else sub.parentId
+                        val subQuestions = questionsByExamId[examIdForQuestion] ?: emptyList()
+                        val questionCount = subQuestions.size
+
+                        if (questionCount == 0) {
+                            ob.addProperty("completed", false)
+                            ob.addProperty("percentage", 0)
+                        } else {
+                            ob.addProperty("completed", subAnswers.size == questionCount)
+                            val percentage = (subAnswers.size.toDouble() / questionCount) * 100
+                            ob.addProperty("percentage", percentage)
+                        }
+                        ob.addProperty("status", sub.status)
+                    }
+                }
+
                 array.add(ob)
             }
             org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
-        }
-    }
-
-    private fun getExamObject(
-        realm: io.realm.Realm,
-        exams: io.realm.RealmResults<RealmStepExam>,
-        ob: com.google.gson.JsonObject,
-        userId: String?
-    ) {
-        exams.forEach { it ->
-            it.id?.let { it1 ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it1).equalTo("type", "exam").findAll()
-            }?.map {
-                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
-                var examId = it.parentId
-                if (it.parentId?.contains("@") == true) {
-                    examId = it.parentId!!.split("@")[0]
-                }
-                val questions = realm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
-                val questionCount = questions.size
-                if (questionCount == 0) {
-                    ob.addProperty("completed", false)
-                    ob.addProperty("percentage", 0)
-                } else {
-                    ob.addProperty("completed", answers.size == questionCount)
-                    val percentage = (answers.size.toDouble() / questionCount) * 100
-                    ob.addProperty("percentage", percentage)
-                }
-                ob.addProperty("status", it.status)
-            }
         }
     }
 
