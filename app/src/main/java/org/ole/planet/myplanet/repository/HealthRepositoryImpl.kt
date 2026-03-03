@@ -15,7 +15,7 @@ class HealthRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), HealthRepository {
 
     override suspend fun updateHealthData(userId: String) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             if (user != null) {
                 val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findAll()

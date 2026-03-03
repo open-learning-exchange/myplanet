@@ -259,7 +259,7 @@ class UploadToShelfService @Inject constructor(
         if (response?.isSuccessful == true && response.body() != null) {
             changeUserSecurity(model, obj)
 
-            model.id?.let { userRepository.updateUserEncryption(it, Pair(keyString ?: "", iv ?: "")) }
+            model.id?.let { userRepository.updateUserEncryption(it, keyString, iv) }
         } else {
             throw IOException("Failed to save key/IV after $maxAttempts attempts")
         }
