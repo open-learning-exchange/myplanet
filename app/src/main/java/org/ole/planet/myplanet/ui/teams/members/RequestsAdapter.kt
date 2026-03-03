@@ -36,7 +36,6 @@ class RequestsAdapter(
 
     fun setUser(user: RealmUser) {
         this.currentUser = user
-        submitList(currentList.toList())
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
