@@ -25,7 +25,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -383,10 +382,6 @@ abstract class BaseResourceFragment : Fragment() {
         mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
-    }
-
-    override fun onPause() {
-        super.onPause()
     }
 
     override fun onDetach() {
