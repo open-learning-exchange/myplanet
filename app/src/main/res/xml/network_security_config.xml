@@ -1,10 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system"/>
         </trust-anchors>
     </base-config>
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">157.245.241.39</domain>
+        <domain includeSubdomains="true">planet.learning.ole.org</domain>
+        <domain includeSubdomains="true">planet.gt</domain>
+        <domain includeSubdomains="true">sanpablo.planet.gt</domain>
+        <domain includeSubdomains="true">planet.earth.ole.org</domain>
+        <domain includeSubdomains="true">planet.somalia.ole.org</domain>
+        <domain includeSubdomains="true">planet.vi.ole.org</domain>
+        <domain includeSubdomains="true">uriur.planet.gt</domain>
+        <domain includeSubdomains="true">embakasi.planet.gt</domain>
+        <domain includeSubdomains="true">10.82.1.31</domain>
+        <domain includeSubdomains="true">192.168.48.253</domain>
+        <domain includeSubdomains="true">192.168.1.64</domain>
+        <domain includeSubdomains="true">192.168.1.93</domain>
+        <domain includeSubdomains="true">192.168.1.148</domain>
+        <domain includeSubdomains="true">192.168.68.126</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
 
     <debug-overrides>
         <trust-anchors>
