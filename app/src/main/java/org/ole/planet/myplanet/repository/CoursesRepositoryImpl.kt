@@ -407,15 +407,23 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourse(courseId, userId)
     }
 
-    override fun getCourseActivities(): ActivitiesRepository {
-        return activitiesRepository
+    override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
+        activitiesRepository.logCourseVisit(courseId, title, userId)
     }
 
-    override fun getCourseProgress(): ProgressRepository {
-        return progressRepository
+    override suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int {
+        return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override fun getCourseSubmissions(): SubmissionsRepository {
-        return submissionsRepository
+    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
+        return progressRepository.getCourseProgress(userId)
+    }
+
+    override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
+        return submissionsRepository.isStepCompleted(stepId, userId)
+    }
+
+    override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
+        return submissionsRepository.hasUnfinishedSurveys(courseId, userId)
     }
 }
