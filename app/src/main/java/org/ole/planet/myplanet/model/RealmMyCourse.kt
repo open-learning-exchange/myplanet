@@ -212,12 +212,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.isMyCourse instead")
-        fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean {
-            return getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findAll()).isNotEmpty()
-        }
-
-        @JvmStatic
         @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
         fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
             return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
