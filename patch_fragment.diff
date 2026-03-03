@@ -1,0 +1,232 @@
+<<<<<<< SEARCH
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+
+                // Fetch tags for all items to enable filtering
+                val allResourceIds = allLibraryItems.mapNotNull { it.id }
+                tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
+                resourcesViewModel.setAllLibraryItems(allLibraryItems, tagsMap)
+                resourcesViewModel.setSearchTags(currentSearchTags)
+                resourcesViewModel.setSearchQuery(searchQuery)
+
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setRatingMap(map!!)
+                    adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
+                }
+=======
+                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+
+                // Fetch tags for all items to enable filtering
+                val allResourceIds = allLibraryItems.mapNotNull { it.id }
+                tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
+                val mappedItems = allLibraryItems.map { it.toResourceItem() }
+                val mappedTagsMap = tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } }
+                val mappedSearchTags = currentSearchTags.map { it.toTagItem() }
+
+                resourcesViewModel.setAllLibraryItems(mappedItems, mappedTagsMap)
+                resourcesViewModel.setSearchTags(mappedSearchTags)
+                resourcesViewModel.setSearchQuery(searchQuery)
+
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setRatingMap(map!!)
+                    adapterLibrary.setTagsMap(mappedTagsMap)
+                }
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        return ResourceItem(
+            id = id,
+            title = title,
+            description = description,
+            createdDate = createdDate,
+            averageRating = averageRating,
+            timesRated = timesRated,
+            resourceId = resourceId,
+            isOffline = isResourceOffline(),
+            _rev = _rev,
+            uploadDate = uploadDate,
+            filename = filename
+        )
+=======
+        return ResourceItem(
+            id = id,
+            title = title,
+            description = description,
+            createdDate = createdDate,
+            averageRating = averageRating,
+            timesRated = timesRated,
+            resourceId = resourceId,
+            isOffline = isResourceOffline(),
+            _rev = _rev,
+            uploadDate = uploadDate,
+            filename = filename,
+            subject = subject,
+            level = level,
+            language = language,
+            mediaType = mediaType
+        )
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        val allResourceIds = allLibraryItems.mapNotNull { it.id }
+        tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
+        val user = profileDbHandler.getUserModel()
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
+
+        resourcesViewModel.setAllLibraryItems(allLibraryItems, tagsMap)
+        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+        resourcesViewModel.setSearchQuery(searchQuery)
+        resourcesViewModel.setSearchTags(searchTags)
+
+        adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
+=======
+        val allResourceIds = allLibraryItems.mapNotNull { it.id }
+        tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+
+        val user = profileDbHandler.getUserModel()
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
+
+        val mappedItems = allLibraryItems.map { it.toResourceItem() }
+        val mappedTagsMap = tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } }
+        val mappedSearchTags = searchTags.map { it.toTagItem() }
+
+        resourcesViewModel.setAllLibraryItems(mappedItems, mappedTagsMap)
+        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+        resourcesViewModel.setSearchQuery(searchQuery)
+        resourcesViewModel.setSearchTags(mappedSearchTags)
+
+        adapterLibrary.setTagsMap(mappedTagsMap)
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    resourcesViewModel.filteredLibraryItems.collect { filteredList ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() }) {
+                                recyclerView.scrollToPosition(0)
+                            }
+                            checkList(filteredList.size)
+                            showNoData(tvMessage, filteredList.size, "resources")
+                            changeButtonStatus()
+                        }
+                    }
+                }
+=======
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    resourcesViewModel.filteredLibraryItems.collect { filteredList ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setLibraryList(filteredList) {
+                                recyclerView.scrollToPosition(0)
+                            }
+                            checkList(filteredList.size)
+                            showNoData(tvMessage, filteredList.size, "resources")
+                            changeButtonStatus()
+                        }
+                    }
+                }
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    private fun clearTagsButton() {
+        clearTags.setOnClickListener {
+            saveSearchActivity()
+            searchTags.clear()
+            resourcesViewModel.setSearchTags(searchTags)
+=======
+    private fun clearTagsButton() {
+        clearTags.setOnClickListener {
+            saveSearchActivity()
+            searchTags.clear()
+            resourcesViewModel.setSearchTags(emptyList())
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    override fun onTagClicked(tag: RealmTag) {
+        tvSelected.visibility = View.VISIBLE
+        flexBoxTags.removeAllViews()
+        val chipCloud = ChipCloud(activity, flexBoxTags, config)
+        chipCloud.setDeleteListener(this)
+        if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
+        chipCloud.addChips(searchTags)
+        resourcesViewModel.setSearchTags(searchTags)
+        showTagText(searchTags, tvSelected)
+    }
+
+    override fun onTagSelected(tag: RealmTag) {
+        tvSelected.visibility = View.VISIBLE
+        val li: MutableList<RealmTag> = ArrayList()
+        li.add(tag)
+        searchTags = li
+        resourcesViewModel.setSearchTags(searchTags)
+        tvSelected.text = getString(R.string.tag_selected, tag.name)
+    }
+
+    override fun onOkClicked(list: List<RealmTag>?) {
+        if (list?.isEmpty() == true) {
+            searchTags.clear()
+            resourcesViewModel.setSearchTags(searchTags)
+        } else {
+            for (tag in list ?: emptyList()) {
+                onTagClicked(tag)
+            }
+        }
+    }
+
+    override fun chipDeleted(i: Int, s: String) {
+        searchTags.removeAt(i)
+        resourcesViewModel.setSearchTags(searchTags)
+    }
+=======
+    override fun onTagClicked(tag: RealmTag) {
+        tvSelected.visibility = View.VISIBLE
+        flexBoxTags.removeAllViews()
+        val chipCloud = ChipCloud(activity, flexBoxTags, config)
+        chipCloud.setDeleteListener(this)
+        if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
+        chipCloud.addChips(searchTags)
+        resourcesViewModel.setSearchTags(searchTags.map { it.toTagItem() })
+        showTagText(searchTags, tvSelected)
+    }
+
+    override fun onTagSelected(tag: RealmTag) {
+        tvSelected.visibility = View.VISIBLE
+        val li: MutableList<RealmTag> = ArrayList()
+        li.add(tag)
+        searchTags = li
+        resourcesViewModel.setSearchTags(searchTags.map { it.toTagItem() })
+        tvSelected.text = getString(R.string.tag_selected, tag.name)
+    }
+
+    override fun onOkClicked(list: List<RealmTag>?) {
+        if (list?.isEmpty() == true) {
+            searchTags.clear()
+            resourcesViewModel.setSearchTags(emptyList())
+        } else {
+            for (tag in list ?: emptyList()) {
+                onTagClicked(tag)
+            }
+        }
+    }
+
+    override fun chipDeleted(i: Int, s: String) {
+        searchTags.removeAt(i)
+        resourcesViewModel.setSearchTags(searchTags.map { it.toTagItem() })
+    }
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+            resourcesRepository.saveSearchActivity(
+                userName,
+                searchText,
+                planetCode,
+                parentCode,
+                resourcesViewModel.getSearchTags(),
+=======
+            val tags = searchTags.toList()
+            resourcesRepository.saveSearchActivity(
+                userName,
+                searchText,
+                planetCode,
+                parentCode,
+                tags,
+>>>>>>> REPLACE

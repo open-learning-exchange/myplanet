@@ -7,78 +7,66 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.TagItem
 import java.text.Normalizer
 import java.util.Locale
+
+data class FilterState(
+    val allLibraryItems: List<ResourceItem> = emptyList(),
+    val searchQuery: String = "",
+    val searchTags: List<TagItem> = emptyList(),
+    val subjects: Set<String> = emptySet(),
+    val languages: Set<String> = emptySet(),
+    val mediums: Set<String> = emptySet(),
+    val levels: Set<String> = emptySet(),
+    val tagsMap: Map<String, List<TagItem>> = emptyMap()
+)
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor() : ViewModel() {
 
-    private val _allLibraryItems = MutableStateFlow<List<RealmMyLibrary>>(emptyList())
-    val allLibraryItems: StateFlow<List<RealmMyLibrary>> = _allLibraryItems.asStateFlow()
+    private val _filterState = MutableStateFlow(FilterState())
 
-    private val _filteredLibraryItems = MutableStateFlow<List<RealmMyLibrary>>(emptyList())
-    val filteredLibraryItems: StateFlow<List<RealmMyLibrary>> = _filteredLibraryItems.asStateFlow()
-
-    private val _searchQuery = MutableStateFlow("")
-    private val _searchTags = MutableStateFlow<List<RealmTag>>(emptyList())
-
-    private val _subjects = MutableStateFlow<Set<String>>(emptySet())
-    private val _languages = MutableStateFlow<Set<String>>(emptySet())
-    private val _mediums = MutableStateFlow<Set<String>>(emptySet())
-    private val _levels = MutableStateFlow<Set<String>>(emptySet())
-
-    private val _tagsMap = MutableStateFlow<Map<String, List<RealmTag>>>(emptyMap())
+    private val _filteredLibraryItems = MutableStateFlow<List<ResourceItem>>(emptyList())
+    val filteredLibraryItems: StateFlow<List<ResourceItem>> = _filteredLibraryItems.asStateFlow()
 
     init {
-        combine(
-            _allLibraryItems,
-            _searchQuery,
-            _searchTags,
-            _subjects,
-            _languages,
-            _mediums,
-            _levels,
-            _tagsMap
-        ) { args ->
-            @Suppress("UNCHECKED_CAST")
-            val items = args[0] as List<RealmMyLibrary>
-            val query = args[1] as String
-            @Suppress("UNCHECKED_CAST")
-            val tags = args[2] as List<RealmTag>
-            @Suppress("UNCHECKED_CAST")
-            val subjects = args[3] as Set<String>
-            @Suppress("UNCHECKED_CAST")
-            val languages = args[4] as Set<String>
-            @Suppress("UNCHECKED_CAST")
-            val mediums = args[5] as Set<String>
-            @Suppress("UNCHECKED_CAST")
-            val levels = args[6] as Set<String>
-            @Suppress("UNCHECKED_CAST")
-            val tagsMap = args[7] as Map<String, List<RealmTag>>
-
-            val filteredByTagAndSearch = filterLocalLibraryByTag(items, query, tags, tagsMap)
-            applyFilter(filteredByTagAndSearch, subjects, languages, mediums, levels)
+        _filterState.map { state ->
+            val filteredByTagAndSearch = filterLocalLibraryByTag(
+                state.allLibraryItems,
+                state.searchQuery,
+                state.searchTags,
+                state.tagsMap
+            )
+            applyFilter(
+                filteredByTagAndSearch,
+                state.subjects,
+                state.languages,
+                state.mediums,
+                state.levels
+            )
         }.onEach { result ->
             _filteredLibraryItems.value = result
         }.launchIn(viewModelScope)
     }
 
-    fun setAllLibraryItems(items: List<RealmMyLibrary>, tagsMap: Map<String, List<RealmTag>>) {
-        _allLibraryItems.value = items
-        _tagsMap.value = tagsMap
+    fun setAllLibraryItems(items: List<ResourceItem>, tagsMap: Map<String, List<TagItem>>) {
+        _filterState.value = _filterState.value.copy(
+            allLibraryItems = items,
+            tagsMap = tagsMap
+        )
     }
 
     fun setSearchQuery(query: String) {
-        _searchQuery.value = query
+        _filterState.value = _filterState.value.copy(searchQuery = query)
     }
 
-    fun setSearchTags(tags: List<RealmTag>) {
-        _searchTags.value = tags
+    fun setSearchTags(tags: List<TagItem>) {
+        _filterState.value = _filterState.value.copy(searchTags = tags)
     }
 
     fun setFilters(
@@ -87,27 +75,29 @@ class ResourcesViewModel @Inject constructor() : ViewModel() {
         mediums: Set<String>,
         levels: Set<String>
     ) {
-        _subjects.value = subjects
-        _languages.value = languages
-        _mediums.value = mediums
-        _levels.value = levels
+        _filterState.value = _filterState.value.copy(
+            subjects = subjects,
+            languages = languages,
+            mediums = mediums,
+            levels = levels
+        )
     }
 
-    fun getSubjects(): Set<String> = _subjects.value
-    fun getLanguages(): Set<String> = _languages.value
-    fun getMediums(): Set<String> = _mediums.value
-    fun getLevels(): Set<String> = _levels.value
-    fun getSearchTags(): List<RealmTag> = _searchTags.value
-    fun getSearchQuery(): String = _searchQuery.value
+    fun getSubjects(): Set<String> = _filterState.value.subjects
+    fun getLanguages(): Set<String> = _filterState.value.languages
+    fun getMediums(): Set<String> = _filterState.value.mediums
+    fun getLevels(): Set<String> = _filterState.value.levels
+    fun getSearchTags(): List<TagItem> = _filterState.value.searchTags
+    fun getSearchQuery(): String = _filterState.value.searchQuery
 
     private fun applyFilter(
-        libraries: List<RealmMyLibrary>,
+        libraries: List<ResourceItem>,
         subjects: Set<String>,
         languages: Set<String>,
         mediums: Set<String>,
         levels: Set<String>
-    ): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
+    ): List<ResourceItem> {
+        val newList: MutableList<ResourceItem> = ArrayList()
         for (l in libraries) {
             if (isValidFilter(l, subjects, languages, mediums, levels)) newList.add(l)
         }
@@ -115,7 +105,7 @@ class ResourcesViewModel @Inject constructor() : ViewModel() {
     }
 
     private fun isValidFilter(
-        l: RealmMyLibrary,
+        l: ResourceItem,
         subjects: Set<String>,
         languages: Set<String>,
         mediums: Set<String>,
@@ -129,11 +119,11 @@ class ResourcesViewModel @Inject constructor() : ViewModel() {
     }
 
     private fun filterLocalLibraryByTag(
-        allLibraryItems: List<RealmMyLibrary>,
+        allLibraryItems: List<ResourceItem>,
         s: String,
-        tags: List<RealmTag>,
-        tagsMap: Map<String, List<RealmTag>>
-    ): List<RealmMyLibrary> {
+        tags: List<TagItem>,
+        tagsMap: Map<String, List<TagItem>>
+    ): List<ResourceItem> {
         val normalizedSearchTerm = normalizeText(s)
 
         var filteredList = if (s.isEmpty()) {
@@ -141,8 +131,8 @@ class ResourcesViewModel @Inject constructor() : ViewModel() {
         } else {
             val queryParts = s.split(" ").filterNot { it.isEmpty() }
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
-            val startsWithQuery = mutableListOf<RealmMyLibrary>()
-            val containsQuery = mutableListOf<RealmMyLibrary>()
+            val startsWithQuery = mutableListOf<ResourceItem>()
+            val containsQuery = mutableListOf<ResourceItem>()
 
             for (item in allLibraryItems) {
                 val title = item.title?.let { normalizeText(it) } ?: continue

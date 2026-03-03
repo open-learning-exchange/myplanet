@@ -11,5 +11,9 @@ data class ResourceItem(
     val isOffline: Boolean,
     val _rev: String?,
     val uploadDate: String?,
-    val filename: String?
+    val filename: String?,
+    val subject: List<String>? = null,
+    val level: List<String>? = null,
+    val language: String? = null,
+    val mediaType: String? = null
 )

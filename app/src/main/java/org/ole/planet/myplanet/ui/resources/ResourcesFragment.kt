@@ -202,13 +202,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 val allResourceIds = allLibraryItems.mapNotNull { it.id }
                 tagsMap = tagsRepository.getTagsForResources(allResourceIds)
 
-                resourcesViewModel.setAllLibraryItems(allLibraryItems, tagsMap)
-                resourcesViewModel.setSearchTags(currentSearchTags)
+                val mappedItems = allLibraryItems.map { it.toResourceItem() }
+                val mappedTagsMap = tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } }
+                val mappedSearchTags = currentSearchTags.map { it.toTagItem() }
+
+                resourcesViewModel.setAllLibraryItems(mappedItems, mappedTagsMap)
+                resourcesViewModel.setSearchTags(mappedSearchTags)
                 resourcesViewModel.setSearchQuery(searchQuery)
 
                 if (::adapterLibrary.isInitialized) {
                     adapterLibrary.setRatingMap(map!!)
-                    adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
+                    adapterLibrary.setTagsMap(mappedTagsMap)
                 }
 
             } catch (e: Exception) {
@@ -229,7 +233,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             isOffline = isResourceOffline(),
             _rev = _rev,
             uploadDate = uploadDate,
-            filename = filename
+            filename = filename,
+            subject = subject,
+            level = level,
+            language = language,
+            mediaType = mediaType
         )
     }
 
@@ -254,12 +262,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val user = profileDbHandler.getUserModel()
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
 
-        resourcesViewModel.setAllLibraryItems(allLibraryItems, tagsMap)
+        val mappedItems = allLibraryItems.map { it.toResourceItem() }
+        val mappedTagsMap = tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } }
+        val mappedSearchTags = searchTags.map { it.toTagItem() }
+
+        resourcesViewModel.setAllLibraryItems(mappedItems, mappedTagsMap)
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
         resourcesViewModel.setSearchQuery(searchQuery)
-        resourcesViewModel.setSearchTags(searchTags)
+        resourcesViewModel.setSearchTags(mappedSearchTags)
 
-        adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
+        adapterLibrary.setTagsMap(mappedTagsMap)
 
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
@@ -286,7 +298,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 launch {
                     resourcesViewModel.filteredLibraryItems.collect { filteredList ->
                         if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() }) {
+                            adapterLibrary.setLibraryList(filteredList) {
                                 recyclerView.scrollToPosition(0)
                             }
                             checkList(filteredList.size)
@@ -499,7 +511,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         clearTags.setOnClickListener {
             saveSearchActivity()
             searchTags.clear()
-            resourcesViewModel.setSearchTags(searchTags)
+            resourcesViewModel.setSearchTags(emptyList())
             etSearch.setText(R.string.empty_text)
             resourcesViewModel.setSearchQuery("")
             tvSelected.text = getString(R.string.empty_text)
@@ -542,7 +554,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         chipCloud.setDeleteListener(this)
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         chipCloud.addChips(searchTags)
-        resourcesViewModel.setSearchTags(searchTags)
+        resourcesViewModel.setSearchTags(searchTags.map { it.toTagItem() })
         showTagText(searchTags, tvSelected)
     }
 
@@ -551,14 +563,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        resourcesViewModel.setSearchTags(searchTags)
+        resourcesViewModel.setSearchTags(searchTags.map { it.toTagItem() })
         tvSelected.text = getString(R.string.tag_selected, tag.name)
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            resourcesViewModel.setSearchTags(searchTags)
+            resourcesViewModel.setSearchTags(emptyList())
         } else {
             for (tag in list ?: emptyList()) {
                 onTagClicked(tag)
@@ -579,7 +591,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        resourcesViewModel.setSearchTags(searchTags)
+        resourcesViewModel.setSearchTags(searchTags.map { it.toTagItem() })
     }
 
     override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
@@ -655,12 +667,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 return@launch
             }
 
+            val tags = searchTags.toList()
             resourcesRepository.saveSearchActivity(
                 userName,
                 searchText,
                 planetCode,
                 parentCode,
-                resourcesViewModel.getSearchTags(),
+                tags,
                 resourcesViewModel.getSubjects(),
                 resourcesViewModel.getLanguages(),
                 resourcesViewModel.getLevels(),
