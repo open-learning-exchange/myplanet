@@ -49,13 +49,12 @@ fun SyncActivity.showConfigurationUIElements(
 
 fun SyncActivity.performSync(dialog: MaterialDialog) {
     serverConfigAction = "sync"
-    val protocol = "${settings.getString("serverProtocol", "")}"
+    val protocol = prefData.getServerProtocol()
     var url = "${serverUrl.text}"
     val pin = "${serverPassword.text}"
 
-
-    editor.putString("serverURL", url).apply()
-    editor.putString("serverPin", pin).apply()
+    prefData.setServerUrl(url)
+    prefData.setServerPin(pin)
 
     url = protocol + url
 
@@ -70,7 +69,7 @@ fun SyncActivity.onChangeServerUrl() {
     if (selected is RealmCommunity && selected.isValid) {
         serverUrl.setText(selected.localDomain)
         protocolCheckIn.check(R.id.radio_https)
-        settings.getString("serverProtocol", getString(R.string.https_protocol))
+        prefData.getServerProtocol().ifEmpty { getString(R.string.https_protocol) }
         serverPassword.setText(if (selected.weight == 0) "1983" else "")
         serverPassword.isEnabled = selected.weight != 0
     }
@@ -80,10 +79,10 @@ fun SyncActivity.setUrlAndPin(checked: Boolean) {
     if (checked) {
         onChangeServerUrl()
     } else {
-        serverUrl.setText(settings.getString("serverURL", "")?.let { ServerConfigUtils.removeProtocol(it) })
-        serverPassword.setText(settings.getString("serverPin", ""))
+        serverUrl.setText(ServerConfigUtils.removeProtocol(prefData.getServerUrl()))
+        serverPassword.setText(prefData.getServerPin())
         protocolCheckIn.check(
-            if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) {
+            if (TextUtils.equals(prefData.getServerProtocol(), "http://")) {
                 R.id.radio_http
             } else {
                 R.id.radio_https
@@ -100,8 +99,8 @@ fun SyncActivity.setUrlAndPin(checked: Boolean) {
 fun SyncActivity.protocolSemantics() {
     protocolCheckIn.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
         when (i) {
-            R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-            R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+            R.id.radio_http -> prefData.setServerProtocol(getString(R.string.http_protocol))
+            R.id.radio_https -> prefData.setServerProtocol(getString(R.string.https_protocol))
         }
     }
 }
@@ -110,11 +109,11 @@ fun SyncActivity.refreshServerList() {
     val filteredList = ServerConfigUtils.getFilteredList(
         showAdditionalServers,
         serverListAddresses,
-        settings.getString("pinnedServerUrl", null),
+        prefData.getPinnedServerUrl(),
     )
     serverAddressAdapter?.submitList(filteredList)
 
-    val pinnedUrl = settings.getString("serverURL", "")
+    val pinnedUrl = prefData.getServerUrl()
     val pinnedIndex = filteredList.indexOfFirst {
         it.url.replace(Regex("^https?://"), "") == pinnedUrl?.replace(Regex("^https?://"), "")
     }
@@ -124,15 +123,15 @@ fun SyncActivity.refreshServerList() {
 }
 
 fun SyncActivity.setupManualUi(binding: DialogServerUrlBinding) {
-    if (settings.getString("serverProtocol", "") == getString(R.string.http_protocol)) {
+    if (prefData.getServerProtocol() == getString(R.string.http_protocol)) {
         binding.radioHttp.isChecked = true
-        editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-    } else if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)) {
+        prefData.setServerProtocol(getString(R.string.http_protocol))
+    } else if (prefData.getServerProtocol() == getString(R.string.https_protocol)) {
         binding.radioHttps.isChecked = true
-        editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+        prefData.setServerProtocol(getString(R.string.https_protocol))
     }
-    serverUrl.setText(settings.getString("serverURL", "")?.let { ServerConfigUtils.removeProtocol(it) })
-    serverPassword.setText(settings.getString("serverPin", ""))
+    serverUrl.setText(ServerConfigUtils.removeProtocol(prefData.getServerUrl()))
+    serverPassword.setText(prefData.getServerPin())
     serverUrl.isEnabled = true
     serverPassword.isEnabled = true
 }
@@ -141,14 +140,14 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     serverAddresses.layoutManager = LinearLayoutManager(this)
     serverListAddresses = ServerConfigUtils.getServerAddresses(this)
 
-    val storedUrl = settings.getString("serverURL", null)
-    val storedPin = settings.getString("serverPin", null)
+    val storedUrl = prefData.getServerUrl().takeIf { it.isNotEmpty() }
+    val storedPin = prefData.getServerPin().takeIf { it.isNotEmpty() }
     val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
     val filteredList = ServerConfigUtils.getFilteredList(
         showAdditionalServers,
         serverListAddresses,
-        settings.getString("pinnedServerUrl", null),
+        prefData.getPinnedServerUrl(),
     )
 
     serverAddressAdapter = ServerAddressAdapter(
@@ -162,7 +161,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
                 actualUrl == BuildConfig.PLANET_URIUR_URL ||
                 isLocalNetwork(actualUrl)
             ) "http://" else "https://"
-            editor.putString("serverProtocol", protocol).apply()
+            prefData.setServerProtocol(protocol)
             if (serverCheck) {
                 performSync(dialog)
             }
@@ -184,7 +183,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
         if (position != -1) {
             serverAddressAdapter?.setSelectedPosition(position)
             binding.inputServerUrl.setText(urlWithoutProtocol)
-            binding.inputServerPassword.setText(settings.getString("serverPin", ""))
+            binding.inputServerPassword.setText(prefData.getServerPin())
         }
     }
 
@@ -220,7 +219,7 @@ fun SyncActivity.onNeutralButtonClick(dialog: MaterialDialog) {
             if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
     } else {
         serverConfigAction = "save"
-        val protocol = "${settings.getString("serverProtocol", "")}"
+        val protocol = prefData.getServerProtocol()
         var url = "${serverUrl.text}"
         val pin = "${serverPassword.text}"
         url = protocol + url
@@ -244,17 +243,16 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
     binding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
         when (checkedId) {
-            R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-            R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+            R.id.radio_http -> prefData.setServerProtocol(getString(R.string.http_protocol))
+            R.id.radio_https -> prefData.setServerProtocol(getString(R.string.https_protocol))
         }
     }
 }
 
 fun SyncActivity.setupFastSyncOption(binding: DialogServerUrlBinding) {
-    val isFastSync = settings.getBoolean("fastSync", false)
-    binding.fastSync.isChecked = isFastSync
+    binding.fastSync.isChecked = prefData.getFastSync()
     binding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, checked: Boolean ->
-        editor.putBoolean("fastSync", checked).apply()
+        prefData.setFastSync(checked)
     }
 }
 
@@ -288,7 +286,7 @@ fun SyncActivity.handleManualConfiguration(
             } else {
                 prefData.setManualConfig(false)
                 showConfigurationUIElements(binding, false, dialog)
-                editor.putBoolean("switchCloudUrl", false).apply()
+                prefData.setSwitchCloudUrl(false)
             }
         }
     }
@@ -296,10 +294,10 @@ fun SyncActivity.handleManualConfiguration(
 
 fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialog: MaterialDialog) {
     prefData.setManualConfig(true)
-    editor.putString("serverURL", "").apply()
-    editor.putString("serverPin", "").apply()
+    prefData.setServerUrl("")
+    prefData.setServerPin("")
     binding.radioHttp.isChecked = true
-    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
+    prefData.setServerProtocol(getString(R.string.http_protocol))
     showConfigurationUIElements(binding, true, dialog)
 
     lifecycleScope.launch {
@@ -318,15 +316,15 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     }
 
     binding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-        editor.putBoolean("switchCloudUrl", b).apply()
+        prefData.setSwitchCloudUrl(b)
         binding.spnCloud.visibility = if (b) View.VISIBLE else View.GONE
         setUrlAndPin(binding.switchServerUrl.isChecked)
     }
     serverUrl.doAfterTextChanged { s ->
-        positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
+        positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${prefData.getServerProtocol()}$s")
     }
-    binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
-    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
+    binding.switchServerUrl.isChecked = prefData.getSwitchCloudUrl()
+    setUrlAndPin(prefData.getSwitchCloudUrl())
     protocolSemantics()
 }
 
