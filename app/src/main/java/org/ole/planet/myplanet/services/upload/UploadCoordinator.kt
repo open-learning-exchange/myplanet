@@ -230,11 +230,23 @@ class UploadCoordinator @Inject constructor(
         config: UploadConfig<T>
     ) {
         databaseService.executeTransactionAsync { realm ->
+            val localIds = succeeded.map { it.localId }
+            val idFieldName = getIdFieldName(config.modelClass)
+
+            val items = mutableListOf<T>()
+            localIds.chunked(1000).forEach { chunk ->
+                items.addAll(
+                    realm.where(config.modelClass.java)
+                        .`in`(idFieldName, chunk.toTypedArray())
+                        .findAll()
+                )
+            }
+
+            val itemsById = items.associateBy { config.idExtractor(it) ?: "" }
+
             succeeded.forEach { uploadedItem ->
                 try {
-                    val item = realm.where(config.modelClass.java).equalTo(
-                        getIdFieldName(config.modelClass),
-                        uploadedItem.localId).findFirst()
+                    val item = itemsById[uploadedItem.localId]
 
                     item?.let {
                         setRealmField(it, "_id", uploadedItem.remoteId)
@@ -299,6 +311,7 @@ class UploadCoordinator @Inject constructor(
             Log.w(TAG, "Failed to set field $fieldName: ${e.message}")
         }
     }
+
 }
 
 private data class PreparedUpload<T : RealmObject>(
