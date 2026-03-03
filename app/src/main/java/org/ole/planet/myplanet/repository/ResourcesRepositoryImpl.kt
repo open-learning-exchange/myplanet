@@ -33,6 +33,12 @@ class ResourcesRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences
 ) : RealmRepository(databaseService), ResourcesRepository {
 
+    override suspend fun getAllLibraries(): List<RealmMyLibrary> {
+        return withRealm { realm ->
+            realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
+        }
+    }
+
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
