@@ -1,0 +1,90 @@
+--- app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesFragment.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesFragment.kt
+@@ -42,6 +42,9 @@
+ import org.ole.planet.myplanet.model.RealmUser
+ import org.ole.planet.myplanet.model.TableDataUpdate
+ import org.ole.planet.myplanet.model.Tag
++import org.ole.planet.myplanet.repository.ProgressRepository
++import org.ole.planet.myplanet.repository.RatingsRepository
++import org.ole.planet.myplanet.repository.TagsRepository
+ import org.ole.planet.myplanet.services.SharedPrefManager
+ import org.ole.planet.myplanet.services.UserSessionManager
+ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+@@ -89,6 +92,15 @@
+     @Inject
+     lateinit var userSessionManager: UserSessionManager
+
++    @Inject
++    lateinit var tagsRepository: TagsRepository
++
++    @Inject
++    lateinit var progressRepository: ProgressRepository
++
++    @Inject
++    lateinit var ratingsRepository: RatingsRepository
++
+     private val serverUrl: String
+         get() = settings.getString("serverURL", "") ?: ""
+
+@@ -173,8 +185,8 @@
+         viewLifecycleOwner.lifecycleScope.launch {
+             try {
+                 // Run independent queries in parallel
+-                val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
+-                val progressDeferred = async { coursesRepository.getCourseProgressSummary(model?.id) }
++                val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
++                val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+
+                 if (!mRealm.isInTransaction) {
+                     mRealm.refresh()
+@@ -208,7 +220,7 @@
+                     requireActivity(),
+                     map,
+                     userModel?.isGuest() ?: true,
+-                    { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
++                    { courseId -> tagsRepository.getTagsForCourse(courseId).map { it.toTag() } },
+                     isMyCourseLib
+                 )
+                 adapterCourses.submitList(courses)
+@@ -253,8 +265,8 @@
+         }
+
+         val (map, progressMap) = coroutineScope {
+-            val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
+-            val progressDeferred = async { coursesRepository.getCourseProgressSummary(model?.id) }
++            val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
++            val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+             Pair(ratingsDeferred.await(), progressDeferred.await())
+         }
+
+@@ -264,7 +276,7 @@
+             requireActivity(),
+             map,
+             userModel?.isGuest() ?: true,
+-            { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
++            { courseId -> tagsRepository.getTagsForCourse(courseId).map { it.toTag() } },
+             isMyCourseLib
+         )
+         adapterCourses.submitList(courses) {
+@@ -564,8 +576,8 @@
+                         course.isMyCourse = course.userId?.contains(userId) == true
+                     }.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+                 }
+-                val ratings = coursesRepository.getCourseRatings(userId)
+-                val progress = coursesRepository.getCourseProgressSummary(userId)
++                val ratings = ratingsRepository.getCourseRatings(userId)
++                val progress = progressRepository.getCourseProgress(userId)
+                 Triple(finalCourses, ratings, progress)
+             }
+             val courses = filteredCourses.map { it.toCourse() }
+@@ -782,8 +794,8 @@
+         if (table == "courses" && update.shouldRefreshUI) {
+             if (::adapterCourses.isInitialized) {
+                 viewLifecycleOwner.lifecycleScope.launch {
+-                    val map = coursesRepository.getCourseRatings(model?.id)
+-                    val progressMap = coursesRepository.getCourseProgressSummary(model?.id)
++                    val map = ratingsRepository.getCourseRatings(model?.id)
++                    val progressMap = progressRepository.getCourseProgress(model?.id)
+                     val allCourses = coursesRepository.getAllCourses()
+                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+                     val courseList = if (isMyCourseLib) {

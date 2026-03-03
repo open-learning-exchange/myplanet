@@ -29,9 +29,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val progressRepository: ProgressRepository,
-    private val tagsRepository: TagsRepository,
-    private val ratingsRepository: RatingsRepository
+    private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -405,17 +403,5 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
-    }
-
-    override suspend fun getCourseTags(courseId: String): List<RealmTag> {
-        return tagsRepository.getTagsForCourse(courseId)
-    }
-
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
-        return ratingsRepository.getCourseRatings(userId)
-    }
-
-    override suspend fun getCourseProgressSummary(userId: String?): HashMap<String?, JsonObject> {
-        return progressRepository.getCourseProgress(userId)
     }
 }
