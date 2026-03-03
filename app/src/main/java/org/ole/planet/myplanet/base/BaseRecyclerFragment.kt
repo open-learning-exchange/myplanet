@@ -29,10 +29,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
-    var subjects: MutableSet<String> = mutableSetOf()
-    var languages: MutableSet<String> = mutableSetOf()
-    var mediums: MutableSet<String> = mutableSetOf()
-    var levels: MutableSet<String> = mutableSetOf()
     var selectedItems: MutableList<LI>? = null
     var gradeLevel = ""
     var subjectLevel = ""
@@ -41,10 +37,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
-    var resources: List<RealmMyLibrary>? = null
-    var courseLib: String? = null
     private var isAddInProgress = false
-
 
     abstract fun getLayout(): Int
 
@@ -54,14 +47,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onCreate(savedInstanceState)
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
-            courseLib = it.getString("courseLib")
-            @Suppress("UNCHECKED_CAST")
-            resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
-            } else {
-                @Suppress("DEPRECATION")
-                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
-            }
         }
     }
 
@@ -88,15 +73,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
-            if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-                resources?.let { showDownloadDialog(it) }
-            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = settings.getString("userId", "--")
-                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
-                }
-            }
             startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()
         }
@@ -304,14 +280,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return items.filterIsInstance<RealmMyCourse>()
     }
 
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
         val newList: MutableList<RealmMyCourse> = ArrayList()
@@ -324,14 +292,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
         return newList
-    }
-
-    private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-        val lan = languages.isEmpty() || languages.contains(l.language)
-        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-        return sub && lev && lan && med
     }
 
     override fun onDestroy() {
@@ -371,7 +331,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list?.clear()
         selectedItems = null
         list = null
-        resources = null
     }
 
     companion object {

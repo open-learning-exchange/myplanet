@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -76,6 +77,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var searchJob: Job? = null
+    var resources: List<RealmMyLibrary>? = null
+    var courseLib: String? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -206,6 +209,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val courseIds = sortedCourseList.mapNotNull { it.id }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
+                    resources?.let { showDownloadDialog(it) }
                 }
 
                 // Wait for parallel queries to complete
@@ -261,6 +265,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val courseIds = courseList.mapNotNull { it.id }
             resources = coursesRepository.getCourseOfflineResources(courseIds)
             courseLib = "courses"
+            resources?.let { showDownloadDialog(it) }
         }
 
         val (map, progressMap) = coroutineScope {
