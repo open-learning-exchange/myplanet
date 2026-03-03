@@ -85,5 +85,14 @@ interface UserRepository {
     fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
-    suspend fun initializeAchievement(achievementId: String): RealmAchievement?
+    suspend fun getOrCreateAchievement(achievementId: String): RealmAchievement?
+    suspend fun updateAchievement(
+        achievementId: String,
+        header: String,
+        goals: String,
+        purpose: String,
+        sendToNation: String,
+        achievementsJson: String,
+        referencesJson: String
+    )
 }

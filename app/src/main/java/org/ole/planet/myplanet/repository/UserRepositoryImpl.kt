@@ -630,7 +630,7 @@ class UserRepositoryImpl @Inject constructor(
         return actions.isNotEmpty()
     }
 
-    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
+    override suspend fun getOrCreateAchievement(achievementId: String): RealmAchievement? {
         return withRealm { realm ->
             var achievement = realm.where(RealmAchievement::class.java)
                 .equalTo("_id", achievementId)
@@ -641,6 +641,32 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
             achievement?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun updateAchievement(
+        achievementId: String,
+        header: String,
+        goals: String,
+        purpose: String,
+        sendToNation: String,
+        achievementsJson: String,
+        referencesJson: String
+    ) {
+        withRealm { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val achievement = transactionRealm.where(RealmAchievement::class.java)
+                    .equalTo("_id", achievementId)
+                    .findFirst()
+                if (achievement != null) {
+                    achievement.achievementsHeader = header
+                    achievement.goals = goals
+                    achievement.purpose = purpose
+                    achievement.sendToNation = sendToNation
+                    achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, com.google.gson.JsonArray::class.java))
+                    achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, com.google.gson.JsonArray::class.java))
+                }
+            }
         }
     }
 }

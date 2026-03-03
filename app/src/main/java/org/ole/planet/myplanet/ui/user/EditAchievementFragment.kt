@@ -97,21 +97,15 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                databaseService.withRealmAsync { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        val achievement = transactionRealm.where(RealmAchievement::class.java)
-                            .equalTo("_id", achievementId)
-                            .findFirst()
-                        if (achievement != null) {
-                            achievement.achievementsHeader = header
-                            achievement.goals = goals
-                            achievement.purpose = purpose
-                            achievement.sendToNation = sendToNation
-                            achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
-                            achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
-                        }
-                    }
-                }
+                userRepository.updateAchievement(
+                    achievementId = achievementId,
+                    header = header,
+                    goals = goals,
+                    purpose = purpose,
+                    sendToNation = sendToNation,
+                    achievementsJson = achievementsJson,
+                    referencesJson = referencesJson
+                )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
                 fragmentEditAchievementBinding.btnUpdate.isEnabled = true
@@ -309,7 +303,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = userRepository.initializeAchievement(achievementId)
+            achievement = userRepository.getOrCreateAchievement(achievementId)
             if (isAdded) {
                 populateAchievementData()
             }
