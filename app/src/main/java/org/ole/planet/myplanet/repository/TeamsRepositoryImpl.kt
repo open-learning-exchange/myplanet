@@ -166,6 +166,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamSummaries(): List<TeamSummary> {
+        // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
         return getShareableTeams().mapNotNull { team ->
             val id = team._id ?: return@mapNotNull null
             TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
@@ -177,6 +178,14 @@ class TeamsRepositoryImpl @Inject constructor(
             isEmpty("teamId")
             notEqualTo("status", "archived")
             equalTo("type", "enterprise")
+        }
+    }
+
+    override suspend fun getShareableEnterpriseSummaries(): List<TeamSummary> {
+        // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
+        return getShareableEnterprises().mapNotNull { team ->
+            val id = team._id ?: return@mapNotNull null
+            TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
         }
     }
 
@@ -251,6 +260,13 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamById(teamId: String): RealmMyTeam? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)
+    }
+
+    override suspend fun getTeamSummaryById(teamId: String): TeamSummary? {
+        // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
+        val team = getTeamById(teamId) ?: return null
+        val id = team._id ?: return null
+        return TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
     }
 
     override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? {

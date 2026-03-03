@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.model
 
 data class ChatShareTargets(
-    val community: RealmMyTeam?,
+    val community: TeamSummary?,
     val teams: List<TeamSummary>,
-    val enterprises: List<RealmMyTeam>,
+    val enterprises: List<TeamSummary>,
 )

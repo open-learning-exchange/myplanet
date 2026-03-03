@@ -222,17 +222,10 @@ class ChatHistoryAdapter(
                         if (section == context.getString(R.string.teams)) {
                             showGrandChildRecyclerView(shareTargets.teams, context.getString(R.string.teams), item)
                         } else {
-                            val enterpriseSummaries = shareTargets.enterprises.mapNotNull { t ->
-                                val id = t._id ?: return@mapNotNull null
-                                TeamSummary(id, t.name ?: "", t.teamType, t.teamPlanetCode)
-                            }
-                            showGrandChildRecyclerView(enterpriseSummaries, context.getString(R.string.enterprises), item)
+                            showGrandChildRecyclerView(shareTargets.enterprises, context.getString(R.string.enterprises), item)
                         }
                     } else {
-                        val communitySummary = shareTargets.community?.let { t ->
-                            t._id?.let { TeamSummary(it, t.name ?: "", t.teamType, t.teamPlanetCode) }
-                        }
-                        showEditTextAndShareButton(communitySummary, context.getString(R.string.community), item)
+                        showEditTextAndShareButton(shareTargets.community, context.getString(R.string.community), item)
                     }
                     dialog?.dismiss()
                     false
