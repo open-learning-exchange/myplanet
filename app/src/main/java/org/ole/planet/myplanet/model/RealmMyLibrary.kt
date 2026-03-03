@@ -350,12 +350,6 @@ open class RealmMyLibrary : RealmObject() {
 
         @Deprecated("Use ResourcesRepository.getFilterFacets instead")
         @JvmStatic
-        fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
-            return libraries.flatMap { it.level ?: emptyList() }.toSet()
-        }
-
-        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
-        @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
             return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
         }
