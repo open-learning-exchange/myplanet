@@ -621,19 +621,24 @@ class TeamsRepositoryImpl @Inject constructor(
         user: RealmUser?,
     ) {
         if (teamId.isBlank() || resources.isEmpty() || user == null) return
-        executeTransaction { realm ->
-            resources.forEach { resource ->
-                val teamResource = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                teamResource.teamId = teamId
-                teamResource.title = resource.title
-                teamResource.status = user.parentCode
-                teamResource.resourceId = resource._id
-                teamResource.docType = "resourceLink"
-                teamResource.updated = true
-                teamResource.teamType = "local"
-                teamResource.teamPlanetCode = user.planetCode
-                teamResource.userPlanetCode = user.planetCode
+
+        val teamResources = resources.map { resource ->
+            RealmMyTeam().apply {
+                _id = UUID.randomUUID().toString()
+                this.teamId = teamId
+                title = resource.title
+                status = user.parentCode
+                resourceId = resource._id
+                docType = "resourceLink"
+                updated = true
+                teamType = "local"
+                teamPlanetCode = user.planetCode
+                userPlanetCode = user.planetCode
             }
+        }
+
+        executeTransaction { realm ->
+            realm.insertOrUpdate(teamResources)
         }
     }
 
