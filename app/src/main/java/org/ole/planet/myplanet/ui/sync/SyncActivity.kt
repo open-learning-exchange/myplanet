@@ -152,6 +152,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initSyncConfigurationCoordinator()
         lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 syncManager.syncStatus.collect { status ->
@@ -221,28 +222,33 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     continueSync(dialog, url, isAlternativeUrl, defaultUrl)
                 }
 
-                override fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-                    saveConfigAndContinue(dialog, binding, url, isAlternativeUrl, defaultUrl)
+                override fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, defaultUrl: String) {
+                    saveConfigAndContinue(dialog, binding, "", false, defaultUrl)
                 }
 
                 override fun onClearDataDialog() {
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                 }
-
-                override fun getServerConfigAction(): String = serverConfigAction
-
-                override fun getCurrentDialog(): MaterialDialog? = currentDialog
-
-                override fun getServerDialogBinding(): DialogServerUrlBinding? = serverDialogBinding
             }
         )
     }
 
     fun checkMinApk(url: String, pin: String, callerActivity: String) {
-        if (!::syncConfigurationCoordinator.isInitialized) {
-            initSyncConfigurationCoordinator()
+        val callerContext = when (callerActivity) {
+            "LoginActivity" -> CallerContext.LOGIN_ACTIVITY
+            "DashboardActivity" -> CallerContext.DASHBOARD_ACTIVITY
+            "SyncActivity" -> CallerContext.SYNC_ACTIVITY
+            else -> CallerContext.OTHER
         }
-        syncConfigurationCoordinator.checkMinApk(lifecycleScope, url, pin, callerActivity)
+        syncConfigurationCoordinator.checkMinApk(
+            lifecycleScope,
+            url,
+            pin,
+            callerContext,
+            serverConfigAction,
+            currentDialog,
+            serverDialogBinding
+        )
     }
     fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)

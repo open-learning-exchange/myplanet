@@ -8,6 +8,13 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
+enum class CallerContext {
+    LOGIN_ACTIVITY,
+    DASHBOARD_ACTIVITY,
+    SYNC_ACTIVITY,
+    OTHER
+}
+
 class SyncConfigurationCoordinator(
     private val configurationsRepository: ConfigurationsRepository,
     private val prefData: SharedPrefManager,
@@ -21,22 +28,29 @@ class SyncConfigurationCoordinator(
         fun showErrorDialog(errorMessage: String)
         fun onVersionCheckSuccess()
         fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String)
-        fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, url: String, isAlternativeUrl: Boolean, defaultUrl: String)
+        fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, defaultUrl: String)
         fun onClearDataDialog()
-
-        fun getServerConfigAction(): String
-        fun getCurrentDialog(): MaterialDialog?
-        fun getServerDialogBinding(): DialogServerUrlBinding?
     }
 
-    fun checkMinApk(scope: CoroutineScope, url: String, pin: String, callerActivity: String) {
+    fun checkMinApk(
+        scope: CoroutineScope,
+        url: String,
+        pin: String,
+        callerContext: CallerContext,
+        serverConfigAction: String,
+        currentDialog: MaterialDialog?,
+        serverDialogBinding: DialogServerUrlBinding?
+    ) {
         scope.launch {
             callback.showProgressDialog()
             val result = configurationsRepository.getMinApk(url, pin)
             callback.dismissProgressDialog()
             when (result) {
                 is ConfigurationsRepository.ConfigurationResult.Success -> {
-                    handleConfigurationSuccess(result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerActivity)
+                    handleConfigurationSuccess(
+                        result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerContext,
+                        serverConfigAction, currentDialog, serverDialogBinding
+                    )
                 }
                 is ConfigurationsRepository.ConfigurationResult.Failure -> {
                     callback.setSyncFailed(true)
@@ -46,36 +60,46 @@ class SyncConfigurationCoordinator(
         }
     }
 
-    private fun handleConfigurationSuccess(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
+    private fun handleConfigurationSuccess(
+        id: String,
+        code: String,
+        url: String,
+        defaultUrl: String,
+        isAlternativeUrl: Boolean,
+        callerContext: CallerContext,
+        serverConfigAction: String,
+        currentDialog: MaterialDialog?,
+        serverDialogBinding: DialogServerUrlBinding?
+    ) {
         val savedId = prefData.getConfigurationId()
         callback.setSyncFailed(false)
-        when (callerActivity) {
-            "LoginActivity", "DashboardActivity"-> {
+        when (callerContext) {
+            CallerContext.LOGIN_ACTIVITY, CallerContext.DASHBOARD_ACTIVITY -> {
                 if (isAlternativeUrl) {
                     ServerConfigUtils.saveAlternativeUrl(url, prefData.getServerPin(), prefData)
                 }
                 callback.onVersionCheckSuccess()
             }
             else -> {
-                if (callback.getServerConfigAction() == "sync") {
+                if (serverConfigAction == "sync") {
                     if (savedId == null) {
                         prefData.setConfigurationId(id)
                         prefData.setCommunityName(code)
-                        callback.getCurrentDialog()?.let {
+                        currentDialog?.let {
                             callback.onContinueSync(it, url, isAlternativeUrl, defaultUrl)
                         }
                     } else if (id == savedId) {
-                        callback.getCurrentDialog()?.let {
+                        currentDialog?.let {
                             callback.onContinueSync(it, url, isAlternativeUrl, defaultUrl)
                         }
                     } else {
                         callback.onClearDataDialog()
                     }
-                } else if (callback.getServerConfigAction() == "save") {
+                } else if (serverConfigAction == "save") {
                     if (savedId == null || id == savedId) {
-                        callback.getCurrentDialog()?.let {
-                            val binding = callback.getServerDialogBinding() ?: return@let
-                            callback.onSaveConfigAndContinue(it, binding, "", false, defaultUrl)
+                        currentDialog?.let {
+                            val binding = serverDialogBinding ?: return@let
+                            callback.onSaveConfigAndContinue(it, binding, defaultUrl)
                         }
                     } else {
                         callback.onClearDataDialog()
