@@ -252,14 +252,13 @@ open class RealmMyTeam : RealmObject() {
                 query = query.equalTo("docType", docType)
             }
             val myTeam = query.findAll()
-            val list = mutableListOf<RealmUser>()
-            for (team in myTeam) {
-                val model = mRealm.where(RealmUser::class.java)
-                    .equalTo("id", team.userId)
-                    .findFirst()
-                if (model != null && !list.contains(model)) list.add(model)
-            }
-            return list
+            val userIds = myTeam.mapNotNull { it.userId }.toTypedArray()
+            if (userIds.isEmpty()) return mutableListOf()
+
+            return mRealm.where(RealmUser::class.java)
+                .`in`("id", userIds)
+                .findAll()
+                .toMutableList()
         }
 
         @JvmStatic
