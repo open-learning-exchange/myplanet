@@ -5,12 +5,18 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import java.util.WeakHashMap
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utils.Utilities
+
+private val dialogMap = WeakHashMap<Fragment, AlertDialog>()
 
 fun BaseResourceFragment.showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
     if (!isAdded) return
@@ -74,7 +80,20 @@ fun BaseResourceFragment.showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) 
                 }
             }.setNegativeButton(R.string.txt_cancel, null)
 
+        dialogMap[this]?.dismiss()
         val downloadSuggestionDialog = alertDialogBuilder.create()
+        dialogMap[this] = downloadSuggestionDialog
+
+        downloadSuggestionDialog.setOnDismissListener {
+            dialogMap.remove(this)
+        }
+
+        this.viewLifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                dialogMap[this@showDownloadDialog]?.dismiss()
+                dialogMap.remove(this@showDownloadDialog)
+            }
+        })
 
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = librariesForDialog.map { it?.title }
