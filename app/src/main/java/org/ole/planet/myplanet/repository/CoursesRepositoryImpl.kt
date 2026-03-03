@@ -292,10 +292,22 @@ class CoursesRepositoryImpl @Inject constructor(
             val title = course?.courseTitle
 
             val array = com.google.gson.JsonArray()
+
+            val stepIds = stepsList.mapNotNull { it.id }.toTypedArray()
+            val allExams = if (stepIds.isNotEmpty()) {
+                realm.where(RealmStepExam::class.java)
+                    .`in`("stepId", stepIds)
+                    .findAll()
+            } else {
+                emptyList()
+            }
+
+            val examsByStepId = allExams.groupBy { it.stepId }
+
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
-                val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()
+                val exams = examsByStepId[step.id] ?: emptyList()
                 getExamObject(realm, exams, ob, userId)
                 array.add(ob)
             }
@@ -305,7 +317,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private fun getExamObject(
         realm: io.realm.Realm,
-        exams: io.realm.RealmResults<RealmStepExam>,
+        exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
         userId: String?
     ) {
