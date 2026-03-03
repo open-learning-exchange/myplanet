@@ -47,4 +47,7 @@ interface CoursesRepository {
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
+    suspend fun getCourseTags(courseId: String): List<org.ole.planet.myplanet.model.RealmTag>
+    suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getCourseProgressSummary(userId: String?): HashMap<String?, com.google.gson.JsonObject>
 }
