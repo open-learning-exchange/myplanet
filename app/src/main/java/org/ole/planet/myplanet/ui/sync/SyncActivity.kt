@@ -765,9 +765,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun registerReceiver() {
         lifecycleScope.launch {
-            broadcastService.events.collect { intent ->
-                if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                    broadcastReceiver.onReceive(this@SyncActivity, intent)
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                        broadcastReceiver.onReceive(this@SyncActivity, intent)
+                    }
                 }
             }
         }
