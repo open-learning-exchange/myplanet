@@ -228,12 +228,6 @@ open class RealmMyTeam : RealmObject() {
             return getUsers(teamId, realm, "membership")
         }
 
-        @Deprecated("Use TeamsRepository.getJoinedMemberCount instead")
-        @JvmStatic
-        fun getJoinedMemberCount(teamId: String, realm: Realm): Int {
-            return getUsers(teamId, realm, "membership").size
-        }
-
         @JvmStatic
         fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
