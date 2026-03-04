@@ -638,7 +638,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         executeTransaction { realm ->
-            realm.insertOrUpdate(teamResources)
+            realm.insert(teamResources)
         }
     }
 
