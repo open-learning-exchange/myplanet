@@ -35,15 +35,17 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) :
             val existing = realm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
             if (existing.isEmpty()) {
                 var weight = 1
-                for (item in items) {
-                    val ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
+                val newItems = items.map { item ->
+                    RealmMyLife().apply {
+                        _id = UUID.randomUUID().toString()
+                        title = item.title
+                        imageId = item.imageId
+                        this.weight = weight++
+                        this.userId = item.userId
+                        isVisible = true
+                    }
                 }
+                realm.insertOrUpdate(newItems)
             }
         }
     }
