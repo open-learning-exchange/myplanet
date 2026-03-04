@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -123,17 +124,17 @@ class TeamViewModel @Inject constructor(
             return TeamActionResult.NameExists
         }
 
-        val teamObject = com.google.gson.JsonObject().apply {
-            addProperty("name", name)
-            addProperty("description", description)
-            addProperty("services", services)
-            addProperty("rules", rules)
-            addProperty("teamType", teamType)
-            addProperty("isPublic", isPublic)
-            addProperty("category", category)
-        }
+        val request = CreateTeamRequest(
+            name = name,
+            description = description,
+            services = services,
+            rules = rules,
+            teamType = teamType,
+            isPublic = isPublic,
+            category = category
+        )
 
-        return teamsRepository.createTeamAndAddMember(teamObject, userModel)
+        return teamsRepository.createTeamAndAddMember(request, userModel)
             .fold(
                 onSuccess = { TeamActionResult.Success },
                 onFailure = { TeamActionResult.Failure(it.message) }
