@@ -261,17 +261,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
-        fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
-            val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
-            val ids = JsonArray()
-            for (lib in myCourses) {
-                ids.add(lib.courseId)
-            }
-            return ids
-        }
-
-        @JvmStatic
         fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
