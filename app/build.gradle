@@ -208,7 +208,6 @@ dependencies {
     implementation(libs.webkit)
 
     testImplementation(libs.junit)
-    testImplementation(libs.mockito.core)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.ext.junit)
 }
