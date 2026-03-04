@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
@@ -41,6 +42,7 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -55,7 +57,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
-    
+
+    @Inject
+    lateinit var prefData: SharedPrefManager
+
     @Inject
     lateinit var uploadManager: UploadManager
 
@@ -143,8 +148,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun setUrlParts(url: String, password: String): String {
-
-        val editor = settings.edit()
         val uri = url.toUri()
 
         var couchdbURL: String
@@ -165,14 +168,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        editor.putString("serverPin", password)
-        saveUrlScheme(editor, uri, url, couchdbURL)
-        editor.putString("url_user", urlUser)
-        editor.putString("url_pwd", urlPwd)
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.apply()
-
+        prefData.setServerPin(password)
+        prefData.setUrlScheme(uri.scheme ?: "")
+        prefData.setUrlHost(uri.host ?: "")
+        prefData.setUrlPort(if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
+        prefData.setServerUrl(url)
+        prefData.setCouchdbUrl(couchdbURL)
+        prefData.setUrlUser(urlUser)
+        prefData.setUrlPwd(urlPwd)
 
         if (!couchdbURL.endsWith("db")) {
             couchdbURL += "/db"
@@ -308,15 +311,16 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
         this.settings = settings
-        settings.edit {
-            putString("userId", user?.id)
-            putString("name", user?.name)
+        prefData.setUserId(user?.id ?: "")
+        prefData.setUserName(user?.name ?: "")
+        prefData.rawPreferences.edit().apply {
             putString("password", password)
             putString("firstName", user?.firstName)
             putString("lastName", user?.lastName)
             putString("middleName", user?.middleName)
             user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
             putLong("lastLogin", System.currentTimeMillis())
+            apply()
         }
     }
 
@@ -340,14 +344,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             }
             return ar
         }
-    }
-
-    private fun saveUrlScheme(editor: SharedPreferences.Editor, uri: Uri, url: String?, couchdbURL: String?) {
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
-        editor.putString("serverURL", url)
-        editor.putString("couchdbURL", couchdbURL)
     }
 
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {

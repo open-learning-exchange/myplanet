@@ -10,10 +10,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -93,9 +91,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         if (personal != null) {
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
-                    val result = withContext(Dispatchers.IO) {
-                        uploadManager.uploadMyPersonal(personal)
-                    }
+                    val result = uploadManager.uploadMyPersonal(personal)
                     Utilities.toast(activity, result)
                 } catch (e: Exception) {
                     Utilities.toast(activity, "Upload failed: ${e.message}")
@@ -128,11 +124,9 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
                 val id = personal.id ?: personal._id
                 if (id != null) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            personalsRepository.updatePersonalResource(id) { realmPersonal ->
-                                realmPersonal.description = desc
-                                realmPersonal.title = title
-                            }
+                        personalsRepository.updatePersonalResource(id) { realmPersonal ->
+                            realmPersonal.description = desc
+                            realmPersonal.title = title
                         }
                     }
                 }
@@ -148,9 +142,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
                 val id = personal.id ?: personal._id
                 if (id != null) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            personalsRepository.deletePersonalResource(id)
-                        }
+                        personalsRepository.deletePersonalResource(id)
                     }
                 }
             }
