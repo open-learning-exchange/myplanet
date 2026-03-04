@@ -269,6 +269,11 @@ open class RealmMyCourse : RealmObject() {
             obj.addProperty("memberLimit", course.memberLimit)
 
             val stepsArray = JsonArray()
+            val allResourcesForCourse = realm.where(RealmMyLibrary::class.java)
+                .equalTo("courseId", course.courseId)
+                .findAll()
+            val resourcesByStepId = allResourcesForCourse.groupBy { it.stepId }
+
             course.courseSteps?.forEach { step ->
                 val stepObj = JsonObject()
                 stepObj.addProperty("stepTitle", step.stepTitle)
@@ -276,10 +281,7 @@ open class RealmMyCourse : RealmObject() {
                 stepObj.addProperty("id", step.id)
 
                 val resourcesArray = JsonArray()
-                val stepResources = realm.where(RealmMyLibrary::class.java)
-                    .equalTo("stepId", step.id)
-                    .equalTo("courseId", course.courseId)
-                    .findAll()
+                val stepResources = resourcesByStepId[step.id] ?: emptyList()
 
                 stepResources.forEach { resource ->
                     resourcesArray.add(resource.serializeResource())
