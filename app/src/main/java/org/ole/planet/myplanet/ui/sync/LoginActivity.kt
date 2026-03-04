@@ -227,9 +227,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 settingDialog()
             }
         }
-        if (!settings.contains("serverProtocol")) settings.edit {
-            putString("serverProtocol", "http://")
-        }
+        if (prefData.getServerProtocol().isEmpty()) prefData.setServerProtocol("http://")
         binding.becomeMember.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
@@ -262,9 +260,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         syncIconDrawable = syncIcon.drawable as AnimationDrawable
         syncIcon.setOnClickListener {
             if (getUrl() != "/db") {
-                val protocol = settings.getString("serverProtocol", "")
-                val serverUrl = "${settings.getString("serverURL", "")}"
-                val serverPin = "${settings.getString("serverPin", "")}"
+                val protocol = prefData.getServerProtocol()
+                val serverUrl = prefData.getServerUrl()
+                val serverPin = prefData.getServerPin()
 
                 val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
                     serverUrl
@@ -653,7 +651,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun getCustomDeviceName(): String? {
-        return settings.getString("customDeviceName", NetworkUtils.getDeviceName())
+        return prefData.getCustomDeviceName().ifEmpty { NetworkUtils.getDeviceName() }
     }
 
     fun invalidateTeamsCacheAndReload() {
