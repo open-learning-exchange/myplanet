@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import java.util.Calendar
 import java.util.Locale
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.databinding.EditAttachementBinding
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
+import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.RowlayoutBinding
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
@@ -42,10 +44,13 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
+@AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
     private lateinit var editAttachmentBinding: EditAttachementBinding
@@ -92,21 +97,15 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                databaseService.withRealmAsync { realm ->
-                    realm.executeTransaction { transactionRealm ->
-                        val achievement = transactionRealm.where(RealmAchievement::class.java)
-                            .equalTo("_id", achievementId)
-                            .findFirst()
-                        if (achievement != null) {
-                            achievement.achievementsHeader = header
-                            achievement.goals = goals
-                            achievement.purpose = purpose
-                            achievement.sendToNation = sendToNation
-                            achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java))
-                            achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java))
-                        }
-                    }
-                }
+                userRepository.updateAchievement(
+                    achievementId = achievementId,
+                    header = header,
+                    goals = goals,
+                    purpose = purpose,
+                    sendToNation = sendToNation,
+                    achievements = JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java),
+                    references = JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java)
+                )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
                 fragmentEditAchievementBinding.btnUpdate.isEnabled = true
@@ -273,9 +272,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: List<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = databaseService.withRealmAsync { realm ->
-                realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-            }
+            val list = resourcesRepository.getAllLibraries()
 
             if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -304,16 +301,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = databaseService.withRealmAsync { realm ->
-                var achievement = realm.where(RealmAchievement::class.java)
-                    .equalTo("_id", achievementId)
-                    .findFirst()
-                if (achievement == null) {
-                    realm.executeTransaction { transactionRealm ->
-                        achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-                    }
-                }
-                realm.copyFromRealm(achievement!!)
+            achievementId?.let {
+                achievement = userRepository.initializeAchievement(it)
             }
             if (isAdded) {
                 populateAchievementData()

@@ -20,8 +20,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import com.google.gson.JsonArray
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
@@ -627,5 +629,47 @@ class UserRepositoryImpl @Inject constructor(
             equalTo("actionType", "sync")
         }
         return actions.isNotEmpty()
+    }
+
+    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
+        return withRealm { realm ->
+            var achievement = realm.where(RealmAchievement::class.java)
+                .equalTo("_id", achievementId)
+                .findFirst()
+
+            if (achievement == null) {
+                realm.executeTransaction { transactionRealm ->
+                    achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
+                }
+            }
+
+            achievement?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun updateAchievement(
+        achievementId: String,
+        header: String,
+        goals: String,
+        purpose: String,
+        sendToNation: String,
+        achievements: JsonArray,
+        references: JsonArray
+    ) {
+        withRealm { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val achievement = transactionRealm.where(RealmAchievement::class.java)
+                    .equalTo("_id", achievementId)
+                    .findFirst()
+                if (achievement != null) {
+                    achievement.achievementsHeader = header
+                    achievement.goals = goals
+                    achievement.purpose = purpose
+                    achievement.sendToNation = sendToNation
+                    achievement.setAchievements(achievements)
+                    achievement.setReferences(references)
+                }
+            }
+        }
     }
 }

@@ -8,6 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.createBitmap
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -24,11 +26,24 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private var resources: List<RealmMyLibrary>,
     private val onResourceClick: (RealmMyLibrary) -> Unit
-) : RecyclerView.Adapter<InlineResourceAdapter.ViewHolder>() {
+) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(ResourceDiffCallback()) {
 
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root)
+
+    class ResourceDiffCallback : DiffUtil.ItemCallback<RealmMyLibrary>() {
+        override fun areItemsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
+            return oldItem._rev == newItem._rev &&
+                oldItem.downloadedRev == newItem.downloadedRev &&
+                oldItem.resourceLocalAddress == newItem.resourceLocalAddress &&
+                oldItem.title == newItem.title &&
+                oldItem.isResourceOffline() == newItem.isResourceOffline()
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemInlineResourceBinding.inflate(
@@ -38,7 +53,7 @@ class InlineResourceAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val resource = resources[position]
+        val resource = getItem(position)
         val context = holder.itemView.context
         val binding = holder.binding
 
@@ -199,10 +214,4 @@ class InlineResourceAdapter(
         }
     }
 
-    override fun getItemCount(): Int = resources.size
-
-    fun updateResources(newResources: List<RealmMyLibrary>) {
-        resources = newResources
-        notifyDataSetChanged()
-    }
 }
