@@ -631,7 +631,7 @@ class UserRepositoryImpl @Inject constructor(
         return actions.isNotEmpty()
     }
 
-    override suspend fun getOrCreateAchievement(achievementId: String): RealmAchievement? {
+    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
         return withRealm { realm ->
             var achievement = realm.where(RealmAchievement::class.java)
                 .equalTo("_id", achievementId)
