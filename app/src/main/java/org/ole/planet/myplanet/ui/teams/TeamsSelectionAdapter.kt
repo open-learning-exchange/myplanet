@@ -8,12 +8,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class TeamsSelectionAdapter(private val section: String, private val onClick: (RealmMyTeam) -> Unit) :
-    ListAdapter<RealmMyTeam, TeamsSelectionAdapter.TeamSelectionViewHolder>(
-        DiffUtils.itemCallback<RealmMyTeam>(
+class TeamsSelectionAdapter(private val section: String, private val onClick: (TeamSummary) -> Unit) :
+    ListAdapter<TeamSummary, TeamsSelectionAdapter.TeamSelectionViewHolder>(
+        DiffUtils.itemCallback<TeamSummary>(
             { old, new -> old._id == new._id },
             { old, new -> old.name == new.name }
         )
@@ -22,7 +22,7 @@ class TeamsSelectionAdapter(private val section: String, private val onClick: (R
         private val textView: TextView = itemView.findViewById(R.id.textView)
         private val teamIcon: ImageView = itemView.findViewById(R.id.teamIcon)
 
-        fun bind(item: RealmMyTeam) {
+        fun bind(item: TeamSummary) {
             textView.text = item.name
             if (section == itemView.context.getString(R.string.teams)) {
                 teamIcon.setImageResource(R.drawable.team)
