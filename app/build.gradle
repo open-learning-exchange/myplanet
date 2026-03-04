@@ -11,13 +11,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< fix-unused-getexammap-6790978603293595486
         versionCode = 4766
         versionName = "0.47.66"
-=======
-        versionCode = 4765
-        versionName = "0.47.65"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
