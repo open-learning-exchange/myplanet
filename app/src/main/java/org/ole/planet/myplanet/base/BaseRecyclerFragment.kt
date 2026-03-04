@@ -232,16 +232,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
-        for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
-                .equalTo("linkId", course?.courseId).count()
-            if (count > 0 && !courses.contains(course)) {
-                course?.let { courses.add(it) }
-            }
-        }
-    }
-
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
         val query = mRealm.where(c)
         if (c == RealmMyLibrary::class.java) {
@@ -293,9 +283,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty()) {
             return list
         }
+
+        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
+        val linkedCourseIds = mRealm.where(RealmTag::class.java)
+            .equalTo("db", "courses")
+            .`in`("tagId", tagIds)
+            .findAll()
+            .mapNotNull { it.linkId }
+            .toSet()
+
         val courses = RealmList<RealmMyCourse>()
         list.forEach { course ->
-            checkAndAddToList(course, courses, tags)
+            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
+                courses.add(course)
+            }
         }
         return applyCourseFilter(courses)
     }

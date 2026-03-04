@@ -5,8 +5,10 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 
 data class JoinedMemberData(
@@ -40,8 +42,11 @@ interface TeamsRepository {
     suspend fun markTeamUploaded(teamId: String?, rev: String)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
+    @Deprecated("Use getTeamSummaries instead", ReplaceWith("getTeamSummaries()"))
     suspend fun getShareableTeams(): List<RealmMyTeam>
+    suspend fun getTeamSummaries(): List<TeamSummary>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
+    suspend fun getShareableEnterpriseSummaries(): List<TeamSummary>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>)
@@ -49,6 +54,7 @@ interface TeamsRepository {
     suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
     suspend fun getTeamById(teamId: String): RealmMyTeam?
+    suspend fun getTeamSummaryById(teamId: String): TeamSummary?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
@@ -87,7 +93,7 @@ interface TeamsRepository {
         teamType: String?,
     )
 
-    suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String>
+    suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String>
     suspend fun updateTeam(
         teamId: String,
         name: String,

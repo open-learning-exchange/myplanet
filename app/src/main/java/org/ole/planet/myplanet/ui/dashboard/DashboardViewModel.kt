@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -61,6 +62,7 @@ class DashboardViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
     private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -189,7 +191,7 @@ class DashboardViewModel @Inject constructor(
         )
     }
 
-    suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(Dispatchers.IO) {
+    suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(dispatcherProvider.io) {
         var unreadCount = 0
         val newNotifications = mutableListOf<NotificationConfig>()
 
