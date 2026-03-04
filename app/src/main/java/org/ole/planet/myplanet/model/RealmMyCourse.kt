@@ -218,12 +218,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
-        fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
-            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-        }
-
-        @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
