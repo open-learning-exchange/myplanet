@@ -340,14 +340,6 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
-        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
-        @JvmStatic
-        fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
-            val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
-            return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
-            }
-        }
-
         @Deprecated("Use ResourcesRepository.getFilterFacets instead")
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
