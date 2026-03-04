@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services
 
-import android.content.SharedPreferences
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
@@ -21,8 +20,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 class ChallengePrompter(
     private val activity: DashboardActivity,
     private val user: RealmUser?,
-    private val settings: SharedPreferences,
-    private val editor: SharedPreferences.Editor,
+    private val sharedPrefManager: SharedPrefManager,
     private val viewModel: DashboardViewModel,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
@@ -101,7 +99,7 @@ class ChallengePrompter(
         val endDate = LocalDate.of(2025, 1, 16)
         return today.isAfter(LocalDate.of(2024, 11, 30)) &&
                 today.isBefore(endDate) &&
-                settings.getString("serverURL", "") in validUrls
+                sharedPrefManager.getServerUrl() in validUrls
     }
 
     private fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean, hasValidSync: Boolean) {
@@ -114,12 +112,12 @@ class ChallengePrompter(
 
         val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
 
-        val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
+        val hasShownCongrats = sharedPrefManager.getHasShownCongrats()
 
         if (isCompleted && hasShownCongrats) return
 
         if (isCompleted && !hasShownCongrats) {
-            editor.putBoolean("has_shown_congrats", true).apply()
+            sharedPrefManager.setHasShownCongrats(true)
             val markdownContent = """
             ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
             ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
