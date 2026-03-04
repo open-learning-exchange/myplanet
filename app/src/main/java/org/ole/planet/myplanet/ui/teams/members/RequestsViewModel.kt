@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class RequestsUiState(
     val members: List<RealmUser> = emptyList(),
@@ -24,7 +25,8 @@ data class RequestsUiState(
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RequestsUiState())
@@ -33,7 +35,7 @@ class RequestsViewModel @Inject constructor(
     val successAction = _successAction.asSharedFlow()
 
     fun fetchMembers(teamId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcherProvider.io) {
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMembers(teamId).size
             val user = userSessionManager.getUserModel()
@@ -51,7 +53,7 @@ class RequestsViewModel @Inject constructor(
         )
         _uiState.value = optimisticState
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcherProvider.io) {
             val result = teamsRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
             if (result.isSuccess) {
                 teamsRepository.syncTeamActivities()

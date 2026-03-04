@@ -21,12 +21,14 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class SubmissionViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
+    private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
 
     private data class SubmissionViewData(
@@ -82,7 +84,7 @@ class SubmissionViewModel @Inject constructor(
             }
 
         Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.flowOn(Dispatchers.IO).shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
         uniqueSubmissions.map { viewData ->
