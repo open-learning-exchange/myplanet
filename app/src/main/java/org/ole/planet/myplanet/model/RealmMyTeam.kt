@@ -338,7 +338,10 @@ open class RealmMyTeam : RealmObject() {
                         .`in`("courseId", courseIds)
                         .findAll()
 
-                    courses.forEach { course ->
+                    val courseMap = courses.associateBy { it.courseId }
+
+                    team.courses?.forEach { courseId ->
+                        val course = courseMap[courseId]
                         if (course != null) {
                             val courseJson = RealmMyCourse.serialize(course, realm)
                             coursesArray.add(courseJson)
