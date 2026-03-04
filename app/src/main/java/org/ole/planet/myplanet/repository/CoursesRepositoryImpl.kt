@@ -436,8 +436,4 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
     }
-
-    override suspend fun getCourseProgressSummary(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
-        return progressRepository.getCourseProgress(userId)
-    }
 }

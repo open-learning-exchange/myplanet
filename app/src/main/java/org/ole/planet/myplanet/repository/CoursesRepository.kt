@@ -55,5 +55,4 @@ interface CoursesRepository {
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTags(courseId: String): List<RealmTag>
     suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
-    suspend fun getCourseProgressSummary(userId: String?): HashMap<String?, com.google.gson.JsonObject>
 }
