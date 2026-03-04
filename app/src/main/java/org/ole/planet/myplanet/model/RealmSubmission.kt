@@ -124,9 +124,11 @@ open class RealmSubmission : RealmObject() {
                     val answersArray = submission.get("answers").asJsonArray
                     sub?.answers = RealmList<RealmAnswer>()
 
+                    val unmanagedAnswers = mutableListOf<RealmAnswer>()
                     for (i in 0 until answersArray.size()) {
                         val answerJson = answersArray[i].asJsonObject
-                        val realmAnswer = mRealm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+                        val realmAnswer = RealmAnswer()
+                        realmAnswer.id = UUID.randomUUID().toString()
 
                         realmAnswer.value = JsonUtils.getString("value", answerJson)
                         realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
@@ -141,7 +143,12 @@ open class RealmSubmission : RealmObject() {
                             "$examIdPart-$i"
                         }
 
-                        sub?.answers?.add(realmAnswer)
+                        unmanagedAnswers.add(realmAnswer)
+                    }
+
+                    if (unmanagedAnswers.isNotEmpty()) {
+                        val managedAnswers = mRealm.copyToRealmOrUpdate(unmanagedAnswers)
+                        sub?.answers?.addAll(managedAnswers)
                     }
                 }
 

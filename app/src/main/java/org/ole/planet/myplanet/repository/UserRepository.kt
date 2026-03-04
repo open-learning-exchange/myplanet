@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.AchievementData
 
 interface UserRepository {
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
@@ -96,4 +97,5 @@ interface UserRepository {
         achievements: JsonArray,
         references: JsonArray
     )
+    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
 }
