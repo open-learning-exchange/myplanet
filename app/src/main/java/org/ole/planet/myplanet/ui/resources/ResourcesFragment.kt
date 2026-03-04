@@ -80,6 +80,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
     var levels: MutableSet<String> = mutableSetOf()
+    private var isDownloadDialogShown = false
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -295,11 +296,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             checkList()
         }
 
-        if (isMyCourseLib && !isSurvey) {
+        if (isMyCourseLib && !isSurvey && !isDownloadDialogShown) {
             viewLifecycleOwner.lifecycleScope.launch {
                 val userId = settings.getString("userId", "--")
                 val libraryList = resourcesRepository.getLibraryListForUser(userId)
                 showDownloadDialog(libraryList)
+                isDownloadDialogShown = true
             }
         }
         clearTagsButton()

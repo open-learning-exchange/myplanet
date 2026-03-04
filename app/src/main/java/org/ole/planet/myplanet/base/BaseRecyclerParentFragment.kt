@@ -9,7 +9,10 @@ import org.ole.planet.myplanet.model.RealmStepExam
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     var isMyCourseLib: Boolean = false
 
-    @Deprecated("Subclasses should fetch their initial list from their respective ViewModels or Repositories.")
+    @Deprecated(
+        "Subclasses should fetch their initial list from their respective ViewModels or Repositories.",
+        ReplaceWith("repository.getItems()")
+    )
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>): List<LI> {
         return when {
@@ -50,7 +53,10 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         }
     }
 
-    @Deprecated("Subclasses should fetch their initial list from their respective ViewModels or Repositories.")
+    @Deprecated(
+        "Subclasses should fetch their initial list from their respective ViewModels or Repositories.",
+        ReplaceWith("repository.getItems(orderBy, sort)")
+    )
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {

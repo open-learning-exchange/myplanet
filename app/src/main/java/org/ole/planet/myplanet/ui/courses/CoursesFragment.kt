@@ -77,8 +77,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var searchJob: Job? = null
-    var resources: List<RealmMyLibrary>? = null
-    var courseLib: String? = null
+    private var resources: List<RealmMyLibrary>? = null
+    private var courseLib: String? = null
+    private var isDownloadDialogShown = false
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -209,7 +210,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val courseIds = sortedCourseList.mapNotNull { it.id }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
-                    resources?.let { showDownloadDialog(it) }
+                    if (!isDownloadDialogShown) {
+                        resources?.let { showDownloadDialog(it) }
+                        isDownloadDialogShown = true
+                    }
                 }
 
                 // Wait for parallel queries to complete
@@ -265,7 +269,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val courseIds = courseList.mapNotNull { it.id }
             resources = coursesRepository.getCourseOfflineResources(courseIds)
             courseLib = "courses"
-            resources?.let { showDownloadDialog(it) }
+            if (!isDownloadDialogShown) {
+                resources?.let { showDownloadDialog(it) }
+                isDownloadDialogShown = true
+            }
         }
 
         val (map, progressMap) = coroutineScope {
