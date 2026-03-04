@@ -340,30 +340,10 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
-        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
-        @JvmStatic
-        fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
-            val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
-            return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
-            }
-        }
-
-        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
-        @JvmStatic
-        fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
-            return libraries.flatMap { it.level ?: emptyList() }.toSet()
-        }
-
         @Deprecated("Use ResourcesRepository.getFilterFacets instead")
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
             return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
-        }
-
-        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
-        @JvmStatic
-        fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
-            return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }
     }
 }
