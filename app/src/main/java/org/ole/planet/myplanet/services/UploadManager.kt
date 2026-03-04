@@ -505,6 +505,8 @@ class UploadManager @Inject constructor(
             }
 
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
+                val successfulUpdates = mutableMapOf<String, JsonObject?>()
+
                 batch.forEach { activityData ->
                     try {
                         val `object` = apiInterface.postDoc(
@@ -512,13 +514,25 @@ class UploadManager @Inject constructor(
                             "${UrlUtils.getUrl()}/login_activities", activityData.serialized
                         ).body()
 
-                        databaseService.executeTransactionAsync { transactionRealm ->
-                            transactionRealm.where(RealmOfflineActivity::class.java)
-                                .equalTo("id", activityData.activityId)
-                                .findFirst()?.changeRev(`object`)
+                        if (activityData.activityId != null) {
+                            successfulUpdates[activityData.activityId] = `object`
                         }
                     } catch (e: IOException) {
                         e.printStackTrace()
+                    }
+                }
+
+                if (successfulUpdates.isNotEmpty()) {
+                    val idsToUpdate = successfulUpdates.keys.toTypedArray()
+                    databaseService.executeTransactionAsync { transactionRealm ->
+                        val activities = transactionRealm.where(RealmOfflineActivity::class.java)
+                            .`in`("id", idsToUpdate)
+                            .findAll()
+
+                        activities.forEach { activity ->
+                            val updateData = successfulUpdates[activity.id]
+                            activity.changeRev(updateData)
+                        }
                     }
                 }
             }

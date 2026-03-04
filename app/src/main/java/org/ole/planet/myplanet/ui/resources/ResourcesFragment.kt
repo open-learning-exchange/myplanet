@@ -117,9 +117,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                updateServerIfNecessary(mapping)
-            }
+            updateServerIfNecessary(mapping)
             startSyncManager()
         }
     }

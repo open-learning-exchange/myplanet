@@ -302,7 +302,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
             achievementId?.let {
-                achievement = userRepository.getOrCreateAchievement(it)
+                achievement = userRepository.initializeAchievement(it)
             }
             if (isAdded) {
                 populateAchievementData()
