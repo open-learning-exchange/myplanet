@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
-import android.graphics.Color
 import android.view.View
 import android.view.Window
 import androidx.core.view.ViewCompat
