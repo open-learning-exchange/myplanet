@@ -541,6 +541,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
         data class TeamLogData(
+            val id: String?,
             val time: Long?,
             val user: String?,
             val type: String?,
@@ -551,6 +552,7 @@ class UploadManager @Inject constructor(
             val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
             results.map { log ->
                 TeamLogData(
+                    id = log.id,
                     time = log.time,
                     user = log.user,
                     type = log.type,
@@ -558,6 +560,16 @@ class UploadManager @Inject constructor(
                 )
             }
         }
+
+        data class UploadResult(
+            val id: String?,
+            val time: Long?,
+            val user: String?,
+            val type: String?,
+            val _id: String,
+            val _rev: String
+        )
+        val successfulUploads = mutableListOf<UploadResult>()
 
         logsData.forEach { logData ->
             try {
@@ -569,18 +581,42 @@ class UploadManager @Inject constructor(
                 if (`object` != null) {
                     val id = getString("id", `object`)
                     val rev = getString("rev", `object`)
-                    databaseService.executeTransactionAsync { realm ->
-                        val managedLog = realm.where(RealmTeamLog::class.java)
-                            .equalTo("time", logData.time)
-                            .equalTo("user", logData.user)
-                            .equalTo("type", logData.type)
-                            .findFirst()
-                        managedLog?._id = id
-                        managedLog?._rev = rev
-                    }
+                    successfulUploads.add(UploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+
+        if (successfulUploads.isNotEmpty()) {
+            databaseService.executeTransactionAsync { realm ->
+                val ids = successfulUploads.mapNotNull { it.id }
+                val managedLogs = mutableMapOf<String, RealmTeamLog>()
+
+                if (ids.isNotEmpty()) {
+                    ids.chunked(999).forEach { chunk ->
+                        val results = realm.where(RealmTeamLog::class.java)
+                            .`in`("id", chunk.toTypedArray())
+                            .findAll()
+                        results.forEach { log ->
+                            log.id?.let { id -> managedLogs[id] = log }
+                        }
+                    }
+                }
+
+                successfulUploads.forEach { upload ->
+                    val managedLog = if (upload.id != null) {
+                        managedLogs[upload.id]
+                    } else {
+                        realm.where(RealmTeamLog::class.java)
+                            .equalTo("time", upload.time)
+                            .equalTo("user", upload.user)
+                            .equalTo("type", upload.type)
+                            .findFirst()
+                    }
+                    managedLog?._id = upload._id
+                    managedLog?._rev = upload._rev
+                }
             }
         }
     }
