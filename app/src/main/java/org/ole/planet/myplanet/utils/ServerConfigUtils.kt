@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 object ServerConfigUtils {
     fun getServerAddresses(context: Context): List<ServerAddress> {
@@ -65,8 +66,7 @@ object ServerConfigUtils {
     fun saveAlternativeUrl(
         url: String,
         password: String,
-        settings: android.content.SharedPreferences,
-        editor: android.content.SharedPreferences.Editor,
+        sharedPrefManager: SharedPrefManager,
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
@@ -78,15 +78,14 @@ object ServerConfigUtils {
             Triple(user, password, dbUrl)
         }
 
-        editor.putString("serverPin", password)
-        editor.putString("url_user", urlUser)
-        editor.putString("url_pwd", urlPwd)
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.putString("alternativeUrl", url)
-        editor.putString("processedAlternativeUrl", couchdbURL)
-        editor.putBoolean("isAlternativeUrl", true)
-        editor.apply()
+        sharedPrefManager.setServerPin(password)
+        sharedPrefManager.setUrlUser(urlUser)
+        sharedPrefManager.setUrlPwd(urlPwd)
+        sharedPrefManager.setUrlScheme(uri.scheme ?: "")
+        sharedPrefManager.setUrlHost(uri.host ?: "")
+        sharedPrefManager.setAlternativeUrl(url)
+        sharedPrefManager.setProcessedAlternativeUrl(couchdbURL)
+        sharedPrefManager.setIsAlternativeUrl(true)
 
         return couchdbURL
     }

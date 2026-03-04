@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
@@ -90,9 +91,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
             val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
             val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
-            val achievementsJson = if (achievementArray != null) JsonUtils.gson.toJson(achievementArray) else "[]"
-            val referencesJson = if (referenceArray != null) JsonUtils.gson.toJson(referenceArray) else "[]"
-
             fragmentEditAchievementBinding.btnUpdate.isEnabled = false
             Utilities.toast(activity, getString(R.string.saving))
 
@@ -103,8 +101,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     goals = goals,
                     purpose = purpose,
                     sendToNation = sendToNation,
-                    achievementsJson = achievementsJson,
-                    referencesJson = referencesJson
+                    achievements = achievementArray ?: JsonArray(),
+                    references = referenceArray ?: JsonArray()
                 )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
@@ -272,9 +270,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: List<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = databaseService.withRealmAsync { realm ->
-                realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-            }
+            val list = resourcesRepository.getAllLibraries()
 
             if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -303,7 +299,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = userRepository.getOrCreateAchievement(achievementId)
+            achievement = userRepository.initializeAchievement(achievementId)
             if (isAdded) {
                 populateAchievementData()
             }

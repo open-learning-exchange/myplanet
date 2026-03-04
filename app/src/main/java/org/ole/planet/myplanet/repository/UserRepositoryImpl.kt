@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import com.google.gson.JsonArray
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
@@ -630,16 +631,18 @@ class UserRepositoryImpl @Inject constructor(
         return actions.isNotEmpty()
     }
 
-    override suspend fun getOrCreateAchievement(achievementId: String): RealmAchievement? {
+    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
         return withRealm { realm ->
             var achievement = realm.where(RealmAchievement::class.java)
                 .equalTo("_id", achievementId)
                 .findFirst()
+
             if (achievement == null) {
                 realm.executeTransaction { transactionRealm ->
                     achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
                 }
             }
+
             achievement?.let { realm.copyFromRealm(it) }
         }
     }
@@ -650,8 +653,8 @@ class UserRepositoryImpl @Inject constructor(
         goals: String,
         purpose: String,
         sendToNation: String,
-        achievementsJson: String,
-        referencesJson: String
+        achievements: JsonArray,
+        references: JsonArray
     ) {
         withRealm { realm ->
             realm.executeTransaction { transactionRealm ->
@@ -663,8 +666,8 @@ class UserRepositoryImpl @Inject constructor(
                     achievement.goals = goals
                     achievement.purpose = purpose
                     achievement.sendToNation = sendToNation
-                    achievement.setAchievements(JsonUtils.gson.fromJson(achievementsJson, com.google.gson.JsonArray::class.java))
-                    achievement.setReferences(JsonUtils.gson.fromJson(referencesJson, com.google.gson.JsonArray::class.java))
+                    achievement.setAchievements(achievements)
+                    achievement.setReferences(references)
                 }
             }
         }
