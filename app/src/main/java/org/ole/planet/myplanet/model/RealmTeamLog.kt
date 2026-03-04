@@ -24,11 +24,6 @@ open class RealmTeamLog : RealmObject() {
     var uploaded = false
     companion object {
         @JvmStatic
-        fun getVisitCount(realm: Realm, userName: String?, teamId: String?): Long {
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count()
-        }
-
-        @JvmStatic
         fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long? {
             return realm.where(RealmTeamLog::class.java)
                 .equalTo("type", "teamVisit")
