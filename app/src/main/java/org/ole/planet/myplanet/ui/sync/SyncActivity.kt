@@ -152,6 +152,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        initSyncConfigurationCoordinator()
         lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 syncManager.syncStatus.collect { status ->
@@ -187,65 +188,68 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         processedUrl = UrlUtils.getUrl()
     }
 
+    private lateinit var syncConfigurationCoordinator: SyncConfigurationCoordinator
+
+    private fun initSyncConfigurationCoordinator() {
+        syncConfigurationCoordinator = SyncConfigurationCoordinator(
+            configurationsRepository,
+            prefData,
+            object : SyncConfigurationCoordinator.Callback {
+                override fun showProgressDialog() {
+                    customProgressDialog.setText(getString(R.string.check_apk_version))
+                    customProgressDialog.show()
+                }
+
+                override fun dismissProgressDialog() {
+                    customProgressDialog.dismiss()
+                }
+
+                override fun setSyncFailed(failed: Boolean) {
+                    syncFailed = failed
+                }
+
+                override fun showErrorDialog(errorMessage: String) {
+                    alertDialogOkay(errorMessage)
+                }
+
+                override fun onVersionCheckSuccess() {
+                    isSync = false
+                    forceSync = true
+                    configurationsRepository.checkVersion(this@SyncActivity, settings)
+                }
+
+                override fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
+                    continueSync(dialog, url, isAlternativeUrl, defaultUrl)
+                }
+
+                override fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, defaultUrl: String) {
+                    saveConfigAndContinue(dialog, binding, "", false, defaultUrl)
+                }
+
+                override fun onClearDataDialog() {
+                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                }
+            }
+        )
+    }
+
     fun checkMinApk(url: String, pin: String, callerActivity: String) {
-        lifecycleScope.launch {
-            customProgressDialog.setText(getString(R.string.check_apk_version))
-            customProgressDialog.show()
-            val result = configurationsRepository.getMinApk(url, pin)
-            customProgressDialog.dismiss()
-            when (result) {
-                is ConfigurationsRepository.ConfigurationResult.Success -> {
-                    handleConfigurationSuccess(result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerActivity)
-                }
-                is ConfigurationsRepository.ConfigurationResult.Failure -> {
-                    syncFailed = true
-                    alertDialogOkay(result.errorMessage)
-                }
-            }
+        val callerContext = when (callerActivity) {
+            "LoginActivity" -> CallerContext.LOGIN_ACTIVITY
+            "DashboardActivity" -> CallerContext.DASHBOARD_ACTIVITY
+            "SyncActivity" -> CallerContext.SYNC_ACTIVITY
+            else -> CallerContext.OTHER
         }
+        syncConfigurationCoordinator.checkMinApk(
+            lifecycleScope,
+            url,
+            pin,
+            callerContext,
+            serverConfigAction,
+            currentDialog,
+            serverDialogBinding
+        )
     }
-
-    private fun handleConfigurationSuccess(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
-        val savedId = prefData.getConfigurationId()
-        syncFailed = false
-        when (callerActivity) {
-            "LoginActivity", "DashboardActivity"-> {
-                if (isAlternativeUrl) {
-                    ServerConfigUtils.saveAlternativeUrl(url, prefData.getServerPin(), prefData)
-                }
-                isSync = false
-                forceSync = true
-                configurationsRepository.checkVersion(this, settings)
-            }
-            else -> {
-                if (serverConfigAction == "sync") {
-                    if (savedId == null) {
-                        prefData.setConfigurationId(id)
-                        prefData.setCommunityName(code)
-                        currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl, defaultUrl)
-                        }
-                    } else if (id == savedId) {
-                        currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl, defaultUrl)
-                        }
-                    } else {
-                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
-                    }
-                } else if (serverConfigAction == "save") {
-                    if (savedId == null || id == savedId) {
-                        currentDialog?.let {
-                            val binding = serverDialogBinding ?: return@let
-                            saveConfigAndContinue(it, binding, "", false, defaultUrl)
-                        }
-                    } else {
-                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
-                    }
-                }
-            }
-        }
-    }
-
     fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
@@ -761,9 +765,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun registerReceiver() {
         lifecycleScope.launch {
-            broadcastService.events.collect { intent ->
-                if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                    broadcastReceiver.onReceive(this@SyncActivity, intent)
+            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                        broadcastReceiver.onReceive(this@SyncActivity, intent)
+                    }
                 }
             }
         }
