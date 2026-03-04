@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -82,27 +83,27 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String> {
+    override suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String> {
         return runCatching {
             val teamId = AndroidDecrypter.generateIv()
             executeTransaction { realm ->
                 val team = realm.createObject(RealmMyTeam::class.java, teamId)
                 team.status = "active"
                 team.createdDate = Date().time
-                val category = JsonUtils.getString("category", teamObject)
+                val category = request.category
                 if (category == "enterprise") {
                     team.type = "enterprise"
-                    team.services = JsonUtils.getString("services", teamObject)
-                    team.rules = JsonUtils.getString("rules", teamObject)
+                    team.services = request.services
+                    team.rules = request.rules
                 } else {
                     team.type = "team"
-                    team.teamType = JsonUtils.getString("teamType", teamObject)
+                    team.teamType = request.teamType
                 }
-                team.name = JsonUtils.getString("name", teamObject)
-                team.description = JsonUtils.getString("description", teamObject)
+                team.name = request.name
+                team.description = request.description
                 team.createdBy = user._id
                 team.teamId = ""
-                team.isPublic = teamObject.get("isPublic")?.asBoolean ?: false
+                team.isPublic = request.isPublic
                 team.userId = user._id
                 team.parentCode = user.parentCode
                 team.teamPlanetCode = user.planetCode
@@ -116,13 +117,12 @@ class TeamsRepositoryImpl @Inject constructor(
                 membership.userPlanetCode = user.planetCode
                 membership.docType = "membership"
                 membership.isLeader = true
-                membership.teamType = JsonUtils.getString("teamType", teamObject)
+                membership.teamType = request.teamType
                 membership.updated = true
             }
             teamId
         }
     }
-
     override suspend fun getTasks(userId: String?): List<RealmTeamTask> {
         return queryList(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")
@@ -1195,5 +1195,16 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return allLibraryItems.filter { it._id !in existingIds }
+    }
+
+    override suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long {
+        if (userName == null || teamId == null) return 0
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmTeamLog::class.java)
+                .equalTo("type", "teamVisit")
+                .equalTo("user", userName)
+                .equalTo("teamId", teamId)
+                .count()
+        } ?: 0
     }
 }

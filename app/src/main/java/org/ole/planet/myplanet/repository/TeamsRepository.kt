@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -92,7 +93,7 @@ interface TeamsRepository {
         teamType: String?,
     )
 
-    suspend fun createTeamAndAddMember(teamObject: JsonObject, user: RealmUser): Result<String>
+    suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String>
     suspend fun updateTeam(
         teamId: String,
         name: String,
@@ -155,4 +156,5 @@ interface TeamsRepository {
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
+    suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 }
