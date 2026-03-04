@@ -219,22 +219,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
-            return getUsers(teamId, realm, "request")
-        }
-
-        @JvmStatic
-        fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
-            return getUsers(teamId, realm, "membership")
-        }
-
-        @Deprecated("Use TeamsRepository.getJoinedMemberCount instead")
-        @JvmStatic
-        fun getJoinedMemberCount(teamId: String, realm: Realm): Int {
-            return getUsers(teamId, realm, "membership").size
-        }
-
-        @JvmStatic
         fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -243,22 +227,6 @@ open class RealmMyTeam : RealmObject() {
                 .equalTo("isLeader", true)
                 .findFirst()
             return team != null
-        }
-
-        @JvmStatic
-        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUser> {
-            var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-            if (docType.isNotEmpty()) {
-                query = query.equalTo("docType", docType)
-            }
-            val myTeam = query.findAll()
-            val userIds = myTeam.mapNotNull { it.userId }.toTypedArray()
-            if (userIds.isEmpty()) return mutableListOf()
-
-            return mRealm.where(RealmUser::class.java)
-                .`in`("id", userIds)
-                .findAll()
-                .toMutableList()
         }
 
         @JvmStatic
