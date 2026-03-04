@@ -662,6 +662,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         val binding = serverDialogBinding!!
         initServerDialog(binding)
+        protocolSemantics(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
         val dialog = MaterialDialog.Builder(contextWrapper)
@@ -676,7 +677,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         neutralAction = dialog.getActionButton(DialogAction.NEUTRAL)
 
         handleManualConfiguration(binding, prefData.getConfigurationId(), dialog)
-        setRadioProtocolListener(binding)
         binding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }

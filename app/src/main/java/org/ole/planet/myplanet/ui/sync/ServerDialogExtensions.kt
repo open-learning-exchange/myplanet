@@ -96,13 +96,22 @@ fun SyncActivity.setUrlAndPin(checked: Boolean) {
     protocolCheckIn.isEnabled = !checked
 }
 
-fun SyncActivity.protocolSemantics() {
-    protocolCheckIn.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
+fun SyncActivity.protocolSemantics(binding: DialogServerUrlBinding) {
+    binding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
         when (i) {
-            R.id.radio_http -> prefData.setServerProtocol(getString(R.string.http_protocol))
-            R.id.radio_https -> prefData.setServerProtocol(getString(R.string.https_protocol))
+            R.id.radio_http -> {
+                prefData.setServerProtocol(getString(R.string.http_protocol))
+            }
+            R.id.radio_https -> {
+                prefData.setServerProtocol(getString(R.string.https_protocol))
+            }
         }
+        updateHttpWarning(binding)
     }
+}
+
+fun SyncActivity.updateHttpWarning(binding: DialogServerUrlBinding) {
+    binding.tvHttpWarning.visibility = if (binding.radioHttp.isChecked) View.VISIBLE else View.GONE
 }
 
 fun SyncActivity.refreshServerList() {
@@ -130,6 +139,7 @@ fun SyncActivity.setupManualUi(binding: DialogServerUrlBinding) {
         binding.radioHttps.isChecked = true
         prefData.setServerProtocol(getString(R.string.https_protocol))
     }
+    updateHttpWarning(binding)
     serverUrl.setText(ServerConfigUtils.removeProtocol(prefData.getServerUrl()))
     serverPassword.setText(prefData.getServerPin())
     serverUrl.isEnabled = true
@@ -240,14 +250,6 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     binding.deviceName.setText(org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
 }
 
-fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
-    binding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
-        when (checkedId) {
-            R.id.radio_http -> prefData.setServerProtocol(getString(R.string.http_protocol))
-            R.id.radio_https -> prefData.setServerProtocol(getString(R.string.https_protocol))
-        }
-    }
-}
 
 fun SyncActivity.setupFastSyncOption(binding: DialogServerUrlBinding) {
     binding.fastSync.isChecked = prefData.getFastSync()
@@ -298,6 +300,7 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     prefData.setServerPin("")
     binding.radioHttp.isChecked = true
     prefData.setServerProtocol(getString(R.string.http_protocol))
+    updateHttpWarning(binding)
     showConfigurationUIElements(binding, true, dialog)
 
     lifecycleScope.launch {
@@ -325,7 +328,6 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     }
     binding.switchServerUrl.isChecked = prefData.getSwitchCloudUrl()
     setUrlAndPin(prefData.getSwitchCloudUrl())
-    protocolSemantics()
 }
 
 private fun isLocalNetwork(url: String): Boolean {
