@@ -98,7 +98,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     @Inject
     lateinit var ratingsRepository: RatingsRepository
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = prefManager.getServerUrl()
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
@@ -107,7 +107,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun startCoursesSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
+        val isFastSync = prefManager.getFastSync()
         if (isFastSync && !prefManager.isCoursesSynced()) {
             checkServerAndStartSync()
         }
@@ -165,7 +165,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }

@@ -5,9 +5,7 @@ import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.content.ContentValues
-import android.content.Context.MODE_PRIVATE
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -61,8 +59,8 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -72,7 +70,8 @@ class UserProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: UserProfileViewModel by viewModels()
     private lateinit var rowStatBinding: RowStatBinding
-    private lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private var model: RealmUser? = null
@@ -187,14 +186,13 @@ class UserProfileFragment : Fragment() {
         binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
         setupStatsRecycler()
         observeUserProfile()
-        viewModel.loadUserProfile(settings.getString("userId", ""))
+        viewModel.loadUserProfile(sharedPrefManager.getUserId())
         viewModel.getOfflineVisits()
 
         return binding.root
     }
 
     private fun initializeDependencies() {
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
     }
@@ -431,7 +429,7 @@ class UserProfileFragment : Fragment() {
             val email = binding.email.text.toString()
             val phoneNumber = binding.phoneNumber.text.toString()
             val dob = date ?: model?.dob
-            val userId = settings.getString("userId", "")
+            val userId = sharedPrefManager.getUserId()
 
             viewModel.updateUserProfile(
                 userId = userId,
@@ -569,7 +567,7 @@ class UserProfileFragment : Fragment() {
 
     private fun startIntent(uri: Uri?) {
         val path = uri?.toString()
-        viewModel.updateProfileImage(settings.getString("userId", ""), path)
+        viewModel.updateProfileImage(sharedPrefManager.getUserId(), path)
     }
 
     inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)

@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -47,7 +46,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
@@ -86,13 +84,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = prefManager.getServerUrl()
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startResourcesSync()
     }
 
@@ -107,7 +104,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun startResourcesSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
+        val isFastSync = prefManager.getFastSync()
         if (isFastSync && !prefManager.isResourcesSynced()) {
             checkServerAndStartSync()
         }
@@ -162,7 +159,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }

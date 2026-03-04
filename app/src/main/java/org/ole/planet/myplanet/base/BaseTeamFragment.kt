@@ -36,8 +36,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val sParentCode = settings.getString("parentCode", "")
-        val communityName = settings.getString("communityName", "")
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {

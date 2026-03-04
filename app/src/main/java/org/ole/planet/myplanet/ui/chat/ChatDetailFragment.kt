@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.Editable
@@ -40,7 +39,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatRequest
@@ -52,6 +50,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -76,8 +75,7 @@ class ChatDetailFragment : Fragment() {
     private var newsId: String? = null
     private var loadingJob: Job? = null
     @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
+    lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var chatRepository: ChatRepository
@@ -89,7 +87,7 @@ class ChatDetailFragment : Fragment() {
     lateinit var serverUrlMapper: ServerUrlMapper
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = sharedPrefManager.getServerUrl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -123,7 +121,7 @@ class ChatDetailFragment : Fragment() {
         isAiUnavailable = false
         refreshInputState()
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = settings.getString("userId", "") ?: ""
+            val userId = sharedPrefManager.getUserId()
             user = userRepository.getUserById(userId)
             isUserLoaded = true
             refreshInputState()
@@ -474,13 +472,13 @@ class ChatDetailFragment : Fragment() {
         serverUrlMapper.processUrl(serverUrl)
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }
 
     private fun getModelsMap(): Map<String, String> {
-        val modelsString = settings.getString("ai_models", null)
+        val modelsString = sharedPrefManager.getRawString("ai_models").takeIf { it.isNotEmpty() }
         return if (modelsString != null) {
             JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
         } else {
@@ -644,12 +642,10 @@ class ChatDetailFragment : Fragment() {
         if (this::messageTextWatcher.isInitialized) {
             binding.editGchatMessage.removeTextChangedListener(messageTextWatcher)
         }
-        val editor = settings.edit()
-        if (settings.getBoolean("isAlternativeUrl", false)) {
-            editor.putString("alternativeUrl", "")
-            editor.putString("processedAlternativeUrl", "")
-            editor.putBoolean("isAlternativeUrl", false)
-            editor.apply()
+        if (sharedPrefManager.isAlternativeUrl()) {
+            sharedPrefManager.setAlternativeUrl("")
+            sharedPrefManager.setProcessedAlternativeUrl("")
+            sharedPrefManager.setIsAlternativeUrl(false)
         }
         loadingJob?.cancel()
         _binding = null

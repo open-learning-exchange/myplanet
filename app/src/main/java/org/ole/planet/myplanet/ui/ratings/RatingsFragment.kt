@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.ratings
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,7 +17,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -28,10 +26,11 @@ class RatingsFragment : DialogFragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var viewModel: RatingsViewModel
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
-    lateinit var settings: SharedPreferences
     private var ratingListener: OnRatingChangeListener? = null
     private var isUserReady = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
@@ -51,7 +50,6 @@ class RatingsFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return binding.root
     }
 
@@ -136,7 +134,7 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun loadRatingData() {
-        val userId = settings.getString("userId", "") ?: ""
+        val userId = sharedPrefManager.getUserId()
         if (type != null && id != null && userId.isNotEmpty()) {
             viewModel.loadRatingData(type!!, id!!, userId)
         }
@@ -150,7 +148,7 @@ class RatingsFragment : DialogFragment() {
     private fun submitRating() {
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
-        val userId = settings.getString("userId", "") ?: ""
+        val userId = sharedPrefManager.getUserId()
 
         if (type != null && id != null && title != null && userId.isNotEmpty()) {
             viewModel.submitRating(
