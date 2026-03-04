@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class TeamActionResult {
     object Success : TeamActionResult()
@@ -25,7 +26,8 @@ sealed class TeamActionResult {
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository
+    private val teamsRepository: TeamsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
@@ -35,7 +37,7 @@ class TeamViewModel @Inject constructor(
     fun prepareTeamData(teams: List<RealmMyTeam>, userId: String?) {
         currentTeams = teams
         viewModelScope.launch {
-            val processedTeams = withContext(Dispatchers.IO) {
+            val processedTeams = withContext(dispatcherProvider.io) {
                 val validTeams = teams.filter {
                     !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
                 }
