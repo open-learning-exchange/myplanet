@@ -31,7 +31,9 @@ class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val submissionsRepository: SubmissionsRepository
+    private val submissionsRepository: SubmissionsRepository,
+    private val tagsRepository: TagsRepository,
+    private val ratingsRepository: RatingsRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -425,5 +427,17 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
         return submissionsRepository.hasUnfinishedSurveys(courseId, userId)
+    }
+
+    override suspend fun getCourseTags(courseId: String): List<RealmTag> {
+        return tagsRepository.getTagsForCourse(courseId)
+    }
+
+    override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
+        return ratingsRepository.getCourseRatings(userId)
+    }
+
+    override suspend fun getCourseProgressSummary(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
+        return progressRepository.getCourseProgress(userId)
     }
 }
