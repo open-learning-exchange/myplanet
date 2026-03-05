@@ -219,16 +219,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
-            return getUsers(teamId, realm, "request")
-        }
-
-        @JvmStatic
-        fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUser> {
-            return getUsers(teamId, realm, "membership")
-        }
-
-        @JvmStatic
         fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -237,23 +227,6 @@ open class RealmMyTeam : RealmObject() {
                 .equalTo("isLeader", true)
                 .findFirst()
             return team != null
-        }
-
-        @JvmStatic
-        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUser> {
-            var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-            if (docType.isNotEmpty()) {
-                query = query.equalTo("docType", docType)
-            }
-            val myTeam = query.findAll()
-            val list = mutableListOf<RealmUser>()
-            for (team in myTeam) {
-                val model = mRealm.where(RealmUser::class.java)
-                    .equalTo("id", team.userId)
-                    .findFirst()
-                if (model != null && !list.contains(model)) list.add(model)
-            }
-            return list
         }
 
         @JvmStatic
@@ -325,14 +298,21 @@ open class RealmMyTeam : RealmObject() {
             if (!team.courses.isNullOrEmpty()) {
                 val coursesArray = JsonArray()
 
-                team.courses?.forEach { courseId ->
-                    val course = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
+                val courseIds = team.courses?.toTypedArray() ?: emptyArray()
 
-                    if (course != null) {
-                        val courseJson = RealmMyCourse.serialize(course, realm)
-                        coursesArray.add(courseJson)
+                if (courseIds.isNotEmpty()) {
+                    val courses = realm.where(RealmMyCourse::class.java)
+                        .`in`("courseId", courseIds)
+                        .findAll()
+
+                    val courseMap = courses.associateBy { it.courseId }
+
+                    team.courses?.forEach { courseId ->
+                        val course = courseMap[courseId]
+                        if (course != null) {
+                            val courseJson = RealmMyCourse.serialize(course, realm)
+                            coursesArray.add(courseJson)
+                        }
                     }
                 }
                 `object`.add("courses", coursesArray)
