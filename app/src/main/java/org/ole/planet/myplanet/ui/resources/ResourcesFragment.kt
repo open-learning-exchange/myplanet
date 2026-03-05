@@ -41,8 +41,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
-import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -86,12 +84,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     lateinit var syncManager: SyncManager
 
     @Inject
-    lateinit var ratingsRepository: RatingsRepository
-
-    @Inject
-    lateinit var tagsRepository: TagsRepository
-
-    @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -125,9 +117,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                updateServerIfNecessary(mapping)
-            }
+            updateServerIfNecessary(mapping)
             startSyncManager()
         }
     }
@@ -177,13 +167,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    private suspend fun loadRatingsAndTags(allResourceIds: List<String>, userId: String?) {
+        map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, userId))
+        tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
+    }
+
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
         lifecycleScope.launch {
             try {
-                map = ratingsRepository.getResourceRatings(model?.id)
-
                 allLibraryItems = if (isMyCourseLib) {
                     resourcesRepository.getMyLibrary(model?.id)
                 } else {
@@ -192,12 +185,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     }
                 }
 
+                val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+
+                loadRatingsAndTags(allResourceIds, model?.id)
+
                 val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
                 val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-
-                // Fetch tags for all items to enable filtering
-                val allResourceIds = allLibraryItems.mapNotNull { it.id }
-                tagsMap = tagsRepository.getTagsForResources(allResourceIds)
 
                 val filteredLibraryList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
 
@@ -236,8 +229,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
-        map = ratingsRepository.getResourceRatings(model?.id)
-
         allLibraryItems = if (isMyCourseLib) {
             resourcesRepository.getMyLibrary(model?.id)
         } else {
@@ -246,8 +237,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
 
-        val allResourceIds = allLibraryItems.mapNotNull { it.id }
-        tagsMap = tagsRepository.getTagsForResources(allResourceIds)
+        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+
+        loadRatingsAndTags(allResourceIds, model?.id)
 
         val user = profileDbHandler.getUserModel()
         adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())

@@ -30,7 +30,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val activitiesRepository: ActivitiesRepository,
-    @param:AppPreferences private val settings: SharedPreferences
+    @param:AppPreferences private val settings: SharedPreferences,
+    private val ratingsRepository: RatingsRepository,
+    private val tagsRepository: TagsRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
@@ -290,24 +292,25 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (resourceIds.isEmpty() || userId.isBlank()) return
 
         executeTransaction { realm ->
-            resourceIds.forEach { resourceId ->
-                val libraryItem = realm.where(RealmMyLibrary::class.java)
-                    .equalTo("resourceId", resourceId)
-                    .findFirst()
+            val chunkSize = 1000
+            resourceIds.chunked(chunkSize).forEach { chunk ->
+                val libraryItems = realm.where(RealmMyLibrary::class.java)
+                    .`in`("resourceId", chunk.toTypedArray())
+                    .findAll()
 
-                libraryItem?.let {
-                    if (it.userId?.contains(userId) == false) {
-                        it.setUserId(userId)
+                libraryItems.forEach { libraryItem ->
+                    if (libraryItem.userId?.contains(userId) == false) {
+                        libraryItem.setUserId(userId)
                     }
                 }
 
-                val removedLog = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
                     .equalTo("type", "resources")
                     .equalTo("userId", userId)
-                    .equalTo("docId", resourceId)
-                    .findFirst()
+                    .`in`("docId", chunk.toTypedArray())
+                    .findAll()
 
-                removedLog?.deleteFromRealm()
+                removedLogs.deleteAllFromRealm()
             }
         }
     }
@@ -383,23 +386,13 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
         val validCurrentIds = currentIds.filterNotNull().toSet()
         executeTransaction { realm ->
-            val idsToDelete = realm.where(RealmMyLibrary::class.java)
+            realm.where(RealmMyLibrary::class.java)
                 .isNotNull("_rev")
                 .notEqualTo("_rev", "")
                 .equalTo("isPrivate", false)
                 .findAll()
                 .filter { it.resourceId !in validCurrentIds }
-                .mapNotNull { it.resourceId }
-
-            if (idsToDelete.isNotEmpty()) {
-                val chunkSize = 1000
-                idsToDelete.chunked(chunkSize).forEach { chunk ->
-                    realm.where(RealmMyLibrary::class.java)
-                        .`in`("resourceId", chunk.toTypedArray())
-                        .findAll()
-                        .deleteAllFromRealm()
-                }
-            }
+                .forEach { it.deleteFromRealm() }
         }
     }
 
@@ -486,5 +479,28 @@ class ResourcesRepositoryImpl @Inject constructor(
                 savedIds
             }
         }
+    }
+
+    override suspend fun getResourceRatings(resourceId: String): JsonObject? {
+        return ratingsRepository.getRatingsById("resource", resourceId, null)
+    }
+
+    override suspend fun getResourceTags(resourceId: String): List<RealmTag> {
+        return tagsRepository.getTagsForResource(resourceId)
+    }
+
+    override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
+        val allRatings = ratingsRepository.getResourceRatings(userId)
+        val filteredRatings = HashMap<String?, JsonObject>()
+        for (id in ids) {
+            allRatings[id]?.let {
+                filteredRatings[id] = it
+            }
+        }
+        return filteredRatings
+    }
+
+    override suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
+        return tagsRepository.getTagsForResources(ids)
     }
 }
