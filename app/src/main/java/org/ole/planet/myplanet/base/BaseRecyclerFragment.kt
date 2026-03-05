@@ -224,9 +224,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (deleteProgress && `object` is RealmMyCourse) {
             mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
             val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
+            val examIds = examList.mapNotNull { it.id }.toTypedArray()
+            if (examIds.isNotEmpty()) {
+                mRealm.where(RealmSubmission::class.java)
+                    .`in`("parentId", examIds)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
                     .deleteAllFromRealm()
             }
         }
