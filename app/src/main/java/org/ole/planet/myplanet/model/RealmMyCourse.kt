@@ -212,18 +212,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.isMyCourse instead")
-        fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean {
-            return getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findAll()).isNotEmpty()
-        }
-
-        @JvmStatic
-        @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
-        fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
-            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-        }
-
-        @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
@@ -267,17 +255,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
-        fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
-            val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
-            val ids = JsonArray()
-            for (lib in myCourses) {
-                ids.add(lib.courseId)
-            }
-            return ids
-        }
-
-        @JvmStatic
         fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
@@ -292,6 +269,11 @@ open class RealmMyCourse : RealmObject() {
             obj.addProperty("memberLimit", course.memberLimit)
 
             val stepsArray = JsonArray()
+            val allResourcesForCourse = realm.where(RealmMyLibrary::class.java)
+                .equalTo("courseId", course.courseId)
+                .findAll()
+            val resourcesByStepId = allResourcesForCourse.groupBy { it.stepId }
+
             course.courseSteps?.forEach { step ->
                 val stepObj = JsonObject()
                 stepObj.addProperty("stepTitle", step.stepTitle)
@@ -299,10 +281,7 @@ open class RealmMyCourse : RealmObject() {
                 stepObj.addProperty("id", step.id)
 
                 val resourcesArray = JsonArray()
-                val stepResources = realm.where(RealmMyLibrary::class.java)
-                    .equalTo("stepId", step.id)
-                    .equalTo("courseId", course.courseId)
-                    .findAll()
+                val stepResources = resourcesByStepId[step.id] ?: emptyList()
 
                 stepResources.forEach { resource ->
                     resourcesArray.add(resource.serializeResource())

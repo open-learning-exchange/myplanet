@@ -328,9 +328,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         // Capture syncStartTime before launching coroutine to preserve it across lifecycle changes
         val capturedSyncStartTime = syncStartTime
 
-        // Use GlobalScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
+        // Use ApplicationScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
         submissionUploadExecutor.execute {
-            Log.d("UserInformationFragment", "GlobalScope coroutine started, will not be cancelled by fragment lifecycle")
+            Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
             Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
             val checkStartTime = System.currentTimeMillis()
 
