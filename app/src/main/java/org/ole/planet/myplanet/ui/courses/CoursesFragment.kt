@@ -21,7 +21,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -42,9 +41,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -55,6 +51,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -344,9 +341,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                     deleteSelected(true)
                     clearAllSelections()
-                    loadDataAsync()
+                    adapterCourses.removeCourses(courseIdsToRemove)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -360,9 +358,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                     deleteSelected(true)
                     clearAllSelections()
-                    loadDataAsync()
+                    adapterCourses.removeCourses(courseIdsToRemove)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -594,7 +593,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
         builder.setCancelable(true)
-            .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
+            .setPositiveButton(R.string.go_to_mycourses) { _: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
@@ -790,11 +789,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val allCourses = coursesRepository.getAllCourses()
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
                     val courseList = if (isMyCourseLib) {
-                    val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+                        val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
                         myCourses.forEach { it.isMyCourse = true }
                         myCourses.sortedBy { it.courseTitle }
                     } else {
-                    validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
+                        validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
                         validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
                     val courses = courseList.map { it.toCourse() }

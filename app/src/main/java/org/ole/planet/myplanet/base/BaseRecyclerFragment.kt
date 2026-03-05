@@ -195,7 +195,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
+        selectedItems?.forEachIndexed { _, item ->
             try {
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
@@ -352,7 +352,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 if (mRealm.isInTransaction) {
                     try {
                         mRealm.commitTransaction()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         mRealm.cancelTransaction()
                     }
                 }
