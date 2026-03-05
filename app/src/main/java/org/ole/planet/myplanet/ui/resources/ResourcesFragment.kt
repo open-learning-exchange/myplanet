@@ -502,16 +502,25 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         clearTags.setOnClickListener {
             saveSearchActivity()
             searchTags.clear()
+
+            searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
             etSearch.setText(R.string.empty_text)
+            searchTextWatcher?.let { etSearch.addTextChangedListener(it) }
+
             tvSelected.text = getString(R.string.empty_text)
+            flexBoxTags.removeAllViews()
             levels.clear()
             mediums.clear()
             subjects.clear()
             languages.clear()
-            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag("", searchTags)).map { it.toResourceItem() }) {
-                recyclerView.scrollToPosition(0)
+
+            lifecycleScope.launch {
+                val filteredList = applyFilter(filterLocalLibraryByTag("", searchTags))
+                adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() }) {
+                    recyclerView.scrollToPosition(0)
+                }
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
     }
 
