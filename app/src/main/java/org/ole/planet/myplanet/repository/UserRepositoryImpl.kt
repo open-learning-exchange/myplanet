@@ -544,10 +544,6 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun validateUsername(username: String): String? {
-        val specialCharPattern = Pattern.compile(
-            ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-        )
-
         val firstChar = username.firstOrNull()
         when {
             username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
@@ -555,7 +551,7 @@ class UserRepositoryImpl @Inject constructor(
             firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
                 return context.getString(R.string.must_start_with_letter_or_number)
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
-            specialCharPattern.matcher(username).matches() ||
+            SPECIAL_CHAR_PATTERN.matcher(username).matches() ||
             !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
             } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
@@ -673,6 +669,12 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
+
+    companion object {
+        private val SPECIAL_CHAR_PATTERN = Pattern.compile(
+            ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
+        )
     }
 
     override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData = withRealm { realm ->
