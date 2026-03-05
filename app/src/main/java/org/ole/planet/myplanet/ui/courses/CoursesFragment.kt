@@ -42,9 +42,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -89,14 +86,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
-    @Inject
-    lateinit var tagsRepository: TagsRepository
-
-    @Inject
-    lateinit var progressRepository: ProgressRepository
-
-    @Inject
-    lateinit var ratingsRepository: RatingsRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -184,8 +173,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Run independent queries in parallel
-                val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
-                val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+                val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
+                val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
 
                 if (!mRealm.isInTransaction) {
                     mRealm.refresh()
@@ -219,7 +208,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     requireActivity(),
                     map,
                     userModel?.isGuest() ?: true,
-                    { courseId -> tagsRepository.getTagsForCourse(courseId).map { it.toTag() } },
+                    { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
                     isMyCourseLib
                 )
                 adapterCourses.submitList(courses)
@@ -264,8 +253,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         val (map, progressMap) = coroutineScope {
-            val ratingsDeferred = async { ratingsRepository.getCourseRatings(model?.id) }
-            val progressDeferred = async { progressRepository.getCourseProgress(model?.id) }
+            val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
+            val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
             Pair(ratingsDeferred.await(), progressDeferred.await())
         }
 
@@ -275,7 +264,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireActivity(),
             map,
             userModel?.isGuest() ?: true,
-            { courseId -> tagsRepository.getTagsForCourse(courseId).map { it.toTag() } },
+            { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
             isMyCourseLib
         )
         adapterCourses.submitList(courses) {
@@ -352,9 +341,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                     deleteSelected(true)
                     clearAllSelections()
-                    loadDataAsync()
+                    adapterCourses.removeCourses(courseIdsToRemove)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -368,9 +358,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                     deleteSelected(true)
                     clearAllSelections()
-                    loadDataAsync()
+                    adapterCourses.removeCourses(courseIdsToRemove)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -575,8 +566,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         course.isMyCourse = course.userId?.contains(userId) == true
                     }.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                 }
-                val ratings = ratingsRepository.getCourseRatings(userId)
-                val progress = progressRepository.getCourseProgress(userId)
+                val ratings = coursesRepository.getCourseRatings(userId)
+                val progress = coursesRepository.getCourseProgress(userId)
                 Triple(finalCourses, ratings, progress)
             }
             val courses = filteredCourses.map { it.toCourse() }
@@ -602,7 +593,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
         builder.setCancelable(true)
-            .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
+            .setPositiveButton(R.string.go_to_mycourses) { _: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
@@ -793,16 +784,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val map = ratingsRepository.getCourseRatings(model?.id)
-                    val progressMap = progressRepository.getCourseProgress(model?.id)
+                    val map = coursesRepository.getCourseRatings(model?.id)
+                    val progressMap = coursesRepository.getCourseProgress(model?.id)
                     val allCourses = coursesRepository.getAllCourses()
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
                     val courseList = if (isMyCourseLib) {
-                    val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+                        val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
                         myCourses.forEach { it.isMyCourse = true }
                         myCourses.sortedBy { it.courseTitle }
                     } else {
-                    validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
+                        validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
                         validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
                     val courses = courseList.map { it.toCourse() }

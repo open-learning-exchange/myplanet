@@ -16,11 +16,13 @@ class CommunityRepositoryImpl @Inject constructor(
     override suspend fun replaceAll(rows: JsonArray) {
         executeTransaction { realm ->
             realm.delete(RealmCommunity::class.java)
+            val communities = mutableListOf<RealmCommunity>()
             for (j in rows) {
                 var jsonDoc = j.asJsonObject
                 jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
                 val id = JsonUtils.getString("_id", jsonDoc)
-                val community = realm.createObject(RealmCommunity::class.java, id)
+                val community = RealmCommunity()
+                community.id = id
                 if (JsonUtils.getString("name", jsonDoc) == "learning") {
                     community.weight = 0
                 }
@@ -28,7 +30,9 @@ class CommunityRepositoryImpl @Inject constructor(
                 community.name = JsonUtils.getString("name", jsonDoc)
                 community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
                 community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                communities.add(community)
             }
+            realm.insertOrUpdate(communities)
         }
     }
 

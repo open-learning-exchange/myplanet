@@ -22,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.Array
 import kotlin.Int
 import kotlin.String
@@ -35,17 +36,16 @@ import org.ole.planet.myplanet.databinding.EditAttachementBinding
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
-import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.RowlayoutBinding
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
@@ -58,6 +58,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertReferenceBinding: AlertReferenceBinding
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
+
     var user: RealmUser? = null
     private var achievement: RealmAchievement? = null
     private var referenceArray: JsonArray? = null
@@ -90,9 +91,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
             val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
             val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
-            val achievementsJson = if (achievementArray != null) JsonUtils.gson.toJson(achievementArray) else "[]"
-            val referencesJson = if (referenceArray != null) JsonUtils.gson.toJson(referenceArray) else "[]"
-
             fragmentEditAchievementBinding.btnUpdate.isEnabled = false
             Utilities.toast(activity, getString(R.string.saving))
 
@@ -103,8 +101,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     goals = goals,
                     purpose = purpose,
                     sendToNation = sendToNation,
-                    achievements = JsonUtils.gson.fromJson(achievementsJson, JsonArray::class.java),
-                    references = JsonUtils.gson.fromJson(referencesJson, JsonArray::class.java)
+                    achievements = achievementArray ?: JsonArray(),
+                    references = referenceArray ?: JsonArray()
                 )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
@@ -301,9 +299,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievementId?.let {
-                achievement = userRepository.getOrCreateAchievement(it)
-            }
+            achievement = userRepository.initializeAchievement(achievementId)
             if (isAdded) {
                 populateAchievementData()
             }

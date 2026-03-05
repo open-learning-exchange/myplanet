@@ -87,6 +87,11 @@ class CoursesAdapter(
         this.ratingChangeListener = ratingChangeListener
     }
 
+    fun removeCourses(courseIds: List<String>) {
+        val updated = currentList.filter { it.courseId !in courseIds }
+        submitList(updated)
+    }
+
     fun updateData(
         newCourseList: List<Course>,
         newMap: HashMap<String?, JsonObject>,

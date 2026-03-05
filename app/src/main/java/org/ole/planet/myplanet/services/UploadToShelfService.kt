@@ -291,20 +291,31 @@ class UploadToShelfService @Inject constructor(
                     .map { realm.copyFromRealm(it) }
             }
 
+            val uploadedHealths = mutableMapOf<String, String?>()
             myHealths.forEach { pojo ->
                 try {
                     val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
 
                     if (res.body() != null && res.body()?.has("id") == true) {
                         val rev = res.body()?.get("rev")?.asString
-                        dbService.executeTransactionAsync { realm ->
-                            val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
-                            managedPojo?._rev = rev
-                            managedPojo?.isUpdated = false
+                        pojo._id?.let { id ->
+                            uploadedHealths[id] = rev
                         }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                }
+            }
+
+            if (uploadedHealths.isNotEmpty()) {
+                dbService.executeTransactionAsync { realm ->
+                    uploadedHealths.keys.chunked(999).forEach { chunk ->
+                        val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
+                        managedPojos.forEach { managedPojo ->
+                            managedPojo._rev = uploadedHealths[managedPojo._id]
+                            managedPojo.isUpdated = false
+                        }
+                    }
                 }
             }
         }
@@ -324,6 +335,7 @@ class UploadToShelfService @Inject constructor(
                         .map { realm.copyFromRealm(it) }
                 }
 
+                val uploadedHealths = mutableMapOf<String, String?>()
                 myHealths.forEach { pojo ->
                     try {
                         val res = apiInterface.postDoc(
@@ -335,16 +347,27 @@ class UploadToShelfService @Inject constructor(
 
                         if (res.body() != null && res.body()?.has("id") == true) {
                             val rev = res.body()?.get("rev")?.asString
-                            dbService.executeTransactionAsync { realm ->
-                                val managedPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", pojo._id).findFirst()
-                                managedPojo?._rev = rev
-                                managedPojo?.isUpdated = false
+                            pojo._id?.let { id ->
+                                uploadedHealths[id] = rev
                             }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
+
+                if (uploadedHealths.isNotEmpty()) {
+                    dbService.executeTransactionAsync { realm ->
+                        uploadedHealths.keys.chunked(999).forEach { chunk ->
+                            val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
+                            managedPojos.forEach { managedPojo ->
+                                managedPojo._rev = uploadedHealths[managedPojo._id]
+                                managedPojo.isUpdated = false
+                            }
+                        }
+                    }
+                }
+
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")
                 }
