@@ -46,6 +46,8 @@ open class RealmExamQuestion : RealmObject() {
         @JvmStatic
         fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
             if (questions.size() == 0) return
+
+            val questionIds = mutableListOf<String>()
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
                 val questionId = if (question.has("id")) {
@@ -53,13 +55,27 @@ open class RealmExamQuestion : RealmObject() {
                 } else {
                     "$examId-${i}"
                 }
+                questionIds.add(questionId)
+            }
 
-                var myQuestion = mRealm.where(RealmExamQuestion::class.java)
-                    .equalTo("id", questionId)
-                    .findFirst()
+            val existingQuestionsList = if (questionIds.isNotEmpty()) {
+                mRealm.where(RealmExamQuestion::class.java)
+                    .`in`("id", questionIds.toTypedArray())
+                    .findAll()
+            } else {
+                emptyList()
+            }
+            val existingQuestionsMap = existingQuestionsList.associateBy { it.id }.toMutableMap()
+
+            for (i in 0 until questions.size()) {
+                val question = questions[i].asJsonObject
+                val questionId = questionIds[i]
+
+                var myQuestion = existingQuestionsMap[questionId]
 
                 if (myQuestion == null) {
                     myQuestion = mRealm.createObject(RealmExamQuestion::class.java, questionId)
+                    existingQuestionsMap[questionId] = myQuestion
                 }
 
                 myQuestion.apply {
