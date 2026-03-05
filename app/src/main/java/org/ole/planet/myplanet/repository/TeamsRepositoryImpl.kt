@@ -646,19 +646,26 @@ class TeamsRepositoryImpl @Inject constructor(
         user: RealmUser?,
     ) {
         if (teamId.isBlank() || resources.isEmpty() || user == null) return
+
+        val teamResources = resources.map { resource ->
+            val teamResource = RealmMyTeam()
+            teamResource._id = UUID.randomUUID().toString()
+            teamResource.teamId = teamId
+            teamResource.title = resource.title
+            teamResource.status = user.parentCode
+            teamResource.resourceId = resource._id
+            teamResource.docType = "resourceLink"
+            teamResource.updated = true
+            teamResource.teamType = "local"
+            teamResource.teamPlanetCode = user.planetCode
+            teamResource.userPlanetCode = user.planetCode
+
+            requireNotNull(teamResource._id) { "Primary key _id must not be null for insertion" }
+            teamResource
+        }
+
         executeTransaction { realm ->
-            resources.forEach { resource ->
-                val teamResource = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                teamResource.teamId = teamId
-                teamResource.title = resource.title
-                teamResource.status = user.parentCode
-                teamResource.resourceId = resource._id
-                teamResource.docType = "resourceLink"
-                teamResource.updated = true
-                teamResource.teamType = "local"
-                teamResource.teamPlanetCode = user.planetCode
-                teamResource.userPlanetCode = user.planetCode
-            }
+            realm.insert(teamResources)
         }
     }
 
