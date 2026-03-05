@@ -38,6 +38,7 @@ class RealtimeSyncManager {
         synchronized(listeners) {
             listeners.toList()
         }.forEach { it.onTableDataUpdated(update) }
+        _dataUpdateFlow.tryEmit(update)
     }
 
 }
