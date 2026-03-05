@@ -298,14 +298,21 @@ open class RealmMyTeam : RealmObject() {
             if (!team.courses.isNullOrEmpty()) {
                 val coursesArray = JsonArray()
 
-                team.courses?.forEach { courseId ->
-                    val course = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
+                val courseIds = team.courses?.toTypedArray() ?: emptyArray()
 
-                    if (course != null) {
-                        val courseJson = RealmMyCourse.serialize(course, realm)
-                        coursesArray.add(courseJson)
+                if (courseIds.isNotEmpty()) {
+                    val courses = realm.where(RealmMyCourse::class.java)
+                        .`in`("courseId", courseIds)
+                        .findAll()
+
+                    val courseMap = courses.associateBy { it.courseId }
+
+                    team.courses?.forEach { courseId ->
+                        val course = courseMap[courseId]
+                        if (course != null) {
+                            val courseJson = RealmMyCourse.serialize(course, realm)
+                            coursesArray.add(courseJson)
+                        }
                     }
                 }
                 `object`.add("courses", coursesArray)
