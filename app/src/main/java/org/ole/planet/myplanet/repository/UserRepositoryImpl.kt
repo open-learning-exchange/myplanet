@@ -57,11 +57,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getCurrentUser(): RealmUser? {
-        return getUserModel()
-    }
-
     override suspend fun getUserByAnyId(id: String): RealmUser? {
         return findByField(RealmUser::class.java, "_id", id)
             ?: findByField(RealmUser::class.java, "id", id)
