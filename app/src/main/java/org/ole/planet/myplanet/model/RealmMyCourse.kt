@@ -87,9 +87,12 @@ open class RealmMyCourse : RealmObject() {
             val description = JsonUtils.getString("description", myCoursesDoc)
             val links = extractLinks(description)
             val baseUrl = UrlUtils.getUrl()
+            val urlBuilder = StringBuilder(baseUrl).append("/")
+            val baseLen = urlBuilder.length
             for (link in links) {
-                val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
+                urlBuilder.append(link)
+                concatenatedLinks.add(urlBuilder.toString())
+                urlBuilder.setLength(baseLen)
             }
             myMyCoursesDB?.method = JsonUtils.getString("method", myCoursesDoc)
             myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCoursesDoc)
@@ -108,9 +111,12 @@ open class RealmMyCourse : RealmObject() {
                 step.description = JsonUtils.getString("description", stepJson)
                 val stepDescription = JsonUtils.getString("description", stepJson)
                 val stepLinks = extractLinks(stepDescription)
+                val stepUrlBuilder = StringBuilder(baseUrl).append("/")
+                val stepBaseLen = stepUrlBuilder.length
                 for (stepLink in stepLinks) {
-                    val concatenatedLink = "$baseUrl/$stepLink"
-                    concatenatedLinks.add(concatenatedLink)
+                    stepUrlBuilder.append(stepLink)
+                    concatenatedLinks.add(stepUrlBuilder.toString())
+                    stepUrlBuilder.setLength(stepBaseLen)
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
