@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmTag
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
@@ -52,4 +53,6 @@ interface CoursesRepository {
     suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
+    suspend fun getCourseTags(courseId: String): List<RealmTag>
+    suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
 }
