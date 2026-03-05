@@ -42,8 +42,6 @@ interface TeamsRepository {
     suspend fun markTeamUploaded(teamId: String?, rev: String)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
-    @Deprecated("Use getTeamSummaries instead", ReplaceWith("getTeamSummaries()"))
-    suspend fun getShareableTeams(): List<RealmMyTeam>
     suspend fun getTeamSummaries(): List<TeamSummary>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getShareableEnterpriseSummaries(): List<TeamSummary>
@@ -113,13 +111,6 @@ interface TeamsRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities()
-    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
-    suspend fun getTeamTransactions(
-        teamId: String,
-        startDate: Long? = null,
-        endDate: Long? = null,
-        sortAscending: Boolean = false,
-    ): Flow<List<RealmMyTeam>>
     suspend fun getTeamTransactionsWithBalance(
         teamId: String,
         startDate: Long? = null,
