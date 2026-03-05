@@ -187,15 +187,14 @@ class NotificationsRepositoryImpl @Inject constructor(
         val updatedIds = mutableSetOf<String>()
         val now = Date()
         executeTransaction { realm ->
-            notificationIds.forEach { id ->
-                val notification = realm.where(RealmNotification::class.java)
-                    .equalTo("id", id)
-                    .findFirst()
-                if (notification != null) {
-                    notification.isRead = true
-                    notification.createdAt = now
-                    updatedIds.add(notification.id)
-                }
+            val notifications = realm.where(RealmNotification::class.java)
+                .`in`("id", notificationIds.toTypedArray())
+                .findAll()
+
+            notifications.forEach { notification ->
+                notification.isRead = true
+                notification.createdAt = now
+                updatedIds.add(notification.id)
             }
         }
         return updatedIds
