@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
@@ -130,7 +131,7 @@ object VoicesActions {
         news: RealmNews?,
         repository: VoicesRepository,
         currentUser: RealmUser?,
-        imageList: List<String>?,
+        imageList: RealmList<String>?,
         listener: OnNewsItemClickListener?,
         scope: CoroutineScope,
         imagesToRemove: MutableSet<String>,

@@ -37,8 +37,15 @@ import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.repository.UserRepository
+
+private data class AchievementData(
+    val goals: String = "",
+    val purpose: String = "",
+    val achievementsHeader: String = "",
+    val achievements: List<String> = emptyList(),
+    val achievementResources: List<RealmMyLibrary> = emptyList(),
+    val references: List<String> = emptyList()
+)
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
@@ -160,10 +167,40 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    private suspend fun loadAchievementDataAsync(): AchievementData {
-        val uId = user?.id ?: return AchievementData()
-        val pCode = user?.planetCode ?: return AchievementData()
-        return userRepository.getAchievementData(uId, pCode)
+    private suspend fun loadAchievementDataAsync(): AchievementData = databaseService.withRealmAsync { realm ->
+        val achievement = realm.where(RealmAchievement::class.java)
+            .equalTo("_id", user?.id + "@" + user?.planetCode)
+            .findFirst()
+
+        if (achievement != null) {
+            val achievementCopy = realm.copyFromRealm(achievement)
+            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
+                JsonUtils.gson.fromJson(json, JsonObject::class.java)
+                    ?.getAsJsonArray("resources")
+                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
+            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
+
+            val resources = if (resourceIds.isNotEmpty()) {
+                realm.copyFromRealm(
+                    realm.where(RealmMyLibrary::class.java)
+                        .`in`("id", resourceIds)
+                        .findAll()
+                )
+            } else {
+                emptyList()
+            }
+
+            AchievementData(
+                goals = achievementCopy.goals ?: "",
+                purpose = achievementCopy.purpose ?: "",
+                achievementsHeader = achievementCopy.achievementsHeader ?: "",
+                achievements = achievementCopy.achievements ?: emptyList(),
+                achievementResources = resources,
+                references = achievementCopy.references ?: emptyList()
+            )
+        } else {
+            AchievementData()
+        }
     }
 
 

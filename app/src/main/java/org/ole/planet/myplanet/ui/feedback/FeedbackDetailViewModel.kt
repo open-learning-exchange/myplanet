@@ -15,12 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class FeedbackDetailViewModel @Inject constructor(
-    private val feedbackRepository: FeedbackRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val feedbackRepository: FeedbackRepository
 ) : ViewModel() {
 
     private val _feedback = MutableStateFlow<RealmFeedback?>(null)
@@ -30,13 +28,13 @@ class FeedbackDetailViewModel @Inject constructor(
     val events: SharedFlow<FeedbackDetailEvent> = _events.asSharedFlow()
 
     fun loadFeedback(id: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch(Dispatchers.IO) {
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
     }
 
     fun closeFeedback(id: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch(Dispatchers.IO) {
             feedbackRepository.closeFeedback(id)
             _feedback.value = feedbackRepository.getFeedbackById(id)
             _events.emit(FeedbackDetailEvent.CloseFeedbackSuccess)
@@ -44,7 +42,7 @@ class FeedbackDetailViewModel @Inject constructor(
     }
 
     fun addReply(id: String?, obj: JsonObject) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch(Dispatchers.IO) {
             feedbackRepository.addReply(id, obj)
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }

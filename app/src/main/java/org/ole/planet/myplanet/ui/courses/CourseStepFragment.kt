@@ -165,14 +165,13 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter { library ->
+        inlineResourceAdapter = InlineResourceAdapter(resources) { library ->
             openResource(library)
         }
         fragmentCourseStepBinding.rvInlineResources.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = inlineResourceAdapter
         }
-        inlineResourceAdapter?.submitList(resources)
     }
 
     private fun autoDownloadResources() {
@@ -215,7 +214,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             val updatedResources = resourcesRepository.getAllStepResources(stepId)
             resources = updatedResources
-            inlineResourceAdapter?.submitList(updatedResources)
+            inlineResourceAdapter?.updateResources(updatedResources)
             fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
         }
     }

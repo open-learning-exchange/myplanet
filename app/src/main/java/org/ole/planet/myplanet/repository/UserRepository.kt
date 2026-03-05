@@ -1,14 +1,11 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Sort
 import org.ole.planet.myplanet.model.HealthRecord
-import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.AchievementData
 
 interface UserRepository {
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
@@ -87,15 +84,4 @@ interface UserRepository {
     fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
-    suspend fun initializeAchievement(achievementId: String): RealmAchievement?
-    suspend fun updateAchievement(
-        achievementId: String,
-        header: String,
-        goals: String,
-        purpose: String,
-        sendToNation: String,
-        achievements: JsonArray,
-        references: JsonArray
-    )
-    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
 }

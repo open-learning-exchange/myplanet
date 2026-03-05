@@ -36,6 +36,7 @@ class RequestsAdapter(
 
     fun setUser(user: RealmUser) {
         this.currentUser = user
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {

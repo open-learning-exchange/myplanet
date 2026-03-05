@@ -191,19 +191,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     mRealm.refresh()
                 }
 
-                val allCourses = coursesRepository.getAllCourses()
-                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+                val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>().filter { !it.courseTitle.isNullOrBlank() }
+                val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
+                    copiedList.forEachIndexed { index, course ->
+                        course.isMyCourse = if (isMyCourseLib) true else managedCourseList[index].isMyCourse
+                    }
+                }
                 val sortedCourseList = if (isMyCourseLib) {
-                    val myCourses = coursesRepository.getMyCourses(userModel?.id, validCourses)
-                    myCourses.forEach { it.isMyCourse = true }
-                    myCourses.sortedBy { it.courseTitle }
+                    courseList.sortedBy { it.courseTitle }
                 } else {
-                    validCourses.forEach { it.isMyCourse = it.userId?.contains(userModel?.id) == true }
-                    validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+                    courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                 }
 
                 if (isMyCourseLib) {
-                    val courseIds = sortedCourseList.mapNotNull { it.id }
+                    val courseIds = courseList.mapNotNull { it.id }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
@@ -240,15 +241,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             userModel = userSessionManager.getUserModel()
         }
 
-        val allCourses = coursesRepository.getAllCourses()
-        val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-        val courseList: List<RealmMyCourse> = if (isMyCourseLib) {
-            val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
-            myCourses.forEach { it.isMyCourse = true }
-            myCourses
-        } else {
-            validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
-            validCourses
+        if (!mRealm.isInTransaction) {
+            mRealm.refresh()
+        }
+
+        val managedCourses: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
+            .filterIsInstance<RealmMyCourse>()
+            .filter { !it.courseTitle.isNullOrBlank() }
+
+        val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourses).also { copiedList ->
+            copiedList.forEachIndexed { index, course ->
+                course.isMyCourse = if (isMyCourseLib) true else managedCourses[index].isMyCourse
+            }
         }
 
         val sortedCourseList = if (isMyCourseLib) {
@@ -298,7 +302,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupMyProgressButton()
         viewLifecycleOwner.lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
-            model = userModel
             searchTags = ArrayList()
             initializeView()
             setupButtonVisibility()
@@ -795,17 +798,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 viewLifecycleOwner.lifecycleScope.launch {
                     val map = ratingsRepository.getCourseRatings(model?.id)
                     val progressMap = progressRepository.getCourseProgress(model?.id)
-                    val allCourses = coursesRepository.getAllCourses()
-                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-                    val courseList = if (isMyCourseLib) {
-                    val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
-                        myCourses.forEach { it.isMyCourse = true }
-                        myCourses.sortedBy { it.courseTitle }
-                    } else {
-                    validCourses.forEach { it.isMyCourse = it.userId?.contains(model?.id) == true }
-                        validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+                    val managedCourseList: List<RealmMyCourse> = getList(RealmMyCourse::class.java)
+                        .filterIsInstance<RealmMyCourse>()
+                        .filter { !it.courseTitle.isNullOrBlank() }
+                    val courseList: List<RealmMyCourse> = mRealm.copyFromRealm(managedCourseList).also { copiedList ->
+                        copiedList.forEachIndexed { index, course ->
+                            course.isMyCourse = if (isMyCourseLib) true else managedCourseList[index].isMyCourse
+                        }
                     }
-                    val courses = courseList.map { it.toCourse() }
+                    val sortedCourseList = if (isMyCourseLib) {
+                        courseList.sortedBy { it.courseTitle }
+                    } else {
+                        courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+                    }
+                    val courses = sortedCourseList.map { it.toCourse() }
                     adapterCourses.updateData(courses, map, progressMap)
                 }
             } else {

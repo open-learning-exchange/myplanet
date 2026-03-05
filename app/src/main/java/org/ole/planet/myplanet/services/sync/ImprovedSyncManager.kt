@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import javax.inject.Inject
@@ -18,6 +19,11 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
+import org.ole.planet.myplanet.services.sync.RealmPoolManager
+import org.ole.planet.myplanet.services.sync.StandardSyncStrategy
+import org.ole.planet.myplanet.services.sync.SyncMode
+import org.ole.planet.myplanet.services.sync.SyncStrategy
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 
@@ -26,7 +32,6 @@ class ImprovedSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val transactionSyncManager: TransactionSyncManager,
     private val standardStrategy: StandardSyncStrategy,
     private val loginSyncManager: LoginSyncManager
@@ -74,7 +79,7 @@ class ImprovedSyncManager @Inject constructor(
     ) {
         this.listener = listener
         if (!isSyncing) {
-            sharedPrefManager.removeKey("concatenated_links")
+            settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
             createLog(
                 "improved_sync_start",
@@ -176,7 +181,7 @@ class ImprovedSyncManager @Inject constructor(
 
     private fun cleanup() {
         isSyncing = false
-        sharedPrefManager.setLastSync(Date().time)
+        settings.edit { putLong("LastSync", Date().time) }
         NotificationUtils.cancel(context, 111)
         listener?.onSyncComplete()
     }

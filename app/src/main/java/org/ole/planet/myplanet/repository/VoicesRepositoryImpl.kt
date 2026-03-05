@@ -58,19 +58,17 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: io.realm.RealmList<String>?): RealmNews {
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, realmImageList)
+            val managedNews = createNews(map, realm, user, imageList)
             realm.copyFromRealm(managedNews)
         }
     }
 
-    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: io.realm.RealmList<String>?): Boolean {
         return try {
             databaseService.executeTransactionAsync { realm ->
-                RealmNews.createNews(newsData, realm, user, realmImageList)
+                RealmNews.createNews(newsData, realm, user, imageList)
             }
             true
         } catch (e: Exception) {
@@ -348,8 +346,7 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?) {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+    override suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: io.realm.RealmList<String>?) {
         val userId = currentUser.id
         val viewableBy = news.viewableBy
         val viewableId = news.viewableId
@@ -368,12 +365,11 @@ class VoicesRepositoryImpl @Inject constructor(
             map["messageType"] = messageType ?: ""
             map["messagePlanetCode"] = messagePlanetCode ?: ""
             map["viewIn"] = viewIn ?: ""
-            createNews(map, realm, transactionUser, realmImageList, true)
+            createNews(map, realm, transactionUser, imageList, true)
         }
     }
 
-    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?) {
-        val realmImageList = newImages?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+    override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: io.realm.RealmList<String>?) {
         if (message.isEmpty()) return
         executeTransaction { realm ->
             val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
@@ -395,7 +391,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
 
-                realmImageList?.forEach { news.imageUrls?.add(it) }
+                newImages?.forEach { news.imageUrls?.add(it) }
                 news.updateMessage(message)
             }
         }

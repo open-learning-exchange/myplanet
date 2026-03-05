@@ -105,5 +105,29 @@ open class RealmFeedback : RealmObject() {
             return `object`
         }
 
+        @JvmStatic
+        @Deprecated("Use FeedbackRepository.insertFromJson")
+        fun insert(mRealm: Realm, act: JsonObject?) {
+            var feedback = mRealm.where(RealmFeedback::class.java)
+                .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+            if (feedback == null) {
+                feedback = mRealm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
+            }
+            feedback?._id = JsonUtils.getString("_id", act)
+            feedback?.title = JsonUtils.getString("title", act)
+            feedback?.source = JsonUtils.getString("source", act)
+            feedback?.status = JsonUtils.getString("status", act)
+            feedback?.priority = JsonUtils.getString("priority", act)
+            feedback?.owner = JsonUtils.getString("owner", act)
+            feedback?.openTime = JsonUtils.getLong("openTime", act)
+            feedback?.type = JsonUtils.getString("type", act)
+            feedback?.url = JsonUtils.getString("url", act)
+            feedback?.parentCode = JsonUtils.getString("parentCode", act)
+            feedback?.setMessages(JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act)))
+            feedback?.isUploaded = true
+            feedback?.item = JsonUtils.getString("item", act)
+            feedback?.state = JsonUtils.getString("state", act)
+            feedback?._rev = JsonUtils.getString("_rev", act)
+        }
     }
 }

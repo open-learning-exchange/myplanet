@@ -124,11 +124,9 @@ open class RealmSubmission : RealmObject() {
                     val answersArray = submission.get("answers").asJsonArray
                     sub?.answers = RealmList<RealmAnswer>()
 
-                    val unmanagedAnswers = mutableListOf<RealmAnswer>()
                     for (i in 0 until answersArray.size()) {
                         val answerJson = answersArray[i].asJsonObject
-                        val realmAnswer = RealmAnswer()
-                        realmAnswer.id = UUID.randomUUID().toString()
+                        val realmAnswer = mRealm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
 
                         realmAnswer.value = JsonUtils.getString("value", answerJson)
                         realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
@@ -143,12 +141,7 @@ open class RealmSubmission : RealmObject() {
                             "$examIdPart-$i"
                         }
 
-                        unmanagedAnswers.add(realmAnswer)
-                    }
-
-                    if (unmanagedAnswers.isNotEmpty()) {
-                        val managedAnswers = mRealm.copyToRealmOrUpdate(unmanagedAnswers)
-                        sub?.answers?.addAll(managedAnswers)
+                        sub?.answers?.add(realmAnswer)
                     }
                 }
 
@@ -213,6 +206,37 @@ open class RealmSubmission : RealmObject() {
                 `object`.add("user", JsonParser.parseString(sub.user))
             }
             return `object`
+        }
+
+        @JvmStatic
+        @Deprecated("Use SubmissionsRepository.getOrCreateSubmission instead")
+        fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
+            var submission = sub
+            if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
+                submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
+            submission!!.lastUpdateTime = Date().time
+            return submission
+        }
+
+        @JvmStatic
+        @Deprecated("Use SubmissionsRepository.getExamMap instead")
+        fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
+            val exams = HashMap<String?, RealmStepExam>()
+            for (sub in submissions ?: emptyList()){
+                var id = sub.parentId
+                if (checkParentId(sub.parentId)) {
+                    id = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                }
+                val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+                if (survey != null) {
+                    exams[sub.parentId] = survey
+                }
+            }
+            return exams
+        }
+
+        private fun checkParentId(parentId: String?): Boolean {
+            return parentId != null && parentId.contains("@")
         }
 
         @JvmStatic

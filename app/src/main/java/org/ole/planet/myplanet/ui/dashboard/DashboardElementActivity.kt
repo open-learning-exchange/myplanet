@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -52,6 +53,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        prefData = SharedPrefManager(this)
         supportFragmentManager.addOnBackStackChangedListener(this)
     }
 

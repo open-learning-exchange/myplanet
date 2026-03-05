@@ -29,9 +29,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val progressRepository: ProgressRepository,
-    private val activitiesRepository: ActivitiesRepository,
-    private val submissionsRepository: SubmissionsRepository
+    private val progressRepository: ProgressRepository
 ) : RealmRepository(databaseService), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -293,23 +291,11 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val title = course?.courseTitle
 
-            val stepIds = stepsList.mapNotNull { it.id }
-            val allExams = mutableListOf<RealmStepExam>()
-            if (stepIds.isNotEmpty()) {
-                stepIds.chunked(1000).forEach { chunk ->
-                    val chunkExams = realm.where(RealmStepExam::class.java)
-                        .`in`("stepId", chunk.toTypedArray())
-                        .findAll()
-                    allExams.addAll(chunkExams)
-                }
-            }
-            val examsByStepId = allExams.groupBy { it.stepId }
-
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
-                val exams = examsByStepId[step.id] ?: emptyList()
+                val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findAll()
                 getExamObject(realm, exams, ob, userId)
                 array.add(ob)
             }
@@ -319,7 +305,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private fun getExamObject(
         realm: io.realm.Realm,
-        exams: Iterable<RealmStepExam>,
+        exams: io.realm.RealmResults<RealmStepExam>,
         ob: com.google.gson.JsonObject,
         userId: String?
     ) {
@@ -417,25 +403,5 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
-    }
-
-    override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        activitiesRepository.logCourseVisit(courseId, title, userId)
-    }
-
-    override suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int {
-        return progressRepository.getCurrentProgress(steps, userId, courseId)
-    }
-
-    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
-        return progressRepository.getCourseProgress(userId)
-    }
-
-    override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
-        return submissionsRepository.isStepCompleted(stepId, userId)
-    }
-
-    override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
-        return submissionsRepository.hasUnfinishedSurveys(courseId, userId)
     }
 }

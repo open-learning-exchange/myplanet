@@ -17,14 +17,13 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -85,6 +84,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
+    private var broadcastJob: Job? = null
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
@@ -355,16 +355,15 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun registerReceiver() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                broadcastService.events.collect { intent ->
-                    if (isActive) {
-                        when (intent.action) {
-                            DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
-                            "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
-                            "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
-                            DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
-                        }
+        broadcastJob?.cancel()
+        broadcastJob = lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (isActive) {
+                    when (intent.action) {
+                        DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
+                        "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
+                        "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
+                        DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                     }
                 }
             }
@@ -372,16 +371,16 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        registerReceiver()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        broadcastJob?.cancel()
     }
 
     override fun onDetach() {
@@ -414,6 +413,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        registerReceiver()
     }
 
     fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
@@ -452,6 +452,7 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null
+        broadcastJob?.cancel()
         super.onDestroyView()
     }
 

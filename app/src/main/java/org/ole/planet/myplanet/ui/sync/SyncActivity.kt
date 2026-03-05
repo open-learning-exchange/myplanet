@@ -100,9 +100,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
+    lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
+    lateinit var prefData: SharedPrefManager
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     lateinit var spnCloud: Spinner
@@ -152,7 +154,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        initSyncConfigurationCoordinator()
         lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 syncManager.syncStatus.collect { status ->
@@ -183,73 +184,72 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
         }
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        editor = settings.edit()
         requestAllPermissions()
+        prefData = SharedPrefManager(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = UrlUtils.getUrl()
     }
 
-    private lateinit var syncConfigurationCoordinator: SyncConfigurationCoordinator
-
-    private fun initSyncConfigurationCoordinator() {
-        syncConfigurationCoordinator = SyncConfigurationCoordinator(
-            configurationsRepository,
-            prefData,
-            object : SyncConfigurationCoordinator.Callback {
-                override fun showProgressDialog() {
-                    customProgressDialog.setText(getString(R.string.check_apk_version))
-                    customProgressDialog.show()
+    fun checkMinApk(url: String, pin: String, callerActivity: String) {
+        lifecycleScope.launch {
+            customProgressDialog.setText(getString(R.string.check_apk_version))
+            customProgressDialog.show()
+            val result = configurationsRepository.getMinApk(url, pin)
+            customProgressDialog.dismiss()
+            when (result) {
+                is ConfigurationsRepository.ConfigurationResult.Success -> {
+                    handleConfigurationSuccess(result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerActivity)
                 }
-
-                override fun dismissProgressDialog() {
-                    customProgressDialog.dismiss()
-                }
-
-                override fun setSyncFailed(failed: Boolean) {
-                    syncFailed = failed
-                }
-
-                override fun showErrorDialog(errorMessage: String) {
-                    alertDialogOkay(errorMessage)
-                }
-
-                override fun onVersionCheckSuccess() {
-                    isSync = false
-                    forceSync = true
-                    configurationsRepository.checkVersion(this@SyncActivity, settings)
-                }
-
-                override fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-                    continueSync(dialog, url, isAlternativeUrl, defaultUrl)
-                }
-
-                override fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, defaultUrl: String) {
-                    saveConfigAndContinue(dialog, binding, "", false, defaultUrl)
-                }
-
-                override fun onClearDataDialog() {
-                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                is ConfigurationsRepository.ConfigurationResult.Failure -> {
+                    syncFailed = true
+                    alertDialogOkay(result.errorMessage)
                 }
             }
-        )
+        }
     }
 
-    fun checkMinApk(url: String, pin: String, callerActivity: String) {
-        val callerContext = when (callerActivity) {
-            "LoginActivity" -> CallerContext.LOGIN_ACTIVITY
-            "DashboardActivity" -> CallerContext.DASHBOARD_ACTIVITY
-            "SyncActivity" -> CallerContext.SYNC_ACTIVITY
-            else -> CallerContext.OTHER
+    private fun handleConfigurationSuccess(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
+        val savedId = settings.getString("configurationId", null)
+        syncFailed = false
+        when (callerActivity) {
+            "LoginActivity", "DashboardActivity"-> {
+                if (isAlternativeUrl) {
+                    ServerConfigUtils.saveAlternativeUrl(url, settings.getString("serverPin", "") ?: "", settings, editor)
+                }
+                isSync = false
+                forceSync = true
+                configurationsRepository.checkVersion(this, settings)
+            }
+            else -> {
+                if (serverConfigAction == "sync") {
+                    if (savedId == null) {
+                        editor.putString("configurationId", id).apply()
+                        editor.putString("communityName", code).apply()
+                        currentDialog?.let {
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
+                        }
+                    } else if (id == savedId) {
+                        currentDialog?.let {
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
+                        }
+                    } else {
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                    }
+                } else if (serverConfigAction == "save") {
+                    if (savedId == null || id == savedId) {
+                        currentDialog?.let {
+                            val binding = serverDialogBinding ?: return@let
+                            saveConfigAndContinue(it, binding, "", false, defaultUrl)
+                        }
+                    } else {
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                    }
+                }
+            }
         }
-        syncConfigurationCoordinator.checkMinApk(
-            lifecycleScope,
-            url,
-            pin,
-            callerContext,
-            serverConfigAction,
-            currentDialog,
-            serverDialogBinding
-        )
     }
+
     fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
@@ -293,7 +293,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         }
-        prefData.setFirstRun(false)
+        editor.putBoolean("firstRun", false).apply()
     }
 
     fun sync(binding: DialogServerUrlBinding) {
@@ -303,7 +303,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         syncSwitch.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             setSpinnerVisibility(isChecked)
         }
-        syncSwitch.isChecked = prefData.getAutoSync()
+        syncSwitch.isChecked = settings.getBoolean("autoSync", true)
         dateCheck(binding)
     }
 
@@ -319,7 +319,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         try {
-            val isAlternativeUrl = prefData.isAlternativeUrl()
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
             val url = if (isAlternativeUrl) {
                 if (processedUrl?.contains("/db") == true) {
                     processedUrl.replace("/db", "") + "/db/_all_dbs"
@@ -360,7 +360,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     // Converts OS date to human date
     private fun convertDate(): String {
-        val lastSynced = prefData.getLastSync()
+        val lastSynced = settings.getLong("LastSync", 0)
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
@@ -378,9 +378,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private fun saveSyncInfoToPreference() {
-        prefData.setAutoSync(syncSwitch.isChecked)
-        prefData.setAutoSyncInterval(syncTimeInterval[spinner.selectedItemPosition])
-        prefData.setAutoSyncPosition(spinner.selectedItemPosition)
+        editor.putBoolean("autoSync", syncSwitch.isChecked)
+        editor.putInt("autoSyncInterval", syncTimeInterval[spinner.selectedItemPosition])
+        editor.putInt("autoSyncPosition", spinner.selectedItemPosition)
+        editor.apply()
     }
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
@@ -431,21 +432,26 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         url: String,
         defaultUrl: String
     ): String {
-        val password = prefData.getServerPin().ifEmpty {
+        val password = if (settings.getString("serverPin", "") != "") {
+            settings.getString("serverPin", "")!!
+        } else {
             binding.inputServerPassword.text.toString()
         }
 
-        val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, prefData)
+        val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
         if (isUrlValid(url)) setUrlParts(defaultUrl, password)
         return couchdbURL
     }
 
     private fun handleRegularUrlSave(binding: DialogServerUrlBinding): String {
-        val protocol = prefData.getServerProtocol()
+        val protocol = settings.getString("serverProtocol", "")
         var url = binding.inputServerUrl.text.toString()
         val pin = binding.inputServerPassword.text.toString()
 
-        prefData.setCustomDeviceName(binding.deviceName.text.toString())
+        editor.putString(
+            "customDeviceName",
+            binding.deviceName.text.toString()
+        ).apply()
 
         url = protocol + url
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
@@ -497,13 +503,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
             withContext(Dispatchers.Main) {
                 forceSyncTrigger()
-                    val syncedUrl = prefData.getServerUrl().takeIf { it.isNotEmpty() }?.let { ServerConfigUtils.removeProtocol(it) }
+                    val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
                     if (
                         syncedUrl != null &&
                         serverListAddresses.isNotEmpty() &&
                         serverListAddresses.any { it.url.replace(urlProtocolRegex, "") == syncedUrl }
                     ) {
-                        prefData.setPinnedServerUrl(syncedUrl)
+                        editor.putString("pinnedServerUrl", syncedUrl).apply()
                     }
 
                     customProgressDialog.dismiss()
@@ -520,10 +526,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
 
                     lifecycleScope.launch(Dispatchers.IO) {
-                        val pendingLanguage = prefData.getPendingLanguageChange()
+                        val pendingLanguage = settings.getString("pendingLanguageChange", null)
                         if (pendingLanguage != null) {
                             withContext(Dispatchers.Main) {
-                                prefData.setPendingLanguageChange(null)
+                                editor.remove("pendingLanguageChange").apply()
 
                                 LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
                                 recreate()
@@ -533,10 +539,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
-                    if (prefData.isAlternativeUrl()) {
-                        prefData.setAlternativeUrl("")
-                        prefData.setProcessedAlternativeUrl("")
-                        prefData.setIsAlternativeUrl(false)
+                    if (settings.getBoolean("isAlternativeUrl", false)) {
+                        editor.putString("alternativeUrl", "")
+                        editor.putString("processedAlternativeUrl", "")
+                        editor.putBoolean("isAlternativeUrl", false)
+                        editor.apply()
                     }
 
                     downloadAdditionalResources()
@@ -574,7 +581,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private fun downloadAdditionalResources() {
-        val storedJsonConcatenatedLinks = prefData.getConcatenatedLinks()
+        val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
             openDownloadService(context, storedConcatenatedLinks, true)
@@ -583,10 +590,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun forceSyncTrigger(): Boolean {
         if (::lblLastSyncDate.isInitialized) {
-            if (prefData.getLastSync() <= 0) {
+            if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
             } else {
-                val lastSyncMillis = prefData.getLastSync()
+                val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
 
                 if (relativeTime.matches(secondsAgoRegex)) {
@@ -613,7 +620,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private fun checkForceSync(maxDays: Int): Boolean {
         cal_today = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
-        val lastSyncTime = prefData.getLastSync().let { if (it == 0L) -1L else it }
+        val lastSyncTime = settings.getLong("LastSync", -1)
         if (lastSyncTime <= 0) {
             return false
         }
@@ -642,11 +649,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
         )
 
-        prefData.setLoggedIn(true)
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
-                val serverUrl = prefData.getServerUrl()
+                val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
@@ -679,7 +686,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
         neutralAction = dialog.getActionButton(DialogAction.NEUTRAL)
 
-        handleManualConfiguration(binding, prefData.getConfigurationId(), dialog)
+        handleManualConfiguration(binding, settings.getString("configurationId", null), dialog)
         setRadioProtocolListener(binding)
         binding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
@@ -687,7 +694,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         setupFastSyncOption(binding)
 
         showAdditionalServers = false
-        if (serverListAddresses.isNotEmpty() && prefData.getServerUrl().isNotEmpty()) {
+        if (serverListAddresses.isNotEmpty() && settings.getString("serverURL", "")?.isNotEmpty() == true) {
             refreshServerList()
         }
 
@@ -705,14 +712,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             dialog.dismiss()
 
             processedUrl = if (isAlternativeUrl) {
-                val password = prefData.getServerPin()
-                val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, prefData)
+                val password = settings.getString("serverPin", "") ?: ""
+                val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
                 if (isUrlValid(url)) setUrlParts(defaultUrl, password)
                 couchdbURL
             } else {
-                val protocol = prefData.getServerProtocol()
-                val savedUrl = prefData.getServerUrl()
-                val pin = prefData.getServerPin()
+                val protocol = settings.getString("serverProtocol", "")
+                val savedUrl = settings.getString("serverURL", "") ?: ""
+                val pin = settings.getString("serverPin", "") ?: ""
                 val fullUrl = protocol + savedUrl
                 if (isUrlValid(fullUrl)) setUrlParts(fullUrl, pin) else ""
             }
@@ -722,7 +729,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
 
             isSync = true
-            if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && prefData.getFirstRun()) {
+            if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
                 clearInternalStorage()
             }
 
@@ -739,7 +746,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
         }
-        prefData.setLastUsageUploaded(Date().time)
+        editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
             lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))} >>")
         }
@@ -765,11 +772,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun registerReceiver() {
         lifecycleScope.launch {
-            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                broadcastService.events.collect { intent ->
-                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                        broadcastReceiver.onReceive(this@SyncActivity, intent)
-                    }
+            broadcastService.events.collect { intent ->
+                if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                    broadcastReceiver.onReceive(this@SyncActivity, intent)
                 }
             }
         }

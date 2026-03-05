@@ -27,6 +27,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import java.io.File
 import java.util.Locale
 import javax.inject.Inject
@@ -110,7 +111,7 @@ class VoicesAdapter(
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var imageList: List<String>? = null
+    private var imageList: RealmList<String>? = null
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
@@ -142,7 +143,7 @@ class VoicesAdapter(
         }
     }
 
-    fun setImageList(imageList: List<String>?) {
+    fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
     }
 

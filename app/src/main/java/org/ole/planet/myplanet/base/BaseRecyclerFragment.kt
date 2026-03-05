@@ -224,14 +224,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (deleteProgress && `object` is RealmMyCourse) {
             mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
             val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            val examIds = examList.mapNotNull { it.id }.toTypedArray()
-            if (examIds.isNotEmpty()) {
-                mRealm.where(RealmSubmission::class.java)
-                    .`in`("parentId", examIds)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
+            for (exam in examList) {
+                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
+                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
                     .deleteAllFromRealm()
+            }
+        }
+    }
+
+    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
+        for (tg in tags) {
+            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
+                .equalTo("linkId", course?.courseId).count()
+            if (count > 0 && !courses.contains(course)) {
+                course?.let { courses.add(it) }
             }
         }
     }
@@ -287,20 +293,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty()) {
             return list
         }
-
-        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-        val linkedCourseIds = mRealm.where(RealmTag::class.java)
-            .equalTo("db", "courses")
-            .`in`("tagId", tagIds)
-            .findAll()
-            .mapNotNull { it.linkId }
-            .toSet()
-
         val courses = RealmList<RealmMyCourse>()
         list.forEach { course ->
-            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
-                courses.add(course)
-            }
+            checkAndAddToList(course, courses, tags)
         }
         return applyCourseFilter(courses)
     }

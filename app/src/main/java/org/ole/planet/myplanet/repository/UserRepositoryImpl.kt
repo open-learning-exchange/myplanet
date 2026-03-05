@@ -20,19 +20,15 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
-import com.google.gson.JsonArray
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.HealthRecord
-import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -631,83 +627,5 @@ class UserRepositoryImpl @Inject constructor(
             equalTo("actionType", "sync")
         }
         return actions.isNotEmpty()
-    }
-
-    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
-        return withRealm { realm ->
-            var achievement = realm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-
-            if (achievement == null) {
-                realm.executeTransaction { transactionRealm ->
-                    achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-                }
-            }
-
-            achievement?.let { realm.copyFromRealm(it) }
-        }
-    }
-
-    override suspend fun updateAchievement(
-        achievementId: String,
-        header: String,
-        goals: String,
-        purpose: String,
-        sendToNation: String,
-        achievements: JsonArray,
-        references: JsonArray
-    ) {
-        withRealm { realm ->
-            realm.executeTransaction { transactionRealm ->
-                val achievement = transactionRealm.where(RealmAchievement::class.java)
-                    .equalTo("_id", achievementId)
-                    .findFirst()
-                if (achievement != null) {
-                    achievement.achievementsHeader = header
-                    achievement.goals = goals
-                    achievement.purpose = purpose
-                    achievement.sendToNation = sendToNation
-                    achievement.setAchievements(achievements)
-                    achievement.setReferences(references)
-                }
-            }
-        }
-    }
-
-    override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData = withRealm { realm ->
-        val achievement = realm.where(RealmAchievement::class.java)
-            .equalTo("_id", "$userId@$planetCode")
-            .findFirst()
-
-        if (achievement != null) {
-            val achievementCopy = realm.copyFromRealm(achievement)
-            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                JsonUtils.gson.fromJson(json, JsonObject::class.java)
-                    ?.getAsJsonArray("resources")
-                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
-            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
-
-            val resources = if (resourceIds.isNotEmpty()) {
-                realm.copyFromRealm(
-                    realm.where(RealmMyLibrary::class.java)
-                        .`in`("id", resourceIds)
-                        .findAll()
-                )
-            } else {
-                emptyList()
-            }
-
-            AchievementData(
-                goals = achievementCopy.goals ?: "",
-                purpose = achievementCopy.purpose ?: "",
-                achievementsHeader = achievementCopy.achievementsHeader ?: "",
-                achievements = achievementCopy.achievements ?: emptyList(),
-                achievementResources = resources,
-                references = achievementCopy.references ?: emptyList()
-            )
-        } else {
-            AchievementData()
-        }
     }
 }

@@ -315,14 +315,14 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamsRepository.getTeamSummaries()
-        val enterprises = teamsRepository.getShareableEnterpriseSummaries()
+        val teams = teamsRepository.getShareableTeams()
+        val enterprises = teamsRepository.getShareableEnterprises()
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
             null
         }
-        val community = communityId?.let { teamsRepository.getTeamSummaryById(it) }
+        val community = communityId?.let { teamsRepository.getTeamById(it) }
         return ChatShareTargets(community, teams, enterprises)
     }
 

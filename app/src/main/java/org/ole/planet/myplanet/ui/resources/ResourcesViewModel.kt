@@ -7,9 +7,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.FlowPreview
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TagItem
 import java.text.Normalizer
@@ -17,7 +20,6 @@ import java.util.Locale
 
 data class FilterState(
     val allLibraryItems: List<ResourceItem> = emptyList(),
-    val searchQuery: String = "",
     val searchTags: List<TagItem> = emptyList(),
     val subjects: Set<String> = emptySet(),
     val languages: Set<String> = emptySet(),
@@ -30,15 +32,20 @@ data class FilterState(
 class ResourcesViewModel @Inject constructor() : ViewModel() {
 
     private val _filterState = MutableStateFlow(FilterState())
+    private val _searchQuery = MutableStateFlow("")
 
     private val _filteredLibraryItems = MutableStateFlow<List<ResourceItem>>(emptyList())
     val filteredLibraryItems: StateFlow<List<ResourceItem>> = _filteredLibraryItems.asStateFlow()
 
     init {
-        _filterState.map { state ->
+        @OptIn(FlowPreview::class)
+        combine(
+            _filterState,
+            _searchQuery.debounce { if (it.isEmpty()) 0L else 300L }
+        ) { state, query ->
             val filteredByTagAndSearch = filterLocalLibraryByTag(
                 state.allLibraryItems,
-                state.searchQuery,
+                query,
                 state.searchTags,
                 state.tagsMap
             )
@@ -62,7 +69,7 @@ class ResourcesViewModel @Inject constructor() : ViewModel() {
     }
 
     fun setSearchQuery(query: String) {
-        _filterState.value = _filterState.value.copy(searchQuery = query)
+        _searchQuery.value = query
     }
 
     fun setSearchTags(tags: List<TagItem>) {
@@ -88,7 +95,7 @@ class ResourcesViewModel @Inject constructor() : ViewModel() {
     fun getMediums(): Set<String> = _filterState.value.mediums
     fun getLevels(): Set<String> = _filterState.value.levels
     fun getSearchTags(): List<TagItem> = _filterState.value.searchTags
-    fun getSearchQuery(): String = _filterState.value.searchQuery
+    fun getSearchQuery(): String = _searchQuery.value
 
     private fun applyFilter(
         libraries: List<ResourceItem>,
