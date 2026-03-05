@@ -231,18 +231,19 @@ class UploadCoordinator @Inject constructor(
     ) {
         databaseService.executeTransactionAsync { realm ->
             val localIds = succeeded.map { it.localId }
-            val idFieldName = getIdFieldName(config.modelClass)
+            val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
 
-            val items = mutableListOf<T>()
+            val itemsById = mutableMapOf<String, T>()
             localIds.chunked(1000).forEach { chunk ->
-                items.addAll(
-                    realm.where(config.modelClass.java)
-                        .`in`(idFieldName, chunk.toTypedArray())
-                        .findAll()
-                )
-            }
+                val results = realm.where(config.modelClass.java)
+                    .`in`(idFieldName, chunk.toTypedArray())
+                    .findAll()
 
-            val itemsById = items.associateBy { config.idExtractor(it) ?: "" }
+                results.forEach { item ->
+                    val localId = config.idExtractor(item) ?: ""
+                    itemsById[localId] = item
+                }
+            }
 
             succeeded.forEach { uploadedItem ->
                 try {
@@ -282,10 +283,6 @@ class UploadCoordinator @Inject constructor(
                 )
             }
         }
-    }
-
-    private fun getIdFieldName(modelClass: KClass<out RealmObject>): String {
-        return "id"
     }
 
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
