@@ -492,6 +492,7 @@ open class RealmUser : RealmObject() {
             realm.executeTransactionAsync({ mRealm: Realm ->
                 val allUsers = mRealm.where(RealmUser::class.java).findAll()
                 val usersByName = allUsers.groupBy { it.name }
+                val duplicateIds = mutableListOf<String>()
 
                 usersByName.forEach { (_, users) ->
                     if (users.size > 1) {
@@ -506,8 +507,17 @@ open class RealmUser : RealmObject() {
                         }
 
                         for (i in 1 until sortedUsers.size) {
-                            sortedUsers[i].deleteFromRealm()
+                            sortedUsers[i].id?.let { duplicateIds.add(it) }
                         }
+                    }
+                }
+
+                if (duplicateIds.isNotEmpty()) {
+                    duplicateIds.chunked(1000).forEach { chunk ->
+                        mRealm.where(RealmUser::class.java)
+                            .`in`("id", chunk.toTypedArray())
+                            .findAll()
+                            .deleteAllFromRealm()
                     }
                 }
             }, {
