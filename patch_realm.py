@@ -1,10 +1,19 @@
 import re
 
-with open("app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt", "r") as f:
+with open("app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt", "r") as f:
     text = f.read()
 
-if "mRealm = databaseService.createManagedRealmInstance()" in text:
-    text = text.replace("mRealm = databaseService.createManagedRealmInstance()", "mRealm = requireRealmInstance()")
+text = text.replace("""    protected fun requireRealmInstance(): Realm {
+        if (!isRealmInitialized()) {
+            // mRealm initialized in onViewCreated
+        }
+        return mRealm
+    }""", """    protected fun requireRealmInstance(): Realm {
+        if (!isRealmInitialized()) {
+            mRealm = databaseService.createManagedRealmInstance()
+        }
+        return mRealm
+    }""")
 
-with open("app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt", "w") as f:
+with open("app/src/main/java/org/ole/planet/myplanet/base/BaseResourceFragment.kt", "w") as f:
     f.write(text)

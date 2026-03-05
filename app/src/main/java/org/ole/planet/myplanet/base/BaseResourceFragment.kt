@@ -85,7 +85,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
-            // mRealm initialized in onViewCreated
+            mRealm = databaseService.createManagedRealmInstance()
         }
         return mRealm
     }
