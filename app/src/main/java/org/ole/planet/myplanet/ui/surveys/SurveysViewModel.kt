@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 
+private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
@@ -142,6 +144,7 @@ class SurveysViewModel @Inject constructor(
 
     private fun filter(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<RealmStepExam>()
         val containsQuery = mutableListOf<RealmStepExam>()
@@ -150,7 +153,7 @@ class SurveysViewModel @Inject constructor(
             val title = item.name?.let { normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
                 containsQuery.add(item)
             }
         }
@@ -159,7 +162,7 @@ class SurveysViewModel @Inject constructor(
 
     private fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(DIACRITICS_REGEX, "")
     }
 
     fun startExamSync() {
