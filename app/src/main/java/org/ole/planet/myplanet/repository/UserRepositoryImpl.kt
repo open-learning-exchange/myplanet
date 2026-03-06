@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,8 +21,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
-import com.google.gson.JsonArray
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -56,11 +56,6 @@ class UserRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         }
-    }
-
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getCurrentUser(): RealmUser? {
-        return getUserModel()
     }
 
     override suspend fun getUserByAnyId(id: String): RealmUser? {
@@ -399,11 +394,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getActiveUserIdSuspending() instead")
-    override fun getActiveUserId(): String {
-        return getUserModel()?.id ?: ""
-    }
-
     override suspend fun getActiveUserIdSuspending(): String {
         return getUserModelSuspending()?.id ?: ""
     }
@@ -545,10 +535,6 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun validateUsername(username: String): String? {
-        val specialCharPattern = Pattern.compile(
-            ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-        )
-
         val firstChar = username.firstOrNull()
         when {
             username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
@@ -556,7 +542,7 @@ class UserRepositoryImpl @Inject constructor(
             firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
                 return context.getString(R.string.must_start_with_letter_or_number)
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
-            specialCharPattern.matcher(username).matches() ||
+            SPECIAL_CHAR_PATTERN.matcher(username).matches() ||
             !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
             } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
@@ -674,6 +660,12 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
+
+    companion object {
+        private val SPECIAL_CHAR_PATTERN = Pattern.compile(
+            ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
+        )
     }
 
     override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData = withRealm { realm ->

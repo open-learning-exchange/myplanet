@@ -195,7 +195,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
+        selectedItems?.forEachIndexed { _, item ->
             try {
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
@@ -271,7 +271,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(DIACRITICS_REGEX, "")
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
@@ -352,7 +352,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 if (mRealm.isInTransaction) {
                     try {
                         mRealm.commitTransaction()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         mRealm.cancelTransaction()
                     }
                 }
@@ -380,6 +380,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,

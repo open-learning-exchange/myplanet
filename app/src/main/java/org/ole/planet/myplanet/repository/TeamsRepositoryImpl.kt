@@ -24,11 +24,11 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -157,8 +157,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getTeamSummaries instead", ReplaceWith("getTeamSummaries()"))
-    override suspend fun getShareableTeams(): List<RealmMyTeam> {
+    private suspend fun getShareableTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
             notEqualTo("status", "archived")
@@ -170,7 +169,19 @@ class TeamsRepositoryImpl @Inject constructor(
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
         return getShareableTeams().mapNotNull { team ->
             val id = team._id ?: return@mapNotNull null
-            TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
+            TeamSummary(
+                _id = id,
+                name = team.name ?: "",
+                teamType = team.teamType,
+                teamPlanetCode = team.teamPlanetCode,
+                createdDate = team.createdDate,
+                type = team.type,
+                status = team.status,
+                teamId = team.teamId,
+                description = team.description,
+                services = team.services,
+                rules = team.rules
+            )
         }
     }
 
@@ -186,7 +197,19 @@ class TeamsRepositoryImpl @Inject constructor(
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
         return getShareableEnterprises().mapNotNull { team ->
             val id = team._id ?: return@mapNotNull null
-            TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
+            TeamSummary(
+                _id = id,
+                name = team.name ?: "",
+                teamType = team.teamType,
+                teamPlanetCode = team.teamPlanetCode,
+                createdDate = team.createdDate,
+                type = team.type,
+                status = team.status,
+                teamId = team.teamId,
+                description = team.description,
+                services = team.services,
+                rules = team.rules
+            )
         }
     }
 
@@ -267,7 +290,19 @@ class TeamsRepositoryImpl @Inject constructor(
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
         val team = getTeamById(teamId) ?: return null
         val id = team._id ?: return null
-        return TeamSummary(id, team.name ?: "", team.teamType, team.teamPlanetCode)
+        return TeamSummary(
+            _id = id,
+            name = team.name ?: "",
+            teamType = team.teamType,
+            teamPlanetCode = team.teamPlanetCode,
+            createdDate = team.createdDate,
+            type = team.type,
+            status = team.status,
+            teamId = team.teamId,
+            description = team.description,
+            services = team.services,
+            rules = team.rules
+        )
     }
 
     override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? {
@@ -350,16 +385,6 @@ class TeamsRepositoryImpl @Inject constructor(
             val teamName = team?.name ?: "Unknown Team"
             JoinRequestNotification(requesterName, teamName, requestId)
         }
-    }
-
-    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
-    override suspend fun getTeamTransactions(
-        teamId: String,
-        startDate: Long?,
-        endDate: Long?,
-        sortAscending: Boolean,
-    ): Flow<List<RealmMyTeam>> {
-        return queryTransactions(teamId, startDate, endDate, sortAscending)
     }
 
     override suspend fun getTeamTransactionsWithBalance(
@@ -647,19 +672,26 @@ class TeamsRepositoryImpl @Inject constructor(
         user: RealmUser?,
     ) {
         if (teamId.isBlank() || resources.isEmpty() || user == null) return
+
+        val teamResources = resources.map { resource ->
+            val teamResource = RealmMyTeam()
+            teamResource._id = UUID.randomUUID().toString()
+            teamResource.teamId = teamId
+            teamResource.title = resource.title
+            teamResource.status = user.parentCode
+            teamResource.resourceId = resource._id
+            teamResource.docType = "resourceLink"
+            teamResource.updated = true
+            teamResource.teamType = "local"
+            teamResource.teamPlanetCode = user.planetCode
+            teamResource.userPlanetCode = user.planetCode
+
+            requireNotNull(teamResource._id) { "Primary key _id must not be null for insertion" }
+            teamResource
+        }
+
         executeTransaction { realm ->
-            resources.forEach { resource ->
-                val teamResource = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                teamResource.teamId = teamId
-                teamResource.title = resource.title
-                teamResource.status = user.parentCode
-                teamResource.resourceId = resource._id
-                teamResource.docType = "resourceLink"
-                teamResource.updated = true
-                teamResource.teamType = "local"
-                teamResource.teamPlanetCode = user.planetCode
-                teamResource.userPlanetCode = user.planetCode
-            }
+            realm.insert(teamResources)
         }
     }
 

@@ -148,7 +148,7 @@ abstract class BaseResourceFragment : Fragment() {
                         val panelIntent = Intent(Settings.Panel.ACTION_WIFI)
                         try {
                             startActivity(panelIntent)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
                         }
                     } else {
@@ -201,9 +201,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        val librariesForDialog = dbMyLibrary
-
-        if (librariesForDialog.isEmpty()) {
+        if (dbMyLibrary.isEmpty()) {
             return
         }
 
@@ -219,11 +217,13 @@ abstract class BaseResourceFragment : Fragment() {
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
                             lv?.selectedItemsList?.let {
-                                addToLibrary(librariesForDialog, it)
-                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
-                                val filtered = selectedLibraries.filterNotNull()
-                                if (resourcesRepository.downloadResources(filtered)) {
-                                    trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                addToLibrary(dbMyLibrary, it)
+                                val selectedLibraries = it.mapNotNull { index ->
+                                    dbMyLibrary.getOrNull(
+                                        index
+                                    ) }
+                                if (resourcesRepository.downloadResources(selectedLibraries)) {
+                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress })
                                     showProgressDialog()
                                 }
                             }
@@ -234,8 +234,8 @@ abstract class BaseResourceFragment : Fragment() {
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(librariesForDialog)
-                            val filtered = librariesForDialog.filterNotNull()
+                            addAllToLibrary(dbMyLibrary)
+                            val filtered = dbMyLibrary.filterNotNull()
                             if (resourcesRepository.downloadResources(filtered)) {
                                 trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
                                 showProgressDialog()
@@ -248,7 +248,7 @@ abstract class BaseResourceFragment : Fragment() {
             downloadSuggestionDialog?.dismiss()
             downloadSuggestionDialog = alertDialogBuilder.create()
             downloadSuggestionDialog?.let { dialog ->
-                createListView(librariesForDialog, dialog)
+                createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
                     downloadSuggestionDialog = null
                 }
@@ -467,7 +467,7 @@ abstract class BaseResourceFragment : Fragment() {
                 if (mRealm.isInTransaction) {
                     try {
                         mRealm.commitTransaction()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         mRealm.cancelTransaction()
                     }
                 }

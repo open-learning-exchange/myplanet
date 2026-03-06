@@ -181,13 +181,7 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
-            val libraries: MutableList<RealmMyCourse> = ArrayList()
-            for (item in libs ?: emptyList()) {
-                if (item.userId?.contains(userId) == true) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
+            return libs?.filter { it.userId?.contains(userId) == true } ?: emptyList()
         }
 
         @JvmStatic
