@@ -327,12 +327,12 @@ class CoursesAdapter(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filter { !it.isMyCourse }
+            val selectableCourses = currentList.filter { !it.isMyCourse || isMyCourseLib }
             selectedItems.addAll(selectableCourses)
         }
 
         currentList.forEachIndexed { index, course ->
-            if (!course.isMyCourse) {
+            if (!course.isMyCourse || isMyCourseLib) {
                 notifyItemChanged(index)
             }
         }
