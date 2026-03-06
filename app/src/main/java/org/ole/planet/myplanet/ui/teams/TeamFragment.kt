@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -51,7 +52,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUser? = null
-    private var teamList: List<RealmMyTeam> = emptyList()
+    private var teamList: List<TeamSummary> = emptyList()
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
@@ -275,12 +276,12 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     }
 
 
-    private fun getList(searchText: String): Pair<List<RealmMyTeam>, Boolean> {
+    private fun getList(searchText: String): Pair<List<TeamSummary>, Boolean> {
         val nameFilteredList = teamList.filter {
-            it.name?.contains(searchText, ignoreCase = true) == true
+            it.name.contains(searchText, ignoreCase = true)
         }
 
-        val typeFilteredList: List<RealmMyTeam>
+        val typeFilteredList: List<TeamSummary>
         val newConditionApplied: Boolean
 
         if (TextUtils.isEmpty(type) || type == "team") {
@@ -304,20 +305,35 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
             when {
                 fromDashboard -> {
                     user?._id?.let { userId ->
-                        teamsRepository.getMyTeamsFlow(userId).collectLatest {
-                            teamList = it
+                        teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
+                            teamList = list.mapNotNull {
+                                val id = it._id ?: return@mapNotNull null
+                                org.ole.planet.myplanet.model.TeamSummary(
+                                    _id = id,
+                                    name = it.name ?: "",
+                                    teamType = it.teamType,
+                                    teamPlanetCode = it.teamPlanetCode,
+                                    createdDate = it.createdDate,
+                                    type = it.type,
+                                    status = it.status,
+                                    teamId = it.teamId,
+                                    description = it.description,
+                                    services = it.services,
+                                    rules = it.rules
+                                )
+                            }
                             setTeamList()
                         }
                     }
                 }
                 type == "enterprise" -> {
                     conditionApplied = true
-                    teamList = teamsRepository.getShareableEnterprises()
+                    teamList = teamsRepository.getShareableEnterpriseSummaries()
                     setTeamList()
                 }
                 else -> {
                     conditionApplied = false
-                    teamList = teamsRepository.getShareableTeams()
+                    teamList = teamsRepository.getTeamSummaries()
                     setTeamList()
                 }
             }

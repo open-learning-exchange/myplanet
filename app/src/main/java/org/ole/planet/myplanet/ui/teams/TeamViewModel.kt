@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -31,22 +32,22 @@ class TeamViewModel @Inject constructor(
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
-    private var currentTeams: List<RealmMyTeam> = emptyList()
+    private var currentTeams: List<TeamSummary> = emptyList()
 
 
-    fun prepareTeamData(teams: List<RealmMyTeam>, userId: String?) {
+    fun prepareTeamData(teams: List<TeamSummary>, userId: String?) {
         currentTeams = teams
         viewModelScope.launch {
             val processedTeams = withContext(dispatcherProvider.io) {
                 val validTeams = teams.filter {
-                    !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
+                    !it._id.isBlank() && (it.status == null || it.status != "archived")
                 }
 
                 if (validTeams.isEmpty()) {
                     return@withContext emptyList<TeamDetails>()
                 }
 
-                val teamIds = validTeams.mapNotNull { it._id }
+                val teamIds = validTeams.map { it._id }
 
                 val visitCountsDeferred = async { teamsRepository.getRecentVisitCounts(teamIds) }
                 val memberStatusesDeferred = async { teamsRepository.getTeamMemberStatuses(userId, teamIds) }
@@ -55,7 +56,7 @@ class TeamViewModel @Inject constructor(
                 val memberStatuses = memberStatusesDeferred.await()
 
                 val teamDataList = validTeams.map { team ->
-                    val teamId = team._id.orEmpty()
+                    val teamId = team._id
                     val status = memberStatuses[teamId]
                     TeamDetails(
                         _id = team._id,
