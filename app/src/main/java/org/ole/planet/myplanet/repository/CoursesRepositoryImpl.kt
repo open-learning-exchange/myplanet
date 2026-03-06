@@ -325,15 +325,41 @@ class CoursesRepositoryImpl @Inject constructor(
         ob: com.google.gson.JsonObject,
         userId: String?
     ) {
-        exams.forEach { it ->
-            it.id?.let { it1 ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it1).equalTo("type", "exam").findAll()
-            }?.map {
-                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
-                var examId = it.parentId
-                if (it.parentId?.contains("@") == true) {
-                    examId = it.parentId!!.split("@")[0]
+        val examSubmissionsMap = mutableMapOf<RealmStepExam, RealmResults<org.ole.planet.myplanet.model.RealmSubmission>?>()
+        val allSubmissions = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
+
+        exams.forEach { exam ->
+            val submissions = exam.id?.let { examId ->
+                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .contains("parentId", examId)
+                    .equalTo("type", "exam")
+                    .findAll()
+            }
+            examSubmissionsMap[exam] = submissions
+            if (submissions != null) {
+                allSubmissions.addAll(submissions)
+            }
+        }
+
+        val submissionIds = allSubmissions.mapNotNull { it.id }
+        val allAnswers = mutableListOf<org.ole.planet.myplanet.model.RealmAnswer>()
+        if (submissionIds.isNotEmpty()) {
+            submissionIds.chunked(1000).forEach { chunk ->
+                val chunkAnswers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
+                    .`in`("submissionId", chunk.toTypedArray())
+                    .findAll()
+                allAnswers.addAll(chunkAnswers)
+            }
+        }
+        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+
+        exams.forEach { exam ->
+            examSubmissionsMap[exam]?.map { submission ->
+                val answers = answersBySubmissionId[submission.id] ?: emptyList()
+                var examId = submission.parentId
+                if (submission.parentId?.contains("@") == true) {
+                    examId = submission.parentId!!.split("@")[0]
                 }
                 val questions = realm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
                 val questionCount = questions.size
@@ -345,7 +371,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     val percentage = (answers.size.toDouble() / questionCount) * 100
                     ob.addProperty("percentage", percentage)
                 }
-                ob.addProperty("status", it.status)
+                ob.addProperty("status", submission.status)
             }
         }
     }
