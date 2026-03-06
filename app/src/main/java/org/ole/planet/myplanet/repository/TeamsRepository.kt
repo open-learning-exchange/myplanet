@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -113,13 +113,6 @@ interface TeamsRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities()
-    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
-    suspend fun getTeamTransactions(
-        teamId: String,
-        startDate: Long? = null,
-        endDate: Long? = null,
-        sortAscending: Boolean = false,
-    ): Flow<List<RealmMyTeam>>
     suspend fun getTeamTransactionsWithBalance(
         teamId: String,
         startDate: Long? = null,
