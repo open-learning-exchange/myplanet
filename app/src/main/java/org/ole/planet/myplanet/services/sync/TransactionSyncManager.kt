@@ -236,23 +236,26 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
-                    databaseService.withRealm { realm ->
-                        realm.executeTransactionAsync { mRealm: Realm ->
-                            val insertStartTime = System.currentTimeMillis()
+                    databaseService.executeTransactionAsync { mRealm: Realm ->
+                        val insertStartTime = System.currentTimeMillis()
 
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
-                            insertDocs(arr, mRealm, table)
-
-                            val insertDuration = System.currentTimeMillis() - insertStartTime
-                            org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                                "insert_batch",
-                                table,
-                                insertDuration,
-                                arr.size()
-                            )
+                        if (table == "chat_history") {
+                            insertToChat(arr, mRealm)
                         }
+                        insertDocs(arr, mRealm, table)
+
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
+
+                        if (table == "courses") {
+                            android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
+                        }
+
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
                     }
                 }
 
@@ -307,13 +310,15 @@ class TransactionSyncManager @Inject constructor(
             }
         }
 
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc)
+            continueInsert(mRealm, table, jsonDoc, settings)
         }
+
+        saveConcatenatedLinksToPrefs()
     }
 
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject, settings: SharedPreferences) {
         when (table) {
             "exams" -> {
                 insertCourseStepsExams("", "", jsonDoc, mRealm)
@@ -327,7 +332,6 @@ class TransactionSyncManager @Inject constructor(
                 callMethod(mRealm, jsonDoc, table)
             }
         }
-        saveConcatenatedLinksToPrefs()
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
