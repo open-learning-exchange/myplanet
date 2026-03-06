@@ -37,7 +37,19 @@ class CoursesRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
-        return queryList(RealmMyCourse::class.java) {}
+        return queryList(RealmMyCourse::class.java) {
+            isNotEmpty("courseTitle")
+        }
+    }
+
+    override suspend fun getAllCourses(orderBy: String, sort: io.realm.Sort): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val results = realm.where(RealmMyCourse::class.java)
+                .isNotEmpty("courseTitle")
+                .sort(orderBy, sort)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
     }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
