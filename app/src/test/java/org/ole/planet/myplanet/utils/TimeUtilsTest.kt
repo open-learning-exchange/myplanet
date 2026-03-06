@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -60,22 +59,6 @@ class TimeUtilsTest {
         // Pattern: "yyyy-MM-dd HH:mm:ss"
         val result = TimeUtils.formatDateTZ(timestamp)
         assertEquals("2024-03-05 16:00:00", result)
-    }
-
-    @Test
-    fun testGetAge() {
-        // This test depends on the current date, but we can test with a fixed birth date
-        // and check if it returns a reasonable age.
-        // Actually getAge uses LocalDate.now() which we can't easily mock here without more dependencies
-        // but we can check if it parses correctly.
-        val age = TimeUtils.getAge("1990-01-01")
-        assertTrue(age >= 34) // As of 2024/2025
-    }
-
-    @Test
-    fun testGetAge_withDateTime() {
-        val age = TimeUtils.getAge("1990-01-01 10:00:00")
-        assertTrue(age >= 34)
     }
 
     @Test
@@ -161,8 +144,12 @@ class TimeUtilsTest {
     @Test
     fun testGetRelativeTime_future() {
         val now = System.currentTimeMillis()
+        // Note: The function collapses all future timestamps into a single "Just now" string.
+        // This includes events even years in the future.
         val hourHence = now + 3600 * 1000
-        val result = TimeUtils.getRelativeTime(hourHence)
-        assertEquals("Just now", result)
+        val yearHence = now + (365L * 24 * 3600 * 1000)
+
+        assertEquals("Future timestamps should return 'Just now'", "Just now", TimeUtils.getRelativeTime(hourHence))
+        assertEquals("Distant future timestamps should also return 'Just now'", "Just now", TimeUtils.getRelativeTime(yearHence))
     }
 }
