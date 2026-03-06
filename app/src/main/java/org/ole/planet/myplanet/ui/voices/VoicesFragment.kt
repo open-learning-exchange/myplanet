@@ -209,15 +209,39 @@ class VoicesFragment : BaseVoicesFragment() {
                 teamName = "",
                 teamId = null,
                 userSessionManager = userSessionManager,
-                scope = viewLifecycleOwner.lifecycleScope,
-                isTeamLeaderFn = { false },
-                getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
-                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                isTeamLeaderFn = { onResult ->
+                    onResult(false)
+                    null
                 },
-                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                getUserFn = { userId, onResult ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        onResult(userRepository.getUserById(userId))
+                    }
+                },
+                getReplyCountFn = { newsId, onResult ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        onResult(voicesRepository.getReplyCount(newsId))
+                    }
+                },
+                deletePostFn = { newsId, onComplete ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        voicesRepository.deletePost(newsId, "")
+                        onComplete()
+                    }
+                },
+                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        onResult(voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName))
+                    }
+                },
+                getLibraryResourceFn = { resourceId, onResult ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        onResult(voicesRepository.getLibraryResource(resourceId))
+                    }
+                },
+                showEditAlertFn = { id, isEdit, currentUser, listener, viewHolder, repository, updateReplyButton ->
+                    VoicesActions.showEditAlert(requireContext(), id, isEdit, currentUser, listener, viewHolder, repository, viewLifecycleOwner.lifecycleScope, updateReplyButton)
+                },
                 labelManager = labelManager,
                 voicesRepository = voicesRepository
             )
