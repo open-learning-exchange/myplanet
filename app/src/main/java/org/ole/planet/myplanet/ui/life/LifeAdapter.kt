@@ -34,9 +34,8 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
-    private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
-    private val reorderCallback: (List<RealmMyLife>) -> Unit
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
+    private val visibilityCallback: (RealmMyLife, Boolean) -> Unit
+) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
     private val hide = 0.5f
     private val show = 1f
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -84,15 +83,6 @@ class LifeAdapter(
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
         (holder as LifeViewHolder).visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
-    }
-
-    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        val newList = currentList.toMutableList()
-        val movedItem = newList.removeAt(fromPosition)
-        newList.add(toPosition, movedItem)
-        reorderCallback(newList)
-        submitList(newList)
-        return true
     }
 
     internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),

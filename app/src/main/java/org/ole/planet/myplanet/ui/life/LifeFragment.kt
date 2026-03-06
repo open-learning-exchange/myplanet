@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
@@ -24,7 +25,7 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
+class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener, OnItemMoveListener {
     private lateinit var lifeAdapter: LifeAdapter
     private var itemTouchHelper: ItemTouchHelper? = null
     @Inject
@@ -61,16 +62,9 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
                         refreshList()
                     }
                 }
-            },
-            reorderCallback = { list ->
-                lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
-                        lifeRepository.updateMyLifeListOrder(list)
-                    }
-                }
             }
         )
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+        val callback: ItemTouchHelper.Callback = ItemReorderHelper(this)
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper?.attachToRecyclerView(recyclerView)
         return lifeAdapter
@@ -102,5 +96,19 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
 
     override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {
         viewHolder?.let { itemTouchHelper?.startDrag(it) }
+    }
+
+    override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
+        val newList = lifeAdapter.currentList.toMutableList()
+        val movedItem = newList.removeAt(fromPosition)
+        newList.add(toPosition, movedItem)
+        lifeAdapter.submitList(newList)
+
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                lifeRepository.updateMyLifeListOrder(newList.filterNotNull())
+            }
+        }
+        return true
     }
 }
