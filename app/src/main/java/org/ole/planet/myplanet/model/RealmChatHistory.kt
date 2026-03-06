@@ -41,11 +41,8 @@ open class RealmChatHistory : RealmObject() {
 
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<RealmConversation> {
             val conversations = RealmList<RealmConversation>()
-            for (element in jsonArray) {
-                val conversation = JsonUtils.gson.fromJson(element, RealmConversation::class.java)
-                val realmConversation = realm.copyToRealm(conversation)
-                conversations.add(realmConversation)
-            }
+            val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
+            conversations.addAll(realm.copyToRealm(unmanagedConversations))
             return conversations
         }
 
