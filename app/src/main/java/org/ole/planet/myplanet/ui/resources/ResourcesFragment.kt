@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -44,6 +45,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.library.SelectionViewModel
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -74,6 +76,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
     private var allLibraryItems: List<RealmMyLibrary> = emptyList()
+
+    private val selectionViewModel: SelectionViewModel<RealmMyLibrary> by viewModels()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -322,7 +326,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (selectionViewModel.selectedItems.value.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
             }
@@ -334,7 +338,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
+                    super.deleteSelected(true, selectionViewModel.selectedItems.value)
+                    deleteSelectedLocally(true)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -400,9 +405,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun hideButton(){
-        tvDelete?.isEnabled = selectedItems?.size!! != 0
-        tvAddToLib.isEnabled = selectedItems?.size!! != 0
-        if(selectedItems?.size!! != 0){
+        val count = selectionViewModel.selectedItems.value.size
+        tvDelete?.isEnabled = count != 0
+        tvAddToLib.isEnabled = count != 0
+        if(count != 0){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -456,22 +462,24 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             dialog.cancel()
         }
         builder.setOnDismissListener {
-            addToMyList()
+            super.addToMyList(selectionViewModel.selectedItems.value)
+            addToMyListLocally()
         }
         return builder.create()
     }
 
     private fun buildAlertMessage(): String {
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
+        val selected = selectionViewModel.selectedItems.value
+        if (selected.size <= 5) {
+            for (i in selected.indices) {
+                msg += " - " + selected[i].title + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
+                msg += " - " + selected[i].title + "\n"
             }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
+            msg += getString(R.string.and) + (selected.size - 5) +
                 getString(R.string.more_resource_s)
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
@@ -500,8 +508,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val newSelected = list.mapNotNull { item ->
             allLibraryItems.find { it.id == item.id }
         }
-        selectedItems?.clear()
-        selectedItems?.addAll(newSelected)
+        selectionViewModel.setSelectedItems(newSelected)
         changeButtonStatus()
         hideButton()
     }
@@ -561,7 +568,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
+        tvAddToLib.isEnabled = selectionViewModel.selectedItems.value.isNotEmpty()
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -760,9 +767,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return filteredList
     }
 
-    override fun deleteSelected(deleteProgress: Boolean) {
+    private fun deleteSelectedLocally(deleteProgress: Boolean) {
         val userId = userModel?.id
-        val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val itemsToDelete = selectionViewModel.selectedItems.value.mapNotNull { it.resourceId }
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -773,7 +780,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                     refreshResourcesData()
-                    selectedItems?.clear()
+                    selectionViewModel.clearSelection()
                     changeButtonStatus()
                     hideButton()
                 }
@@ -781,9 +788,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun addToMyList() {
+    private fun addToMyListLocally() {
         val userId = userModel?.id
-        val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val itemsToAdd = selectionViewModel.selectedItems.value.mapNotNull { it.resourceId }
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -792,7 +799,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     refreshResourcesData()
-                    selectedItems?.clear()
+                    selectionViewModel.clearSelection()
                     changeButtonStatus()
                     hideButton()
                 }

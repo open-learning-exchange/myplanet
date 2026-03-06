@@ -33,7 +33,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
     var levels: MutableSet<String> = mutableSetOf()
-    var selectedItems: MutableList<LI>? = null
     var gradeLevel = ""
     var subjectLevel = ""
     lateinit var recyclerView: RecyclerView
@@ -75,7 +74,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             v.findViewById<TextView>(R.id.tv_add)?.visibility = View.GONE
         }
         tvMessage = v.findViewById(R.id.tv_message)
-        selectedItems = mutableListOf()
         list = mutableListOf()
         return v
     }
@@ -105,7 +103,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            // setOnClickListener should be overridden or handled by subclasses if they use the base tvDelete
+            // We can leave it empty here or remove the click listener, since subclasses will set it.
+            // Actually, we can just remove the default click listener here.
         }
     }
 
@@ -115,7 +115,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun addToMyList() {
+    open fun addToMyList(selectedItems: List<Any>?) {
         if (!isRealmInitialized() || isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
@@ -135,7 +135,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (resourceIds.isEmpty() && courseIds.isEmpty()) return
 
         isAddInProgress = true
-        setJoinInProgress(true)
+        setJoinInProgress(true, itemsToAdd.size)
 
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = profileDbHandler.getUserModel()?.id ?: return@launch
@@ -158,7 +158,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
 
             isAddInProgress = false
-            setJoinInProgress(false)
+            setJoinInProgress(false, itemsToAdd.size)
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
@@ -181,20 +181,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun setJoinInProgress(inProgress: Boolean) {
+    private fun setJoinInProgress(inProgress: Boolean, selectedCount: Int) {
         recyclerView.isEnabled = !inProgress
         recyclerView.alpha = if (inProgress) 0.6f else 1f
         view?.findViewById<View>(R.id.tv_add)?.let { addButton ->
             addButton.isEnabled = if (inProgress) {
                 false
             } else {
-                !(selectedItems.isNullOrEmpty())
+                selectedCount > 0
             }
             addButton.alpha = if (inProgress) 0.5f else 1f
         }
     }
 
-    open fun deleteSelected(deleteProgress: Boolean) {
+    open fun deleteSelected(deleteProgress: Boolean, selectedItems: List<Any>?) {
         selectedItems?.forEachIndexed { _, item ->
             try {
                 if (!mRealm.isInTransaction) {
@@ -213,11 +213,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 throw e
             }
         }
-        selectedItems?.clear()
-    }
-
-    fun countSelected(): Int {
-        return selectedItems?.size ?: 0
     }
 
     private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
@@ -372,9 +367,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun cleanupReferences() {
-        selectedItems?.clear()
         list?.clear()
-        selectedItems = null
         list = null
         resources = null
     }
