@@ -40,7 +40,9 @@ class NotificationsRepositoryImpl @Inject constructor(
                 if (storageRatio > 85) {
                     createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
                 }
-                createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+                if (org.ole.planet.myplanet.BuildConfig.DEBUG) {
+                    createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+                }
 
                 joinRequestData.forEach { (requesterName, teamName, requestId) ->
                     val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
@@ -118,26 +120,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     ) {
         val actualUserId = userId ?: ""
         executeTransaction { realm ->
-            val query = realm.where(RealmNotification::class.java)
-                .equalTo("userId", actualUserId)
-                .equalTo("type", type)
-
-            val existingNotification =
-                if (relatedId != null) {
-                    query.equalTo("relatedId", relatedId).findFirst()
-                } else {
-                    query.isNull("relatedId").findFirst()
-                }
-
-            if (existingNotification == null) {
-                realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
-                    this.userId = actualUserId
-                    this.type = type
-                    this.message = message
-                    this.relatedId = relatedId
-                    this.createdAt = Date()
-                }
-            }
+            createNotificationIfMissingInternal(realm, type, message, relatedId, actualUserId)
         }
     }
 
