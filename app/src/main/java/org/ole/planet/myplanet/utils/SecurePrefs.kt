@@ -63,6 +63,16 @@ object SecurePrefs {
         }
     }
 
+    fun encryptString(context: Context, text: String): String {
+        val aead = getAead(context)
+        return encrypt(aead, text)
+    }
+
+    fun decryptString(context: Context, encryptedText: String): String? {
+        val aead = getAead(context)
+        return decrypt(aead, encryptedText)
+    }
+
     private fun encrypt(aead: Aead, text: String): String {
         val bytes = aead.encrypt(text.toByteArray(Charsets.UTF_8), null)
         return Base64.encodeToString(bytes, Base64.DEFAULT)

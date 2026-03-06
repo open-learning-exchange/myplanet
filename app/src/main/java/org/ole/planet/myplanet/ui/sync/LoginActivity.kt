@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -548,7 +549,12 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     }
                 }
             } else {
-                submitForm(user.name, user.password)
+                val decryptedPassword = if (user.password?.isNotEmpty() == true) {
+                    SecurePrefs.decryptString(this, user.password!!)
+                } else {
+                    user.password
+                }
+                submitForm(user.name, decryptedPassword)
             }
         }
     }
@@ -601,8 +607,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     fun saveUsers(name: String?, password: String?, source: String) {
         lifecycleScope.launch {
-            if (source === "guest") {
-                val newUser = User("", name, password, "", "guest")
+            val encryptedPassword = if (password?.isNotEmpty() == true) {
+                SecurePrefs.encryptString(this@LoginActivity, password)
+            } else {
+                password
+            }
+            if (source == "guest") {
+                val newUser = User("", name, encryptedPassword, "", "guest")
                 val existingUsers: MutableList<User> = ArrayList(
                     prefData.getSavedUsers()
                 )
@@ -617,14 +628,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     existingUsers.add(newUser)
                     prefData.setSavedUsers(existingUsers)
                 }
-            } else if (source === "member") {
+            } else if (source == "member") {
                 val userModel = profileDbHandler.getUserModel()
                 var userProfile = userModel?.userImage
                 val userName: String? = userModel?.name
                 if (userProfile == null) {
                     userProfile = ""
                 }
-                val newUser = User(userName, name, password, userProfile, "member")
+                val newUser = User(userName, name, encryptedPassword, userProfile, "member")
                 val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
                 var newUserExists = false
                 for ((fullName1) in existingUsers) {
