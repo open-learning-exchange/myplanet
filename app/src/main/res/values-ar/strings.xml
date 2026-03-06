@@ -19,7 +19,7 @@
     <string name="hint_name">اسم المستخدم</string>
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
-    <string name="loading">جار التحميل...</string>
+    <string name="loading">جار التحميل…</string>
     <string name="select_team">حدد الفريق</string>
     <string name="btn_sync_save">حفظ</string>
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
@@ -1031,6 +1031,9 @@
     <string name="chart_label">عدد مرات تسجيل الدخول</string>
     <string name="copied_to_clipboard">تم نسخه إلى الحافظة</string>
     <string name="mark_all_as_read">وضع علامة "مقروء" على الجميع</string>
+    <string name="no_notifications">لا توجد إشعارات</string>
+    <string name="no_unread_notifications">لا توجد إشعارات غير مقروءة</string>
+    <string name="no_read_notifications">لا توجد إشعارات مقروءة</string>
     <string name="mark_as_read">وضع علامة كمقروء</string>
     <string name="our_voices">أصواتنا</string>
     <string name="no_voices_available">لا توجد أصوات متاحة</string>
