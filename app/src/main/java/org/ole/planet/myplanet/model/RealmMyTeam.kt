@@ -350,28 +350,22 @@ open class RealmMyTeam : RealmObject() {
             .equalTo("docType", "membership")
             .findAll()
 
-        for (team in teams) {
-            if (team != null) {
-                removeTeam(team, mRealm)
-            }
-        }
-    }
-
-    private fun removeTeam(team: RealmMyTeam, mRealm: Realm) {
-        val startedTransaction = !mRealm.isInTransaction
-        if (startedTransaction) {
-            mRealm.beginTransaction()
-        }
-        try {
-            team.deleteFromRealm()
+        if (!teams.isEmpty()) {
+            val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
-                mRealm.commitTransaction()
+                mRealm.beginTransaction()
             }
-        } catch (e: Exception) {
-            if (startedTransaction && mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+            try {
+                teams.deleteAllFromRealm()
+                if (startedTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
             }
-            throw e
         }
     }
 }
