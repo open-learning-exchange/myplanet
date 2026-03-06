@@ -9,6 +9,7 @@ import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
@@ -98,21 +99,26 @@ class NotificationsViewModel @Inject constructor(
 
     fun markAsRead(notificationId: String, userId: String) {
         viewModelScope.launch {
-            notificationsRepository.markNotificationsAsRead(setOf(notificationId))
-            val currentList = _notifications.value
-            val targetNotification = currentList.find { it.id == notificationId }
-
-            if (targetNotification != null && !targetNotification.isRead) {
-                if (_unreadCount.value > 0) {
-                    _unreadCount.value -= 1
-                }
-
-                if (currentFilter == "unread") {
-                    _notifications.value = currentList.filter { it.id != notificationId }
-                } else {
-                    _notifications.value = currentList.map {
-                        if (it.id == notificationId) it.copy(isRead = true) else it
+            val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
+            if (markedIds.contains(notificationId)) {
+                var wasUnread = false
+                _notifications.update { currentList ->
+                    val targetNotification = currentList.find { it.id == notificationId }
+                    if (targetNotification != null && !targetNotification.isRead) {
+                        wasUnread = true
+                        if (currentFilter == "unread") {
+                            currentList.filter { it.id != notificationId }
+                        } else {
+                            currentList.map {
+                                if (it.id == notificationId) it.copy(isRead = true) else it
+                            }
+                        }
+                    } else {
+                        currentList
                     }
+                }
+                if (wasUnread && _unreadCount.value > 0) {
+                    _unreadCount.value -= 1
                 }
             }
         }
@@ -120,16 +126,18 @@ class NotificationsViewModel @Inject constructor(
 
     fun markAllAsRead(userId: String) {
         viewModelScope.launch {
-            notificationsRepository.markAllUnreadAsRead(userId)
-            val currentList = _notifications.value
-            _unreadCount.value = 0
-
-            if (currentFilter == "unread") {
-                _notifications.value = emptyList()
-            } else {
-                _notifications.value = currentList.map {
-                    if (!it.isRead) it.copy(isRead = true) else it
+            val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
+            if (markedIds.isNotEmpty()) {
+                _notifications.update { currentList ->
+                    if (currentFilter == "unread") {
+                        currentList.filterNot { it.id in markedIds }
+                    } else {
+                        currentList.map {
+                            if (it.id in markedIds && !it.isRead) it.copy(isRead = true) else it
+                        }
+                    }
                 }
+                _unreadCount.value = 0
             }
         }
     }
