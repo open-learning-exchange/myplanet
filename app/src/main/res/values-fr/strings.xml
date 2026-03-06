@@ -19,7 +19,7 @@
     <string name="hint_name">Nom d\'utilisateur</string>
     <string name="btn_back">Retourner</string>
     <string name="btn_sign_in">Se connecter</string>
-    <string name="loading">Chargement...</string>
+    <string name="loading">Chargement…</string>
     <string name="select_team">sélectionner une équipe</string>
     <string name="btn_sync_save">Enregistrer</string>
     <string name="err_msg_name">Entrez votre nom d\'utilisateur</string>
@@ -1031,6 +1031,9 @@
     <string name="chart_label">Nbre de connexions</string>
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
     <string name="mark_all_as_read">Marquer tout comme lu</string>
+    <string name="no_notifications">Aucune notification</string>
+    <string name="no_unread_notifications">Aucune notification non lue</string>
+    <string name="no_read_notifications">Aucune notification lue</string>
     <string name="mark_as_read">Marquer comme lu</string>
     <string name="our_voices">nos voix</string>
     <string name="no_voices_available">aucune voix disponible</string>

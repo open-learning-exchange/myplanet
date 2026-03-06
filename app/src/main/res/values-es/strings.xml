@@ -19,7 +19,7 @@
     <string name="hint_name">Nombre</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
-    <string name="loading">Cargando...</string>
+    <string name="loading">Cargando…</string>
     <string name="select_team">seleccionar equipo</string>
     <string name="btn_sync_save">Guardar</string>
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
@@ -1031,6 +1031,9 @@
     <string name="chart_label">N.º de inicios de sesión</string>
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
+    <string name="no_notifications">Sin notificaciones</string>
+    <string name="no_unread_notifications">Sin notificaciones no leídas</string>
+    <string name="no_read_notifications">Sin notificaciones leídas</string>
     <string name="mark_as_read">Marcar como leído</string>
     <string name="our_voices">nuestras voces</string>
     <string name="no_voices_available">no hay voces disponibles</string>
