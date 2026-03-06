@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration as WorkManagerConfiguration
@@ -272,7 +271,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                     applicationScope.launch {
                         createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
-                        Log.d("anr", "ANR detected! Duration: ${duration}ms\n $message")
                     }
                 }
             })
