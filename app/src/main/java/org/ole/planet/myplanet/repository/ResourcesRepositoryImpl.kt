@@ -91,6 +91,16 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getMyLibrary(userId: String?, orderBy: String, sort: io.realm.Sort): List<RealmMyLibrary> {
+        return withRealm { realm ->
+            val results = realm.where(RealmMyLibrary::class.java)
+                .equalTo("userId", userId)
+                .sort(orderBy, sort)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
+    }
+
     override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
         if (stepId == null) return emptyList()
 

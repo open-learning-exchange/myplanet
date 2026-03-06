@@ -40,6 +40,13 @@ class CoursesRepositoryImpl @Inject constructor(
         return queryList(RealmMyCourse::class.java) {}
     }
 
+    override suspend fun getAllCourses(orderBy: String, sort: io.realm.Sort): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val results = realm.where(RealmMyCourse::class.java).sort(orderBy, sort).findAll()
+            realm.copyFromRealm(results)
+        }
+    }
+
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         val myCourses: MutableList<RealmMyCourse> = ArrayList()
         if (userId == null) return myCourses
