@@ -11,8 +11,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< perf-optimize-team-leaving-8434336441246268505
         versionCode = 4810
         versionName = "0.48.10"
+=======
+        versionCode = 4809
+        versionName = "0.48.9"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
