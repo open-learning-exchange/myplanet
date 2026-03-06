@@ -11,7 +11,9 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
@@ -80,23 +82,27 @@ class NotificationsFragment : Fragment() {
         }
         viewModel.loadNotifications(userId, "all")
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.notifications.collect { notifications ->
-                adapter.submitList(notifications)
-                val isEmpty = notifications.isEmpty()
-                binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
-                binding.emptyData.text = when (currentFilter) {
-                    "unread" -> getString(R.string.no_unread_notifications)
-                    "read" -> getString(R.string.no_read_notifications)
-                    else -> getString(R.string.no_notifications)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.notifications.collect { notifications ->
+                        adapter.submitList(notifications)
+                        val isEmpty = notifications.isEmpty()
+                        binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                        binding.emptyData.text = when (currentFilter) {
+                            "unread" -> getString(R.string.no_unread_notifications)
+                            "read" -> getString(R.string.no_read_notifications)
+                            else -> getString(R.string.no_notifications)
+                        }
+                        binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
+                    }
                 }
-                binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.unreadCount.collect { count ->
-                notificationUpdateListener?.onNotificationCountUpdated(count)
-                val showButton = count > 0 && currentFilter != "read"
-                binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
+                launch {
+                    viewModel.unreadCount.collect { count ->
+                        notificationUpdateListener?.onNotificationCountUpdated(count)
+                        val showButton = count > 0 && currentFilter != "read"
+                        binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
+                    }
+                }
             }
         }
         binding.btnMarkAllAsRead.setOnClickListener {
