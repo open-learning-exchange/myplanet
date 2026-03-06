@@ -25,6 +25,9 @@ class NotificationsViewModel @Inject constructor(
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications: StateFlow<List<Notification>> = _notifications
 
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount
+
     private var currentFilter: String = "all"
 
     fun loadNotifications(userId: String, filter: String) {
@@ -32,6 +35,7 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val realmNotifications = notificationsRepository.getNotifications(userId, filter)
             _notifications.value = realmNotifications.map { formatNotification(it) }
+            _unreadCount.value = notificationsRepository.getUnreadCount(userId)
         }
     }
 

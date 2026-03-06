@@ -4,11 +4,11 @@ import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Sort
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.AchievementData
 
 interface UserRepository {
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
@@ -74,13 +74,9 @@ interface UserRepository {
 
     @Deprecated("Use getUserModelSuspending() instead")
     fun getUserModel(): RealmUser?
-    @Deprecated("Use getUserModelSuspending() instead")
-    fun getCurrentUser(): RealmUser?
     suspend fun getUserModelSuspending(): RealmUser?
     suspend fun getUserProfile(): RealmUser?
     suspend fun getUserImageUrl(): String?
-    @Deprecated("Use getActiveUserIdSuspending() instead")
-    fun getActiveUserId(): String
     suspend fun getActiveUserIdSuspending(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()

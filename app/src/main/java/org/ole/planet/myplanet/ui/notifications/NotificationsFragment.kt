@@ -39,7 +39,7 @@ class NotificationsFragment : Fragment() {
     private lateinit var userId: String
     private var notificationUpdateListener: OnNotificationsListener? = null
     private lateinit var dashboardActivity: DashboardActivity
-    private var unreadCountCache: Int = 0
+    private var currentFilter: String = "all"
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -72,8 +72,8 @@ class NotificationsFragment : Fragment() {
         binding.status.adapter = spinnerAdapter
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
-                viewModel.loadNotifications(userId, selectedOption)
+                currentFilter = parent.getItemAtPosition(position).toString().lowercase()
+                viewModel.loadNotifications(userId, currentFilter)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -82,10 +82,23 @@ class NotificationsFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.notifications.collect { notifications ->
                 adapter.submitList(notifications)
-                binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
+                val isEmpty = notifications.isEmpty()
+                binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                binding.emptyData.text = when (currentFilter) {
+                    "unread" -> getString(R.string.no_unread_notifications)
+                    "read" -> getString(R.string.no_read_notifications)
+                    else -> getString(R.string.no_notifications)
+                }
+                binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
             }
         }
-        refreshUnreadCountCache()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.unreadCount.collect { count ->
+                notificationUpdateListener?.onNotificationCountUpdated(count)
+                val showButton = count > 0 && currentFilter != "read"
+                binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
+            }
+        }
         binding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
@@ -165,30 +178,10 @@ class NotificationsFragment : Fragment() {
         viewModel.markAllAsRead(userId)
     }
 
-    private fun updateMarkAllAsReadButtonVisibility() {
-        _binding?.let { binding ->
-            binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
-        }
-    }
-
-    private fun updateUnreadCount() {
-        notificationUpdateListener?.onNotificationCountUpdated(unreadCountCache)
-    }
-
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
-            val selectedFilter = binding.status.selectedItem.toString().lowercase()
-            viewModel.loadNotifications(userId, selectedFilter)
-            refreshUnreadCountCache()
-        }
-    }
-
-    private fun refreshUnreadCountCache() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val count = viewModel.getUnreadCount(userId)
-            unreadCountCache = count
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
+            currentFilter = binding.status.selectedItem.toString().lowercase()
+            viewModel.loadNotifications(userId, currentFilter)
         }
     }
 
