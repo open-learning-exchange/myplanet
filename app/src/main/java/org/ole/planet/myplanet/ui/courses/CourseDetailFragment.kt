@@ -28,6 +28,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private val binding get() = _binding!!
     private var id: String? = null
     private val viewModel: CourseDetailViewModel by viewModels()
+    private var isRatingViewInitialized = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,7 +60,9 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                             bindCourseData(state)
                         }
                         is CourseDetailUiState.Error -> {
-                            // Handle error, e.g., show a toast or error message
+                            context?.let { ctx ->
+                                android.widget.Toast.makeText(ctx, state.message, android.widget.Toast.LENGTH_LONG).show()
+                            }
                         }
                     }
                 }
@@ -91,7 +94,10 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setOpenResourceButton(state.downloadedResources, binding.btnOpen)
         setStepsList(state.stepItems)
 
-        initRatingView("course", course.courseId, course.courseTitle, this@CourseDetailFragment)
+        if (!isRatingViewInitialized) {
+            initRatingView("course", course.courseId, course.courseTitle, this@CourseDetailFragment)
+            isRatingViewInitialized = true
+        }
         setRatings(state.ratingSummary)
     }
 
