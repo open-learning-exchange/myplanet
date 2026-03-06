@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -105,7 +105,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    deleteSelected(false)
+                }
+            }
         }
     }
 
@@ -172,12 +176,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             result.exceptionOrNull()?.let {
                 it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
+                Utilities.toast(activity, "An error occurred: ${it.message}")
                 return@launch
             }
 
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+            if (libraryAdded) Utilities.toast(activity, getString(R.string.added_to_my_library))
+            if (courseAdded) Utilities.toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 
@@ -194,39 +198,27 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun deleteSelected(deleteProgress: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            selectedItems?.forEachIndexed { _, item ->
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
+    open suspend fun deleteSelected(deleteProgress: Boolean) {
+        val items = selectedItems?.toList() ?: return
+        items.forEach { item ->
+            val `object` = item as RealmObject
+            val userId = profileDbHandler.getUserModel()?.id
+            if (`object` is RealmMyCourse && userId != null) {
+                if (deleteProgress) {
+                    `object`.courseId?.let { coursesRepository.removeCourseAndProgress(it, userId) }
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                } else {
                     removeFromShelf(`object`)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
-                    }
-                } catch (e: Exception) {
-                    if (mRealm.isInTransaction) {
-                        mRealm.cancelTransaction()
-                    }
-                    throw e
                 }
+            } else {
+                removeFromShelf(`object`)
             }
-            selectedItems?.clear()
         }
+        selectedItems?.clear()
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
-    }
-
-    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
-        }
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
