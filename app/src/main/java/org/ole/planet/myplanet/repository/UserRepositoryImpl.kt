@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,8 +21,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
-import com.google.gson.JsonArray
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -55,11 +55,6 @@ class UserRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         }
-    }
-
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getCurrentUser(): RealmUser? {
-        return getUserModel()
     }
 
     override suspend fun getUserByAnyId(id: String): RealmUser? {
@@ -396,11 +391,6 @@ class UserRepositoryImpl @Inject constructor(
             e.printStackTrace()
             Result.failure(e)
         }
-    }
-
-    @Deprecated("Use getActiveUserIdSuspending() instead")
-    override fun getActiveUserId(): String {
-        return getUserModel()?.id ?: ""
     }
 
     override suspend fun getActiveUserIdSuspending(): String {
