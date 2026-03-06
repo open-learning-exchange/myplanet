@@ -70,7 +70,7 @@ fun SyncActivity.onChangeServerUrl() {
         serverUrl.setText(selected.localDomain)
         protocolCheckIn.check(R.id.radio_https)
         prefData.getServerProtocol().ifEmpty { getString(R.string.https_protocol) }
-        serverPassword.setText(if (selected.weight == 0) "1983" else "")
+        serverPassword.setText(if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else "")
         serverPassword.isEnabled = selected.weight != 0
     }
 }
