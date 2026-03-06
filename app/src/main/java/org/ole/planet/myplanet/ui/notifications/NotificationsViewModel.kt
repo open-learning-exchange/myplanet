@@ -39,12 +39,15 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    companion object {
+        private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+    }
+
     private suspend fun formatNotification(notification: RealmNotification): Notification {
         val formattedText = when (notification.type.lowercase()) {
             "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
             "task" -> {
-                val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
-                val matcher = datePattern.matcher(notification.message)
+                val matcher = TASK_DATE_PATTERN.matcher(notification.message)
                 if (matcher.find()) {
                     val taskTitle = notification.message.substring(0, matcher.start()).trim()
                     val dateValue = notification.message.substring(matcher.start()).trim()
@@ -96,14 +99,38 @@ class NotificationsViewModel @Inject constructor(
     fun markAsRead(notificationId: String, userId: String) {
         viewModelScope.launch {
             notificationsRepository.markNotificationsAsRead(setOf(notificationId))
-            loadNotifications(userId, currentFilter)
+            val currentList = _notifications.value
+            val targetNotification = currentList.find { it.id == notificationId }
+
+            if (targetNotification != null && !targetNotification.isRead) {
+                if (_unreadCount.value > 0) {
+                    _unreadCount.value -= 1
+                }
+
+                if (currentFilter == "unread") {
+                    _notifications.value = currentList.filter { it.id != notificationId }
+                } else {
+                    _notifications.value = currentList.map {
+                        if (it.id == notificationId) it.copy(isRead = true) else it
+                    }
+                }
+            }
         }
     }
 
     fun markAllAsRead(userId: String) {
         viewModelScope.launch {
             notificationsRepository.markAllUnreadAsRead(userId)
-            loadNotifications(userId, currentFilter)
+            val currentList = _notifications.value
+            _unreadCount.value = 0
+
+            if (currentFilter == "unread") {
+                _notifications.value = emptyList()
+            } else {
+                _notifications.value = currentList.map {
+                    if (!it.isRead) it.copy(isRead = true) else it
+                }
+            }
         }
     }
 
