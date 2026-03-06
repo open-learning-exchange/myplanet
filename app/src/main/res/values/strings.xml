@@ -1031,6 +1031,9 @@
     <string name="chart_label">No. of login</string>
     <string name="copied_to_clipboard">copied to clipboard</string>
     <string name="mark_all_as_read">Mark all as read</string>
+    <string name="no_notifications">No notifications</string>
+    <string name="no_unread_notifications">No unread notifications</string>
+    <string name="no_read_notifications">No read notifications</string>
     <string name="mark_as_read">Mark as read</string>
     <string name="our_voices">our voices</string>
     <string name="no_voices_available">no voices available</string>
