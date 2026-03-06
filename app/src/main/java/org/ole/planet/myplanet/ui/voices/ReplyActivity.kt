@@ -106,15 +106,39 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     teamName = "",
                     teamId = null,
                     userSessionManager = userSessionManager,
-                    scope = lifecycleScope,
-                    isTeamLeaderFn = { false },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    isTeamLeaderFn = { onResult ->
+                        onResult(false)
+                        null
                     },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    getUserFn = { userId, onResult ->
+                        lifecycleScope.launch {
+                            onResult(userRepository.getUserById(userId))
+                        }
+                    },
+                    getReplyCountFn = { newsId, onResult ->
+                        lifecycleScope.launch {
+                            onResult(voicesRepository.getReplyCount(newsId))
+                        }
+                    },
+                    deletePostFn = { newsId, onComplete ->
+                        lifecycleScope.launch {
+                            voicesRepository.deletePost(newsId, "")
+                            onComplete()
+                        }
+                    },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                        lifecycleScope.launch {
+                            onResult(voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName))
+                        }
+                    },
+                    getLibraryResourceFn = { resourceId, onResult ->
+                        lifecycleScope.launch {
+                            onResult(voicesRepository.getLibraryResource(resourceId))
+                        }
+                    },
+                    showEditAlertFn = { id, isEdit, currentUser, listener, viewHolder, repository, updateReplyButton ->
+                        VoicesActions.showEditAlert(this@ReplyActivity, id, isEdit, currentUser, listener, viewHolder, repository, lifecycleScope, updateReplyButton)
+                    },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository
                 )

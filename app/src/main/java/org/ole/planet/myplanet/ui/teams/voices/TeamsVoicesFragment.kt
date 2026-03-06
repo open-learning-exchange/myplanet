@@ -180,15 +180,40 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamName = getEffectiveTeamName(),
                     teamId = teamId,
                     userSessionManager = userSessionManager,
-                    scope = viewLifecycleOwner.lifecycleScope,
-                    isTeamLeaderFn = { teamsRepository.isTeamLeader(teamId, user?._id) },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, getEffectiveTeamName()) },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    isTeamLeaderFn = { onResult ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            onResult(teamsRepository.isTeamLeader(teamId, user?._id))
+                        }
                     },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    getUserFn = { userId, onResult ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            onResult(userRepository.getUserById(userId))
+                        }
+                    },
+                    getReplyCountFn = { newsId, onResult ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            onResult(voicesRepository.getReplyCount(newsId))
+                        }
+                    },
+                    deletePostFn = { newsId, onComplete ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            voicesRepository.deletePost(newsId, getEffectiveTeamName())
+                            onComplete()
+                        }
+                    },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            onResult(voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName))
+                        }
+                    },
+                    getLibraryResourceFn = { resourceId, onResult ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            onResult(voicesRepository.getLibraryResource(resourceId))
+                        }
+                    },
+                    showEditAlertFn = { id, isEdit, currentUser, listener, viewHolder, repository, updateReplyButton ->
+                        org.ole.planet.myplanet.ui.voices.VoicesActions.showEditAlert(requireContext(), id, isEdit, currentUser, listener, viewHolder, repository, viewLifecycleOwner.lifecycleScope, updateReplyButton)
+                    },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository
                 )

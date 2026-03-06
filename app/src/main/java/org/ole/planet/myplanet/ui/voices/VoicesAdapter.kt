@@ -65,13 +65,13 @@ class VoicesAdapter(
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userSessionManager: UserSessionManager,
-    private val scope: CoroutineScope,
-    private val isTeamLeaderFn: suspend () -> Boolean,
-    private val getUserFn: suspend (String) -> RealmUser?,
-    private val getReplyCountFn: suspend (String) -> Int,
-    private val deletePostFn: suspend (String) -> Unit,
-    private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
-    private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
+    private val isTeamLeaderFn: ((Boolean) -> Unit) -> kotlinx.coroutines.Job?,
+    private val getUserFn: (String, (RealmUser?) -> Unit) -> kotlinx.coroutines.Job?,
+    private val getReplyCountFn: (String, (Int) -> Unit) -> kotlinx.coroutines.Job?,
+    private val deletePostFn: (String, () -> Unit) -> kotlinx.coroutines.Job?,
+    private val shareNewsFn: (String, String, String, String, String, (Result<Unit>) -> Unit) -> kotlinx.coroutines.Job?,
+    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> kotlinx.coroutines.Job?,
+    private val showEditAlertFn: (String?, Boolean, RealmUser?, OnNewsItemClickListener?, RecyclerView.ViewHolder, VoicesRepository, (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit) -> Unit,
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
@@ -131,10 +131,7 @@ class VoicesAdapter(
             _isTeamLeader = false
             return
         }
-        scope.launch {
-            val isLeader = withTimeoutOrNull(2000) {
-                isTeamLeaderFn()
-            }
+        isTeamLeaderFn { isLeader ->
             _isTeamLeader = isLeader
         }
     }
@@ -277,18 +274,15 @@ class VoicesAdapter(
             showHideButtons(news, holder)
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
-                scope.launch {
-                    val userModel = getUserFn(userId)
+                getUserFn(userId) { userModel ->
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
-                    withContext(Dispatchers.Main) {
-                        if (parentNews?.userId == userId) {
-                            notifyItemChanged(0)
-                        }
-                        currentList.forEachIndexed { index, item ->
-                            if (item?.userId == userId) {
-                                notifyItemChanged(if (parentNews != null) index + 1 else index)
-                            }
+                    if (parentNews?.userId == userId) {
+                        notifyItemChanged(0)
+                    }
+                    currentList.forEachIndexed { index, item ->
+                        if (item?.userId == userId) {
+                            notifyItemChanged(if (parentNews != null) index + 1 else index)
                         }
                     }
                 }
@@ -334,9 +328,8 @@ class VoicesAdapter(
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         if (adjustedPos >= 0 && adjustedPos < snapshotList.size) {
                             val newsToDelete = snapshotList[adjustedPos]
-                            scope.launch {
-                                newsToDelete?.id?.let { deletePostFn(it) }
-                                withContext(Dispatchers.Main) {
+                            newsToDelete?.id?.let { id ->
+                                deletePostFn(id) {
                                     val newList = snapshotList.toMutableList().apply { removeAt(adjustedPos) }
                                     submitListSafely(newList)
                                     parentNews?.id?.let { pid ->
@@ -356,15 +349,13 @@ class VoicesAdapter(
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
+                showEditAlertFn(
                     news.id,
                     true,
                     currentUser,
                     listener,
                     holder,
-                    voicesRepository,
-                    scope
+                    voicesRepository
                 ) { holder, updatedNews, position ->
                     showReplyButton(holder, updatedNews, position)
                     notifyItemChanged(position)
@@ -511,18 +502,9 @@ class VoicesAdapter(
             return
         }
         viewHolder.job?.cancel()
-        viewHolder.job = scope.launch {
-            try {
-                val replyCount = getReplyCountFn(newsId)
-                replyCountCache[newsId] = replyCount
-                withContext(Dispatchers.Main) {
-                    applyReplyCount(viewHolder.binding, replyCount, position)
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        viewHolder.job = getReplyCountFn(newsId) { replyCount ->
+            replyCountCache[newsId] = replyCount
+            applyReplyCount(viewHolder.binding, replyCount, position)
         }
     }
 
@@ -559,15 +541,13 @@ class VoicesAdapter(
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
+                showEditAlertFn(
                     finalNews?.id,
                     false,
                     currentUser,
                     listener,
                     viewHolder,
-                    voicesRepository,
-                    scope
+                    voicesRepository
                 ) { _, _, _ -> }
             }
         } else {
@@ -603,15 +583,12 @@ class VoicesAdapter(
                      val parentCode = currentUser?.parentCode ?: ""
 
                      if (newsId != null && userId != null) {
-                         scope.launch {
-                             val result = shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
-                             withContext(Dispatchers.Main) {
-                                 if (result.isSuccess) {
-                                     Utilities.toast(context, context.getString(R.string.shared_to_community))
-                                     viewHolder.binding.btnShare.visibility = View.GONE
-                                 } else {
-                                     Utilities.toast(context, "Failed to share news")
-                                 }
+                         shareNewsFn(newsId, userId, planetCode, parentCode, teamName) { result ->
+                             if (result.isSuccess) {
+                                 Utilities.toast(context, context.getString(R.string.shared_to_community))
+                                 viewHolder.binding.btnShare.visibility = View.GONE
+                             } else {
+                                 Utilities.toast(context, "Failed to share news")
                              }
                          }
                      }
@@ -729,26 +706,23 @@ class VoicesAdapter(
 
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        scope.launch {
-            val library = getLibraryResourceFn(resourceId)
-            withContext(Dispatchers.Main) {
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    val request = Glide.with(binding.imgNews.context)
-                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                    val target = if (isGif) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
-                    }
-                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(binding.imgNews)
-                    binding.imgNews.visibility = View.VISIBLE
-                    binding.imgNews.setOnClickListener {
-                        showZoomableImage(it.context, imageFile.toString())
-                    }
+        getLibraryResourceFn(resourceId) { library ->
+            val basePath = context.getExternalFilesDir(null)
+            if (library != null && basePath != null) {
+                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                val request = Glide.with(binding.imgNews.context)
+                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val target = if (isGif) {
+                    request.asGif().load(imageFile)
+                } else {
+                    request.load(imageFile)
+                }
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(binding.imgNews)
+                binding.imgNews.visibility = View.VISIBLE
+                binding.imgNews.setOnClickListener {
+                    showZoomableImage(it.context, imageFile.toString())
                 }
             }
         }
@@ -756,37 +730,34 @@ class VoicesAdapter(
 
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        scope.launch {
-            val library = getLibraryResourceFn(resourceId)
-            withContext(Dispatchers.Main) {
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    val imageView = ImageView(context)
-                    val size = (100 * context.resources.displayMetrics.density).toInt()
-                    val margin = (4 * context.resources.displayMetrics.density).toInt()
-                    val params = ViewGroup.MarginLayoutParams(size, size)
-                    params.setMargins(margin, margin, margin, margin)
-                    imageView.layoutParams = params
-                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+        getLibraryResourceFn(resourceId) { library ->
+            val basePath = context.getExternalFilesDir(null)
+            if (library != null && basePath != null) {
+                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                val imageView = ImageView(context)
+                val size = (100 * context.resources.displayMetrics.density).toInt()
+                val margin = (4 * context.resources.displayMetrics.density).toInt()
+                val params = ViewGroup.MarginLayoutParams(size, size)
+                params.setMargins(margin, margin, margin, margin)
+                imageView.layoutParams = params
+                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                    val request = Glide.with(context)
-                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                    val target = if (isGif) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
-                    }
-                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(imageView)
-
-                    imageView.setOnClickListener {
-                        showZoomableImage(context, imageFile.toString())
-                    }
-
-                    binding.llNewsImages.addView(imageView)
+                val request = Glide.with(context)
+                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val target = if (isGif) {
+                    request.asGif().load(imageFile)
+                } else {
+                    request.load(imageFile)
                 }
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(imageView)
+
+                imageView.setOnClickListener {
+                    showZoomableImage(context, imageFile.toString())
+                }
+
+                binding.llNewsImages.addView(imageView)
             }
         }
     }
