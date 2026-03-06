@@ -102,13 +102,6 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         return map
     }
 
-    @Deprecated("Use getCurrentProgress instead")
-    private suspend fun suspendGetCurrentProgress(
-        steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
-    ): Int {
-        return getCurrentProgress(steps, userId, courseId)
-    }
-
     private suspend fun submissionMap(
         submissions: List<RealmSubmission>, examIds: List<String>, obj: JsonObject
     ) {
