@@ -195,44 +195,37 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEachIndexed { _, item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            selectedItems?.forEachIndexed { _, item ->
                 val `object` = item as RealmObject
                 deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
+
+                try {
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    removeFromShelf(`object`)
+                    if (mRealm.isInTransaction) {
+                        mRealm.commitTransaction()
+                    }
+                } catch (e: Exception) {
+                    if (mRealm.isInTransaction) {
+                        mRealm.cancelTransaction()
+                    }
+                    throw e
                 }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
             }
+            selectedItems?.clear()
         }
-        selectedItems?.clear()
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            val examIds = examList.mapNotNull { it.id }.toTypedArray()
-            if (examIds.isNotEmpty()) {
-                mRealm.where(RealmSubmission::class.java)
-                    .`in`("parentId", examIds)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
-            }
+            `object`.courseId?.let { coursesRepository.deleteCourseProgress(it) }
         }
     }
 
