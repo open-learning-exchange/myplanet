@@ -32,6 +32,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import java.io.File
 import java.util.Calendar
 import java.util.Date
@@ -215,7 +217,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun onVersionCheckSuccess() {
                     isSync = false
                     forceSync = true
-                    configurationsRepository.checkVersion(this@SyncActivity, settings)
+                    configurationsRepository.checkVersion(this@SyncActivity, prefData)
                 }
 
                 override fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
@@ -647,7 +649,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
-                if (!serverUrl.isNullOrEmpty()) {
+                if (serverUrl.isNotEmpty()) {
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
@@ -819,13 +821,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         suspend fun clearSharedPref() {
             withContext(Dispatchers.IO) {
-                val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                val editor = settings.edit()
+                val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                val prefs = spm.rawPreferences
+                val editor = prefs.edit()
                 val keysToKeep =
                     setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
                 val tempStorage = HashMap<String, Boolean>()
                 for (key in keysToKeep) {
-                    tempStorage[key] = settings.getBoolean(key, false)
+                    tempStorage[key] = prefs.getBoolean(key, false)
                 }
                 editor.clear().apply()
                 for ((key, value) in tempStorage) {

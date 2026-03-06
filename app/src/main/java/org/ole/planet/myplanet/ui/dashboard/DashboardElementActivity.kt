@@ -15,7 +15,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -37,8 +36,6 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -51,7 +48,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         supportFragmentManager.addOnBackStackChangedListener(this)
     }
 
@@ -143,9 +139,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        val protocol = settings.getString("serverProtocol", "")
-        val serverUrl = "${settings.getString("serverURL", "")}"
-        val serverPin = "${settings.getString("serverPin", "")}"
+        val protocol = prefData.getServerProtocol()
+        val serverUrl = prefData.getServerUrl()
+        val serverPin = prefData.getServerPin()
 
         val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
             serverUrl
@@ -210,7 +206,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     private fun connectToWifi() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return
-        val id = settings.getInt("LastWifiID", -1)
+        val id = prefData.getLastWifiId()
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         val netId: Int
         for (tmp in wifiManager.configuredNetworks) {
@@ -230,8 +226,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         lifecycleScope.launch {
             profileDbHandler.logoutAsync()
             SecurePrefs.clearCredentials(this@DashboardElementActivity)
-            settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
-            settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
+            prefData.setLoggedIn(false)
+            prefData.setNotificationShown(false)
             NotificationUtils.cancelAll(this@DashboardElementActivity)
             
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)

@@ -1,28 +1,31 @@
 package org.ole.planet.myplanet.utils
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.net.toUri
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
+    private fun spm(): SharedPrefManager =
+        EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+
     val header: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val credentials = "${settings.getString("url_user", "")}:${settings.getString("url_pwd", "")}".toByteArray()
+            val spm = spm()
+            val credentials = "${spm.getUrlUser()}:${spm.getUrlPwd()}".toByteArray()
             return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
         }
 
     val hostUrl: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            var scheme = settings.getString("url_Scheme", "")
-            var hostIp = settings.getString("url_Host", "")
-            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
-            val alternativeUrl = settings.getString("processedAlternativeUrl", "")
+            val spm = spm()
+            var scheme = spm.getUrlScheme()
+            var hostIp = spm.getUrlHost()
+            val isAlternativeUrl = spm.isAlternativeUrl()
+            val alternativeUrl = spm.getProcessedAlternativeUrl()
 
 
             if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
@@ -42,21 +45,21 @@ object UrlUtils {
             }
             return finalUrl
         }
-    fun baseUrl(settings: SharedPreferences): String {
-        val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+    fun baseUrl(spm: SharedPrefManager): String {
+        val isAlternativeUrl = spm.isAlternativeUrl()
         var url = if (isAlternativeUrl) {
-            settings.getString("processedAlternativeUrl", "")
+            spm.getProcessedAlternativeUrl()
         } else {
-            settings.getString("couchdbURL", "")
+            spm.getCouchdbUrl()
         }
-        if (url != null && url.endsWith("/db")) {
+        if (url.endsWith("/db")) {
             url = url.removeSuffix("/db")
         }
-        return url ?: ""
+        return url
     }
 
-    fun dbUrl(settings: SharedPreferences): String {
-        val base = baseUrl(settings)
+    fun dbUrl(spm: SharedPrefManager): String {
+        val base = baseUrl(spm)
         return if (base.endsWith("/db")) base else "$base/db"
     }
 
@@ -77,34 +80,31 @@ object UrlUtils {
     }
 
     fun getUrl(): String {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val url = dbUrl(settings)
-        return url
+        return dbUrl(spm())
     }
 
-    fun getUpdateUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
+    fun getUpdateUrl(spm: SharedPrefManager): String {
+        val url = baseUrl(spm)
         return "$url/versions"
     }
 
-    fun getChecksumUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
+    fun getChecksumUrl(spm: SharedPrefManager): String {
+        val url = baseUrl(spm)
         return "$url/fs/myPlanet.apk.sha256"
     }
 
-    fun getHealthAccessUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
-        return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"))
+    fun getHealthAccessUrl(spm: SharedPrefManager): String {
+        val url = baseUrl(spm)
+        return String.format("%s/healthaccess?p=%s", url, spm.getServerPin().ifEmpty { "0000" })
     }
 
-    fun getApkVersionUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
+    fun getApkVersionUrl(spm: SharedPrefManager): String {
+        val url = baseUrl(spm)
         return "$url/apkversion"
     }
 
     fun getApkUpdateUrl(path: String?): String {
-        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val url = baseUrl(preferences)
+        val url = baseUrl(spm())
         return "$url$path"
     }
 }

@@ -52,7 +52,7 @@ class AutoSyncWorker @AssistedInject constructor(
                     Utilities.toast(context, "Syncing started...")
                 }
             }
-            configurationsRepository.checkVersion(this, preferences)
+            configurationsRepository.checkVersion(this, sharedPrefManager)
         }
         return Result.success()
     }

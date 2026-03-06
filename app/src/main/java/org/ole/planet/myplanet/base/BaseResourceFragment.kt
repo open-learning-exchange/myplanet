@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -58,7 +59,6 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
     protected lateinit var mRealm: Realm
-    var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -79,6 +79,8 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
@@ -335,11 +337,10 @@ abstract class BaseResourceFragment : Fragment() {
     open fun onDownloadComplete() {
         prgDialog.dismiss()
 
-        if (settings.getBoolean("isAlternativeUrl", false)) {
-            editor?.putString("alternativeUrl", "")
-            editor?.putString("processedAlternativeUrl", "")
-            editor?.putBoolean("isAlternativeUrl", false)
-            editor?.apply()
+        if (sharedPrefManager.isAlternativeUrl()) {
+            sharedPrefManager.setAlternativeUrl("")
+            sharedPrefManager.setProcessedAlternativeUrl("")
+            sharedPrefManager.setIsAlternativeUrl(false)
         }
     }
 
@@ -381,7 +382,6 @@ abstract class BaseResourceFragment : Fragment() {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
-        editor = settings.edit()
     }
 
     override fun onDetach() {

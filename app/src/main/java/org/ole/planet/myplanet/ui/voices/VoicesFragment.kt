@@ -54,8 +54,6 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var teamsRepository: TeamsRepository
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -168,8 +166,8 @@ class VoicesFragment : BaseVoicesFragment() {
         if (defaultUserIdentifier.isNotEmpty() && defaultUserIdentifier != "@") {
             return defaultUserIdentifier
         }
-        val planetCode = settings.getString("planetCode", "") ?: ""
-        val parentCode = settings.getString("parentCode", "") ?: ""
+        val planetCode = sharedPrefManager.getPlanetCode()
+        val parentCode = sharedPrefManager.getParentCode()
         return "$planetCode@$parentCode"
     }
 

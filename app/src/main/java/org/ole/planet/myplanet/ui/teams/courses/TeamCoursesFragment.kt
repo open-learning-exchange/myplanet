@@ -42,7 +42,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         viewLifecycleOwner.lifecycleScope.launch {
             val courses = teamsRepository.getTeamCourses(teamId)
             val teamCreator = teamsRepository.getTeamCreator(teamId)
-            val currentUserId = settings.getString("userId", "--")
+            val currentUserId = sharedPrefManager.getUserId().ifEmpty { "--" }
             val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
 
             adapterTeamCourse = TeamCoursesAdapter(requireActivity(), canRemove)

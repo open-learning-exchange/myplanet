@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.ui.health
 
 import android.app.DatePickerDialog
-import android.content.Context.MODE_PRIVATE
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -50,7 +48,6 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -78,19 +75,17 @@ class MyHealthFragment : Fragment() {
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
-    lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = sharedPrefManager.getServerUrl()
     private var textWatcher: TextWatcher? = null
     private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startHealthSync()
     }
 
@@ -100,8 +95,8 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun startHealthSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isHealthSynced()) {
+        val isFastSync = sharedPrefManager.getFastSync()
+        if (isFastSync && !sharedPrefManager.isHealthSynced()) {
             checkServerAndStartSync()
         }
     }
@@ -133,7 +128,7 @@ class MyHealthFragment : Fragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshHealthData()
-                        prefManager.setHealthSynced(true)
+                        sharedPrefManager.setHealthSynced(true)
                     }
                 }
             }
@@ -151,7 +146,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }

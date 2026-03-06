@@ -66,6 +66,7 @@ class UploadManager @Inject constructor(
     private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
     @param:AppPreferences private val pref: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
     private val personalsRepository: PersonalsRepository,
@@ -328,7 +329,7 @@ class UploadManager @Inject constructor(
 
                                     if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
                                         val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                                            ?: pref.getString("planetCode", "") ?: ""
+                                            ?: sharedPrefManager.getPlanetCode()
                                         val teamResource = transactionRealm.createObject(
                                             RealmMyTeam::class.java,
                                             UUID.randomUUID().toString()

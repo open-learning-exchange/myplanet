@@ -1,13 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.text.TextUtils
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
@@ -16,14 +11,14 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @param:ApplicationContext private val context: Context
+    private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService), ChatRepository {
 
     private val concatenatedLinks = ArrayList<String>()
@@ -186,8 +181,7 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     private fun saveConcatenatedLinksToPrefs() {
-        val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val existingJsonLinks = settings.getString("concatenated_links", null)
+        val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
         val existingConcatenatedLinks = if (existingJsonLinks != null) {
             JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
         } else {
@@ -203,6 +197,6 @@ class ChatRepositoryImpl @Inject constructor(
             }
         }
         val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
-        settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
+        sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
     }
 }

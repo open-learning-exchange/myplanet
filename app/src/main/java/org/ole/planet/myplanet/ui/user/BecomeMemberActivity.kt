@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -121,8 +120,8 @@ class BecomeMemberActivity : BaseActivity() {
         addProperty("isUserAdmin", false)
         addProperty("joinDate", Calendar.getInstance().timeInMillis)
         addProperty("email", info.email)
-        addProperty("planetCode", settings.getString("planetCode", ""))
-        addProperty("parentCode", settings.getString("parentCode", ""))
+        addProperty("planetCode", prefData.getPlanetCode())
+        addProperty("parentCode", prefData.getParentCode())
         addProperty("language", info.language)
         addProperty("level", info.level)
         addProperty("phoneNumber", info.phoneNumber)
@@ -192,7 +191,6 @@ class BecomeMemberActivity : BaseActivity() {
         val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
 
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         setupTextWatchers()
 
         if (guest) {

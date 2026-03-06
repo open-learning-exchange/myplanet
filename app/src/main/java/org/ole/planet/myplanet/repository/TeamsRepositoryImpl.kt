@@ -46,6 +46,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @param:AppPreferences private val preferences: SharedPreferences,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
 ) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
@@ -965,7 +966,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun syncTeamActivities() {
-        val updateUrl = preferences.getString("serverURL", "") ?: ""
+        val updateUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
@@ -1035,7 +1036,7 @@ class TeamsRepositoryImpl @Inject constructor(
         )
 
         val members = getJoinedMembers(teamId).toMutableList()
-        val communityLeadersJson = preferences.getString("communityLeaders", "") ?: ""
+        val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
 
         if (communityLeadersJson.isNotEmpty()) {
             val adminUsers = RealmUser.parseLeadersJson(communityLeadersJson)

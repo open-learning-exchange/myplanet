@@ -48,7 +48,6 @@ class AchievementFragment : BaseContainerFragment() {
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
@@ -57,11 +56,10 @@ class AchievementFragment : BaseContainerFragment() {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = prefData.getServerUrl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         startAchievementSync()
     }
 
@@ -87,8 +85,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startAchievementSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isAchievementsSynced()) {
+        val isFastSync = prefData.getFastSync()
+        if (isFastSync && !prefData.isAchievementsSynced()) {
             checkServerAndStartSync()
         }
     }
@@ -122,7 +120,7 @@ class AchievementFragment : BaseContainerFragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshAchievementData()
-                        prefManager.setAchievementsSynced(true)
+                        prefData.setAchievementsSynced(true)
                     }
                 }
             }
@@ -142,7 +140,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, prefData.rawPreferences) { url ->
             isServerReachable(url)
         }
     }

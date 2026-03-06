@@ -63,6 +63,7 @@ object ServiceModule {
         databaseService: DatabaseService,
         submissionsRepository: SubmissionsRepository,
         @AppPreferences preferences: SharedPreferences,
+        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         gson: Gson,
         uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
         personalsRepository: PersonalsRepository,
@@ -71,7 +72,7 @@ object ServiceModule {
         uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
         teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, preferences, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository)
+        return UploadManager(context, databaseService, submissionsRepository, preferences, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository)
     }
 
     @Provides
@@ -80,11 +81,12 @@ object ServiceModule {
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
+        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, resourcesRepository, coursesRepository, userRepository)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository)
     }
 
     @Provides

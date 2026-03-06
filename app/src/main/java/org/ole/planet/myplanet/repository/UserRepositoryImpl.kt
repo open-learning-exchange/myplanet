@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
@@ -260,7 +261,7 @@ class UserRepositoryImpl @Inject constructor(
 
     @Deprecated("Use getUserModelSuspending() instead")
     override fun getUserModel(): RealmUser? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return databaseService.withRealm { realm ->
             realm.where(RealmUser::class.java)
                 .equalTo("id", userId)
@@ -272,7 +273,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserModelSuspending(): RealmUser? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
                 .equalTo("id", userId)
@@ -284,7 +285,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserProfile(): RealmUser? {
-        val userId = settings.getString("userId", null)?.takeUnless { it.isBlank() } ?: return null
+        val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return queryList(RealmUser::class.java) {
             equalTo("id", userId).or().equalTo("_id", userId)
         }.firstOrNull()

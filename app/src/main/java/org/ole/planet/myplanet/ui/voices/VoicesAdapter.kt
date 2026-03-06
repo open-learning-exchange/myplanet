@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
@@ -50,7 +49,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -115,12 +113,11 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     private val profileDbHandler = userSessionManager
-    lateinit var settings: SharedPreferences
     private val userCache = mutableMapOf<String, RealmUser?>()
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
-        val raw = settings.getString("communityLeaders", "") ?: ""
+        val raw = sharedPrefManager.getCommunityLeaders()
         RealmUser.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
@@ -174,7 +171,6 @@ class VoicesAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return VoicesViewHolder(binding)
     }
 

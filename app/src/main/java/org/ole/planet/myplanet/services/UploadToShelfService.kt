@@ -44,6 +44,7 @@ class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository
@@ -409,7 +410,7 @@ class UploadToShelfService @Inject constructor(
                         apiInterface.putDoc(
                             UrlUtils.header,
                             "application/json",
-                            "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}",
+                            "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}",
                             shelfData
                         )
                     } catch (e: Exception) {
@@ -451,7 +452,7 @@ class UploadToShelfService @Inject constructor(
                         }
                         shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
-                        val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
+                        val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}"
                         apiInterface.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
                     }
                 }
@@ -474,7 +475,7 @@ class UploadToShelfService @Inject constructor(
         val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
         val mergedCourseIds = mergeJsonArray(myCourseIds, getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
-        `object`.addProperty("_id", sharedPreferences.getString("userId", ""))
+        `object`.addProperty("_id", sharedPrefManager.getUserId())
         `object`.add("meetupIds", mergeJsonArray(myMeetups, getJsonArray("meetupIds", jsonDoc), removedResources))
         `object`.add("resourceIds", mergedResourceIds)
         `object`.add("courseIds", mergedCourseIds)

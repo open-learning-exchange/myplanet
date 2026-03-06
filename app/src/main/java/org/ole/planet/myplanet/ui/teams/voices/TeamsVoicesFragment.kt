@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -37,8 +36,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 

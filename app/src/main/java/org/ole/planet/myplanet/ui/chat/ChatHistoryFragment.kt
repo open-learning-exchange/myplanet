@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
@@ -28,7 +27,6 @@ import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
@@ -58,10 +56,8 @@ class ChatHistoryFragment : Fragment() {
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
     @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private var sharedNewsMessages: List<RealmNews> = emptyList()
@@ -84,12 +80,11 @@ class ChatHistoryFragment : Fragment() {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = sharedPrefManager.getServerUrl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
-        prefManager = SharedPrefManager(requireContext())
         startChatHistorySync()
     }
 
@@ -188,8 +183,8 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun startChatHistorySync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isChatHistorySynced()) {
+        val isFastSync = sharedPrefManager.getFastSync()
+        if (isFastSync && !sharedPrefManager.isChatHistorySynced()) {
             checkServerAndStartSync()
         }
     }
@@ -223,7 +218,7 @@ class ChatHistoryFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-                            prefManager.setChatHistorySynced(true)
+                            sharedPrefManager.setChatHistorySynced(true)
 
                             refreshChatHistory()
                         }
@@ -248,7 +243,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }
@@ -258,12 +253,12 @@ class ChatHistoryFragment : Fragment() {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
 
-            val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
+            val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
             val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
             val targets = cachedTargets ?: loadShareTargets(
-                settings.getString("parentCode", ""),
-                settings.getString("communityName", "")
+                sharedPrefManager.getParentCode(),
+                sharedPrefManager.getCommunityName()
             )
 
             user = currentUser

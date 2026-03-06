@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.teams
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.callback.OnTeamEditListener
 import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
@@ -45,9 +43,6 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
     private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false

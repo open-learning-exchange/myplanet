@@ -69,12 +69,11 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     private var directTeamType: String? = null
     private var directTeamId: String? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val teamLastPage = mutableMapOf<String, String>()
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = prefData.getServerUrl()
     private var pageConfigs: List<TeamPageConfig> = emptyList()
     private var loadTeamJob: Job? = null
 
@@ -114,7 +113,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         startTeamSync()
     }
 
@@ -190,8 +188,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun startTeamSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && prefManager.isTeamsSynced()) {
+        val isFastSync = prefData.getFastSync()
+        if (isFastSync && prefData.isTeamsSynced()) {
             checkServerAndStartSync()
         }
     }
@@ -223,7 +221,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshTeamDetails()
-                        prefManager.setTeamsSynced(true)
+                        prefData.setTeamsSynced(true)
                     }
                 }
             }
@@ -244,7 +242,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, prefData.rawPreferences) { url ->
             isServerReachable(url)
         }
     }

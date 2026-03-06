@@ -31,6 +31,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val activitiesRepository: ActivitiesRepository,
     @param:AppPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
@@ -341,7 +342,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
-        val targetUserId = userId ?: settings.getString("userId", null)
+        val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
         }

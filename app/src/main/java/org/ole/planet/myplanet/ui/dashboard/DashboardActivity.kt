@@ -236,7 +236,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (name.isNullOrBlank()) {
                     name = userProfileModel.name
                 }
-                val communityName = settings.getString("communityName", "")
+                val communityName = prefData.getCommunityName()
                 binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
                     "${getString(R.string.planet)} $communityName"
                 } else {

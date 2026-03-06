@@ -125,7 +125,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
-        val updateUrl = settings.getString("serverURL", "") ?: return
+        val updateUrl = prefData.getServerUrl().ifEmpty { return }
         val mapping = serverUrlMapper.processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
