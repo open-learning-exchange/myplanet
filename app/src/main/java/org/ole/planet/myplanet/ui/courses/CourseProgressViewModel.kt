@@ -21,6 +21,7 @@ class CourseProgressViewModel @Inject constructor(
     val courseProgress: StateFlow<CourseProgressData?> = _courseProgress
 
     fun loadProgress(courseId: String) {
+        if (_courseProgress.value != null) return
         viewModelScope.launch {
             val user = userSessionManager.getUserModel()
             _courseProgress.value = coursesRepository.getCourseProgress(courseId, user?._id)
