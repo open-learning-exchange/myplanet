@@ -113,13 +113,6 @@ interface TeamsRepository {
         createdBy: String,
     ): Boolean
     suspend fun syncTeamActivities()
-    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
-    suspend fun getTeamTransactions(
-        teamId: String,
-        startDate: Long? = null,
-        endDate: Long? = null,
-        sortAscending: Boolean = false,
-    ): Flow<List<RealmMyTeam>>
     suspend fun getTeamTransactionsWithBalance(
         teamId: String,
         startDate: Long? = null,

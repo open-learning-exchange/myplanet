@@ -351,16 +351,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getTeamTransactionsWithBalance instead", ReplaceWith("getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)"))
-    override suspend fun getTeamTransactions(
-        teamId: String,
-        startDate: Long?,
-        endDate: Long?,
-        sortAscending: Boolean,
-    ): Flow<List<RealmMyTeam>> {
-        return queryTransactions(teamId, startDate, endDate, sortAscending)
-    }
-
     override suspend fun getTeamTransactionsWithBalance(
         teamId: String,
         startDate: Long?,
