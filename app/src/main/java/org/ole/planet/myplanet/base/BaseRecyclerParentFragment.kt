@@ -19,8 +19,8 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 getMyLibItems(c as Class<out RealmModel>)
             }
             else -> {
-                val myLibItems = getMyLibItems(c as Class<out RealmModel>)
-                val results = coursesRepository.getAllCourses().filter { !it.courseTitle.isNullOrEmpty() }
+                val results = coursesRepository.getAllCourses()
+                val myLibItems = RealmMyCourse.getMyCourseByUserId(model?.id, results)
                 val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
 
                 when (c) {
