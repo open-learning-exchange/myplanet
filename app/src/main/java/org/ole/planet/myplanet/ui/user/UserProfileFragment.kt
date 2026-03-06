@@ -51,6 +51,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
@@ -140,41 +141,16 @@ class UserProfileFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.offlineVisits.collect {
+                combine(
+                    viewModel.offlineVisits,
+                    viewModel.maxOpenedResource,
+                    viewModel.lastVisit,
+                    viewModel.numberOfResourceOpen
+                ) { _, _, _, _ ->
                     if (isAdded) {
                         setupStatsRecycler()
                     }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.maxOpenedResource.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
-                    }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.lastVisit.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
-                    }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.numberOfResourceOpen.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
-                    }
-                }
+                }.collect {}
             }
         }
     }
