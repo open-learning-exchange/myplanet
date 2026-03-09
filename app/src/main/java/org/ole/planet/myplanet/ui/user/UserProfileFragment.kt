@@ -146,11 +146,12 @@ class UserProfileFragment : Fragment() {
                     viewModel.maxOpenedResource,
                     viewModel.lastVisit,
                     viewModel.numberOfResourceOpen
-                ) { _, _, _, _ ->
-                    if (isAdded) {
-                        setupStatsRecycler()
+                ) { _, _, _, _ -> Unit }
+                    .collect {
+                        if (isAdded) {
+                            setupStatsRecycler()
+                        }
                     }
-                }.collect {}
             }
         }
     }
