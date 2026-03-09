@@ -82,7 +82,7 @@ class NotificationsFragment : Fragment() {
         }
         viewModel.loadNotifications(userId, "all")
         viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.notifications.collect { notifications ->
                         adapter.submitList(notifications)
