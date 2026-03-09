@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.isActive
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -65,13 +66,13 @@ class VoicesAdapter(
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userSessionManager: UserSessionManager,
-    private val isTeamLeaderFn: ((Boolean) -> Unit) -> kotlinx.coroutines.Job?,
-    private val getUserFn: (String, (RealmUser?) -> Unit) -> kotlinx.coroutines.Job?,
-    private val getReplyCountFn: (String, (Int) -> Unit) -> kotlinx.coroutines.Job?,
-    private val deletePostFn: (String, () -> Unit) -> kotlinx.coroutines.Job?,
-    private val shareNewsFn: (String, String, String, String, String, (Result<Unit>) -> Unit) -> kotlinx.coroutines.Job?,
-    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> kotlinx.coroutines.Job?,
-    private val showEditAlertFn: (String?, Boolean, RealmUser?, OnNewsItemClickListener?, RecyclerView.ViewHolder, VoicesRepository, (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit) -> Unit,
+    private val isTeamLeaderFn: ((Boolean) -> Unit) -> (() -> Unit),
+    private val getUserFn: (String, (RealmUser?) -> Unit) -> (() -> Unit),
+    private val getReplyCountFn: (String, (Int) -> Unit) -> (() -> Unit),
+    private val deletePostFn: (String, () -> Unit) -> (() -> Unit),
+    private val shareNewsFn: (String, String, String, String, String, (Result<Unit>) -> Unit) -> (() -> Unit),
+    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> (() -> Unit),
+    private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
@@ -349,16 +350,21 @@ class VoicesAdapter(
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                showEditAlertFn(
-                    news.id,
-                    true,
-                    currentUser,
-                    listener,
-                    holder,
-                    voicesRepository
-                ) { holder, updatedNews, position ->
-                    showReplyButton(holder, updatedNews, position)
-                    notifyItemChanged(position)
+                launchCoroutine {
+                    VoicesActions.showEditAlert(
+                        context,
+                        news.id,
+                        true,
+                        currentUser,
+                        listener,
+                        holder,
+                        voicesRepository,
+                        { h, updatedNews, pos ->
+                            showReplyButton(h, updatedNews, pos)
+                            notifyItemChanged(pos)
+                        },
+                        { action -> launchCoroutine(action) }
+                    )
                 }
             }
         } else {
@@ -369,7 +375,19 @@ class VoicesAdapter(
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
+            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
+                val cancelJob = launchCoroutine {
+                    var currentIndex = 0
+                    while (currentIndex < response.length) {
+                        if (!kotlin.coroutines.coroutineContext.isActive) return@launchCoroutine
+                        onUpdate(response.substring(0, currentIndex + 1))
+                        currentIndex++
+                        kotlinx.coroutines.delay(10L)
+                    }
+                    onComplete()
+                }
+                return@ChatAdapter { cancelJob() }
+            }
 
             if (currentUser?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : OnChatItemClickListener {
@@ -501,10 +519,14 @@ class VoicesAdapter(
             applyReplyCount(viewHolder.binding, cached, position)
             return
         }
-        viewHolder.job?.cancel()
-        viewHolder.job = getReplyCountFn(newsId) { replyCount ->
-            replyCountCache[newsId] = replyCount
-            applyReplyCount(viewHolder.binding, replyCount, position)
+        viewHolder.cancelJob?.invoke()
+        viewHolder.cancelJob = getReplyCountFn(newsId) { replyCount ->
+            try {
+                replyCountCache[newsId] = replyCount
+                applyReplyCount(viewHolder.binding, replyCount, position)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -541,14 +563,19 @@ class VoicesAdapter(
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                showEditAlertFn(
-                    finalNews?.id,
-                    false,
-                    currentUser,
-                    listener,
-                    viewHolder,
-                    voicesRepository
-                ) { _, _, _ -> }
+                launchCoroutine {
+                    VoicesActions.showEditAlert(
+                        context,
+                        finalNews?.id,
+                        false,
+                        currentUser,
+                        listener,
+                        viewHolder,
+                        voicesRepository,
+                        { _, _, _ -> },
+                        { action -> launchCoroutine(action) }
+                    )
+                }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
@@ -611,7 +638,7 @@ class VoicesAdapter(
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
-            holder.job?.cancel()
+            holder.cancelJob?.invoke()
         }
     }
 
@@ -786,7 +813,7 @@ class VoicesAdapter(
     }
 
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
-        var job: kotlinx.coroutines.Job? = null
+        var cancelJob: (() -> Unit)? = null
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position

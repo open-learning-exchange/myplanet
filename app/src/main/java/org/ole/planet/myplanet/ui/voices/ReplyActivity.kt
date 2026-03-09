@@ -107,37 +107,53 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     teamId = null,
                     userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
-                        onResult(false)
-                        null
+                        val job = lifecycleScope.launch {
+                            onResult(false)
+                        }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     getUserFn = { userId, onResult ->
-                        lifecycleScope.launch {
-                            onResult(userRepository.getUserById(userId))
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = userRepository.getUserById(userId)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     getReplyCountFn = { newsId, onResult ->
-                        lifecycleScope.launch {
-                            onResult(voicesRepository.getReplyCount(newsId))
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val result = voicesRepository.getReplyCount(newsId)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     deletePostFn = { newsId, onComplete ->
-                        lifecycleScope.launch {
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
                             voicesRepository.deletePost(newsId, "")
-                            onComplete()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                        lifecycleScope.launch {
-                            onResult(voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName))
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        lifecycleScope.launch {
-                            onResult(voicesRepository.getLibraryResource(resourceId))
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = voicesRepository.getLibraryResource(resourceId)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
-                    showEditAlertFn = { id, isEdit, currentUser, listener, viewHolder, repository, updateReplyButton ->
-                        VoicesActions.showEditAlert(this@ReplyActivity, id, isEdit, currentUser, listener, viewHolder, repository, lifecycleScope, updateReplyButton)
+                    launchCoroutine = { action ->
+                        val job = lifecycleScope.launch { action() }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository

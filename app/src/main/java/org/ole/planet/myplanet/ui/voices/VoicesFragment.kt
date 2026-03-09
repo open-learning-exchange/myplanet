@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
@@ -210,37 +212,53 @@ class VoicesFragment : BaseVoicesFragment() {
                 teamId = null,
                 userSessionManager = userSessionManager,
                 isTeamLeaderFn = { onResult ->
-                    onResult(false)
-                    null
+                    val job = viewLifecycleOwner.lifecycleScope.launch {
+                        onResult(false)
+                    }
+                    return@VoicesAdapter { job.cancel() }
                 },
                 getUserFn = { userId, onResult ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        onResult(userRepository.getUserById(userId))
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val result = userRepository.getUserById(userId)
+                        withContext(Dispatchers.Main) { onResult(result) }
                     }
+                    return@VoicesAdapter { job.cancel() }
                 },
                 getReplyCountFn = { newsId, onResult ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        onResult(voicesRepository.getReplyCount(newsId))
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            val result = voicesRepository.getReplyCount(newsId)
+                            withContext(Dispatchers.Main) { onResult(result) }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
+                    return@VoicesAdapter { job.cancel() }
                 },
                 deletePostFn = { newsId, onComplete ->
-                    viewLifecycleOwner.lifecycleScope.launch {
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                         voicesRepository.deletePost(newsId, "")
-                        onComplete()
+                        withContext(Dispatchers.Main) { onComplete() }
                     }
+                    return@VoicesAdapter { job.cancel() }
                 },
                 shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        onResult(voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName))
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                        withContext(Dispatchers.Main) { onResult(result) }
                     }
+                    return@VoicesAdapter { job.cancel() }
                 },
                 getLibraryResourceFn = { resourceId, onResult ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        onResult(voicesRepository.getLibraryResource(resourceId))
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val result = voicesRepository.getLibraryResource(resourceId)
+                        withContext(Dispatchers.Main) { onResult(result) }
                     }
+                    return@VoicesAdapter { job.cancel() }
                 },
-                showEditAlertFn = { id, isEdit, currentUser, listener, viewHolder, repository, updateReplyButton ->
-                    VoicesActions.showEditAlert(requireContext(), id, isEdit, currentUser, listener, viewHolder, repository, viewLifecycleOwner.lifecycleScope, updateReplyButton)
+                launchCoroutine = { action ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch { action() }
+                    return@VoicesAdapter { job.cancel() }
                 },
                 labelManager = labelManager,
                 voicesRepository = voicesRepository
