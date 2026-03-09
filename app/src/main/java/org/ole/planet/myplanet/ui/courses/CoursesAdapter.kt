@@ -318,7 +318,7 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { !it.isMyCourse }
+        val selectableCourses = currentList.filter { !it.isMyCourse || isMyCourseLib }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
