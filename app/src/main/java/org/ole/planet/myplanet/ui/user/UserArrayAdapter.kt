@@ -53,8 +53,10 @@ class UserArrayAdapter(
         }
 
         holder.itemView.setOnClickListener {
+            val currentPos = holder.bindingAdapterPosition
+            if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
             val oldPos = selectedPosition
-            selectedPosition = holder.bindingAdapterPosition
+            selectedPosition = currentPos
             notifyItemChanged(oldPos)
             notifyItemChanged(selectedPosition)
             onItemClick(user)

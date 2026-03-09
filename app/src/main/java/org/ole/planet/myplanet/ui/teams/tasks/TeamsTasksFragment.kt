@@ -145,10 +145,11 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     .setView(alertUsersSpinnerBinding.root)
                     .setCancelable(false)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        if (dialogSelectedItem != null) {
-                            selectedAssignee = dialogSelectedItem
-                            val displayName = selectedAssignee?.getFullName()?.ifBlank {
-                                selectedAssignee?.name ?: getString(R.string.no_assignee)
+                        val user = dialogSelectedItem
+                        if (user != null) {
+                            selectedAssignee = user
+                            val displayName = user.getFullName().ifBlank {
+                                user.name ?: getString(R.string.no_assignee)
                             }
                             alertTaskBinding.tvAssignMember.text = displayName
                             alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
@@ -326,19 +327,19 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 .setTitle(R.string.select_member)
                 .setView(alertUsersSpinnerBinding.root).setCancelable(false)
                 .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (dialogSelectedItem == null) {
+                    val user = dialogSelectedItem
+                    if (user == null) {
                         Toast.makeText(context, R.string.no_member_selected, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    val user = dialogSelectedItem
                     val taskId = realmTeamTask?.id
                     if (taskId.isNullOrBlank()) {
                         Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamsRepository.assignTask(taskId, user?.id)
-                        Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user?.name)
+                        teamsRepository.assignTask(taskId, user.id)
+                        Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                         updateTasks()
                     }
                 }
