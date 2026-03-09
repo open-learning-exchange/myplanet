@@ -236,7 +236,11 @@ class UploadManager @Inject constructor(
         }
 
         withContext(Dispatchers.IO) {
+            data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
+
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
+                val successfulUploads = mutableListOf<UploadedPhotoInfo>()
+
                 batch.forEach { (photoId, serialized) ->
                     try {
                         val `object` = apiInterface.postDoc(
@@ -250,17 +254,28 @@ class UploadManager @Inject constructor(
 
                             submissionsRepository.markPhotoUploaded(photoId, rev, id)
 
-                            listener?.let {
-                                val photo = databaseService.withRealm { realm ->
-                                    realm.where(RealmSubmitPhotos::class.java)
-                                        .equalTo("id", photoId).findFirst()
-                                        ?.let { realm.copyFromRealm(it) }
-                                }
-                                photo?.let { uploadAttachment(id, rev, it, listener) }
+                            if (listener != null && photoId != null) {
+                                successfulUploads.add(UploadedPhotoInfo(photoId, rev, id))
                             }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                    }
+                }
+
+                if (listener != null && successfulUploads.isNotEmpty()) {
+                    val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
+                    val photos = databaseService.withRealm { realm ->
+                        val results = realm.where(RealmSubmitPhotos::class.java)
+                            .`in`("id", photoIds).findAll()
+                        realm.copyFromRealm(results)
+                    }
+
+                    photos?.forEach { photo ->
+                        val uploadInfo = successfulUploads.find { it.photoId == photo.id }
+                        if (uploadInfo != null) {
+                            uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
+                        }
                     }
                 }
             }
