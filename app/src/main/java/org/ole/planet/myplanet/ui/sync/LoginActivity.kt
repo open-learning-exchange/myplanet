@@ -549,10 +549,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     }
                 }
             } else {
-                val decryptedPassword = if (user.password?.isNotEmpty() == true) {
-                    SecurePrefs.decryptString(this, user.password!!)
-                } else {
-                    user.password
+                val decryptedPassword = user.password?.takeIf { it.isNotEmpty() }?.let {
+                    val decrypted = SecurePrefs.decryptString(this, it)
+                    if (decrypted == null && it.length > 30) {
+                        toast(this, getString(R.string.err_msg_login))
+                        null
+                    } else {
+                        decrypted ?: it
+                    }
                 }
                 submitForm(user.name, decryptedPassword)
             }
@@ -612,22 +616,22 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             } else {
                 password
             }
+            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
             if (source == "guest") {
                 val newUser = User("", name, encryptedPassword, "", "guest")
-                val existingUsers: MutableList<User> = ArrayList(
-                    prefData.getSavedUsers()
-                )
-                var newUserExists = false
-                for ((_, name1) in existingUsers) {
-                    if (name1 == newUser.name?.trim { it <= ' ' }) {
-                        newUserExists = true
+                var newUserIndex = -1
+                for (i in existingUsers.indices) {
+                    if (existingUsers[i].name == newUser.name?.trim { it <= ' ' }) {
+                        newUserIndex = i
                         break
                     }
                 }
-                if (!newUserExists) {
+                if (newUserIndex != -1) {
+                    existingUsers[newUserIndex] = newUser
+                } else {
                     existingUsers.add(newUser)
-                    prefData.setSavedUsers(existingUsers)
                 }
+                prefData.setSavedUsers(existingUsers)
             } else if (source == "member") {
                 val userModel = profileDbHandler.getUserModel()
                 var userProfile = userModel?.userImage
@@ -636,18 +640,19 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     userProfile = ""
                 }
                 val newUser = User(userName, name, encryptedPassword, userProfile, "member")
-                val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
-                var newUserExists = false
-                for ((fullName1) in existingUsers) {
-                    if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
-                        newUserExists = true
+                var newUserIndex = -1
+                for (i in existingUsers.indices) {
+                    if (existingUsers[i].fullName == newUser.fullName?.trim { it <= ' ' }) {
+                        newUserIndex = i
                         break
                     }
                 }
-                if (!newUserExists) {
+                if (newUserIndex != -1) {
+                    existingUsers[newUserIndex] = newUser
+                } else {
                     existingUsers.add(newUser)
-                    prefData.setSavedUsers(existingUsers)
                 }
+                prefData.setSavedUsers(existingUsers)
             }
         }
     }
