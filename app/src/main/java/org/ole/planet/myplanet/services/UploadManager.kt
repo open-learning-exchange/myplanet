@@ -619,15 +619,37 @@ class UploadManager @Inject constructor(
                     }
                 }
 
+                val uploadsWithoutId = successfulUploads.filter { it.id == null }
+                val fallbackLogs = mutableMapOf<Triple<Long?, String?, String?>, RealmTeamLog>()
+
+                if (uploadsWithoutId.isNotEmpty()) {
+                    uploadsWithoutId.chunked(250).forEach { chunk ->
+                        val query = realm.where(RealmTeamLog::class.java)
+                        query.beginGroup()
+                        chunk.forEachIndexed { index, upload ->
+                            if (index > 0) query.or()
+                            query.beginGroup()
+                                .equalTo("time", upload.time)
+                                .equalTo("user", upload.user)
+                                .equalTo("type", upload.type)
+                            .endGroup()
+                        }
+                        query.endGroup()
+
+                        val results = query.findAll()
+                        results.forEach { log ->
+                            val key = Triple(log.time, log.user, log.type)
+                            fallbackLogs[key] = log
+                        }
+                    }
+                }
+
                 successfulUploads.forEach { upload ->
                     val managedLog = if (upload.id != null) {
                         managedLogs[upload.id]
                     } else {
-                        realm.where(RealmTeamLog::class.java)
-                            .equalTo("time", upload.time)
-                            .equalTo("user", upload.user)
-                            .equalTo("type", upload.type)
-                            .findFirst()
+                        val key = Triple(upload.time, upload.user, upload.type)
+                        fallbackLogs[key]
                     }
                     managedLog?._id = upload._id
                     managedLog?._rev = upload._rev
