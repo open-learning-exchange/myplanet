@@ -549,16 +549,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     }
                 }
             } else {
-                val decryptedPassword = user.password?.takeIf { it.isNotEmpty() }?.let {
-                    val decrypted = SecurePrefs.decryptString(this, it)
-                    if (decrypted == null && it.length > 30) {
-                        toast(this, getString(R.string.err_msg_login))
-                        null
-                    } else {
-                        decrypted ?: it
-                    }
+                val password = user.password
+                val decrypted = if (password.isNullOrEmpty()) null else SecurePrefs.decryptString(this, password)
+
+                if (decrypted == null && password?.let { it.length > 30 } == true) {
+                    toast(this, getString(R.string.err_msg_login))
+                    binding.inputName.setText(user.name)
+                    binding.inputPassword.requestFocus()
+                } else {
+                    submitForm(user.name, decrypted ?: password)
                 }
-                submitForm(user.name, decryptedPassword)
             }
         }
     }
