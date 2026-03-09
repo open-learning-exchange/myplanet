@@ -307,17 +307,15 @@ class CoursesRepositoryImpl @Inject constructor(
             }
             val examsByStepId = allExams.groupBy { it.stepId }
 
-            val allQuestions = mutableListOf<RealmExamQuestion>()
             val examIds = allExams.mapNotNull { it.id }
-            if (examIds.isNotEmpty()) {
-                examIds.chunked(1000).forEach { chunk ->
-                    val chunkQuestions = realm.where(RealmExamQuestion::class.java)
-                        .`in`("examId", chunk.toTypedArray())
-                        .findAll()
-                    allQuestions.addAll(chunkQuestions)
-                }
+            val questionsByExamId = if (examIds.isNotEmpty()) {
+                realm.where(RealmExamQuestion::class.java)
+                    .`in`("examId", examIds.toTypedArray())
+                    .findAll()
+                    .groupBy { it.examId }
+            } else {
+                emptyMap()
             }
-            val questionsByExamId = allQuestions.groupBy { it.examId }
 
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
@@ -343,7 +341,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
                     .contains("parentId", it1).equalTo("type", "exam").findAll()
             }?.map { submission ->
-                val answersCount = submission.answers?.size ?: 0
+                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", submission.id).findAll()
                 var examId = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
                     examId = submission.parentId!!.split("@")[0]
@@ -354,8 +352,8 @@ class CoursesRepositoryImpl @Inject constructor(
                     ob.addProperty("completed", false)
                     ob.addProperty("percentage", 0)
                 } else {
-                    ob.addProperty("completed", answersCount == questionCount)
-                    val percentage = (answersCount.toDouble() / questionCount) * 100
+                    ob.addProperty("completed", answers.size == questionCount)
+                    val percentage = (answers.size.toDouble() / questionCount) * 100
                     ob.addProperty("percentage", percentage)
                 }
                 ob.addProperty("status", submission.status)
