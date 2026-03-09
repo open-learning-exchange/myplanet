@@ -4,6 +4,8 @@ import android.content.Intent
 import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
@@ -37,10 +39,19 @@ class RetryInterceptor @Inject constructor(
             broadcastService.trySendBroadcast(intent)
 
             try {
-                Thread.sleep(delay)
+                runBlocking {
+                    delay(delay)
+                }
             } catch (e: InterruptedException) {
                 Thread.currentThread().interrupt()
                 throw IOException("Interrupted during retry delay", e)
+            } catch (e: Exception) {
+                // Handle coroutine cancellation or other exceptions
+                if (e is kotlinx.coroutines.CancellationException) {
+                    Thread.currentThread().interrupt()
+                    throw IOException("Coroutine cancelled during retry delay", e)
+                }
+                throw e
             }
 
             response = chain.proceed(request)
