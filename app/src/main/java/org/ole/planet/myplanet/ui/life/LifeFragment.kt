@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener, OnItemMoveListener {
     private lateinit var lifeAdapter: LifeAdapter
     private var itemTouchHelper: ItemTouchHelper? = null
+    private var dragList: MutableList<RealmMyLife?> = mutableListOf()
     @Inject
     lateinit var lifeRepository: LifeRepository
     private var _binding: FragmentLifeBinding? = null
@@ -83,8 +84,9 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener, 
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = profileDbHandler.getUserModel()?.id
             val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+            dragList = myLifeList.toMutableList()
             if (::lifeAdapter.isInitialized) {
-                lifeAdapter.submitList(myLifeList)
+                lifeAdapter.submitList(dragList.toList())
             }
         }
     }
@@ -99,14 +101,16 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener, 
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        val newList = lifeAdapter.currentList.toMutableList()
-        val movedItem = newList.removeAt(fromPosition)
-        newList.add(toPosition, movedItem)
-        lifeAdapter.submitList(newList)
+        if (fromPosition < 0 || fromPosition >= dragList.size || toPosition < 0 || toPosition >= dragList.size) {
+            return false
+        }
+        val movedItem = dragList.removeAt(fromPosition)
+        dragList.add(toPosition, movedItem)
+        lifeAdapter.submitList(dragList.toList())
 
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
-                lifeRepository.updateMyLifeListOrder(newList.filterNotNull())
+                lifeRepository.updateMyLifeListOrder(dragList.filterNotNull())
             }
         }
         return true
