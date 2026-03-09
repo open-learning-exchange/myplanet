@@ -7,6 +7,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowSystemClock
 import java.util.Locale
 import java.util.TimeZone
 
@@ -18,6 +19,9 @@ class TimeUtilsTest {
         Locale.setDefault(Locale.US)
         // Set fixed timezone for deterministic tests where systemDefault is used
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+
+        // Pin the system time to 2024-03-05 16:00:00 UTC for deterministic age calculation
+        ShadowSystemClock.setSystemTime(1709654400000L)
     }
 
     @Test
@@ -40,9 +44,8 @@ class TimeUtilsTest {
     fun testGetFormattedDate_withNull() {
         val result = TimeUtils.getFormattedDate(null)
         assertNotNull(result)
-        assertTrue("Result should not be N/A", result != "N/A")
-        val pattern = """^[A-Za-z]+, [A-Za-z]+ \d{2}, \d{4}$""".toRegex()
-        assertTrue("Result '$result' does not match pattern", pattern.matches(result))
+        // With pinned time, result should be exactly this:
+        assertEquals("Tuesday, Mar 05, 2024", result)
     }
 
     @Test
@@ -59,6 +62,26 @@ class TimeUtilsTest {
         // Pattern: "yyyy-MM-dd HH:mm:ss"
         val result = TimeUtils.formatDateTZ(timestamp)
         assertEquals("2024-03-05 16:00:00", result)
+    }
+
+    @Test
+    fun testGetAge() {
+        // Reference time is 2024-03-05
+        val age = TimeUtils.getAge("1990-01-01")
+        assertEquals(34, age)
+
+        val ageJustTurned = TimeUtils.getAge("1990-03-05")
+        assertEquals(34, ageJustTurned)
+
+        val ageAlmostTurned = TimeUtils.getAge("1990-03-06")
+        assertEquals(33, ageAlmostTurned)
+    }
+
+    @Test
+    fun testGetAge_withDateTime() {
+        // Reference time is 2024-03-05
+        val age = TimeUtils.getAge("1990-01-01 10:00:00")
+        assertEquals(34, age)
     }
 
     @Test
@@ -135,19 +158,20 @@ class TimeUtilsTest {
 
     @Test
     fun testGetRelativeTime_past() {
-        val now = System.currentTimeMillis()
-        val hourAgo = now - 3600 * 1000
+        // Since system time is pinned to 1709654400000 (2024-03-05 16:00:00 UTC)
+        val hourAgo = 1709654400000L - 3600 * 1000
         val result = TimeUtils.getRelativeTime(hourAgo)
-        assertTrue(result.contains("ago") || result.contains("hour"))
+        // DateUtils.getRelativeTimeSpanString should use the pinned time
+        assertTrue("Expected relative time string, got '$result'", result.contains("ago") || result.contains("hour"))
     }
 
     @Test
     fun testGetRelativeTime_future() {
-        val now = System.currentTimeMillis()
+        val pinnedTime = 1709654400000L
         // Note: The function collapses all future timestamps into a single "Just now" string.
         // This includes events even years in the future.
-        val hourHence = now + 3600 * 1000
-        val yearHence = now + (365L * 24 * 3600 * 1000)
+        val hourHence = pinnedTime + 3600 * 1000
+        val yearHence = pinnedTime + (365L * 24 * 3600 * 1000)
 
         assertEquals("Future timestamps should return 'Just now'", "Just now", TimeUtils.getRelativeTime(hourHence))
         assertEquals("Distant future timestamps should also return 'Just now'", "Just now", TimeUtils.getRelativeTime(yearHence))
