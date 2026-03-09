@@ -159,8 +159,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         )
 
-        @Suppress("DEPRECATION")
-        user = userSessionManager.userModel
+        user = kotlinx.coroutines.runBlocking { userSessionManager.getUserModel() }
         checkUser()
         updateAppTitle()
         if (handleGuestAccess()) return
