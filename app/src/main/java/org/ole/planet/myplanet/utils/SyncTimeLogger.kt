@@ -219,7 +219,7 @@ object SyncTimeLogger {
             .filter { !it.key.endsWith(":start") }
             .sortedByDescending { it.value }
             .forEach { (process, duration) ->
-                val percentage = (duration.toDouble() / totalDuration.toDouble() * 100).roundToInt()
+                val percentage = if (duration > 0 && totalDuration > 0) (duration * 100.0 / totalDuration).roundToInt() else 0
                 val itemCount = processItemCounts[process] ?: 0
 
                 if (itemCount > 0) {
