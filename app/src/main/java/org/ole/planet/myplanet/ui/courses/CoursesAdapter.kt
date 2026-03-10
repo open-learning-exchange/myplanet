@@ -318,7 +318,7 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { !it.isMyCourse }
+        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
@@ -327,12 +327,12 @@ class CoursesAdapter(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filter { !it.isMyCourse }
+            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
             selectedItems.addAll(selectableCourses)
         }
 
         currentList.forEachIndexed { index, course ->
-            if (!course.isMyCourse) {
+            if (isMyCourseLib || !course.isMyCourse) {
                 notifyItemChanged(index)
             }
         }

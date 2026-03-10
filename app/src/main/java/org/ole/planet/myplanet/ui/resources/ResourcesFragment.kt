@@ -334,7 +334,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        deleteSelected(true)
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -760,24 +762,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return filteredList
     }
 
-    override fun deleteSelected(deleteProgress: Boolean) {
+    override suspend fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 itemsToDelete.forEach { resourceId ->
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
             }
+            if (_binding == null) return
+            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+            refreshResourcesData()
+            selectedItems?.clear()
+            changeButtonStatus()
+            hideButton()
         }
     }
 
