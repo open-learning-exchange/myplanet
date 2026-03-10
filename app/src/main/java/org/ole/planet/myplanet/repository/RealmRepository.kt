@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
@@ -66,7 +65,6 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                         listener?.let { l ->
                             if (res.isValid) {
                                 res.removeChangeListener(l)
-                                Log.d("RealmRepository", "queryListFlow: listener removed")
                             }
                         }
                     }
@@ -77,7 +75,6 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                     realm?.let { r ->
                         if (!r.isClosed) {
                             r.close()
-                            Log.d("RealmRepository", "queryListFlow: realm closed")
                         }
                     }
                 } catch (e: Exception) {
