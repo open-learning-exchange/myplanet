@@ -707,8 +707,15 @@ class UploadManager @Inject constructor(
                 }
         }
 
+        data class NewsUpdateData(
+            val id: String?,
+            val body: JsonObject?,
+            val imagesArray: com.google.gson.JsonArray
+        )
+
         withContext(Dispatchers.IO) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
+                val successfulUpdates = mutableListOf<NewsUpdateData>()
                 batch.forEach { news ->
                     try {
                         // Upload images first and collect metadata
@@ -776,19 +783,39 @@ class UploadManager @Inject constructor(
 
                         // Update database on success
                         if (newsResponse.isSuccessful && newsResponse.body() != null) {
-                            databaseService.executeTransactionAsync { realm ->
-                                realm.where(RealmNews::class.java)
-                                    .equalTo("id", news.id)
-                                    .findFirst()?.let { managedNews ->
-                                        managedNews.imageUrls?.clear()
-                                        managedNews._id = getString("id", newsResponse.body())
-                                        managedNews._rev = getString("rev", newsResponse.body())
-                                        managedNews.images = gson.toJson(imagesArray)
-                                    }
-                            }
+                            successfulUpdates.add(NewsUpdateData(news.id, newsResponse.body(), imagesArray))
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
+                    }
+                }
+
+                if (successfulUpdates.isNotEmpty()) {
+                    databaseService.executeTransactionAsync { realm ->
+                        val ids = successfulUpdates.mapNotNull { it.id }
+                        val managedNewsMap = mutableMapOf<String, RealmNews>()
+
+                        if (ids.isNotEmpty()) {
+                            ids.chunked(999).forEach { chunk ->
+                                val results = realm.where(RealmNews::class.java)
+                                    .`in`("id", chunk.toTypedArray())
+                                    .findAll()
+                                results.forEach { n ->
+                                    n.id?.let { id -> managedNewsMap[id] = n }
+                                }
+                            }
+                        }
+
+                        successfulUpdates.forEach { update ->
+                            update.id?.let { id ->
+                                managedNewsMap[id]?.let { managedNews ->
+                                    managedNews.imageUrls?.clear()
+                                    managedNews._id = getString("id", update.body)
+                                    managedNews._rev = getString("rev", update.body)
+                                    managedNews.images = gson.toJson(update.imagesArray)
+                                }
+                            }
+                        }
                     }
                 }
             }
