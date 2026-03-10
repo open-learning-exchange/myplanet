@@ -49,7 +49,6 @@ class TransactionSyncManager @Inject constructor(
                 UrlUtils.header,
                 targetUrl
             )
-
             val code = response.code()
             return code == 200
         } catch (e: Exception) {
@@ -69,7 +68,6 @@ class TransactionSyncManager @Inject constructor(
                 val users = databaseService.withRealm { realm ->
                     realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
                 }
-
                 users.forEach { userModel ->
                     syncHealthData(userModel, header)
                 }
@@ -129,11 +127,9 @@ class TransactionSyncManager @Inject constructor(
                 val userModel = databaseService.withRealm { realm ->
                     realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
                 }
-
                 if (userModel != null) {
                     syncHealthData(userModel, header)
                 }
-
                 withContext(Dispatchers.Main) {
                     listener.onSyncComplete()
                 }
@@ -148,7 +144,6 @@ class TransactionSyncManager @Inject constructor(
     suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
-
         try {
             // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
@@ -156,7 +151,6 @@ class TransactionSyncManager @Inject constructor(
                 "submissions" -> 100  // Medium batches for slow endpoint
                 else -> 1000          // Large batches for fast endpoints
             }
-
             var skip = 0
             var totalDocs = 0
             var batchNumber = 0
@@ -165,7 +159,6 @@ class TransactionSyncManager @Inject constructor(
             while (true) {
                 batchNumber++
                 val batchStartTime = System.currentTimeMillis()
-
                 // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
                 val response = apiInterface.findDocs(
@@ -175,24 +168,20 @@ class TransactionSyncManager @Inject constructor(
                     JsonObject() // Empty body for GET-style query
                 )
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
-
                 if (response.body() == null || !response.isSuccessful) {
                     android.util.Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
                 }
-
                 val arr = getJsonArray("rows", response.body())
                 if (arr.size() == 0) {
                     break // No more documents
                 }
-
                 org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
                     "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
                     arr.size()
                 )
-
                 if (table == "news") {
                     val insertStartTime = System.currentTimeMillis()
                     val docs = mutableListOf<JsonObject>()
@@ -204,9 +193,7 @@ class TransactionSyncManager @Inject constructor(
                             docs.add(jsonDoc)
                         }
                     }
-
                     chatRepository.insertNewsList(docs)
-
                     val insertDuration = System.currentTimeMillis() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
@@ -225,9 +212,7 @@ class TransactionSyncManager @Inject constructor(
                             docs.add(jsonDoc)
                         }
                     }
-
                     feedbackRepository.insertFeedbackList(docs)
-
                     val insertDuration = System.currentTimeMillis() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
@@ -239,18 +224,14 @@ class TransactionSyncManager @Inject constructor(
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-
                         if (table == "chat_history") {
                             insertToChat(arr, mRealm)
                         }
                         insertDocs(arr, mRealm, table)
-
                         val insertDuration = System.currentTimeMillis() - insertStartTime
-
                         if (table == "courses") {
                             android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
                         }
-
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
                             table,
@@ -259,24 +240,19 @@ class TransactionSyncManager @Inject constructor(
                         )
                     }
                 }
-
                 totalDocs += arr.size()
                 skip += arr.size()
-
                 val batchDuration = System.currentTimeMillis() - batchStartTime
                 android.util.Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
-
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
-
                 // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
                     break
                 }
             }
-
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
         } catch (e: Exception) {
@@ -293,7 +269,6 @@ class TransactionSyncManager @Inject constructor(
             jsonDoc = getJsonObject("doc", jsonDoc)
             chatHistoryList.add(jsonDoc)
         }
-
         chatHistoryList.forEach { jsonDoc ->
             insert(mRealm, jsonDoc)
         }
@@ -301,7 +276,6 @@ class TransactionSyncManager @Inject constructor(
 
     private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
         val documentList = mutableListOf<JsonObject>()
-
         for (j in arr) {
             var jsonDoc = j.asJsonObject
             jsonDoc = getJsonObject("doc", jsonDoc)
@@ -310,12 +284,9 @@ class TransactionSyncManager @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
-
-
         documentList.forEach { jsonDoc ->
             continueInsert(mRealm, table, jsonDoc)
         }
-
         saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
 
@@ -324,11 +295,9 @@ class TransactionSyncManager @Inject constructor(
             "exams" -> {
                 insertCourseStepsExams("", "", jsonDoc, mRealm)
             }
-
             "tablet_users" -> {
                 populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
             }
-
             else -> {
                 callMethod(mRealm, jsonDoc, table)
             }
