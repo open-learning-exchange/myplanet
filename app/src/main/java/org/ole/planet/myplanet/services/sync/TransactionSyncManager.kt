@@ -302,7 +302,6 @@ class TransactionSyncManager @Inject constructor(
                 callMethod(mRealm, jsonDoc, table)
             }
         }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
