@@ -106,15 +106,55 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     teamName = "",
                     teamId = null,
                     userSessionManager = userSessionManager,
-                    scope = lifecycleScope,
-                    isTeamLeaderFn = { false },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    isTeamLeaderFn = { onResult ->
+                        val job = lifecycleScope.launch {
+                            onResult(false)
+                        }
+                        return@VoicesAdapter { job.cancel() }
                     },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    getUserFn = { userId, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = userRepository.getUserById(userId)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    getReplyCountFn = { newsId, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val result = voicesRepository.getReplyCount(newsId)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    deletePostFn = { newsId, onComplete ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            voicesRepository.deletePost(newsId, "")
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    getLibraryResourceFn = { resourceId, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = voicesRepository.getLibraryResource(resourceId)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    launchCoroutine = { action ->
+                        val job = lifecycleScope.launch { action() }
+                        return@VoicesAdapter { job.cancel() }
+                    },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository
                 )

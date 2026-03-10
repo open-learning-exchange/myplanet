@@ -7,6 +7,7 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -55,6 +56,8 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         var results: RealmResults<T>? = null
         var listener: RealmChangeListener<RealmResults<T>>? = null
 
+        val channel = Channel<RealmResults<T>>(Channel.CONFLATED)
+
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
                 try {
@@ -80,13 +83,29 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             }
         }
 
+        // Single serialized path to copy and send downstream
+        launch(databaseService.ioDispatcher) {
+            for (frozenResults in channel) {
+                if (isClosed.get()) break
+                try {
+                    val frozenRealm = frozenResults.realm
+                    val copiedList = frozenRealm.copyFromRealm(frozenResults)
+                    if (!isClosed.get()) {
+                        send(copiedList)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         try {
             realm = databaseService.createManagedRealmInstance()
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
             if (initialResults.isValid && initialResults.isLoaded) {
-                val initialCopy = realm.copyFromRealm(initialResults)
-                send(initialCopy)
+                val frozenInitial = initialResults.freeze()
+                channel.trySend(frozenInitial)
             }
             
             results = realm.where(clazz).apply(builder).findAllAsync()
@@ -94,17 +113,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                 if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
                     try {
                         val frozenResults = changedResults.freeze()
-                        launch(databaseService.ioDispatcher) {
-                            try {
-                                val frozenRealm = frozenResults.realm
-                                val copiedList = frozenRealm.copyFromRealm(frozenResults)
-                                if (!isClosed.get()) {
-                                    send(copiedList)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
+                        channel.trySend(frozenResults)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -113,9 +122,11 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             results.addChangeListener(listener)
 
             awaitClose {
+                channel.close()
                 safeCloseRealm()
             }
         } catch (e: Exception) {
+            channel.close()
             safeCloseRealm()
             throw e
         }
