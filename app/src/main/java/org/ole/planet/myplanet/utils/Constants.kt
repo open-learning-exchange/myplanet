@@ -65,7 +65,6 @@ object Constants {
         classList["health"] = RealmHealthExamination::class.java
         classList["certifications"] = RealmCertification::class.java
         classList["team_activities"] = RealmTeamLog::class.java
-        classList["courses_progress"] = RealmCourseProgress::class.java
     }
 
     @JvmStatic

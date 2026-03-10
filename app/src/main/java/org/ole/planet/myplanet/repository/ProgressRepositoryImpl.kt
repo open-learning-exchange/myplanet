@@ -169,4 +169,38 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             equalTo("actionType", "sync")
         } > 0
     }
+
+    override suspend fun insertCourseProgressList(docs: List<JsonObject>) {
+        executeTransaction { realm ->
+            docs.forEach { act ->
+                var courseProgress = realm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+                if (courseProgress == null) {
+                    courseProgress = realm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
+                }
+                courseProgress?._rev = JsonUtils.getString("_rev", act)
+                courseProgress?._id = JsonUtils.getString("_id", act)
+                courseProgress?.passed = JsonUtils.getBoolean("passed", act)
+                courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
+                courseProgress?.userId = JsonUtils.getString("userId", act)
+                courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
+                courseProgress?.courseId = JsonUtils.getString("courseId", act)
+                courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
+                courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
+                courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
+            }
+        }
+    }
+
+    override fun serializeProgress(progress: RealmCourseProgress): JsonObject {
+        val `object` = JsonObject()
+        `object`.addProperty("userId", progress.userId)
+        `object`.addProperty("parentCode", progress.parentCode)
+        `object`.addProperty("courseId", progress.courseId)
+        `object`.addProperty("passed", progress.passed)
+        `object`.addProperty("stepNum", progress.stepNum)
+        `object`.addProperty("createdOn", progress.createdOn)
+        `object`.addProperty("createdDate", progress.createdDate)
+        `object`.addProperty("updatedDate", progress.updatedDate)
+        return `object`
+    }
 }
