@@ -15,6 +15,7 @@ import android.widget.TableRow
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -64,7 +65,7 @@ class ChatDetailFragment : Fragment() {
     private var _binding: FragmentChatDetailBinding? = null
     private val binding get() = _binding!!
     private lateinit var mAdapter: ChatAdapter
-    private lateinit var sharedViewModel: ChatViewModel
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     private lateinit var messageTextWatcher: TextWatcher
     private var _id: String = ""
     private var _rev: String = ""
@@ -93,7 +94,6 @@ class ChatDetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
