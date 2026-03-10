@@ -94,4 +94,7 @@ interface UserRepository {
         references: JsonArray
     )
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
+
+    suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean
+    suspend fun uploadNewUser(model: RealmUser)
 }

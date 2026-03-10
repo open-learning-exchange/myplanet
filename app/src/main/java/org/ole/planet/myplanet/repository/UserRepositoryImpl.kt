@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Base64
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -701,6 +704,88 @@ class UserRepositoryImpl @Inject constructor(
             )
         } else {
             AchievementData()
+        }
+    }
+
+    override suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean {
+        try {
+            val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val exists = res.body() != null
+            return exists
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
+
+    override suspend fun uploadNewUser(model: RealmUser) {
+        try {
+            val obj = model.serialize()
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
+
+            if (createResponse.isSuccessful) {
+                val id = createResponse.body()?.get("id")?.asString
+                val rev = createResponse.body()?.get("rev")?.asString
+
+                // Persist _id and _rev to database
+                executeTransaction { realm ->
+                    val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
+                    if (managedModel != null) {
+                        managedModel._id = id
+                        managedModel._rev = rev
+                    } else {
+                        android.util.Log.e("UserRepositoryImpl", "Failed to find user model with id: ${model.id} for persisting _id and _rev")
+                    }
+                }
+
+                model._id = id
+                model._rev = rev
+
+                processUserAfterCreation(model, obj)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun processUserAfterCreation(model: RealmUser, obj: JsonObject) {
+        try {
+            val password = SecurePrefs.getPassword(context, settings) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
+
+            if (fetchDataResponse.isSuccessful) {
+                executeTransaction { realm ->
+                    val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
+                    managedModel?.password_scheme = JsonUtils.getString("password_scheme", fetchDataResponse.body())
+                    managedModel?.derived_key = JsonUtils.getString("derived_key", fetchDataResponse.body())
+                    managedModel?.salt = JsonUtils.getString("salt", fetchDataResponse.body())
+                    managedModel?.iterations = JsonUtils.getString("iterations", fetchDataResponse.body())
+                }
+                uploadToShelfService.get().saveKeyIv(apiInterface, model, obj)
+
+                executeTransaction { realm ->
+                    updateHealthData(realm, model)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun replacedUrl(model: RealmUser): String {
+        val url = UrlUtils.getUrl()
+        val password = SecurePrefs.getPassword(context, settings) ?: ""
+        val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
+        val protocolIndex = url.indexOf("://")
+        val protocol = url.substring(0, protocolIndex)
+        return "$protocol://$replacedUrl"
+    }
+
+    private fun updateHealthData(realm: io.realm.Realm, model: RealmUser) {
+        val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
+        for (p in list) {
+            p.userId = model._id
         }
     }
 }
