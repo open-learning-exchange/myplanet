@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmTag
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
+    suspend fun getAllCourses(orderBy: String, sort: io.realm.Sort): List<RealmMyCourse>
     fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse>
     suspend fun getMyCourses(userId: String): List<RealmMyCourse>
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>

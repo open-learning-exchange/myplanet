@@ -92,7 +92,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = settings.getString("userId", "--")
+                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                     val libraryList = resourcesRepository.getLibraryListForUser(userId)
                     showDownloadDialog(libraryList)
                 }
@@ -259,9 +259,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(DIACRITICS_REGEX, "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
+            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
