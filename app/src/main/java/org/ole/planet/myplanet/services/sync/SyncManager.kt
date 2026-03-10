@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.SupplicantState
@@ -43,7 +42,6 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
@@ -66,7 +64,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
@@ -299,7 +296,7 @@ class SyncManager @Inject constructor(
 
             databaseService.withRealm { realm ->
                 logger.startProcess("on_synced")
-                onSynced(realm, settings)
+                onSynced(realm, sharedPrefManager.rawPreferences)
                 logger.endProcess("on_synced")
             }
 
@@ -513,7 +510,7 @@ class SyncManager @Inject constructor(
 
             databaseService.withRealm { realm ->
                 logger.startProcess("on_synced")
-                onSynced(realm, settings)
+                onSynced(realm, sharedPrefManager.rawPreferences)
                 logger.endProcess("on_synced")
             }
 
@@ -861,7 +858,7 @@ class SyncManager @Inject constructor(
             val processDuration = System.currentTimeMillis() - processStartTime
             logger.endProcess("library_process_shelves", processedItems)
 
-            saveConcatenatedLinksToPrefs()
+            saveConcatenatedLinksToPrefs(sharedPrefManager)
             logger.endProcess("library_sync_main", processedItems)
 
             val totalDuration = System.currentTimeMillis() - librarySyncStartTime
