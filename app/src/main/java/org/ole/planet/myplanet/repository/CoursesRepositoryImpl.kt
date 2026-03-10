@@ -325,20 +325,35 @@ class CoursesRepositoryImpl @Inject constructor(
         ob: com.google.gson.JsonObject,
         userId: String?
     ) {
-        val examSubmissionsMap = mutableMapOf<RealmStepExam, RealmResults<org.ole.planet.myplanet.model.RealmSubmission>?>()
-        val allSubmissions = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
+        val examIds = exams.mapNotNull { it.id }
+        if (examIds.isEmpty()) return
 
-        exams.forEach { exam ->
-            val submissions = exam.id?.let { examId ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .contains("parentId", examId)
-                    .equalTo("type", "exam")
-                    .findAll()
+        val allSubmissions = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
+        examIds.chunked(1000).forEach { chunk ->
+            val query = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "exam")
+
+            query.beginGroup()
+            chunk.forEachIndexed { index, id ->
+                if (index > 0) query.or()
+                query.contains("parentId", id)
             }
-            examSubmissionsMap[exam] = submissions
-            if (submissions != null) {
-                allSubmissions.addAll(submissions)
+            query.endGroup()
+
+            allSubmissions.addAll(query.findAll())
+        }
+
+        val examSubmissionsMap = mutableMapOf<String, MutableList<org.ole.planet.myplanet.model.RealmSubmission>>()
+        allSubmissions.forEach { submission ->
+            val parentId = submission.parentId
+            if (parentId != null) {
+                // Determine which examId this submission belongs to
+                // It might be `examId@courseId` or just `examId`
+                val matchedExamId = examIds.find { parentId.contains(it) }
+                if (matchedExamId != null) {
+                    examSubmissionsMap.getOrPut(matchedExamId) { mutableListOf() }.add(submission)
+                }
             }
         }
 
@@ -354,14 +369,36 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
 
+        val questionExamIds = allSubmissions.mapNotNull {
+            if (it.parentId?.contains("@") == true) {
+                it.parentId!!.split("@")[0]
+            } else {
+                it.parentId
+            }
+        }.distinct()
+
+        val allQuestions = mutableListOf<org.ole.planet.myplanet.model.RealmExamQuestion>()
+        if (questionExamIds.isNotEmpty()) {
+            questionExamIds.chunked(1000).forEach { chunk ->
+                val chunkQuestions = realm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java)
+                    .`in`("examId", chunk.toTypedArray())
+                    .findAll()
+                allQuestions.addAll(chunkQuestions)
+            }
+        }
+        val questionsByExamId = allQuestions.groupBy { it.examId }
+
         exams.forEach { exam ->
-            examSubmissionsMap[exam]?.map { submission ->
+            val examId = exam.id ?: return@forEach
+            val submissions = examSubmissionsMap[examId] ?: emptyList()
+
+            submissions.forEach { submission ->
                 val answers = answersBySubmissionId[submission.id] ?: emptyList()
-                var examId = submission.parentId
+                var questionExamId = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
-                    examId = submission.parentId!!.split("@")[0]
+                    questionExamId = submission.parentId!!.split("@")[0]
                 }
-                val questions = realm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
+                val questions = questionsByExamId[questionExamId] ?: emptyList()
                 val questionCount = questions.size
                 if (questionCount == 0) {
                     ob.addProperty("completed", false)
