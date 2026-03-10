@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -65,7 +63,6 @@ class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
-    @param:AppPreferences private val pref: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
@@ -104,7 +101,7 @@ class UploadManager @Inject constructor(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/myplanet_activities",
-                        MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model)
+                        MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
                     )
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -126,7 +123,7 @@ class UploadManager @Inject constructor(
                     usages.addAll(MyPlanet.getTabletUsages(context))
                     `object`.add("usages", usages)
                 } else {
-                    `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
+                    `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, model)
                 }
 
                 try {
