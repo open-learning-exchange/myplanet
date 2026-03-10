@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUser
@@ -49,14 +48,11 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
-    @Inject
-    @AppPreferences
-    lateinit var appPreferences: SharedPreferences
-
     @Inject
     lateinit var prefData: SharedPrefManager
 
@@ -309,11 +305,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+        SecurePrefs.saveCredentials(this, settings, user?.name, password)
         this.settings = settings
         prefData.setUserId(user?.id ?: "")
         prefData.setUserName(user?.name ?: "")
         prefData.rawPreferences.edit().apply {
-            putString("password", password)
+            remove("password")
             putString("firstName", user?.firstName)
             putString("lastName", user?.lastName)
             putString("middleName", user?.middleName)

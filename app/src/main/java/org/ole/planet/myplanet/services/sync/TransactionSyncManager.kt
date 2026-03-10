@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -39,7 +39,8 @@ class TransactionSyncManager @Inject constructor(
     private val databaseService: DatabaseService,
     @param:ApplicationContext private val context: Context,
     private val chatRepository: ChatRepository,
-    private val feedbackRepository: FeedbackRepository
+    private val feedbackRepository: FeedbackRepository,
+    private val sharedPrefManager: SharedPrefManager
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -318,20 +319,21 @@ class TransactionSyncManager @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject, settings: SharedPreferences) {
+    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
         when (table) {
             "exams" -> {
                 insertCourseStepsExams("", "", jsonDoc, mRealm)
             }
 
             "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, settings)
+                populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
             }
 
             else -> {
                 callMethod(mRealm, jsonDoc, table)
             }
         }
+        saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
