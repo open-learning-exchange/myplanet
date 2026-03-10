@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 
 object NetworkUtils {
     private val coroutineScope: CoroutineScope by lazy {
@@ -186,8 +186,8 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString("customDeviceName", "") ?: ""
+        val spm = EntryPointAccessors.fromApplication(context.applicationContext, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        return spm.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {

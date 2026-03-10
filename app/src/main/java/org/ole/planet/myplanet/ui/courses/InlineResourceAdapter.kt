@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.createBitmap
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -20,6 +19,7 @@ import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -27,23 +27,20 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
     private val onResourceClick: (RealmMyLibrary) -> Unit
-) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(ResourceDiffCallback()) {
+) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
+    DiffUtils.itemCallback<RealmMyLibrary>(
+        areItemsTheSame = { old, new -> old.id == new.id },
+        areContentsTheSame = { old, new ->
+            old._rev == new._rev &&
+                old.downloadedRev == new.downloadedRev &&
+                old.resourceLocalAddress == new.resourceLocalAddress &&
+                old.title == new.title &&
+                old.isResourceOffline() == new.isResourceOffline()
+        }
+    )
+) {
 
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root)
-
-    class ResourceDiffCallback : DiffUtil.ItemCallback<RealmMyLibrary>() {
-        override fun areItemsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
-            return oldItem.id == newItem.id
-        }
-
-        override fun areContentsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
-            return oldItem._rev == newItem._rev &&
-                oldItem.downloadedRev == newItem.downloadedRev &&
-                oldItem.resourceLocalAddress == newItem.resourceLocalAddress &&
-                oldItem.title == newItem.title &&
-                oldItem.isResourceOffline() == newItem.isResourceOffline()
-        }
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemInlineResourceBinding.inflate(
