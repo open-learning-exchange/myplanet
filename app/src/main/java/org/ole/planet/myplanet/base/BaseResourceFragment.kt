@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -30,7 +29,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -42,6 +40,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -71,14 +70,13 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
+    lateinit var surveysRepository: SurveysRepository
+    @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var profileDbHandler: UserSessionManager
-    @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -389,25 +387,23 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
-        lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
-            if (userId.isNullOrEmpty()) {
-                return@launch
-            }
+    suspend fun removeFromShelf(`object`: RealmObject) {
+        val userId = profileDbHandler.getUserModel()?.id
+        if (userId.isNullOrEmpty()) {
+            return
+        }
 
-            if (`object` is RealmMyLibrary) {
-                val resourceId = `object`.resourceId
-                if (resourceId != null) {
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                }
-            } else {
-                val courseId = (`object` as RealmMyCourse).courseId
-                if (courseId != null) {
-                    coursesRepository.removeCourseFromShelf(courseId, userId)
-                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
-                }
+        if (`object` is RealmMyLibrary) {
+            val resourceId = `object`.resourceId
+            if (resourceId != null) {
+                resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+            }
+        } else {
+            val courseId = (`object` as RealmMyCourse).courseId
+            if (courseId != null) {
+                coursesRepository.removeCourseFromShelf(courseId, userId)
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
             }
         }
     }

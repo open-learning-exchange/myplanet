@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -12,6 +13,8 @@ import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -197,9 +200,9 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             `object`.addProperty("sender", sub.sender)
-            val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-            `object`.addProperty("source", prefs.getString("planetCode", ""))
-            `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
+            val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+            `object`.addProperty("source", spm.getPlanetCode())
+            `object`.addProperty("parentCode", spm.getParentCode())
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
             if (exam != null) {
                 `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
@@ -243,9 +246,9 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
                 jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 jsonObject.addProperty("sender", submission.sender)
-                val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-                jsonObject.addProperty("source", prefs.getString("planetCode", ""))
-                jsonObject.addProperty("parentCode", prefs.getString("parentCode", ""))
+                val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                jsonObject.addProperty("source", spm.getPlanetCode())
+                jsonObject.addProperty("parentCode", spm.getParentCode())
                 jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
                 if (exam != null) {
                     jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
