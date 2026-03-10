@@ -9,7 +9,9 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -183,44 +185,46 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                viewModel.surveys.collect { surveys ->
-                    (getAdapter() as SurveysAdapter).submitList(surveys) {
-                        recyclerView.scrollToPosition(0)
-                        updateUIState()
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.surveys.collect { surveys ->
+                        (getAdapter() as SurveysAdapter).submitList(surveys) {
+                            recyclerView.scrollToPosition(0)
+                            updateUIState()
+                        }
                     }
                 }
-            }
-            launch {
-                viewModel.surveyInfos.collect { infos ->
-                    surveyInfoMap.clear()
-                    surveyInfoMap.putAll(infos)
-                }
-            }
-            launch {
-                viewModel.bindingData.collect { data ->
-                    bindingDataMap.clear()
-                    bindingDataMap.putAll(data)
-                }
-            }
-            launch {
-                viewModel.isLoading.collect { isLoading ->
-                    binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
-                }
-            }
-            launch {
-                viewModel.errorMessage.collect { message ->
-                    message?.let {
-                        Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                launch {
+                    viewModel.surveyInfos.collect { infos ->
+                        surveyInfoMap.clear()
+                        surveyInfoMap.putAll(infos)
                     }
                 }
-            }
-            launch {
-                viewModel.userMessage.collect { message ->
-                    message?.let {
-                        Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
-                        if (it == "Survey adopted successfully") {
-                             binding.rbTeamSurvey.isChecked = true
+                launch {
+                    viewModel.bindingData.collect { data ->
+                        bindingDataMap.clear()
+                        bindingDataMap.putAll(data)
+                    }
+                }
+                launch {
+                    viewModel.isLoading.collect { isLoading ->
+                        binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
+                    }
+                }
+                launch {
+                    viewModel.errorMessage.collect { message ->
+                        message?.let {
+                            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                        }
+                    }
+                }
+                launch {
+                    viewModel.userMessage.collect { message ->
+                        message?.let {
+                            Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                            if (it == "Survey adopted successfully") {
+                                 binding.rbTeamSurvey.isChecked = true
+                            }
                         }
                     }
                 }
