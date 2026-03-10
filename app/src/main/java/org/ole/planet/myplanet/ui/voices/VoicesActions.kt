@@ -19,7 +19,6 @@ import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
@@ -123,7 +122,7 @@ object VoicesActions {
         return (dp * context.resources.displayMetrics.density).toInt()
     }
 
-    fun handlePositiveButton(
+    suspend fun handlePositiveButton(
         dialog: AlertDialog,
         isEdit: Boolean,
         components: EditDialogComponents,
@@ -132,7 +131,6 @@ object VoicesActions {
         currentUser: RealmUser?,
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
-        scope: CoroutineScope,
         imagesToRemove: MutableSet<String>,
         onSuccess: () -> Unit
     ) {
@@ -145,30 +143,24 @@ object VoicesActions {
         imagesToRemove.clear()
         dialog.dismiss()
         listener?.clearImages()
-        scope.launch {
-            try {
-                if (isEdit) {
-                    news?.id?.let {
-                        repository.editPost(it, s, imagesToRemoveCopy, imageList)
-                    }
-                } else {
-                    if (news != null && currentUser != null) {
-                        repository.postReply(s, news, currentUser, imageList)
-                    }
+        try {
+            if (isEdit) {
+                news?.id?.let {
+                    repository.editPost(it, s, imagesToRemoveCopy, imageList)
                 }
-                withContext(Dispatchers.Main) {
-                    if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
-                    onSuccess()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    org.ole.planet.myplanet.utils.Utilities.toast(dialog.context, "An error occurred: ${e.message}")
+            } else {
+                if (news != null && currentUser != null) {
+                    repository.postReply(s, news, currentUser, imageList)
                 }
             }
+            if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
+            onSuccess()
+        } catch (e: Exception) {
+            org.ole.planet.myplanet.utils.Utilities.toast(dialog.context, "An error occurred: ${e.message}")
         }
     }
 
-    fun showEditAlert(
+    suspend fun showEditAlert(
         context: Context,
         id: String?,
         isEdit: Boolean,
@@ -176,8 +168,8 @@ object VoicesActions {
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         repository: VoicesRepository,
-        scope: CoroutineScope,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
+        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> },
+        launchAction: (suspend () -> Unit) -> Unit
     ) {
         val components = createEditDialogComponents(context, listener)
         val message = components.view.findViewById<TextView>(R.id.cust_msg)
@@ -186,24 +178,24 @@ object VoicesActions {
         icon.setImageResource(R.drawable.ic_edit)
         val imagesToRemove = mutableSetOf<String>()
 
-        scope.launch {
-            val news = id?.let { repository.getNewsById(it) }
-            withContext(Dispatchers.Main) {
-                if (isEdit) {
-                    components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-                    loadExistingImages(context, news, components.imageLayout, imagesToRemove)
-                }
-                val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-                    .setView(components.view)
-                    .setPositiveButton(R.string.button_submit, null)
-                    .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
-                    .create()
-                dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                    val currentImageList = listener?.getCurrentImageList()
-                    handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, scope, imagesToRemove) {
-                        updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
-                    }
+        val news = id?.let { repository.getNewsById(it) }
+
+        if (isEdit) {
+            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
+            loadExistingImages(context, news, components.imageLayout, imagesToRemove)
+        }
+        val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
+            .setView(components.view)
+            .setPositiveButton(R.string.button_submit, null)
+            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+            .create()
+
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val currentImageList = listener?.getCurrentImageList()
+            launchAction {
+                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) {
+                    updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
                 }
             }
         }

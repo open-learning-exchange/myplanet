@@ -18,6 +18,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
@@ -126,7 +128,19 @@ class ChatDetailFragment : Fragment() {
             isUserLoaded = true
             refreshInputState()
         }
-        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat, viewLifecycleOwner.lifecycleScope)
+        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat) { response, onUpdate, onComplete ->
+            val job = viewLifecycleOwner.lifecycleScope.launch {
+                var currentIndex = 0
+                while (currentIndex < response.length) {
+                    if (!kotlin.coroutines.coroutineContext.isActive) return@launch
+                    onUpdate(response.substring(0, currentIndex + 1))
+                    currentIndex++
+                    kotlinx.coroutines.delay(10L)
+                }
+                onComplete()
+            }
+            return@ChatAdapter { job.cancel() }
+        }
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())

@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.isActive
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -65,13 +66,13 @@ class VoicesAdapter(
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userSessionManager: UserSessionManager,
-    private val scope: CoroutineScope,
-    private val isTeamLeaderFn: suspend () -> Boolean,
-    private val getUserFn: suspend (String) -> RealmUser?,
-    private val getReplyCountFn: suspend (String) -> Int,
-    private val deletePostFn: suspend (String) -> Unit,
-    private val shareNewsFn: suspend (String, String, String, String, String) -> Result<Unit>,
-    private val getLibraryResourceFn: suspend (String) -> RealmMyLibrary?,
+    private val isTeamLeaderFn: ((Boolean) -> Unit) -> (() -> Unit),
+    private val getUserFn: (String, (RealmUser?) -> Unit) -> (() -> Unit),
+    private val getReplyCountFn: (String, (Int) -> Unit) -> (() -> Unit),
+    private val deletePostFn: (String, () -> Unit) -> (() -> Unit),
+    private val shareNewsFn: (String, String, String, String, String, (Result<Unit>) -> Unit) -> (() -> Unit),
+    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> (() -> Unit),
+    private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
@@ -131,10 +132,7 @@ class VoicesAdapter(
             _isTeamLeader = false
             return
         }
-        scope.launch {
-            val isLeader = withTimeoutOrNull(2000) {
-                isTeamLeaderFn()
-            }
+        isTeamLeaderFn { isLeader ->
             _isTeamLeader = isLeader
         }
     }
@@ -277,18 +275,15 @@ class VoicesAdapter(
             showHideButtons(news, holder)
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
-                scope.launch {
-                    val userModel = getUserFn(userId)
+                getUserFn(userId) { userModel ->
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
-                    withContext(Dispatchers.Main) {
-                        if (parentNews?.userId == userId) {
-                            notifyItemChanged(0)
-                        }
-                        currentList.forEachIndexed { index, item ->
-                            if (item?.userId == userId) {
-                                notifyItemChanged(if (parentNews != null) index + 1 else index)
-                            }
+                    if (parentNews?.userId == userId) {
+                        notifyItemChanged(0)
+                    }
+                    currentList.forEachIndexed { index, item ->
+                        if (item?.userId == userId) {
+                            notifyItemChanged(if (parentNews != null) index + 1 else index)
                         }
                     }
                 }
@@ -334,9 +329,8 @@ class VoicesAdapter(
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         if (adjustedPos >= 0 && adjustedPos < snapshotList.size) {
                             val newsToDelete = snapshotList[adjustedPos]
-                            scope.launch {
-                                newsToDelete?.id?.let { deletePostFn(it) }
-                                withContext(Dispatchers.Main) {
+                            newsToDelete?.id?.let { id ->
+                                deletePostFn(id) {
                                     val newList = snapshotList.toMutableList().apply { removeAt(adjustedPos) }
                                     submitListSafely(newList)
                                     parentNews?.id?.let { pid ->
@@ -356,18 +350,21 @@ class VoicesAdapter(
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
-                    news.id,
-                    true,
-                    currentUser,
-                    listener,
-                    holder,
-                    voicesRepository,
-                    scope
-                ) { holder, updatedNews, position ->
-                    showReplyButton(holder, updatedNews, position)
-                    notifyItemChanged(position)
+                launchCoroutine {
+                    VoicesActions.showEditAlert(
+                        context,
+                        news.id,
+                        true,
+                        currentUser,
+                        listener,
+                        holder,
+                        voicesRepository,
+                        { h, updatedNews, pos ->
+                            showReplyButton(h, updatedNews, pos)
+                            notifyItemChanged(pos)
+                        },
+                        { action -> launchCoroutine(action) }
+                    )
                 }
             }
         } else {
@@ -378,7 +375,19 @@ class VoicesAdapter(
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope)
+            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
+                val cancelJob = launchCoroutine {
+                    var currentIndex = 0
+                    while (currentIndex < response.length) {
+                        if (!kotlin.coroutines.coroutineContext.isActive) return@launchCoroutine
+                        onUpdate(response.substring(0, currentIndex + 1))
+                        currentIndex++
+                        kotlinx.coroutines.delay(10L)
+                    }
+                    onComplete()
+                }
+                return@ChatAdapter { cancelJob() }
+            }
 
             if (currentUser?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : OnChatItemClickListener {
@@ -510,16 +519,11 @@ class VoicesAdapter(
             applyReplyCount(viewHolder.binding, cached, position)
             return
         }
-        viewHolder.job?.cancel()
-        viewHolder.job = scope.launch {
+        viewHolder.cancelJob?.invoke()
+        viewHolder.cancelJob = getReplyCountFn(newsId) { replyCount ->
             try {
-                val replyCount = getReplyCountFn(newsId)
                 replyCountCache[newsId] = replyCount
-                withContext(Dispatchers.Main) {
-                    applyReplyCount(viewHolder.binding, replyCount, position)
-                }
-            } catch (e: CancellationException) {
-                throw e
+                applyReplyCount(viewHolder.binding, replyCount, position)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -559,16 +563,19 @@ class VoicesAdapter(
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                VoicesActions.showEditAlert(
-                    context,
-                    finalNews?.id,
-                    false,
-                    currentUser,
-                    listener,
-                    viewHolder,
-                    voicesRepository,
-                    scope
-                ) { _, _, _ -> }
+                launchCoroutine {
+                    VoicesActions.showEditAlert(
+                        context,
+                        finalNews?.id,
+                        false,
+                        currentUser,
+                        listener,
+                        viewHolder,
+                        voicesRepository,
+                        { _, _, _ -> },
+                        { action -> launchCoroutine(action) }
+                    )
+                }
             }
         } else {
             viewHolder.binding.btnReply.visibility = View.GONE
@@ -603,15 +610,12 @@ class VoicesAdapter(
                      val parentCode = currentUser?.parentCode ?: ""
 
                      if (newsId != null && userId != null) {
-                         scope.launch {
-                             val result = shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
-                             withContext(Dispatchers.Main) {
-                                 if (result.isSuccess) {
-                                     Utilities.toast(context, context.getString(R.string.shared_to_community))
-                                     viewHolder.binding.btnShare.visibility = View.GONE
-                                 } else {
-                                     Utilities.toast(context, "Failed to share news")
-                                 }
+                         shareNewsFn(newsId, userId, planetCode, parentCode, teamName) { result ->
+                             if (result.isSuccess) {
+                                 Utilities.toast(context, context.getString(R.string.shared_to_community))
+                                 viewHolder.binding.btnShare.visibility = View.GONE
+                             } else {
+                                 Utilities.toast(context, "Failed to share news")
                              }
                          }
                      }
@@ -634,7 +638,7 @@ class VoicesAdapter(
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
-            holder.job?.cancel()
+            holder.cancelJob?.invoke()
         }
     }
 
@@ -729,26 +733,23 @@ class VoicesAdapter(
 
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        scope.launch {
-            val library = getLibraryResourceFn(resourceId)
-            withContext(Dispatchers.Main) {
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    val request = Glide.with(binding.imgNews.context)
-                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                    val target = if (isGif) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
-                    }
-                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(binding.imgNews)
-                    binding.imgNews.visibility = View.VISIBLE
-                    binding.imgNews.setOnClickListener {
-                        showZoomableImage(it.context, imageFile.toString())
-                    }
+        getLibraryResourceFn(resourceId) { library ->
+            val basePath = context.getExternalFilesDir(null)
+            if (library != null && basePath != null) {
+                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                val request = Glide.with(binding.imgNews.context)
+                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val target = if (isGif) {
+                    request.asGif().load(imageFile)
+                } else {
+                    request.load(imageFile)
+                }
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(binding.imgNews)
+                binding.imgNews.visibility = View.VISIBLE
+                binding.imgNews.setOnClickListener {
+                    showZoomableImage(it.context, imageFile.toString())
                 }
             }
         }
@@ -756,37 +757,34 @@ class VoicesAdapter(
 
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
-        scope.launch {
-            val library = getLibraryResourceFn(resourceId)
-            withContext(Dispatchers.Main) {
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    val imageView = ImageView(context)
-                    val size = (100 * context.resources.displayMetrics.density).toInt()
-                    val margin = (4 * context.resources.displayMetrics.density).toInt()
-                    val params = ViewGroup.MarginLayoutParams(size, size)
-                    params.setMargins(margin, margin, margin, margin)
-                    imageView.layoutParams = params
-                    imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+        getLibraryResourceFn(resourceId) { library ->
+            val basePath = context.getExternalFilesDir(null)
+            if (library != null && basePath != null) {
+                val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                val imageView = ImageView(context)
+                val size = (100 * context.resources.displayMetrics.density).toInt()
+                val margin = (4 * context.resources.displayMetrics.density).toInt()
+                val params = ViewGroup.MarginLayoutParams(size, size)
+                params.setMargins(margin, margin, margin, margin)
+                imageView.layoutParams = params
+                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                    val request = Glide.with(context)
-                    val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                    val target = if (isGif) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
-                    }
-                    target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(imageView)
-
-                    imageView.setOnClickListener {
-                        showZoomableImage(context, imageFile.toString())
-                    }
-
-                    binding.llNewsImages.addView(imageView)
+                val request = Glide.with(context)
+                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                val target = if (isGif) {
+                    request.asGif().load(imageFile)
+                } else {
+                    request.load(imageFile)
                 }
+                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(imageView)
+
+                imageView.setOnClickListener {
+                    showZoomableImage(context, imageFile.toString())
+                }
+
+                binding.llNewsImages.addView(imageView)
             }
         }
     }
@@ -815,7 +813,7 @@ class VoicesAdapter(
     }
 
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
-        var job: kotlinx.coroutines.Job? = null
+        var cancelJob: (() -> Unit)? = null
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position
