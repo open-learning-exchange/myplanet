@@ -17,7 +17,9 @@ import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -269,7 +271,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         )
         adapterCourses.submitList(courses) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
-                selectedItems?.clear()
+                sharedSelectionViewModel.clearSelection()
                 clearAllSelections()
                 checkList()
             }
@@ -298,6 +300,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             }
             updateCheckBoxState(false)
+
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedSelectionViewModel.selectedItems.collect {
+                    changeButtonStatus()
+                    hideButtons()
+                }
+            }
         }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
@@ -341,7 +350,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                    val courseIdsToRemove = sharedSelectionViewModel.selectedItems.value.mapNotNull { (it as RealmMyCourse).courseId }
                     viewLifecycleOwner.lifecycleScope.launch {
                         deleteSelected(true)
                         clearAllSelections()
@@ -360,7 +369,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                    val courseIdsToRemove = sharedSelectionViewModel.selectedItems.value.mapNotNull { (it as RealmMyCourse).courseId }
                     viewLifecycleOwner.lifecycleScope.launch {
                         deleteSelected(true)
                         clearAllSelections()
@@ -430,7 +439,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun initializeView() {
         tvAddToLib = requireView().findViewById(R.id.tv_add)
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (sharedSelectionViewModel.selectedItems.value.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation.show()
             }
@@ -483,7 +492,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun hideButtons() {
-        val count = selectedItems.orEmpty().size
+        val count = sharedSelectionViewModel.selectedItems.value.size
         btnArchive.isEnabled = count != 0
         btnRemove.isEnabled = count != 0
         if (count != 0) {
@@ -584,15 +593,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices!!) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+        if (sharedSelectionViewModel.selectedItems.value.size <= 5) {
+            for (i in sharedSelectionViewModel.selectedItems.value.indices) {
+                msg += " - ${(sharedSelectionViewModel.selectedItems.value[i] as RealmMyCourse).courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+                msg += " - ${(sharedSelectionViewModel.selectedItems.value[i] as RealmMyCourse).courseTitle} \n"
             }
-            msg += "${getString(R.string.and)}${((selectedItems?.size ?: 0) - 5)}${getString(R.string.more_course_s)}"
+            msg += "${getString(R.string.and)}${(sharedSelectionViewModel.selectedItems.value.size - 5)}${getString(R.string.more_course_s)}"
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
@@ -644,9 +653,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 rc
             }
         }.toMutableList<RealmMyCourse?>()
-        selectedItems = realmCourses
-        changeButtonStatus()
-        hideButtons()
+        sharedSelectionViewModel.setSelection(realmCourses.filterNotNull())
     }
 
     override fun onTagClicked(tag: Tag) {
@@ -682,9 +689,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
-        btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
-        btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
+        tvAddToLib.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
+        btnRemove.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
+        btnArchive.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
 
         if (::adapterCourses.isInitialized) {
             val allSelected = adapterCourses.areAllSelected()

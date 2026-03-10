@@ -271,9 +271,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
             if (userModel?.id != null) {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
-                        if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                    launch {
+                        resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                            if (::adapterLibrary.isInitialized) {
+                                adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                            }
+                        }
+                    }
+                    launch {
+                        sharedSelectionViewModel.selectedItems.collect {
+                            changeButtonStatus()
+                            hideButton()
                         }
                     }
                 }
@@ -322,7 +330,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (sharedSelectionViewModel.selectedItems.value.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
             }
@@ -402,9 +410,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun hideButton(){
-        tvDelete?.isEnabled = selectedItems?.size!! != 0
-        tvAddToLib.isEnabled = selectedItems?.size!! != 0
-        if(selectedItems?.size!! != 0){
+        tvDelete?.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
+        tvAddToLib.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
+        if(sharedSelectionViewModel.selectedItems.value.isNotEmpty()){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -465,15 +473,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun buildAlertMessage(): String {
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
+        if (sharedSelectionViewModel.selectedItems.value.size <= 5) {
+            for (i in sharedSelectionViewModel.selectedItems.value.indices) {
+                msg += " - " + (sharedSelectionViewModel.selectedItems.value[i] as RealmMyLibrary).title + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
+                msg += " - " + (sharedSelectionViewModel.selectedItems.value[i] as RealmMyLibrary).title + "\n"
             }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
+            msg += getString(R.string.and) + (sharedSelectionViewModel.selectedItems.value.size - 5) +
                 getString(R.string.more_resource_s)
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
@@ -502,10 +510,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val newSelected = list.mapNotNull { item ->
             allLibraryItems.find { it.id == item.id }
         }
-        selectedItems?.clear()
-        selectedItems?.addAll(newSelected)
-        changeButtonStatus()
-        hideButton()
+        sharedSelectionViewModel.setSelection(newSelected)
     }
 
     override fun onTagClicked(tag: TagItem) {
@@ -563,7 +568,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
+        tvAddToLib.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -764,7 +769,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override suspend fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
-        val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val itemsToDelete = sharedSelectionViewModel.selectedItems.value.mapNotNull { (it as RealmMyLibrary).resourceId }
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             withContext(Dispatchers.IO) {
@@ -775,15 +780,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if (_binding == null) return
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
             refreshResourcesData()
-            selectedItems?.clear()
-            changeButtonStatus()
-            hideButton()
+            sharedSelectionViewModel.clearSelection()
         }
     }
 
     override fun addToMyList() {
         val userId = userModel?.id
-        val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val itemsToAdd = sharedSelectionViewModel.selectedItems.value.mapNotNull { (it as RealmMyLibrary).resourceId }
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
@@ -792,9 +795,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
+                    sharedSelectionViewModel.clearSelection()
                 }
             }
         }

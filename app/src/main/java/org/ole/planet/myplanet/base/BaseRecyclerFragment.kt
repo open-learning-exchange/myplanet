@@ -25,7 +25,9 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import androidx.fragment.app.viewModels
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.ui.library.SharedSelectionViewModel
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -33,7 +35,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
     var levels: MutableSet<String> = mutableSetOf()
-    var selectedItems: MutableList<LI>? = null
+    protected val sharedSelectionViewModel: SharedSelectionViewModel by viewModels()
     var gradeLevel = ""
     var subjectLevel = ""
     lateinit var recyclerView: RecyclerView
@@ -75,7 +77,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             v.findViewById<TextView>(R.id.tv_add)?.visibility = View.GONE
         }
         tvMessage = v.findViewById(R.id.tv_message)
-        selectedItems = mutableListOf()
         list = mutableListOf()
         return v
     }
@@ -122,7 +123,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     open fun addToMyList() {
         if (!isRealmInitialized() || isAddInProgress) return
 
-        val itemsToAdd = selectedItems?.toList() ?: emptyList()
+        val itemsToAdd = sharedSelectionViewModel.selectedItems.value.toList()
         if (itemsToAdd.isEmpty()) return
 
         val resourceIds = mutableListOf<String>()
@@ -192,7 +193,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             addButton.isEnabled = if (inProgress) {
                 false
             } else {
-                !(selectedItems.isNullOrEmpty())
+                sharedSelectionViewModel.selectedItems.value.isNotEmpty()
             }
             addButton.alpha = if (inProgress) 0.5f else 1f
         }
@@ -202,7 +203,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val courseIds = mutableListOf<String>()
         val objectsToRemove = mutableListOf<RealmObject>()
 
-        selectedItems?.forEach { item ->
+        sharedSelectionViewModel.selectedItems.value.forEach { item ->
             val `object` = item as RealmObject
             objectsToRemove.add(`object`)
             if (`object` is RealmMyCourse) {
@@ -250,11 +251,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
             throw e
         }
-        selectedItems?.clear()
+        sharedSelectionViewModel.clearSelection()
     }
 
     fun countSelected(): Int {
-        return selectedItems?.size ?: 0
+        return sharedSelectionViewModel.selectedItems.value.size
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
@@ -393,9 +394,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun cleanupReferences() {
-        selectedItems?.clear()
+        sharedSelectionViewModel.clearSelection()
         list?.clear()
-        selectedItems = null
         list = null
         resources = null
     }
