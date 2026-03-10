@@ -369,7 +369,8 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val submissionsByExamId = submissions.groupBy { sub ->
-            examIds.firstOrNull { examId -> sub.parentId?.contains(examId) == true }
+            val bareId = sub.parentId?.split("@")?.get(0) ?: sub.parentId
+            examIds.firstOrNull { it == bareId }
         }
 
         exams.forEach { exam ->
