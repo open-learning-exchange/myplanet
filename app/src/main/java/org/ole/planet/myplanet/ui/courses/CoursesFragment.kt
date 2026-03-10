@@ -342,9 +342,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                    deleteSelected(true)
-                    clearAllSelections()
-                    adapterCourses.removeCourses(courseIdsToRemove)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        deleteSelected(true)
+                        clearAllSelections()
+                        adapterCourses.removeCourses(courseIdsToRemove)
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -359,9 +361,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                    deleteSelected(true)
-                    clearAllSelections()
-                    adapterCourses.removeCourses(courseIdsToRemove)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        deleteSelected(true)
+                        clearAllSelections()
+                        adapterCourses.removeCourses(courseIdsToRemove)
+                    }
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
