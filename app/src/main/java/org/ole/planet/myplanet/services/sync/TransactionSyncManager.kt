@@ -311,12 +311,12 @@ class TransactionSyncManager @Inject constructor(
             }
         }
 
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
         documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc, settings)
+            continueInsert(mRealm, table, jsonDoc)
         }
 
-        saveConcatenatedLinksToPrefs()
+        saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
 
     private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
