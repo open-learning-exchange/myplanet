@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -30,7 +29,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -79,9 +77,6 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var profileDbHandler: UserSessionManager
-    @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
