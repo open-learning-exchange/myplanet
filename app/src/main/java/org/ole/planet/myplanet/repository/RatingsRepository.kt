@@ -15,6 +15,9 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
+
+    suspend fun insertFromJson(act: com.google.gson.JsonObject)
+    fun serializeRating(realmRating: org.ole.planet.myplanet.model.RealmRating): com.google.gson.JsonObject
 }
 
 data class RatingEntry(

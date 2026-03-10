@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
@@ -40,6 +41,7 @@ class TransactionSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
+    private val ratingsRepository: RatingsRepository,
     private val sharedPrefManager: SharedPrefManager
 ) {
     suspend fun authenticate(): Boolean {
@@ -219,6 +221,20 @@ class TransactionSyncManager @Inject constructor(
                         table,
                         insertDuration,
                         arr.size()
+                    )
+                } else if (table == "ratings") {
+                    val insertStartTime = System.currentTimeMillis()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            ratingsRepository.insertFromJson(jsonDoc)
+                        }
+                    }
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch", table, insertDuration, arr.size()
                     )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)

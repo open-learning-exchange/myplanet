@@ -18,10 +18,12 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val ratingsRepository: RatingsRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -202,7 +204,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.equalTo("isUpdated", true)
         },
-        serializer = UploadSerializer.Simple(RealmRating::serializeRating),
+        serializer = UploadSerializer.Simple(ratingsRepository::serializeRating),
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         filterGuests = true,
