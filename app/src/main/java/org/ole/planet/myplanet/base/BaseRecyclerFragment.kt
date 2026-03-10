@@ -115,7 +115,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onRatingChanged() {
         viewLifecycleOwner.lifecycleScope.launch {
-            recyclerView.adapter = getAdapter()
+            getAdapter()
         }
     }
 
@@ -171,7 +171,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
 
             val newAdapter = getAdapter()
-            recyclerView.adapter = newAdapter
+            if (recyclerView.adapter != newAdapter) {
+                recyclerView.adapter = newAdapter
+            }
             showNoData(tvMessage, newAdapter.itemCount, "")
 
             result.exceptionOrNull()?.let {

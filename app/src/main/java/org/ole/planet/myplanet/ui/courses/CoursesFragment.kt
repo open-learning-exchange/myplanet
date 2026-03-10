@@ -204,17 +204,19 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 recyclerView.adapter = null
                 val courses = sortedCourseList.map { it.toCourse() }
 
-                adapterCourses = CoursesAdapter(
-                    requireActivity(),
-                    map,
-                    userModel?.isGuest() ?: true,
-                    { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
-                    isMyCourseLib
-                )
+                if (!::adapterCourses.isInitialized) {
+                    adapterCourses = CoursesAdapter(
+                        requireActivity(),
+                        map,
+                        userModel?.isGuest() ?: true,
+                        { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
+                        isMyCourseLib
+                    )
+                    adapterCourses.setListener(this@CoursesFragment)
+                    adapterCourses.setRatingChangeListener(this@CoursesFragment)
+                }
+                adapterCourses.updateData(courses, map, progressMap)
                 adapterCourses.submitList(courses)
-                adapterCourses.setProgressMap(progressMap)
-                adapterCourses.setListener(this@CoursesFragment)
-                adapterCourses.setRatingChangeListener(this@CoursesFragment)
                 recyclerView.adapter = adapterCourses
                 checkList()
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
@@ -260,23 +262,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         val courses = sortedCourseList.map { it.toCourse() }
 
-        adapterCourses = CoursesAdapter(
-            requireActivity(),
-            map,
-            userModel?.isGuest() ?: true,
-            { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
-            isMyCourseLib
-        )
+        if (!::adapterCourses.isInitialized) {
+            adapterCourses = CoursesAdapter(
+                requireActivity(),
+                map,
+                userModel?.isGuest() ?: true,
+                { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
+                isMyCourseLib
+            )
+            adapterCourses.setListener(this@CoursesFragment)
+            adapterCourses.setRatingChangeListener(this@CoursesFragment)
+        }
+        adapterCourses.updateData(courses, map, progressMap)
         adapterCourses.submitList(courses) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
-                selectedItems?.clear()
-                clearAllSelections()
                 checkList()
             }
         }
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setListener(this@CoursesFragment)
-        adapterCourses.setRatingChangeListener(this@CoursesFragment)
         return adapterCourses
     }
 

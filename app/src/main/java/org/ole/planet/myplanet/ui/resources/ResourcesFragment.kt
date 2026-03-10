@@ -239,14 +239,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         loadRatingsAndTags(allResourceIds, model?.id)
 
         val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
+        if (!::adapterLibrary.isInitialized) {
+            adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
+            adapterLibrary.setRatingChangeListener(this)
+            adapterLibrary.setListener(this)
+        }
 
         val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
-        adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() })
+        adapterLibrary.setRatingMap(map!!)
         adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
-
-        adapterLibrary.setRatingChangeListener(this)
-        adapterLibrary.setListener(this)
+        adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() })
 
         checkList(filteredList.size)
         showNoData(tvMessage, filteredList.size, "resources")

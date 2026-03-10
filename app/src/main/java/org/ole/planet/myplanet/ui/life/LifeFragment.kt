@@ -46,33 +46,38 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
-        lifeAdapter = LifeAdapter(requireContext(), this,
-            visibilityCallback = { myLife, isVisible ->
-                myLife._id?.let { id ->
+        if (!::lifeAdapter.isInitialized) {
+            lifeAdapter = LifeAdapter(requireContext(), this,
+                visibilityCallback = { myLife, isVisible ->
+                    myLife._id?.let { id ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            withContext(Dispatchers.IO) {
+                                lifeRepository.updateVisibility(isVisible, id)
+                            }
+                            if (!isVisible) {
+                                Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
+                            } else {
+                                Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+                            }
+                            refreshList()
+                        }
+                    }
+                },
+                reorderCallback = { list ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         withContext(Dispatchers.IO) {
-                            lifeRepository.updateVisibility(isVisible, id)
+                            lifeRepository.updateMyLifeListOrder(list)
                         }
-                        if (!isVisible) {
-                            Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
-                        } else {
-                            Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
-                        }
-                        refreshList()
                     }
                 }
-            },
-            reorderCallback = { list ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
-                        lifeRepository.updateMyLifeListOrder(list)
-                    }
-                }
-            }
-        )
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        itemTouchHelper = ItemTouchHelper(callback)
-        itemTouchHelper?.attachToRecyclerView(recyclerView)
+            )
+            val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+            itemTouchHelper = ItemTouchHelper(callback)
+            itemTouchHelper?.attachToRecyclerView(recyclerView)
+        }
+        val userId = profileDbHandler.getUserModel()?.id
+        val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        lifeAdapter.submitList(myLifeList)
         return lifeAdapter
     }
 
