@@ -98,7 +98,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             deadline?.time = Date(t.deadline)
 
             if (!t.assignee.isNullOrBlank()) {
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
@@ -121,7 +121,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val userList = teamsRepository.getJoinedMembers(teamId)
                 val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
 
@@ -187,7 +187,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     }
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val deadlineMillis = deadline?.timeInMillis
             if (deadlineMillis == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
@@ -213,7 +213,13 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value, viewLifecycleOwner.lifecycleScope, userRepository)
+        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
+            val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                val user = userRepository.getUserById(assigneeId)
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onNameFetched(user?.name) }
+            }
+            return@TeamsTasksAdapter { job.cancel() }
+        }
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
@@ -298,7 +304,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             return
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val userList = teamsRepository.getJoinedMembers(teamId)
             val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
 

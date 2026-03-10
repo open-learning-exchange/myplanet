@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -92,7 +92,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = settings.getString("userId", "--")
+                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                     val libraryList = resourcesRepository.getLibraryListForUser(userId)
                     showDownloadDialog(libraryList)
                 }
@@ -105,7 +105,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    deleteSelected(false)
+                }
+            }
         }
     }
 
@@ -172,12 +176,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             result.exceptionOrNull()?.let {
                 it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
+                Utilities.toast(activity, "An error occurred: ${it.message}")
                 return@launch
             }
 
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+            if (libraryAdded) Utilities.toast(activity, getString(R.string.added_to_my_library))
+            if (courseAdded) Utilities.toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 
@@ -194,7 +198,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun deleteSelected(deleteProgress: Boolean) {
+    open suspend fun deleteSelected(deleteProgress: Boolean) {
         val courseIds = mutableListOf<String>()
         val objectsToRemove = mutableListOf<RealmObject>()
 
@@ -291,9 +295,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             .replace(DIACRITICS_REGEX, "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
+            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {

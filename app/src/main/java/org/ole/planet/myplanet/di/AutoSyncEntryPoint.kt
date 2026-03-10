@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.di
 
-import android.content.SharedPreferences
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -15,7 +14,5 @@ interface AutoSyncEntryPoint {
     fun syncManager(): SyncManager
     fun uploadManager(): UploadManager
     fun uploadToShelfService(): UploadToShelfService
-    @AppPreferences
-    fun sharedPreferences(): SharedPreferences
     fun sharedPrefManager(): SharedPrefManager
 }

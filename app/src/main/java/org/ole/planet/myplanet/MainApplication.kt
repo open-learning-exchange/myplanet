@@ -35,8 +35,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.RetryQueueEntryPoint
 import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
@@ -44,13 +44,14 @@ import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.StayOnlineWorker
 import org.ole.planet.myplanet.services.TaskNotificationWorker
+import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
@@ -69,9 +70,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
 
     @Inject
-    @AppPreferences
-    lateinit var appPreferencesProvider: Provider<SharedPreferences>
-    val preferences: SharedPreferences by lazy { appPreferencesProvider.get() }
+    lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
     @DefaultPreferences
@@ -117,14 +116,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                     WorkerDependenciesEntryPoint::class.java
                 )
                 val userSessionManager = entryPoint.userSessionManager()
-                val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
                     val model = userSessionManager.getUserModel()
                     databaseService.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        log.parentCode = settings.getString("parentCode", "")
-                        log.createdOn = settings.getString("planetCode", "")
+                        log.parentCode = spm.getParentCode()
+                        log.createdOn = spm.getPlanetCode()
                         model?.let { log.userId = it.id }
                         log.time = "${Date().time}"
                         log.page = ""
@@ -280,8 +279,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private suspend fun scheduleWorkersOnStart() {
         withContext(Dispatchers.Default) {
-            if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
-                val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
+            if (sharedPrefManager.getAutoSync() && sharedPrefManager.rawPreferences.contains("autoSyncInterval")) {
+                val syncInterval = sharedPrefManager.getAutoSyncInterval()
                 scheduleAutoSyncWork(syncInterval)
             } else {
                 cancelAutoSyncWork()
@@ -335,8 +334,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         withContext(Dispatchers.Default) {
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
-                    val serverUrl = preferences.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
+                    val serverUrl = sharedPrefManager.getServerUrl()
+                    if (serverUrl.isNotEmpty()) {
                         applicationScope.launch {
                             val canReachServer = isServerReachable(serverUrl)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
@@ -396,8 +395,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun getCurrentThemeMode(): String {
-        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
+        return ThemeManager.getCurrentThemeMode(context)
     }
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}

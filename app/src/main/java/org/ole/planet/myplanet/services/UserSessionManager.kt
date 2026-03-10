@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
-import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -12,18 +11,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.Utilities
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository
@@ -32,7 +29,7 @@ class UserSessionManager @Inject constructor(
 
     init {
         try {
-            fullName = Utilities.getUserName(settings)
+            fullName = sharedPrefManager.getUserName()
         } catch (e: IllegalArgumentException) {
             throw e
         }
