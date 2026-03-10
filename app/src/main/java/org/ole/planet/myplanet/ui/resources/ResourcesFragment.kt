@@ -569,12 +569,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = sharedSelectionViewModel.selectedItems.value.isNotEmpty()
-        if (adapterLibrary.areAllSelected()) {
-            selectAll.isChecked = true
-            selectAll.text = getString(R.string.unselect_all)
-        } else {
-            selectAll.isChecked = false
-            selectAll.text = getString(R.string.select_all)
+        if (::adapterLibrary.isInitialized) {
+            if (adapterLibrary.areAllSelected()) {
+                selectAll.isChecked = true
+                selectAll.text = getString(R.string.unselect_all)
+            } else {
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+            }
         }
     }
 
