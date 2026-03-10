@@ -207,3 +207,16 @@ dependencies {
     implementation(libs.tink.android)
     implementation(libs.webkit)
 }
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "io.mockk:mockk:1.13.10"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3"
+}
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+    testImplementation "io.mockk:mockk:1.13.10"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3"
+}
+dependencies {
+    testImplementation "io.reactivex.rxjava2:rxjava:2.2.21"
+}

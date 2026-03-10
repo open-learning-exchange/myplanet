@@ -84,7 +84,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         }
 
         // Single serialized path to copy and send downstream
-        launch(databaseService.ioDispatcher) {
+        launch {
             for (frozenResults in channel) {
                 if (isClosed.get()) break
                 try {
@@ -130,7 +130,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             safeCloseRealm()
             throw e
         }
-    }.flowOn(Dispatchers.Main)
+    }.flowOn(databaseService.ioDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
