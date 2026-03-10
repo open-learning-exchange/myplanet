@@ -1,12 +1,69 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class TagsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), TagsRepository {
+
+    override suspend fun insertTagsList(docs: List<JsonObject>) {
+        executeTransaction { mRealm ->
+            docs.forEach { act ->
+                insertTagToRealm(mRealm, act)
+            }
+        }
+    }
+
+    override suspend fun insertFromJson(act: JsonObject) {
+        executeTransaction { mRealm ->
+            insertTagToRealm(mRealm, act)
+        }
+    }
+
+    private fun insertTagToRealm(mRealm: Realm, act: JsonObject) {
+        var tag = mRealm.where(RealmTag::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+        if (tag == null) {
+            tag = mRealm.createObject(RealmTag::class.java, JsonUtils.getString("_id", act))
+        }
+        if (tag != null) {
+            tag._rev = JsonUtils.getString("_rev", act)
+            tag._id = JsonUtils.getString("_id", act)
+            tag.name = JsonUtils.getString("name", act)
+            tag.db = JsonUtils.getString("db", act)
+            tag.docType = JsonUtils.getString("docType", act)
+            tag.tagId = JsonUtils.getString("tagId", act)
+            tag.linkId = JsonUtils.getString("linkId", act)
+            val el = act["attachedTo"]
+            if (el != null && el.isJsonArray) {
+                val attachedTo = JsonUtils.getJsonArray("attachedTo", act)
+                tag.attachedTo?.clear()
+                for (i in 0 until attachedTo.size()) {
+                    tag.attachedTo?.add(JsonUtils.getString(attachedTo, i))
+                }
+            } else {
+                val attachedStr = JsonUtils.getString("attachedTo", act)
+                if (attachedStr.isNotEmpty()) {
+                    tag.attachedTo?.clear()
+                    tag.attachedTo?.add(attachedStr)
+                }
+            }
+            tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
+        }
+    }
+
+    override fun getTagsArray(tags: List<RealmTag>): JsonArray {
+        val array = JsonArray()
+        for (t in tags) {
+            array.add(t._id)
+        }
+        return array
+    }
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
         return queryList(RealmTag::class.java) {

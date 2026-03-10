@@ -233,7 +233,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         mediums: Set<String>
     ) {
         val filter = JsonObject().apply {
-            add("tags", RealmTag.getTagsArray(tags))
+            add("tags", tagsRepository.getTagsArray(tags))
             add("subjects", getJsonArrayFromList(subjects))
             add("language", getJsonArrayFromList(languages))
             add("level", getJsonArrayFromList(levels))

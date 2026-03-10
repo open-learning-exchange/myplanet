@@ -31,39 +31,4 @@ open class RealmTag : RealmObject() {
     override fun toString(): String {
         return name.orEmpty()
     }
-
-    companion object {
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject) {
-            var tag = mRealm.where(RealmTag::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (tag == null) {
-                tag = mRealm.createObject(RealmTag::class.java, JsonUtils.getString("_id", act))
-            }
-            if (tag != null) {
-                tag._rev = JsonUtils.getString("_rev", act)
-                tag._id = JsonUtils.getString("_id", act)
-                tag.name = JsonUtils.getString("name", act)
-                tag.db = JsonUtils.getString("db", act)
-                tag.docType = JsonUtils.getString("docType", act)
-                tag.tagId = JsonUtils.getString("tagId", act)
-                tag.linkId = JsonUtils.getString("linkId", act)
-                val el = act["attachedTo"]
-                if (el != null && el.isJsonArray) {
-                    tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act))
-                } else {
-                    tag.attachedTo?.add(JsonUtils.getString("attachedTo", act))
-                }
-                tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
-            }
-        }
-
-        @JvmStatic
-        fun getTagsArray(list: List<RealmTag>): JsonArray {
-            val array = JsonArray()
-            for (t in list) {
-                array.add(t._id)
-            }
-            return array
-        }
-    }
 }

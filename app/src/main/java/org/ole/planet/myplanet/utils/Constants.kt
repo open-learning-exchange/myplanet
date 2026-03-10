@@ -52,7 +52,6 @@ object Constants {
 
     private fun initClasses() {
         classList["news"] = RealmNews::class.java
-        classList["tags"] = RealmTag::class.java
         classList["login_activities"] = RealmOfflineActivity::class.java
         classList["ratings"] = RealmRating::class.java
         classList["submissions"] = RealmSubmission::class.java
