@@ -72,7 +72,7 @@ class RatingsFragment : DialogFragment() {
         binding.userStatusContainer.isVisible = true
         updateSubmitButtonState()
         binding.btnSubmit.setOnClickListener {
-            if (binding.ratingBar.rating.toDouble() == 0.0) {
+            if (binding.ratingBar.rating == 0f) {
                 binding.ratingError.visibility = View.VISIBLE
                 binding.ratingError.text = getString(R.string.kindly_give_a_rating)
             } else {
