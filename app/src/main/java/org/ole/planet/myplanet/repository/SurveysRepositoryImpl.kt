@@ -34,9 +34,8 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean) {
         val userModel = userSessionManager.getUserModel()
-        databaseService.withRealmAsync { realm ->
-            realm.executeTransaction { transactionRealm ->
-                val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
+        executeTransaction { transactionRealm ->
+            val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
                     .findFirst() ?: return@executeTransaction
 
                 val sParentCode = sharedPrefManager.getParentCode()
@@ -177,7 +176,6 @@ class SurveysRepositoryImpl @Inject constructor(
                     }
                 }
             }
-        }
     }
     override suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
