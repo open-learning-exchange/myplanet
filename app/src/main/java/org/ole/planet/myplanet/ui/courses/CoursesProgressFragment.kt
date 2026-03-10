@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -36,11 +38,13 @@ class CoursesProgressFragment : Fragment() {
     }
 
     private fun observeCourseData() {
-        lifecycleScope.launch {
-            progressViewModel.courseData.collect { courseData ->
-                courseData?.let { jsonArray ->
-                    val list = jsonArray.map { it.asJsonObject }
-                    progressAdapter.submitList(list)
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                progressViewModel.courseData.collect { courseData ->
+                    courseData?.let { jsonArray ->
+                        val list = jsonArray.map { it.asJsonObject }
+                        progressAdapter.submitList(list)
+                    }
                 }
             }
         }

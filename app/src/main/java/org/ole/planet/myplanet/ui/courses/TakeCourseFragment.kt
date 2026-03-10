@@ -17,10 +17,8 @@ import androidx.viewpager2.widget.ViewPager2
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -191,21 +189,19 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val stepsSize = steps.size
 
         lifecycleScope.launch {
-            withContext(Dispatchers.Main) {
-                if (!isGuest && !containsUserId) {
-                    binding.btnRemove.visibility = View.VISIBLE
-                    binding.btnRemove.text = getString(R.string.join)
-                    joinDialog = getDialog(
-                        requireActivity(),
-                        getString(R.string.do_you_want_to_join_this_course),
-                        getString(R.string.join_this_course)
-                    ) { _: DialogInterface?, _: Int ->
-                        addRemoveCourse()
-                    }
-                    joinDialog?.show()
-                } else {
-                    binding.btnRemove.visibility = View.GONE
+            if (!isGuest && !containsUserId) {
+                binding.btnRemove.visibility = View.VISIBLE
+                binding.btnRemove.text = getString(R.string.join)
+                joinDialog = getDialog(
+                    requireActivity(),
+                    getString(R.string.do_you_want_to_join_this_course),
+                    getString(R.string.join_this_course)
+                ) { _: DialogInterface?, _: Int ->
+                    addRemoveCourse()
                 }
+                joinDialog?.show()
+            } else {
+                binding.btnRemove.visibility = View.GONE
             }
 
             val detachedUserModel = userModel
@@ -353,10 +349,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
                 setCourseData()
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    e.printStackTrace()
-                    Utilities.toast(activity, "Failed to update course: ${e.message}")
-                }
+                e.printStackTrace()
+                Utilities.toast(activity, "Failed to update course: ${e.message}")
             }
         }
     }

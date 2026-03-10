@@ -72,29 +72,10 @@ class SubmissionsAdapter(
             payloads.forEach { payload ->
                 when (payload) {
                     PAYLOAD_EXAM_UPDATE -> {
-                        if (examHashMap.containsKey(submission.parentId)) {
-                            holder.binding.title.text = examHashMap[submission.parentId]?.name
-                        }
+                        holder.updateExam(submission)
                     }
                     PAYLOAD_SUBMISSION_COUNT_UPDATE -> {
-                        val count = submissionCountMap[submission.id] ?: 1
-                        if (count > 1) {
-                            holder.binding.submissionCount.visibility = View.VISIBLE
-                            holder.binding.submissionCount.text = "($count)"
-                        } else {
-                            holder.binding.submissionCount.visibility = View.GONE
-                        }
-                        holder.itemView.setOnClickListener {
-                            if (count > 1) {
-                                showAllSubmissions(submission)
-                            } else {
-                                if (type == "survey") {
-                                    openSurvey(listener, submission.id, true, false, "")
-                                } else {
-                                    openSubmissionDetail(listener, submission.id)
-                                }
-                            }
-                        }
+                        holder.updateSubmissionCount(submission)
                     }
                 }
             }
@@ -102,45 +83,7 @@ class SubmissionsAdapter(
     }
 
     override fun onBindViewHolder(holder: SubmissionsViewHolder, position: Int) {
-        val submission = getItem(position)
-        val binding = holder.binding
-        binding.status.text = submission.status
-        binding.date.text = getFormattedDate(submission.startTime)
-        showSubmittedBy(binding, submission)
-        if (examHashMap.containsKey(submission.parentId)) {
-            binding.title.text = examHashMap[submission.parentId]?.name
-        }
-
-        val count = submissionCountMap[submission.id] ?: 1
-        if (count > 1) {
-            binding.submissionCount.visibility = View.VISIBLE
-            binding.submissionCount.text = "($count)"
-        } else {
-            binding.submissionCount.visibility = View.GONE
-        }
-
-        holder.itemView.setOnClickListener {
-            if (count > 1) {
-                showAllSubmissions(submission)
-            } else {
-                if (type == "survey") {
-                    openSurvey(listener, submission.id, true, false, "")
-                } else {
-                    openSubmissionDetail(listener, submission.id)
-                }
-            }
-        }
-    }
-
-    private fun showSubmittedBy(binding: RowMysurveyBinding, submission: RealmSubmission) {
-        val finalName = submission.submitterName
-        if (finalName.isBlank()) {
-            binding.submittedBy.visibility = View.GONE
-            binding.submittedBy.text = ""
-        } else {
-            binding.submittedBy.visibility = View.VISIBLE
-            binding.submittedBy.text = finalName
-        }
+        holder.bind(getItem(position))
     }
 
     private fun openSubmissionDetail(listener: OnHomeItemClickListener?, id: String?) {
@@ -167,7 +110,54 @@ class SubmissionsAdapter(
         listener?.openCallFragment(fragment)
     }
 
-    class SubmissionsViewHolder(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root)
+    inner class SubmissionsViewHolder(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(submission: RealmSubmission) {
+            binding.status.text = submission.status
+            binding.date.text = getFormattedDate(submission.startTime)
+            showSubmittedBy(submission)
+            updateExam(submission)
+            updateSubmissionCount(submission)
+        }
+
+        fun updateExam(submission: RealmSubmission) {
+            if (examHashMap.containsKey(submission.parentId)) {
+                binding.title.text = examHashMap[submission.parentId]?.name
+            }
+        }
+
+        fun updateSubmissionCount(submission: RealmSubmission) {
+            val count = submissionCountMap[submission.id] ?: 1
+            if (count > 1) {
+                binding.submissionCount.visibility = View.VISIBLE
+                binding.submissionCount.text = "($count)"
+            } else {
+                binding.submissionCount.visibility = View.GONE
+            }
+
+            itemView.setOnClickListener {
+                if (count > 1) {
+                    showAllSubmissions(submission)
+                } else {
+                    if (type == "survey") {
+                        openSurvey(listener, submission.id, true, false, "")
+                    } else {
+                        openSubmissionDetail(listener, submission.id)
+                    }
+                }
+            }
+        }
+
+        private fun showSubmittedBy(submission: RealmSubmission) {
+            val finalName = submission.submitterName
+            if (finalName.isBlank()) {
+                binding.submittedBy.visibility = View.GONE
+                binding.submittedBy.text = ""
+            } else {
+                binding.submittedBy.visibility = View.VISIBLE
+                binding.submittedBy.text = finalName
+            }
+        }
+    }
 
     companion object {
         private const val PAYLOAD_EXAM_UPDATE = "payload_exam_update"
