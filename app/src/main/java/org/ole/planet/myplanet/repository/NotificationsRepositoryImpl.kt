@@ -27,27 +27,27 @@ class NotificationsRepositoryImpl @Inject constructor(
     ): List<RealmNotification> {
         val actualUserId = userId ?: ""
 
-        return databaseService.withRealm { realm ->
-            realm.executeTransaction { r ->
-                surveyTitles.forEach { title ->
-                    createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
-                }
-
-                taskData.forEach { (title, deadline, id) ->
-                    createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
-                }
-
-                if (storageRatio > 85) {
-                    createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
-                }
-                createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
-
-                joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                    createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
-                }
+        executeTransaction { r ->
+            surveyTitles.forEach { title ->
+                createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
             }
 
+            taskData.forEach { (title, deadline, id) ->
+                createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
+            }
+
+            if (storageRatio > 85) {
+                createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
+            }
+            createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+
+            joinRequestData.forEach { (requesterName, teamName, requestId) ->
+                val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
+            }
+        }
+
+        return databaseService.withRealm { realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", actualUserId)
                 .equalTo("isRead", false)
