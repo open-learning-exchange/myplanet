@@ -1,61 +1,75 @@
 package org.ole.planet.myplanet.ui.user
 
-import android.app.Activity
 import android.text.TextUtils
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ImageView
-import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ItemUserBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class UserArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUser>) : ArrayAdapter<RealmUser>(activity, view, list) {
-    private class ViewHolder {
-        var tvName: TextView? = null
-        var joined: TextView? = null
-        var image: ImageView? = null
+class UserArrayAdapter(
+    private val onItemClick: (RealmUser) -> Unit
+) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(UserDiffCallback()) {
+
+    var selectedPosition = 0
+
+    class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolder(binding)
     }
 
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        val holder: ViewHolder
-        var convertViewVar = convertView
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val user = getItem(position)
+        val context = holder.itemView.context
 
-        if (convertViewVar == null) {
-            convertViewVar = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
-            holder = ViewHolder()
-            holder.tvName = convertViewVar.findViewById(R.id.txt_name)
-            holder.joined = convertViewVar.findViewById(R.id.txt_joined)
-            holder.image = convertViewVar.findViewById(R.id.iv_user)
-            convertViewVar.tag = holder
+        holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
+        holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
+
+        if (!TextUtils.isEmpty(user.userImage)) {
+            Glide.with(context)
+                .load(user.userImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .circleCrop()
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(holder.binding.ivUser)
         } else {
-            holder = convertViewVar.tag as ViewHolder
+            holder.binding.ivUser.setImageResource(R.drawable.profile)
         }
 
-        val um = getItem(position)
-        holder.tvName?.text = context.getString(R.string.two_strings, um?.getFullName(), "(${um?.name})")
-        if (um != null) {
-            holder.joined?.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(um.joinDate))
-        }
-
-        if (!TextUtils.isEmpty(um?.userImage)) {
-            holder.image?.let {
-                Glide.with(it.context)
-                    .load(um?.userImage)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(it)
-            }
+        if (position == selectedPosition) {
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
         } else {
-            holder.image?.setImageResource(R.drawable.profile)
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
         }
 
-        return convertViewVar!!
+        holder.itemView.setOnClickListener {
+            val currentPos = holder.bindingAdapterPosition
+            if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
+            val oldPos = selectedPosition
+            selectedPosition = currentPos
+            notifyItemChanged(oldPos)
+            notifyItemChanged(selectedPosition)
+            onItemClick(user)
+        }
+    }
+
+    class UserDiffCallback : DiffUtil.ItemCallback<RealmUser>() {
+        override fun areItemsTheSame(oldItem: RealmUser, newItem: RealmUser): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: RealmUser, newItem: RealmUser): Boolean {
+            return oldItem.id == newItem.id && oldItem.name == newItem.name
+        }
     }
 }
