@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.library
+package org.ole.planet.myplanet.ui.resources
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

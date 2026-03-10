@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import androidx.fragment.app.viewModels
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.ui.library.SharedSelectionViewModel
+import org.ole.planet.myplanet.ui.resources.SharedSelectionViewModel
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
