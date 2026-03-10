@@ -348,12 +348,34 @@ class CoursesRepositoryImpl @Inject constructor(
         userId: String?,
         questionsByExamId: Map<String?, List<RealmExamQuestion>>
     ) {
-        exams.forEach { it ->
-            it.id?.let { it1 ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it1).equalTo("type", "exam").findAll()
-            }?.map { submission ->
-                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", submission.id).findAll()
+        val examIds = exams.mapNotNull { it.id }.filter { it.isNotEmpty() }
+        if (examIds.isEmpty()) return
+
+        val submissions = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
+        examIds.chunked(250).forEach { chunk ->
+            var query = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "exam")
+
+            if (chunk.isNotEmpty()) {
+                query = query.and().beginGroup()
+                chunk.forEachIndexed { index, id ->
+                    if (index > 0) query = query.or()
+                    query = query.contains("parentId", id)
+                }
+                query = query.endGroup()
+            }
+            submissions.addAll(query.findAll())
+        }
+
+        val submissionsByExamId = submissions.groupBy { sub ->
+            examIds.firstOrNull { examId -> sub.parentId?.contains(examId) == true }
+        }
+
+        exams.forEach { exam ->
+            val examSubmissions = submissionsByExamId[exam.id] ?: emptyList()
+            examSubmissions.forEach { submission ->
+                val answers = submission.answers ?: emptyList()
                 var examId = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
                     examId = submission.parentId!!.split("@")[0]
