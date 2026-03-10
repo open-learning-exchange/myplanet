@@ -280,7 +280,7 @@ class UploadManager @Inject constructor(
                 val serialized: JsonObject
             )
 
-            data class UploadResult(
+            data class PendingResourceUpload(
                 val rev: String,
                 val id: String,
                 val resourceData: ResourceData
@@ -314,7 +314,7 @@ class UploadManager @Inject constructor(
 
             withContext(Dispatchers.IO) {
                 resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                    val successfulUploads = mutableListOf<UploadResult>()
+                    val successfulUploads = mutableListOf<PendingResourceUpload>()
 
                     batch.forEach { resourceData ->
                         try {
@@ -326,7 +326,7 @@ class UploadManager @Inject constructor(
                             if (`object` != null) {
                                 val rev = getString("rev", `object`)
                                 val id = getString("id", `object`)
-                                successfulUploads.add(UploadResult(rev, id, resourceData))
+                                successfulUploads.add(PendingResourceUpload(rev, id, resourceData))
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -335,6 +335,7 @@ class UploadManager @Inject constructor(
 
                     if (successfulUploads.isNotEmpty()) {
                         val idsToUpdate = successfulUploads.mapNotNull { it.resourceData.libraryId }.toTypedArray()
+                        if (idsToUpdate.isEmpty()) return@forEach
 
                         databaseService.executeTransactionAsync { transactionRealm ->
                             val libraries = transactionRealm.where(RealmMyLibrary::class.java)
@@ -369,6 +370,10 @@ class UploadManager @Inject constructor(
                             }
                         }
 
+                        // Note: executeTransactionAsync is asynchronous.
+                        // The following withRealm query might read stale data (before the above transaction completes).
+                        // This is currently safe because uploadAttachment only reads library.resourceLocalAddress,
+                        // which is unaffected by the transaction, but could be fragile if uploadAttachment later requires _id/_rev.
                         listener?.let {
                             val updatedLibraries = databaseService.withRealm { realm ->
                                 realm.where(RealmMyLibrary::class.java)
