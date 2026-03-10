@@ -35,6 +35,10 @@ By leveraging myPlanet, users gain seamless access to the Planet system’s exte
 
 For the app usage manual, please visit the [myPlanet Manual page](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md) on OLE Support.
 
+## Best Practices Checklist
+
+- **Adapters**: Always use the shared `DiffUtils.itemCallback` when creating or modifying `ListAdapter`s instead of defining custom `DiffUtil.ItemCallback` classes to prevent callback duplication.
+
 ## Contact
 
 For any questions or feedback, please join [our Discord server](https://discord.gg/BVrFEeNtQZ).
