@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -44,7 +45,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val databaseService: DatabaseService,
-    private val serverUrlMapper: ServerUrlMapper
+    private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -53,13 +55,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             try {
                 val healthUrl = UrlUtils.getHealthAccessUrl(sharedPrefManager)
                 if (healthUrl.isBlank()) {
-                    withContext(Dispatchers.Main) { listener.onSuccess("") }
+                    withContext(dispatcherProvider.main) { listener.onSuccess("") }
                     return@launch
                 }
 
                 try {
-                    val response = withContext(Dispatchers.IO) { apiInterface.healthAccess(healthUrl) }
-                    withContext(Dispatchers.Main) {
+                    val response = withContext(dispatcherProvider.io) { apiInterface.healthAccess(healthUrl) }
+                    withContext(dispatcherProvider.main) {
                         when (response.code()) {
                             200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
                             401 -> listener.onSuccess("Unauthorized - Invalid credentials")
@@ -80,11 +82,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         is IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
-                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
+                    withContext(dispatcherProvider.main) { listener.onSuccess(errorMsg) }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
+                withContext(dispatcherProvider.main) { listener.onSuccess("Health access initialization failed") }
             }
         }
     }
@@ -96,7 +98,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
 
         serviceScope.launch {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 callback.onCheckingVersion()
             }
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
@@ -119,9 +121,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = withContext(Dispatchers.IO) { fetchVersionInfo(spm) }
+                val planetInfo = withContext(dispatcherProvider.io) { fetchVersionInfo(spm) }
                 if (planetInfo == null) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         callback.onError(context.getString(R.string.version_not_found), true)
                     }
                     return@launch
@@ -136,7 +138,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val rawApkVersion = fetchApkVersionString(spm)
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     }
                     return@launch
@@ -144,7 +146,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 val apkVersion = parseApkVersionString(versionStr)
                     ?: run {
-                        withContext(Dispatchers.Main) {
+                        withContext(dispatcherProvider.main) {
                             callback.onError(
                                 context.getString(R.string.new_apk_version_required_but_not_found_on_server),
                                 false
@@ -160,7 +162,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
             }
@@ -432,7 +434,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun fetchVersionInfo(spm: SharedPrefManager): MyPlanet? =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             val result = ApiClient.executeWithResult {
                 apiInterface.checkVersion(UrlUtils.getUpdateUrl(spm))
             }
@@ -443,7 +445,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
 
     private suspend fun fetchApkVersionString(spm: SharedPrefManager): String? =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             val result = ApiClient.executeWithResult {
                 apiInterface.getApkVersion(UrlUtils.getApkVersionUrl(spm))
             }
@@ -465,7 +467,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         val currentVersion = VersionUtils.getVersionCode(context)
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onUpdateAvailable(info, false)
                 }
             }
@@ -473,7 +475,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
         if (apkVersion > currentVersion) {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
                 }
             }
@@ -481,13 +483,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
         if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onUpdateAvailable(info, true)
                 }
             }
         } else {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                 }
             }
