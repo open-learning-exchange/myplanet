@@ -3,15 +3,16 @@ package org.ole.planet.myplanet.model
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.content.SharedPreferences
 import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
 import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -29,13 +30,12 @@ class MyPlanet : Serializable {
 
     companion object {
         @JvmStatic
-        fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUser): JsonObject {
+        fun getMyPlanetActivities(context: Context, spm: SharedPrefManager, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
-            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
+            val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
-            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
+            postJSON.addProperty("last_synced", spm.getLastSync())
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("type", "usages")
@@ -44,12 +44,11 @@ class MyPlanet : Serializable {
         }
 
         @JvmStatic
-        fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUser): JsonObject {
+        fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
-            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = JsonUtils.gson.fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
+            val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
-            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
+            postJSON.addProperty("last_synced", spm.getLastSync())
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("version", VersionUtils.getVersionCode(context))
@@ -66,8 +65,8 @@ class MyPlanet : Serializable {
         @JvmStatic
         fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
-            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            cal.timeInMillis = settings.getLong("lastUsageUploaded", 0)
+            val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+            cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 val mUsageStatsManager = MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
