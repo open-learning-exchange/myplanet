@@ -199,20 +199,56 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open suspend fun deleteSelected(deleteProgress: Boolean) {
-        val items = selectedItems?.toList() ?: return
-        items.forEach { item ->
+        val courseIds = mutableListOf<String>()
+        val objectsToRemove = mutableListOf<RealmObject>()
+
+        selectedItems?.forEach { item ->
             val `object` = item as RealmObject
-            val userId = profileDbHandler.getUserModel()?.id
-            if (`object` is RealmMyCourse && userId != null) {
-                if (deleteProgress) {
-                    `object`.courseId?.let { coursesRepository.removeCourseAndProgress(it, userId) }
-                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
-                } else {
-                    removeFromShelf(`object`)
+            objectsToRemove.add(`object`)
+            if (`object` is RealmMyCourse) {
+                `object`.courseId?.let { courseIds.add(it) }
+            }
+        }
+
+        try {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+
+            if (deleteProgress && courseIds.isNotEmpty()) {
+                val courseIdsArray = courseIds.toTypedArray()
+                mRealm.where(RealmCourseProgress::class.java)
+                    .`in`("courseId", courseIdsArray)
+                    .findAll()
+                    .deleteAllFromRealm()
+
+                val examList = mRealm.where(RealmStepExam::class.java)
+                    .`in`("courseId", courseIdsArray)
+                    .findAll()
+                val examIds = examList.mapNotNull { it.id }.toTypedArray()
+
+                if (examIds.isNotEmpty()) {
+                    mRealm.where(RealmSubmission::class.java)
+                        .`in`("parentId", examIds)
+                        .notEqualTo("type", "survey")
+                        .equalTo("uploaded", false)
+                        .findAll()
+                        .deleteAllFromRealm()
                 }
-            } else {
+            }
+
+            objectsToRemove.forEach { `object` ->
                 removeFromShelf(`object`)
             }
+
+            if (mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
         }
         selectedItems?.clear()
     }
