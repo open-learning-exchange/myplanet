@@ -36,7 +36,6 @@ class TeamsAdapter(
     private var teamListener: OnTeamEditListener? = null
     private var updateCompleteListener: OnUpdateCompleteListener? = null
     private var teamActionsListener: OnTeamActionsListener? = null
-    private val teamStatusCache = mutableMapOf<String, TeamStatus>()
 
     fun setTeamListener(teamListener: OnTeamEditListener?) {
         this.teamListener = teamListener
@@ -179,15 +178,12 @@ class TeamsAdapter(
         teamActionsListener?.onRequestToJoin(team, user)
 
         val teamId = team._id ?: return
-        val userId = user?.id
-        val cacheKey = "${teamId}_${userId}"
 
         val newStatus = TeamStatus(
             isMember = false,
             isLeader = false,
             hasPendingRequest = true
         )
-        teamStatusCache[cacheKey] = newStatus
 
         val updatedList = currentList.map {
             if (it._id == teamId) it.copy(teamStatus = newStatus) else it
@@ -205,10 +201,6 @@ class TeamsAdapter(
 
     fun setType(type: String?) {
         this.type = type
-    }
-
-    fun cleanup() {
-        teamStatusCache.clear()
     }
 
     class TeamsViewHolder(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
