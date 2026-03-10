@@ -496,4 +496,34 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
     }
+
+    override suspend fun removeCoursesAndProgress(courseIds: List<String>, userId: String) {
+        if (courseIds.isEmpty()) return
+
+        executeTransaction { realm ->
+            val courseIdsArray = courseIds.toTypedArray()
+            realm.where(org.ole.planet.myplanet.model.RealmCourseProgress::class.java)
+                .`in`("courseId", courseIdsArray)
+                .findAll()
+                .deleteAllFromRealm()
+
+            val examList: List<org.ole.planet.myplanet.model.RealmStepExam> = realm.where(org.ole.planet.myplanet.model.RealmStepExam::class.java)
+                .`in`("courseId", courseIdsArray)
+                .findAll()
+            val examIds = examList.mapNotNull { it.id }.toTypedArray()
+
+            if (examIds.isNotEmpty()) {
+                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                    .`in`("parentId", examIds)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
+
+        courseIds.forEach { courseId ->
+            leaveCourse(courseId, userId)
+        }
+    }
 }

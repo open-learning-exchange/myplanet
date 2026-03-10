@@ -649,6 +649,39 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         hideButtons()
     }
 
+
+    override suspend fun deleteSelected(deleteProgress: Boolean) {
+        val courseIds = mutableListOf<String>()
+
+        selectedItems?.forEach { item ->
+            if (item is org.ole.planet.myplanet.model.RealmMyCourse) {
+                item.courseId?.let { courseIds.add(it) }
+            }
+        }
+
+        val userId = userModel?.id
+
+        if (userId != null && courseIds.isNotEmpty()) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                if (deleteProgress) {
+                    coursesRepository.removeCoursesAndProgress(courseIds, userId)
+                } else {
+                    courseIds.forEach { courseId ->
+                        coursesRepository.leaveCourse(courseId, userId)
+                    }
+                }
+            }
+        }
+        selectedItems?.clear()
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            if (userId != null && courseIds.isNotEmpty()) {
+                org.ole.planet.myplanet.utils.Utilities.toast(activity, getString(org.ole.planet.myplanet.R.string.removed_from_mycourse))
+            }
+            changeButtonStatus()
+            hideButtons()
+        }
+    }
+
     override fun onTagClicked(tag: Tag) {
         val realmTag = RealmTag()
         realmTag.name = tag.name

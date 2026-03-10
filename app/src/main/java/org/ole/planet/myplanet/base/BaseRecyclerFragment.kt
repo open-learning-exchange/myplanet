@@ -198,43 +198,18 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
+
     open suspend fun deleteSelected(deleteProgress: Boolean) {
-        val courseIds = mutableListOf<String>()
-        val objectsToRemove = mutableListOf<RealmObject>()
+        val objectsToRemove = mutableListOf<io.realm.RealmObject>()
 
         selectedItems?.forEach { item ->
-            val `object` = item as RealmObject
+            val `object` = item as io.realm.RealmObject
             objectsToRemove.add(`object`)
-            if (`object` is RealmMyCourse) {
-                `object`.courseId?.let { courseIds.add(it) }
-            }
         }
 
         try {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
-            }
-
-            if (deleteProgress && courseIds.isNotEmpty()) {
-                val courseIdsArray = courseIds.toTypedArray()
-                mRealm.where(RealmCourseProgress::class.java)
-                    .`in`("courseId", courseIdsArray)
-                    .findAll()
-                    .deleteAllFromRealm()
-
-                val examList = mRealm.where(RealmStepExam::class.java)
-                    .`in`("courseId", courseIdsArray)
-                    .findAll()
-                val examIds = examList.mapNotNull { it.id }.toTypedArray()
-
-                if (examIds.isNotEmpty()) {
-                    mRealm.where(RealmSubmission::class.java)
-                        .`in`("parentId", examIds)
-                        .notEqualTo("type", "survey")
-                        .equalTo("uploaded", false)
-                        .findAll()
-                        .deleteAllFromRealm()
-                }
             }
 
             objectsToRemove.forEach { `object` ->
@@ -251,8 +226,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             throw e
         }
         selectedItems?.clear()
-    }
 
+    }
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
     }
