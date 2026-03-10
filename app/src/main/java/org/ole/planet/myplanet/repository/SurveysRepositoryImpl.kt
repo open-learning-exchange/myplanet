@@ -355,4 +355,20 @@ class SurveysRepositoryImpl @Inject constructor(
                 }
         }
     }
+
+    override suspend fun getSurveys(): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
+        }
+    }
+
+    override suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam> {
+        return withRealm { realm ->
+            val results = realm.where(RealmStepExam::class.java)
+                .equalTo("type", "surveys")
+                .sort(orderBy, sort)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
+    }
 }
