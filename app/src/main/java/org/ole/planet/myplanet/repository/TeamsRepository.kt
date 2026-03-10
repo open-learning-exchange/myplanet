@@ -83,48 +83,26 @@ interface TeamsRepository {
     suspend fun addReport(report: JsonObject)
     suspend fun updateReport(reportId: String, payload: JsonObject)
     suspend fun archiveReport(reportId: String)
-    suspend fun logTeamVisit(
-        teamId: String,
-        userName: String?,
-        userPlanetCode: String?,
-        userParentCode: String?,
-        teamType: String?,
+    suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
+        userParentCode: String?, teamType: String?
     )
 
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String>
-    suspend fun updateTeam(
-        teamId: String,
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        updatedBy: String?,
+    suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
+        rules: String, updatedBy: String?
     ): Result<Boolean>
     suspend fun updateTeamDetails(
-        teamId: String,
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        teamType: String,
-        isPublic: Boolean,
-        createdBy: String,
+        teamId: String, name: String, description: String, services: String, rules: String,
+        teamType: String, isPublic: Boolean, createdBy: String
     ): Boolean
     suspend fun syncTeamActivities()
     suspend fun getTeamTransactionsWithBalance(
-        teamId: String,
-        startDate: Long? = null,
-        endDate: Long? = null,
-        sortAscending: Boolean = false,
+        teamId: String, startDate: Long? = null,
+        endDate: Long? = null, sortAscending: Boolean = false
     ): Flow<List<Transaction>>
     suspend fun createTransaction(
-        teamId: String,
-        type: String,
-        note: String,
-        amount: Int,
-        date: Long,
-        parentCode: String?,
-        planetCode: String?,
+        teamId: String, type: String, note: String, amount: Int, date: Long,
+        parentCode: String?, planetCode: String?
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
@@ -134,13 +112,8 @@ interface TeamsRepository {
     suspend fun getAssignee(userId: String): RealmUser?
     suspend fun getRequestedMembers(teamId: String): List<RealmUser>
     suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String? = null): Boolean
-    suspend fun createEnterprise(
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        isPublic: Boolean,
-        user: RealmUser,
+    suspend fun createEnterprise(name: String, description: String, services: String,
+        rules: String, isPublic: Boolean, user: RealmUser
     ): Result<String>
 
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
