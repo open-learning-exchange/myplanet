@@ -11,7 +11,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -20,6 +19,9 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
+
+    @Inject
+    lateinit var broadcastGateway: BroadcastGateway
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         MainApplication.applicationScope.launch {
@@ -93,8 +95,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             try {
                 val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
                 localBroadcastIntent.putExtra("notification_id", notificationId)
-                val broadcastService = getBroadcastService(context)
-                broadcastService.sendBroadcast(localBroadcastIntent)
+                broadcastGateway.broadcastService.sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
