@@ -32,8 +32,11 @@ class TeamViewModel @Inject constructor(
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
-    private var currentTeams: List<TeamSummary> = emptyList()
 
+    var user: RealmUser? = null
+    var teamList: List<TeamSummary> = emptyList()
+    var conditionApplied: Boolean = false
+    private var currentTeams: List<TeamSummary> = emptyList()
 
     fun prepareTeamData(teams: List<TeamSummary>, userId: String?) {
         currentTeams = teams

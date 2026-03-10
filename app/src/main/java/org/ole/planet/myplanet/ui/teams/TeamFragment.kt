@@ -46,10 +46,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
-    var user: RealmUser? = null
-    private var teamList: List<TeamSummary> = emptyList()
     private lateinit var teamListAdapter: TeamsAdapter
-    private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,7 +108,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                     } else {
                         "sync"
                     }
-                val currentUser = user
+                val currentUser = viewModel.user
                 when {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
@@ -213,8 +210,8 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userSessionManager.getUserModel()
-            if (user?.isGuest() == true) {
+            viewModel.user = userSessionManager.getUserModel()
+            if (viewModel.user?.isGuest() == true) {
                 binding.addTeam.visibility = View.GONE
             } else {
                 binding.addTeam.visibility = View.VISIBLE
@@ -231,7 +228,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         teamListAdapter = TeamsAdapter(
             requireActivity(),
             childFragmentManager,
-            user,
+            viewModel.user,
             sharedPrefManager
         ).apply {
             setType(type)
@@ -247,7 +244,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
             viewModel.teamData.collectLatest { teamDataList ->
                 teamListAdapter.submitList(teamDataList)
                 onUpdateComplete(teamDataList.size)
-                listContentDescription(conditionApplied)
+                listContentDescription(viewModel.conditionApplied)
             }
         }
     }
@@ -257,13 +254,13 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val filteredList = if (TextUtils.isEmpty(charSequence)) {
-                    teamList
+                    viewModel.teamList
                 } else {
-                    teamList.filter {
-                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
+                    viewModel.teamList.filter {
+                        it.name.contains(charSequence.toString(), ignoreCase = true) == true
                     }
                 }
-                viewModel.prepareTeamData(filteredList, user?.id)
+                viewModel.prepareTeamData(filteredList, viewModel.user?.id)
             }
             override fun afterTextChanged(editable: Editable) {}
         }
@@ -272,7 +269,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
 
 
     private fun getList(searchText: String): Pair<List<TeamSummary>, Boolean> {
-        val nameFilteredList = teamList.filter {
+        val nameFilteredList = viewModel.teamList.filter {
             it.name.contains(searchText, ignoreCase = true)
         }
 
@@ -291,17 +288,17 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     }
 
     private fun setTeamList() {
-        viewModel.prepareTeamData(teamList, user?.id)
-        listContentDescription(conditionApplied)
+        viewModel.prepareTeamData(viewModel.teamList, viewModel.user?.id)
+        listContentDescription(viewModel.conditionApplied)
     }
 
     private fun refreshTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             when {
                 fromDashboard -> {
-                    user?._id?.let { userId ->
+                    viewModel.user?._id?.let { userId ->
                         teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
-                            teamList = list.mapNotNull {
+                            viewModel.teamList = list.mapNotNull {
                                 val id = it._id ?: return@mapNotNull null
                                 org.ole.planet.myplanet.model.TeamSummary(
                                     _id = id,
@@ -322,13 +319,13 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                     }
                 }
                 type == "enterprise" -> {
-                    conditionApplied = true
-                    teamList = teamsRepository.getShareableEnterpriseSummaries()
+                    viewModel.conditionApplied = true
+                    viewModel.teamList = teamsRepository.getShareableEnterpriseSummaries()
                     setTeamList()
                 }
                 else -> {
-                    conditionApplied = false
-                    teamList = teamsRepository.getTeamSummaries()
+                    viewModel.conditionApplied = false
+                    viewModel.teamList = teamsRepository.getTeamSummaries()
                     setTeamList()
                 }
             }
