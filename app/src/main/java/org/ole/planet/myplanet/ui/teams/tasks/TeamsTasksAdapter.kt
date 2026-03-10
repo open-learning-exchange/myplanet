@@ -8,16 +8,10 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksAdapter.TeamsTasksViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -25,8 +19,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 class TeamsTasksAdapter(
     private val context: Context,
     var nonTeamMember: Boolean,
-    private val coroutineScope: CoroutineScope,
-    private val userRepository: UserRepository
+    private val fetchAssigneeName: (String, (String?) -> Unit) -> (() -> Unit)
 ) : ListAdapter<RealmTeamTask, TeamsTasksViewHolder>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null
@@ -40,7 +33,7 @@ class TeamsTasksAdapter(
     }
 
     override fun onBindViewHolder(holder: TeamsTasksViewHolder, position: Int) {
-        holder.assigneeJob?.cancel()
+        holder.cancelAssigneeJob?.invoke()
         val it = getItem(position)
         val binding = holder.binding
         binding.checkbox.setOnCheckedChangeListener(null)
@@ -56,7 +49,7 @@ class TeamsTasksAdapter(
                 context.getString(R.string.completed_colon, formatDate(it.deadline))
             )
         }
-        holder.assigneeJob = showAssignee(binding, it)
+        holder.cancelAssigneeJob = showAssignee(binding, it)
         binding.icMore.setOnClickListener {
             listener?.onClickMore(getItem(position))
         }
@@ -89,7 +82,7 @@ class TeamsTasksAdapter(
         }
     }
 
-    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask): Job? {
+    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask): (() -> Unit)? {
         val assigneeId = realmTeamTask.assignee
         if (assigneeId.isNullOrEmpty()) {
             binding.assignee.setText(R.string.no_assignee)
@@ -101,22 +94,18 @@ class TeamsTasksAdapter(
             return null
         }
 
-        return coroutineScope.launch(Dispatchers.IO) {
-            val user = userRepository.getUserById(assigneeId)
-            withContext(Dispatchers.Main) {
-                val name = user?.name
-                if (name != null) {
-                    assigneeCache[assigneeId] = name
-                    binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
-                } else {
-                    binding.assignee.setText(R.string.no_assignee)
-                }
+        return fetchAssigneeName(assigneeId) { name ->
+            if (name != null) {
+                assigneeCache[assigneeId] = name
+                binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
+            } else {
+                binding.assignee.setText(R.string.no_assignee)
             }
         }
     }
 
     class TeamsTasksViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
-        var assigneeJob: Job? = null
+        var cancelAssigneeJob: (() -> Unit)? = null
     }
 
     companion object {

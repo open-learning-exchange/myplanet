@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
@@ -9,13 +8,13 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -25,7 +24,7 @@ class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     private val userSessionManager: UserSessionManager,
-    @param:DefaultPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
 ) : RealmRepository(databaseService), SurveysRepository {
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
@@ -40,8 +39,8 @@ class SurveysRepositoryImpl @Inject constructor(
                 val exam = transactionRealm.where(RealmStepExam::class.java).equalTo("id", examId)
                     .findFirst() ?: return@executeTransaction
 
-                val sParentCode = settings.getString("parentCode", "")
-                val planetCode = settings.getString("planetCode", "")
+                val sParentCode = sharedPrefManager.getParentCode()
+                val planetCode = sharedPrefManager.getPlanetCode()
 
                 val parentJsonString = try {
                     JSONObject().apply {
@@ -354,6 +353,22 @@ class SurveysRepositoryImpl @Inject constructor(
                 .findFirst()?.let {
                     realm.copyFromRealm(it)
                 }
+        }
+    }
+
+    override suspend fun getSurveys(): List<RealmStepExam> {
+        return queryList(RealmStepExam::class.java) {
+            equalTo("type", "surveys")
+        }
+    }
+
+    override suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam> {
+        return withRealm { realm ->
+            val results = realm.where(RealmStepExam::class.java)
+                .equalTo("type", "surveys")
+                .sort(orderBy, sort)
+                .findAll()
+            realm.copyFromRealm(results)
         }
     }
 }
