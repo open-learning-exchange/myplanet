@@ -29,7 +29,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
+import android.content.SharedPreferences
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
+import org.ole.planet.myplanet.di.SurveyPreferences
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -56,9 +58,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
-    companion object {
-        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
-    }
+    @Inject
+    @SurveyPreferences
+    lateinit var surveyPrefs: SharedPreferences
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
@@ -156,8 +158,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-                val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-                if (preferences.contains("reminder_time_$surveyIds")) {
+                if (surveyPrefs.contains("reminder_time_$surveyIds")) {
                     return@launch
                 }
                 val title = getString(
@@ -229,8 +230,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
 
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-        preferences.edit {
+        surveyPrefs.edit {
             putLong("reminder_time_$surveyIds", reminderTime)
                 .putString("reminder_surveys_$surveyIds", surveyIds)
         }
@@ -249,16 +249,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun checkScheduledReminders(): Boolean {
-        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
         val currentTime = System.currentTimeMillis()
 
         val remindersToShow = mutableListOf<String>()
         val remindersToRemove = mutableListOf<String>()
 
-        for (entry in preferences.all) {
+        for (entry in surveyPrefs.all) {
             if (entry.key.startsWith("reminder_time_")) {
                 val surveyIds = entry.key.removePrefix("reminder_time_")
-                val reminderTime = preferences.getLong(entry.key, 0)
+                val reminderTime = surveyPrefs.getLong(entry.key, 0)
 
                 if (reminderTime <= currentTime) {
                     remindersToShow.add(surveyIds)
@@ -282,7 +281,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
 
-        preferences.edit {
+        surveyPrefs.edit {
             for (surveyIds in remindersToRemove) {
                 remove("reminder_time_$surveyIds")
                 remove("reminder_surveys_$surveyIds")
