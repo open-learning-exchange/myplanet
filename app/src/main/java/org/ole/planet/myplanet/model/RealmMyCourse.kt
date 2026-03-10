@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -16,7 +13,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -71,7 +68,6 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
-            context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
@@ -124,9 +120,8 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun saveConcatenatedLinksToPrefs() {
-            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            val existingJsonLinks = settings.getString("concatenated_links", null)
+        fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
+            val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
                 JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
             } else {
@@ -142,7 +137,7 @@ open class RealmMyCourse : RealmObject() {
                 }
             }
             val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
-            settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
+            spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
 
@@ -172,8 +167,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyCourse> {
-            val userId = settings?.getString("userId", "--")
+        fun getMyByUserId(mRealm: Realm, userId: String?): RealmResults<RealmMyCourse> {
             return mRealm.where(RealmMyCourse::class.java)
                 .equalTo("userId", userId)
                 .findAll()
