@@ -329,12 +329,17 @@ class CoursesRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
+            val userSubmissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "exam")
+                .findAll()
+
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
-                getExamObject(realm, exams, ob, userId, questionsByExamId)
+                getExamObject(exams, ob, questionsByExamId, userSubmissions)
                 array.add(ob)
             }
             org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
@@ -342,30 +347,28 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun getExamObject(
-        realm: io.realm.Realm,
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
-        userId: String?,
-        questionsByExamId: Map<String?, List<RealmExamQuestion>>
+        questionsByExamId: Map<String?, List<RealmExamQuestion>>,
+        userSubmissions: List<org.ole.planet.myplanet.model.RealmSubmission>
     ) {
-        exams.forEach { it ->
-            it.id?.let { it1 ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it1).equalTo("type", "exam").findAll()
+        exams.forEach { exam ->
+            exam.id?.let { examId ->
+                userSubmissions.filter { it.parentId?.contains(examId) == true }
             }?.map { submission ->
-                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", submission.id).findAll()
-                var examId = submission.parentId
+                val answersSize = submission.answers?.size ?: 0
+                var examIdForQuestions = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
-                    examId = submission.parentId!!.split("@")[0]
+                    examIdForQuestions = submission.parentId!!.split("@")[0]
                 }
-                val questions = questionsByExamId[examId] ?: emptyList()
+                val questions = questionsByExamId[examIdForQuestions] ?: emptyList()
                 val questionCount = questions.size
                 if (questionCount == 0) {
                     ob.addProperty("completed", false)
                     ob.addProperty("percentage", 0)
                 } else {
-                    ob.addProperty("completed", answers.size == questionCount)
-                    val percentage = (answers.size.toDouble() / questionCount) * 100
+                    ob.addProperty("completed", answersSize == questionCount)
+                    val percentage = (answersSize.toDouble() / questionCount) * 100
                     ob.addProperty("percentage", percentage)
                 }
                 ob.addProperty("status", submission.status)
