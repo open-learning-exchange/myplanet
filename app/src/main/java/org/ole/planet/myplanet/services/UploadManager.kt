@@ -370,10 +370,6 @@ class UploadManager @Inject constructor(
                             }
                         }
 
-                        // Note: executeTransactionAsync is asynchronous.
-                        // The following withRealm query might read stale data (before the above transaction completes).
-                        // This is currently safe because uploadAttachment only reads library.resourceLocalAddress,
-                        // which is unaffected by the transaction, but could be fragile if uploadAttachment later requires _id/_rev.
                         listener?.let {
                             val updatedLibraries = databaseService.withRealm { realm ->
                                 realm.where(RealmMyLibrary::class.java)
