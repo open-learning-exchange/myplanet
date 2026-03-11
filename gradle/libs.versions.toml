@@ -110,4 +110,4 @@ junit = { module = "junit:junit", version.ref = "junit" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesAndroid" }
-androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test-core" }
+testcore = { module = "androidx.test:core", version.ref = "testcore" }
