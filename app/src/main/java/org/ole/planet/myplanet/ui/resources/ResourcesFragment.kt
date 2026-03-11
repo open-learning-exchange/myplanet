@@ -40,10 +40,12 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
+import androidx.fragment.app.activityViewModels
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.components.SelectionViewModel
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -74,6 +76,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
     private var allLibraryItems: List<RealmMyLibrary> = emptyList()
+
+    private val selectionViewModel: SelectionViewModel by activityViewModels()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -281,6 +285,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            selectionViewModel.selectedResources.collect { selected ->
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setSelectedItems(selected)
+                }
+                changeButtonStatus()
+                hideButton()
+            }
+        }
+
         if (::adapterLibrary.isInitialized) {
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             changeButtonStatus()
@@ -323,7 +337,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (selectionViewModel.selectedResources.value.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
             }
@@ -374,7 +388,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectAll.setOnClickListener {
             hideButton()
             val allSelected = adapterLibrary.areAllSelected()
-            adapterLibrary.selectAllItems(!allSelected)
+
+            // Delegate to the ViewModel
+            selectionViewModel.selectAllResources(adapterLibrary.getLibraryList(), !allSelected)
+
             if (allSelected) {
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
@@ -403,7 +420,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun hideButton(){
-        val count = selectedItems?.size ?: 0
+        val count = selectionViewModel.selectedResources.value.size
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
         if (count != 0) {
@@ -460,23 +477,29 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             dialog.cancel()
         }
         builder.setOnDismissListener {
+            val itemsToAdd = selectionViewModel.selectedResources.value
+            selectedItems = itemsToAdd.mapNotNull { item ->
+                allLibraryItems.find { it.id == item.id }
+            }.toMutableList<RealmMyLibrary?>()
+
             addToMyList()
+            selectionViewModel.clearResourceSelections()
         }
         return builder.create()
     }
 
     private fun buildAlertMessage(): String {
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        val items = selectedItems.orEmpty()
+        val items = selectionViewModel.selectedResources.value
         if (items.size <= 5) {
             for (i in items.indices) {
-                msg += " - " + items[i]?.title + "\n"
+                msg += " - " + items[i].title + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
+                msg += " - " + items[i].title + "\n"
             }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
+            msg += getString(R.string.and) + (items.size - 5) +
                 getString(R.string.more_resource_s)
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
@@ -502,13 +525,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onSelectedListChange(list: List<ResourceItem>) {
-        val newSelected = list.mapNotNull { item ->
-            allLibraryItems.find { it.id == item.id }
+        // Now called with the single item that was toggled
+        list.firstOrNull()?.let { resource ->
+            selectionViewModel.toggleResourceSelection(resource)
         }
-        selectedItems?.clear()
-        selectedItems?.addAll(newSelected)
-        changeButtonStatus()
-        hideButton()
     }
 
     override fun onTagClicked(tag: TagItem) {
@@ -566,8 +586,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
-        if (adapterLibrary.areAllSelected()) {
+        tvAddToLib.isEnabled = selectionViewModel.selectedResources.value.isNotEmpty()
+        if (::adapterLibrary.isInitialized && adapterLibrary.areAllSelected() && adapterLibrary.getLibraryList().isNotEmpty()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
         } else {
@@ -767,7 +787,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override suspend fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
-        val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val selectedResources = selectionViewModel.selectedResources.value
+        val itemsToDelete = selectedResources.mapNotNull { it.resourceId }
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             withContext(Dispatchers.IO) {
@@ -778,9 +799,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if (_binding == null) return
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
             refreshResourcesData()
-            selectedItems?.clear()
-            changeButtonStatus()
-            hideButton()
+
+            // Note: we let the viewmodel manage state, so we just clear it
+            selectionViewModel.clearResourceSelections()
         }
     }
 
@@ -795,9 +816,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
+                    selectionViewModel.clearResourceSelections()
                 }
             }
         }

@@ -46,8 +46,10 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import androidx.fragment.app.activityViewModels
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
+import org.ole.planet.myplanet.ui.components.SelectionViewModel
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -73,6 +75,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var searchJob: Job? = null
+
+    private val selectionViewModel: SelectionViewModel by activityViewModels()
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -269,8 +273,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         )
         adapterCourses.submitList(courses) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
-                selectedItems?.clear()
-                clearAllSelections()
+                selectionViewModel.clearCourseSelections()
                 checkList()
             }
         }
@@ -298,6 +301,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             }
             updateCheckBoxState(false)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            selectionViewModel.selectedCourses.collect { selected ->
+                if (::adapterCourses.isInitialized) {
+                    adapterCourses.setSelectedItems(selected)
+                }
+                changeButtonStatus()
+            }
         }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
@@ -334,17 +346,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         btnRemove.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
-            val message = if (countSelected() == 1) {
+            val count = selectionViewModel.selectedCourses.value.size
+            val message = if (count == 1) {
                 R.string.are_you_sure_you_want_to_leave_this_course
             } else {
                 R.string.are_you_sure_you_want_to_leave_these_courses
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                    val coursesToRemove = selectionViewModel.selectedCourses.value
+                    val courseIdsToRemove = coursesToRemove.map { it.courseId }
+                    // Populate base class selectedItems before calling deleteSelected
+                    selectedItems = coursesToRemove.mapNotNull { course ->
+                        mRealm.where(RealmMyCourse::class.java).equalTo("courseId", course.courseId).findFirst()
+                    }.toMutableList<RealmMyCourse?>()
+
                     viewLifecycleOwner.lifecycleScope.launch {
                         deleteSelected(true)
-                        clearAllSelections()
+                        selectionViewModel.clearCourseSelections()
                         adapterCourses.removeCourses(courseIdsToRemove)
                     }
                 }
@@ -353,17 +372,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         btnArchive.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
-            val message = if (countSelected() == 1) {
+            val count = selectionViewModel.selectedCourses.value.size
+            val message = if (count == 1) {
                 R.string.are_you_sure_you_want_to_archive_this_course
             } else {
                 R.string.are_you_sure_you_want_to_archive_these_courses
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                    val coursesToRemove = selectionViewModel.selectedCourses.value
+                    val courseIdsToRemove = coursesToRemove.map { it.courseId }
+                    // Populate base class selectedItems before calling deleteSelected
+                    selectedItems = coursesToRemove.mapNotNull { course ->
+                        mRealm.where(RealmMyCourse::class.java).equalTo("courseId", course.courseId).findFirst()
+                    }.toMutableList<RealmMyCourse?>()
+
                     viewLifecycleOwner.lifecycleScope.launch {
                         deleteSelected(true)
-                        clearAllSelections()
+                        selectionViewModel.clearCourseSelections()
                         adapterCourses.removeCourses(courseIdsToRemove)
                     }
                 }
@@ -430,7 +456,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun initializeView() {
         tvAddToLib = requireView().findViewById(R.id.tv_add)
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (selectionViewModel.selectedCourses.value.isNotEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation.show()
             }
@@ -476,14 +502,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             if (isUpdatingSelectAllState) {
                 return@setOnCheckedChangeListener
             }
-            hideButtons()
-            adapterCourses.selectAllItems(isChecked)
-            selectAll.text = if (isChecked) getString(R.string.unselect_all) else getString(R.string.select_all)
+            if (::adapterCourses.isInitialized) {
+                val selectableCourses = adapterCourses.currentList.filter { isMyCourseLib || !it.isMyCourse }
+                selectionViewModel.selectAllCourses(selectableCourses, isChecked)
+            }
         }
     }
 
     private fun hideButtons() {
-        val count = selectedItems.orEmpty().size
+        val count = selectionViewModel.selectedCourses.value.size
         btnArchive.isEnabled = count != 0
         btnRemove.isEnabled = count != 0
         if (count != 0) {
@@ -584,16 +611,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        val items = selectedItems.orEmpty()
+        val items = selectionViewModel.selectedCourses.value
         if (items.size <= 5) {
             for (i in items.indices) {
-                msg += " - ${items[i]?.courseTitle} \n"
+                msg += " - ${items[i].courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+                msg += " - ${items[i].courseTitle} \n"
             }
-            msg += "${getString(R.string.and)}${((selectedItems?.size ?: 0) - 5)}${getString(R.string.more_course_s)}"
+            msg += "${getString(R.string.and)}${(items.size - 5)}${getString(R.string.more_course_s)}"
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
@@ -614,40 +641,30 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 dialog.cancel()
             }
             .setOnDismissListener {
+                // Populate base class selectedItems before calling addToMyList so it processes them
+                val realmCourses = items.mapNotNull { course ->
+                    var rc = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", course.courseId).findFirst()
+                    if (rc == null) {
+                        rc = RealmMyCourse()
+                        rc.courseId = course.courseId
+                        rc.courseTitle = course.courseTitle
+                        rc.isMyCourse = course.isMyCourse
+                    }
+                    rc
+                }.toMutableList<RealmMyCourse?>()
+                selectedItems = realmCourses
                 addToMyList()
+                selectionViewModel.clearCourseSelections()
             }
 
         return builder.create()
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        val realmCourses = list.mapNotNull { course ->
-            course?.let {
-                // Find managed RealmMyCourse or use a dummy one for addToMyList/deletion?
-                // For addToMyList, we need managed object if we want to add relation?
-                // Actually addToMyList just extracts IDs.
-                // But deleteSelected uses `mRealm.beginTransaction()`.
-                // And `deleteCourseProgress` uses `object.courseId`.
-                // `removeFromShelf`?
-                // `BaseRecyclerFragment.removeFromShelf` checks `object is RealmMyCourse`.
-                // And calls `coursesRepository.removeCourseFromShelf(courseId, userId)`.
-
-                // So I can create an unmanaged RealmMyCourse with just ID and Title.
-                // But safer to try finding it.
-                var rc = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", it.courseId).findFirst()
-                if (rc == null) {
-                    // Create unmanaged
-                    rc = RealmMyCourse()
-                    rc.courseId = it.courseId
-                    rc.courseTitle = it.courseTitle
-                    rc.isMyCourse = it.isMyCourse
-                }
-                rc
-            }
-        }.toMutableList<RealmMyCourse?>()
-        selectedItems = realmCourses
-        changeButtonStatus()
-        hideButtons()
+        // Now called with the single item that was toggled
+        list.firstOrNull()?.let { course ->
+            selectionViewModel.toggleCourseSelection(course)
+        }
     }
 
     override fun onTagClicked(tag: Tag) {
@@ -674,18 +691,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         isUpdatingSelectAllState = false
     }
 
-    private fun clearAllSelections() {
-        if (::adapterCourses.isInitialized) {
-            adapterCourses.selectAllItems(false)
-            updateCheckBoxState(false)
-            selectAll.text = getString(R.string.select_all)
-        }
-    }
-
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
-        btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
-        btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
+        val count = selectionViewModel.selectedCourses.value.size
+        tvAddToLib.isEnabled = count > 0
+        btnRemove.isEnabled = count > 0
+        btnArchive.isEnabled = count > 0
 
         if (::adapterCourses.isInitialized) {
             val allSelected = adapterCourses.areAllSelected()
@@ -745,7 +755,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
-        clearAllSelections()
+        selectionViewModel.clearCourseSelections()
     }
 
     override fun onDestroy() {

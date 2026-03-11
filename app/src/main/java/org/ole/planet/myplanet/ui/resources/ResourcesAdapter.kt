@@ -40,7 +40,7 @@ class ResourcesAdapter(
     )
 ) {
 
-    private val selectedItems: MutableList<ResourceItem> = ArrayList()
+    private var selectedItems: List<ResourceItem> = emptyList()
     private var listener: OnLibraryItemSelectedListener? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -132,15 +132,9 @@ class ResourcesAdapter(
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowLibraryBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, library.title ?: "")
-                    val isChecked = (view as CheckBox).isChecked
-                    if (isChecked) {
-                        if (!selectedItems.contains(library)) {
-                            selectedItems.add(library)
-                        }
-                    } else {
-                        selectedItems.remove(library)
-                    }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems)
+
+                    // The view model handles state logic, just pass the toggled item
+                    listener?.onSelectedListChange(listOf(library))
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -148,21 +142,17 @@ class ResourcesAdapter(
         }
     }
 
+    fun setSelectedItems(items: List<ResourceItem>) {
+        this.selectedItems = items
+        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
+    }
+
     fun areAllSelected(): Boolean {
         return currentList.isNotEmpty() && selectedItems.size == currentList.size
     }
 
     fun selectAllItems(selectAll: Boolean) {
-        if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(currentList)
-        } else {
-            selectedItems.clear()
-        }
-        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
-        if (listener != null) {
-            listener?.onSelectedListChange(selectedItems)
-        }
+        // Handled by viewmodel, adapter shouldn't mutate its own state for selectAll anymore
     }
 
     private fun openLibrary(library: ResourceItem) {

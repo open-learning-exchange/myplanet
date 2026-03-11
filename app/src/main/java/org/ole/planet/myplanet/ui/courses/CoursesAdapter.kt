@@ -58,7 +58,7 @@ class CoursesAdapter(
         }
     )
 ) {
-    private val selectedItems: MutableList<Course?> = ArrayList()
+    private var selectedItems: List<Course> = emptyList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -291,8 +291,7 @@ class CoursesAdapter(
                         context.getString(R.string.select_res_course, course.courseTitle)
                     val adapterPosition = holder.bindingAdapterPosition
                     if (adapterPosition != RecyclerView.NO_POSITION) {
-                        SelectionUtils.handleCheck((view as CheckBox).isChecked, adapterPosition, selectedItems, currentList)
-                        listener?.onSelectedListChange(selectedItems)
+                        listener?.onSelectedListChange(mutableListOf(course))
                     }
                 }
             } else {
@@ -317,27 +316,14 @@ class CoursesAdapter(
         activeJobs.clear()
     }
 
-    fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
-        return areAllSelected
+    fun setSelectedItems(items: List<Course>) {
+        this.selectedItems = items
+        notifyDataSetChanged()
     }
 
-    fun selectAllItems(selectAll: Boolean) {
-        selectedItems.clear()
-
-        if (selectAll) {
-            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-            selectedItems.addAll(selectableCourses)
-        }
-
-        currentList.forEachIndexed { index, course ->
-            if (isMyCourseLib || !course.isMyCourse) {
-                notifyItemChanged(index)
-            }
-        }
-
-        listener?.onSelectedListChange(selectedItems)
+    fun areAllSelected(): Boolean {
+        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
+        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
     }
 
     override fun onBindViewHolder(
