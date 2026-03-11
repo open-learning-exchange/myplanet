@@ -45,6 +45,8 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
+import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -129,4 +131,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
 }
