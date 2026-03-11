@@ -20,10 +20,6 @@ annotation class AppPreferences
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultPreferences
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class SurveyPreferences
-
 @Module
 @InstallIn(SingletonComponent::class)
 object SharedPreferencesModule {
@@ -40,12 +36,5 @@ object SharedPreferencesModule {
     @DefaultPreferences
     fun provideDefaultSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return PreferenceManager.getDefaultSharedPreferences(context)
-    }
-
-    @Provides
-    @Singleton
-    @SurveyPreferences
-    fun provideSurveySharedPreferences(@ApplicationContext context: Context): SharedPreferences {
-        return context.getSharedPreferences("survey_reminders", Context.MODE_PRIVATE)
     }
 }
