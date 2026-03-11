@@ -292,15 +292,15 @@ object SyncTimeLogger {
         return summaryBuilder.toString()
     }
 
-    private fun formatTime(timeMs: Long): String {
+    private fun formatTime(time: Long): String {
         return when {
-            timeMs < 1000 -> "${timeMs}ms"
-            timeMs < 60000 -> String.format(Locale.US, "%.2fs", timeMs / 1000.0)
+            time < 1000 -> "${time}ms"
+            time < 60000 -> String.format(Locale.US, "%.2fs", time / 1000.0)
             else -> {
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(timeMs)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(timeMs) % 60
-                val millis = timeMs % 1000
-                "${minutes}m ${seconds}.${millis}s"
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(time)
+                val seconds = TimeUnit.MILLISECONDS.toSeconds(time) % 60
+                val millis = time % 1000
+                String.format(Locale.US, "%02dm %02d.%03ds", minutes, seconds, millis)
             }
         }
     }
