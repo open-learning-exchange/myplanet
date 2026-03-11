@@ -502,6 +502,8 @@ class CoursesRepositoryImpl @Inject constructor(
 
         executeTransaction { realm ->
             val courseIdsArray = courseIds.toTypedArray()
+
+            // 1. Delete progress
             realm.where(org.ole.planet.myplanet.model.RealmCourseProgress::class.java)
                 .`in`("courseId", courseIdsArray)
                 .findAll()
@@ -520,10 +522,16 @@ class CoursesRepositoryImpl @Inject constructor(
                     .findAll()
                     .deleteAllFromRealm()
             }
-        }
 
-        courseIds.forEach { courseId ->
-            leaveCourse(courseId, userId)
+            // 2. Remove from shelf (leave course)
+            courseIds.forEach { courseId ->
+                val course = realm.where(org.ole.planet.myplanet.model.RealmMyCourse::class.java)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+                course?.removeUserId(userId)
+                org.ole.planet.myplanet.model.RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+            }
         }
+        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
     }
 }
