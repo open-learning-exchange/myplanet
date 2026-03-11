@@ -87,7 +87,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                 )
             }
         }
-        return adapter!!
+        return adapter ?: error("SurveyFragment adapter must be initialized inside mutex block")
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
