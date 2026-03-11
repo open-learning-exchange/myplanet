@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.utils.UrlUtils.header
 @AndroidEntryPoint
 class DownloadService : Service() {
     @Inject
-    lateinit var broadcastGateway: BroadcastGateway
+    lateinit var broadcastService: BroadcastService
 
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
@@ -273,7 +273,7 @@ class DownloadService : Service() {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
                 downloadScope.launch {
-                    broadcastGateway.broadcastService.sendBroadcast(intent)
+                    broadcastService.sendBroadcast(intent)
                 }
             }
         }
@@ -376,7 +376,7 @@ class DownloadService : Service() {
             putExtra("fromSync", fromSync)
         }
         downloadScope.launch {
-            broadcastGateway.broadcastService.sendBroadcast(intent)
+            broadcastService.sendBroadcast(intent)
         }
     }
 

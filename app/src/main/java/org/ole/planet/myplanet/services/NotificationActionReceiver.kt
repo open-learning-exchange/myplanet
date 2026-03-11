@@ -21,7 +21,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var notificationsRepository: NotificationsRepository
 
     @Inject
-    lateinit var broadcastGateway: BroadcastGateway
+    lateinit var broadcastService: BroadcastService
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         MainApplication.applicationScope.launch {
@@ -95,7 +95,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             try {
                 val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
                 localBroadcastIntent.putExtra("notification_id", notificationId)
-                broadcastGateway.broadcastService.sendBroadcast(localBroadcastIntent)
+                broadcastService.sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
