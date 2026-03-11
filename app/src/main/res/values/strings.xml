@@ -1202,8 +1202,6 @@
     <string name="select_open_with">Open</string>
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
-
-    <!-- Accessibility: contentDescription for interactive elements -->
     <string name="add_personal">Add personal note</string>
     <string name="add_survey">Add survey</string>
     <string name="add_finance_entry">Add transaction</string>
@@ -1221,7 +1219,6 @@
     <string name="audio_play_pause">Play or pause audio</string>
     <string name="resource_status">Resource status</string>
     <string name="download_status">Download status</string>
-    <string name="select_date">Select date</string>
     <string name="sort_by_date_column">Sort by date</string>
     <string name="user_avatar">User avatar</string>
     <string name="send_diagnosis">Add diagnosis</string>

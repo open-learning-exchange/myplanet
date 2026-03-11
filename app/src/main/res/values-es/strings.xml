@@ -1202,5 +1202,27 @@
     <string name="select_open_with">Abrir</string>
     <string name="select_media">Medios</string>
     <string name="select_resource_type">Tipo de recurso</string>
+    <string name="add_personal">Agregar nota personal</string>
+    <string name="add_survey">Agregar encuesta</string>
+    <string name="add_finance_entry">Agregar transacción</string>
+    <string name="add_resource_to_team">Agregar recurso al equipo</string>
+    <string name="rewind">Rebobinar</string>
+    <string name="pause">Pausar</string>
+    <string name="fast_forward">Avance rápido</string>
+    <string name="next_question">Siguiente pregunta</string>
+    <string name="more_options">Más opciones</string>
+    <string name="upload_item">Subir</string>
+    <string name="join_or_leave_team">Unirse o salir del equipo</string>
+    <string name="team_feedback">Comentarios del equipo</string>
+    <string name="close_dialog">Cerrar diálogo</string>
+    <string name="go_back">Volver</string>
+    <string name="audio_play_pause">Reproducir o pausar audio</string>
+    <string name="resource_status">Estado del recurso</string>
+    <string name="download_status">Estado de descarga</string>
+    <string name="sort_by_date_column">Ordenar por fecha</string>
+    <string name="user_avatar">Avatar del usuario</string>
+    <string name="send_diagnosis">Agregar diagnóstico</string>
+    <string name="delete_item">Eliminar</string>
+    <string name="toggle_visibility">Alternar visibilidad</string>
 
 </resources>
