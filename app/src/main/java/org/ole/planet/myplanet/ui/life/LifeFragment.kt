@@ -49,7 +49,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
                 myLife._id?.let { id ->
-                    lifecycleScope.launch {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         withContext(Dispatchers.IO) {
                             lifeRepository.updateVisibility(isVisible, id)
                         }
@@ -63,7 +63,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
                 }
             },
             reorderCallback = { list ->
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     withContext(Dispatchers.IO) {
                         lifeRepository.updateMyLifeListOrder(list)
                     }
