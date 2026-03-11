@@ -88,6 +88,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
+            onAdapterReady(adapter)
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
@@ -101,6 +102,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             requireActivity().reportFullyDrawn()
         }
     }
+
+    protected open suspend fun onAdapterReady(adapter: RecyclerView.Adapter<*>) {}
 
     private fun initDeleteButton() {
         tvDelete?.let {

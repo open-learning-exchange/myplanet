@@ -285,24 +285,22 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         additionalSetup()
         setupMyProgressButton()
-        viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userSessionManager.getUserModel()
-            model = userModel
-            searchTags = ArrayList()
-            initializeView()
-            setupButtonVisibility()
-            setupEventListeners()
-            clearTags()
-            if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
-            if (::adapterCourses.isInitialized) {
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            }
-            updateCheckBoxState(false)
-        }
-
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         startCoursesSync()
+    }
+
+    override suspend fun onAdapterReady(adapter: RecyclerView.Adapter<*>) {
+        userModel = userSessionManager.getUserModel()
+        model = userModel
+        searchTags = ArrayList()
+        initializeView()
+        setupButtonVisibility()
+        setupEventListeners()
+        clearTags()
+        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        updateCheckBoxState(false)
     }
 
     private fun setupButtonVisibility() {
@@ -333,6 +331,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         etSearch.addTextChangedListener(searchTextWatcher)
 
         btnRemove.setOnClickListener {
+            if (!::adapterCourses.isInitialized) return@setOnClickListener
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
                 R.string.are_you_sure_you_want_to_leave_this_course
@@ -352,6 +351,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         btnArchive.setOnClickListener {
+            if (!::adapterCourses.isInitialized) return@setOnClickListener
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
                 R.string.are_you_sure_you_want_to_archive_this_course
@@ -476,6 +476,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             if (isUpdatingSelectAllState) {
                 return@setOnCheckedChangeListener
             }
+            if (!::adapterCourses.isInitialized) return@setOnCheckedChangeListener
             hideButtons()
             adapterCourses.selectAllItems(isChecked)
             selectAll.text = if (isChecked) getString(R.string.unselect_all) else getString(R.string.select_all)
@@ -528,6 +529,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             if (view == null) {
                 return
             }
+            if (!::adapterCourses.isInitialized) return
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
             filterCoursesAndUpdateUi()
@@ -701,7 +703,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         tvSelected.text = context?.getString(R.string.tag_selected, tag.name)
         filterCoursesAndUpdateUi()
         scrollToTop()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        if (::adapterCourses.isInitialized) {
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
