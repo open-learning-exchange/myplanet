@@ -46,6 +46,8 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
+    @javax.inject.Inject
+    lateinit var containerFacade: org.ole.planet.myplanet.ui.resources.facades.ContainerResourceUIFacade
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
@@ -182,7 +184,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return@launch
             }
 
-            val result = resourcesRepository.getHtmlResourceDownloadUrls(resourceId)
+            val result = containerFacade.resourcesRepository.getHtmlResourceDownloadUrls(resourceId)
             when (result) {
                 is ResourceUrlsResponse.Success -> {
                     startDownloadWithAutoOpen(ArrayList(result.urls), items)
@@ -203,7 +205,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun openNonHtmlResource(items: RealmMyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
             val matchingItems = items.resourceLocalAddress?.let {
-                resourcesRepository.getLibraryItemsByLocalAddress(it)
+                containerFacade.resourcesRepository.getLibraryItemsByLocalAddress(it)
             } ?: emptyList()
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }

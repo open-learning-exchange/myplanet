@@ -191,7 +191,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     },
                     getUserFn = { userId, onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = userRepository.getUserById(userId)
+                            val result = containerFacade.userRepository.getUserById(userId)
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
                         }
                         return@VoicesAdapter { job.cancel() }

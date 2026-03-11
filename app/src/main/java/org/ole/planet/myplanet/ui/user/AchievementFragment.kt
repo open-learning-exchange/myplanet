@@ -161,7 +161,7 @@ class AchievementFragment : BaseContainerFragment() {
     private suspend fun loadAchievementDataAsync(): AchievementData {
         val uId = user?.id ?: return AchievementData()
         val pCode = user?.planetCode ?: return AchievementData()
-        return userRepository.getAchievementData(uId, pCode)
+        return containerFacade.userRepository.getAchievementData(uId, pCode)
     }
 
 
@@ -274,7 +274,7 @@ class AchievementFragment : BaseContainerFragment() {
                 openResource(lib)
             } else {
                 lifecycleScope.launch {
-                    resourcesRepository.downloadResources(listOf(lib))
+                    containerFacade.resourcesRepository.downloadResources(listOf(lib))
                 }
             }
         }

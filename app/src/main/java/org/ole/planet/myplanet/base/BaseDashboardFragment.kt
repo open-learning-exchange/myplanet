@@ -67,7 +67,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
-            model = userRepository.getUserProfile()
+            model = containerFacade.userRepository.getUserProfile()
             fullName = model?.getFullName()
             if (fullName?.trim().isNullOrBlank()) {
                 fullName = model?.name

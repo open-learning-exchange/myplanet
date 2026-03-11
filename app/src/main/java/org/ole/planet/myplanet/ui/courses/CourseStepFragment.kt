@@ -89,7 +89,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        return coursesRepository.getCourseStepData(stepId!!, user?.id)
+        return containerFacade.coursesRepository.getCourseStepData(stepId!!, user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -184,10 +184,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val serverAvailable = configurationsRepository.checkServerAvailability()
+            val serverAvailable = containerFacade.configurationsRepository.checkServerAvailability()
 
             if (serverAvailable) {
-                resourcesRepository.downloadResourcesPriority(notDownloaded)
+                containerFacade.resourcesRepository.downloadResourcesPriority(notDownloaded)
             } else {
                 fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
             }
@@ -200,7 +200,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val nextResources = resourcesRepository.getAllStepResources(nextStepId)
+            val nextResources = containerFacade.resourcesRepository.getAllStepResources(nextStepId)
             val notDownloaded = nextResources.filter { !it.isResourceOffline() }
             if (notDownloaded.isNotEmpty()) {
                 val urls = ArrayList(notDownloaded.map { UrlUtils.getUrl(it) })
@@ -213,7 +213,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun refreshInlineResources() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val updatedResources = resourcesRepository.getAllStepResources(stepId)
+            val updatedResources = containerFacade.resourcesRepository.getAllStepResources(stepId)
             resources = updatedResources
             inlineResourceAdapter?.submitList(updatedResources)
             fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
@@ -226,7 +226,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         viewLifecycleOwner.lifecycleScope.launch {
             if (stepExams.isNotEmpty()) {
                 val firstStepId = stepExams[0].id
-                val isTestPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
+                val isTestPresent = containerFacade.submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "exam")
                 fragmentCourseStepBinding.btnTakeTest.text = if (isTestPresent) {
                     getString(R.string.retake_test, stepExams.size)
                 } else {
@@ -236,7 +236,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
             if (stepSurvey.isNotEmpty()) {
                 val firstStepId = stepSurvey[0].id
-                val isSurveyPresent = submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
+                val isSurveyPresent = containerFacade.submissionsRepository.hasSubmission(firstStepId, step.courseId, user?.id, "survey")
                 fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) {
                     getString(R.string.redo_survey)
                 } else {
@@ -253,7 +253,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         lifecycleScope.launch {
             try {
                 if (visible) {
-                    val userHasCourse = coursesRepository.isMyCourse(user?.id, step.courseId)
+                    val userHasCourse = containerFacade.coursesRepository.isMyCourse(user?.id, step.courseId)
                     if (userHasCourse) {
                         launchSaveCourseProgress()
                     }

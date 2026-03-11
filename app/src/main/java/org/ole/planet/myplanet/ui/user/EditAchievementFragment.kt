@@ -95,7 +95,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                userRepository.updateAchievement(
+                containerFacade.userRepository.updateAchievement(
                     achievementId = achievementId,
                     header = header,
                     goals = goals,
@@ -270,7 +270,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showResourceListDialog(prevList: List<String?>) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = resourcesRepository.getAllLibraries()
+            val list = containerFacade.resourcesRepository.getAllLibraries()
 
             if (isAdded) {
                 val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -299,7 +299,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = userRepository.initializeAchievement(achievementId)
+            achievement = containerFacade.userRepository.initializeAchievement(achievementId)
             if (isAdded) {
                 populateAchievementData()
             }

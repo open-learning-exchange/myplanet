@@ -165,8 +165,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private suspend fun loadRatingsAndTags(allResourceIds: List<String>, userId: String?) {
-        map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, userId))
-        tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
+        map = HashMap(recyclerFacade.resourcesRepository.getResourceRatingsBulk(allResourceIds, userId))
+        tagsMap = recyclerFacade.resourcesRepository.getResourceTagsBulk(allResourceIds)
     }
 
     private fun refreshResourcesData() {
@@ -175,9 +175,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         lifecycleScope.launch {
             try {
                 allLibraryItems = if (isMyCourseLib) {
-                    resourcesRepository.getMyLibrary(model?.id)
+                    recyclerFacade.resourcesRepository.getMyLibrary(model?.id)
                 } else {
-                    resourcesRepository.getAllLibraryItems().filter {
+                    recyclerFacade.resourcesRepository.getAllLibraryItems().filter {
                         !it.isPrivate && it.userId?.contains(model?.id) == false
                     }
                 }
@@ -227,9 +227,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override suspend fun getAdapter(): RecyclerView.Adapter<*> {
         allLibraryItems = if (isMyCourseLib) {
-            resourcesRepository.getMyLibrary(model?.id)
+            recyclerFacade.resourcesRepository.getMyLibrary(model?.id)
         } else {
-            resourcesRepository.getAllLibraryItems().filter {
+            recyclerFacade.resourcesRepository.getAllLibraryItems().filter {
                 !it.isPrivate && it.userId?.contains(model?.id) == false
             }
         }
@@ -271,7 +271,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
             if (userModel?.id != null) {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                    recyclerFacade.resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
@@ -595,7 +595,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override suspend fun getData(): Map<String, Set<String>> {
         val currentIds = adapterLibrary.getLibraryList().mapNotNull { it.id }.toSet()
         val libraryList = allLibraryItems.filter { it.id in currentIds }
-        return resourcesRepository.getFilterFacets(libraryList)
+        return recyclerFacade.resourcesRepository.getFilterFacets(libraryList)
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
@@ -657,7 +657,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 return@launch
             }
 
-            resourcesRepository.saveSearchActivity(
+            recyclerFacade.resourcesRepository.saveSearchActivity(
                 userName,
                 searchText,
                 planetCode,
@@ -769,7 +769,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (userId != null && itemsToDelete.isNotEmpty()) {
             withContext(Dispatchers.IO) {
                 itemsToDelete.forEach { resourceId ->
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                    recyclerFacade.resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
             }
             if (_binding == null) return
@@ -787,7 +787,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch(Dispatchers.IO) {
-                resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
+                recyclerFacade.resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
                 withContext(Dispatchers.Main) {
                     if (_binding == null) return@withContext
                     Utilities.toast(activity, getString(R.string.added_to_my_library))

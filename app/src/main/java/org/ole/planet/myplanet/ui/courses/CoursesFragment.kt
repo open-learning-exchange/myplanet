@@ -173,17 +173,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Run independent queries in parallel
-                val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-                val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
+                val ratingsDeferred = async { recyclerFacade.coursesRepository.getCourseRatings(model?.id) }
+                val progressDeferred = async { recyclerFacade.coursesRepository.getCourseProgress(model?.id) }
 
                 if (!mRealm.isInTransaction) {
                     mRealm.refresh()
                 }
 
-                val allCourses = coursesRepository.getAllCourses()
+                val allCourses = recyclerFacade.coursesRepository.getAllCourses()
                 val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
                 val sortedCourseList = if (isMyCourseLib) {
-                    val myCourses = coursesRepository.getMyCourses(userModel?.id, validCourses)
+                    val myCourses = recyclerFacade.coursesRepository.getMyCourses(userModel?.id, validCourses)
                     myCourses.forEach { it.isMyCourse = true }
                     myCourses.sortedBy { it.courseTitle }
                 } else {
@@ -193,7 +193,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                 if (isMyCourseLib) {
                     val courseIds = sortedCourseList.mapNotNull { it.id }
-                    resources = coursesRepository.getCourseOfflineResources(courseIds)
+                    resources = recyclerFacade.coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
 
@@ -208,7 +208,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     requireActivity(),
                     map,
                     userModel?.isGuest() ?: true,
-                    { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
+                    { courseId -> recyclerFacade.coursesRepository.getCourseTags(courseId).map { it.toTag() } },
                     isMyCourseLib
                 )
                 adapterCourses.submitList(courses)
@@ -229,10 +229,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             userModel = userSessionManager.getUserModel()
         }
 
-        val allCourses = coursesRepository.getAllCourses()
+        val allCourses = recyclerFacade.coursesRepository.getAllCourses()
         val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
         val courseList: List<RealmMyCourse> = if (isMyCourseLib) {
-            val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+            val myCourses = recyclerFacade.coursesRepository.getMyCourses(model?.id, validCourses)
             myCourses.forEach { it.isMyCourse = true }
             myCourses
         } else {
@@ -248,13 +248,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         if (isMyCourseLib) {
             val courseIds = courseList.mapNotNull { it.id }
-            resources = coursesRepository.getCourseOfflineResources(courseIds)
+            resources = recyclerFacade.coursesRepository.getCourseOfflineResources(courseIds)
             courseLib = "courses"
         }
 
         val (map, progressMap) = coroutineScope {
-            val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-            val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
+            val ratingsDeferred = async { recyclerFacade.coursesRepository.getCourseRatings(model?.id) }
+            val progressDeferred = async { recyclerFacade.coursesRepository.getCourseProgress(model?.id) }
             Pair(ratingsDeferred.await(), progressDeferred.await())
         }
 
@@ -264,7 +264,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireActivity(),
             map,
             userModel?.isGuest() ?: true,
-            { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
+            { courseId -> recyclerFacade.coursesRepository.getCourseTags(courseId).map { it.toTag() } },
             isMyCourseLib
         )
         adapterCourses.submitList(courses) {
@@ -560,7 +560,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = model?.id
             val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+                val courses = recyclerFacade.coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val finalCourses = if (isMyCourseLib) {
                     courses.filter { it.userId?.contains(userId) == true }
                         .onEach { it.isMyCourse = true }
@@ -570,8 +570,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         course.isMyCourse = course.userId?.contains(userId) == true
                     }.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                 }
-                val ratings = coursesRepository.getCourseRatings(userId)
-                val progress = coursesRepository.getCourseProgress(userId)
+                val ratings = recyclerFacade.coursesRepository.getCourseRatings(userId)
+                val progress = recyclerFacade.coursesRepository.getCourseProgress(userId)
                 Triple(finalCourses, ratings, progress)
             }
             val courses = filteredCourses.map { it.toCourse() }
@@ -629,7 +629,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 // And `deleteCourseProgress` uses `object.courseId`.
                 // `removeFromShelf`?
                 // `BaseRecyclerFragment.removeFromShelf` checks `object is RealmMyCourse`.
-                // And calls `coursesRepository.removeCourseFromShelf(courseId, userId)`.
+                // And calls `recyclerFacade.coursesRepository.removeCourseFromShelf(courseId, userId)`.
 
                 // So I can create an unmanaged RealmMyCourse with just ID and Title.
                 // But safer to try finding it.
@@ -728,7 +728,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val grade = gradeLevel
             val subject = subjectLevel
             lifecycleScope.launch {
-                coursesRepository.saveSearchActivity(
+                recyclerFacade.coursesRepository.saveSearchActivity(
                     searchText,
                     userName,
                     planetCode,
@@ -788,12 +788,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val map = coursesRepository.getCourseRatings(model?.id)
-                    val progressMap = coursesRepository.getCourseProgress(model?.id)
-                    val allCourses = coursesRepository.getAllCourses()
+                    val map = recyclerFacade.coursesRepository.getCourseRatings(model?.id)
+                    val progressMap = recyclerFacade.coursesRepository.getCourseProgress(model?.id)
+                    val allCourses = recyclerFacade.coursesRepository.getAllCourses()
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
                     val courseList = if (isMyCourseLib) {
-                        val myCourses = coursesRepository.getMyCourses(model?.id, validCourses)
+                        val myCourses = recyclerFacade.coursesRepository.getMyCourses(model?.id, validCourses)
                         myCourses.forEach { it.isMyCourse = true }
                         myCourses.sortedBy { it.courseTitle }
                     } else {

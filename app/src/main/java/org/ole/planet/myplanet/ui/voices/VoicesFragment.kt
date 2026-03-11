@@ -190,8 +190,8 @@ class VoicesFragment : BaseVoicesFragment() {
             }
             viewLifecycleOwner.lifecycleScope.launch {
                 if (resourceIds.isNotEmpty()) {
-                    val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                    resourcesRepository.downloadResources(libraries)
+                    val libraries = resourceUIFacade.resourcesRepository.getLibraryItemsByIds(resourceIds)
+                    resourceUIFacade.resourcesRepository.downloadResources(libraries)
                 }
             }
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
@@ -219,7 +219,7 @@ class VoicesFragment : BaseVoicesFragment() {
                 },
                 getUserFn = { userId, onResult ->
                     val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        val result = userRepository.getUserById(userId)
+                        val result = containerFacade.userRepository.getUserById(userId)
                         withContext(Dispatchers.Main) { onResult(result) }
                     }
                     return@VoicesAdapter { job.cancel() }

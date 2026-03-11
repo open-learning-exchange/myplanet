@@ -85,7 +85,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
             try {
                 val existingCourses = teamsRepository.getTeamCourses(teamId)
                 val existingIds = existingCourses.mapNotNull { it.courseId }
-                val allCourses = coursesRepository.getAllCourses()
+                val allCourses = resourceUIFacade.coursesRepository.getAllCourses()
                 val availableCourses = allCourses.filter { it.courseId !in existingIds }
 
                 if (availableCourses.isEmpty()) {

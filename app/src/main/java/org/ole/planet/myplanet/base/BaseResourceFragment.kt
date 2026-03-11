@@ -62,17 +62,7 @@ abstract class BaseResourceFragment : Fragment() {
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var userRepository: UserRepository
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
-    @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
+    lateinit var resourceUIFacade: org.ole.planet.myplanet.ui.resources.facades.ResourceUIFacade
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -123,7 +113,7 @@ abstract class BaseResourceFragment : Fragment() {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
-                    val list = resourcesRepository.getDownloadSuggestionList()
+                    val list = resourceUIFacade.resourcesRepository.getDownloadSuggestionList()
                     showDownloadDialog(list)
                 } finally {
                     pendingResult.finish()
@@ -213,14 +203,14 @@ abstract class BaseResourceFragment : Fragment() {
                 .setTitle(R.string.download_suggestion)
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
+                        if (resourceUIFacade.configurationsRepository.checkServerAvailability()) {
                             lv?.selectedItemsList?.let {
                                 addToLibrary(dbMyLibrary, it)
                                 val selectedLibraries = it.mapNotNull { index ->
                                     dbMyLibrary.getOrNull(
                                         index
                                     ) }
-                                if (resourcesRepository.downloadResources(selectedLibraries)) {
+                                if (resourceUIFacade.resourcesRepository.downloadResources(selectedLibraries)) {
                                     trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress })
                                     showProgressDialog()
                                 }
@@ -231,10 +221,10 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
+                        if (resourceUIFacade.configurationsRepository.checkServerAvailability()) {
                             addAllToLibrary(dbMyLibrary)
                             val filtered = dbMyLibrary.filterNotNull()
-                            if (resourcesRepository.downloadResources(filtered)) {
+                            if (resourceUIFacade.resourcesRepository.downloadResources(filtered)) {
                                 trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
                                 showProgressDialog()
                             }
@@ -260,9 +250,9 @@ abstract class BaseResourceFragment : Fragment() {
     fun showPendingSurveyDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val user = profileDbHandler.getUserModel()
-            val list = submissionsRepository.getPendingSurveys(user?.id)
+            val list = resourceUIFacade.submissionsRepository.getPendingSurveys(user?.id)
             if (list.isEmpty()) return@launch
-            val exams = submissionsRepository.getExamMap(list)
+            val exams = resourceUIFacade.submissionsRepository.getExamMap(list)
             val arrayAdapter = createSurveyAdapter(list, exams)
             pendingSurveyDialog?.dismiss()
             pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
@@ -396,13 +386,13 @@ abstract class BaseResourceFragment : Fragment() {
         if (`object` is RealmMyLibrary) {
             val resourceId = `object`.resourceId
             if (resourceId != null) {
-                resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                resourceUIFacade.resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
             }
         } else {
             val courseId = (`object` as RealmMyCourse).courseId
             if (courseId != null) {
-                coursesRepository.removeCourseFromShelf(courseId, userId)
+                resourceUIFacade.coursesRepository.removeCourseFromShelf(courseId, userId)
                 Utilities.toast(activity, getString(R.string.removed_from_mycourse))
             }
         }
@@ -423,7 +413,7 @@ abstract class BaseResourceFragment : Fragment() {
             val resourceIds = selectedItems.mapNotNull { index ->
                 libraryItems.getOrNull(index)?.resourceId
             }
-            resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+            resourceUIFacade.resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
         }
     }
@@ -433,7 +423,7 @@ abstract class BaseResourceFragment : Fragment() {
             val user = profileDbHandler.getUserModel()
             val userId = user?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
-            resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
+            resourceUIFacade.resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
         }
     }

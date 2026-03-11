@@ -93,7 +93,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
-                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
+                    val libraryList = recyclerFacade.resourcesRepository.getLibraryListForUser(userId)
                     showDownloadDialog(libraryList)
                 }
             }
@@ -148,13 +148,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             val result = runCatching {
                 if (resourceIds.isNotEmpty()) {
-                    resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                    recyclerFacade.resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
                     libraryAdded = true
                 }
 
                 if (courseIds.isNotEmpty()) {
                     courseIds.forEach { courseId ->
-                        if (coursesRepository.markCourseAdded(courseId, userId)) {
+                        if (recyclerFacade.coursesRepository.markCourseAdded(courseId, userId)) {
                             courseAdded = true
                         }
                     }
@@ -301,7 +301,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
-            coursesRepository.getMyCourses(model?.id, list)
+            recyclerFacade.coursesRepository.getMyCourses(model?.id, list)
         } else {
             getAllCourses(model?.id, list)
         }

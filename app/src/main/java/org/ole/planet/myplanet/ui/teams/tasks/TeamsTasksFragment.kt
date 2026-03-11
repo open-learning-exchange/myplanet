@@ -221,7 +221,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
             val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                val user = userRepository.getUserById(assigneeId)
+                val user = containerFacade.userRepository.getUserById(assigneeId)
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onNameFetched(user?.name) }
             }
             return@TeamsTasksAdapter { job.cancel() }

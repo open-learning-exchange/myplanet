@@ -7,19 +7,21 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
+    @javax.inject.Inject
+    lateinit var recyclerFacade: org.ole.planet.myplanet.ui.resources.facades.RecyclerParentResourceUIFacade
     var isMyCourseLib: Boolean = false
 
     @Suppress("UNCHECKED_CAST")
     suspend fun getList(c: Class<*>): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                surveysRepository.getSurveys() as List<LI>
+                recyclerFacade.surveysRepository.getSurveys() as List<LI>
             }
             isMyCourseLib -> {
                 getMyLibItems(c as Class<out RealmModel>)
             }
             else -> {
-                val results = coursesRepository.getAllCourses()
+                val results = recyclerFacade.coursesRepository.getAllCourses()
                 val myLibItems = RealmMyCourse.getMyCourseByUserId(model?.id, results)
                 val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
 
@@ -50,16 +52,16 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     suspend fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                surveysRepository.getSurveys(orderBy ?: "", sort) as List<LI>
+                recyclerFacade.surveysRepository.getSurveys(orderBy ?: "", sort) as List<LI>
             }
             isMyCourseLib -> {
                 getMyLibItems(c as Class<out RealmModel>, orderBy, sort)
             }
             else -> {
                 val results = if (orderBy != null) {
-                    coursesRepository.getAllCourses(orderBy, sort)
+                    recyclerFacade.coursesRepository.getAllCourses(orderBy, sort)
                 } else {
-                    coursesRepository.getAllCourses()
+                    recyclerFacade.coursesRepository.getAllCourses()
                 }
                 RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
             }
@@ -71,9 +73,9 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         return when (c) {
             RealmMyCourse::class.java -> {
                 val results = if (orderBy != null) {
-                    coursesRepository.getAllCourses(orderBy, sort)
+                    recyclerFacade.coursesRepository.getAllCourses(orderBy, sort)
                 } else {
-                    coursesRepository.getAllCourses()
+                    recyclerFacade.coursesRepository.getAllCourses()
                 }
                 RealmMyCourse.getMyCourseByUserId(model?.id, results) as List<LI>
             }

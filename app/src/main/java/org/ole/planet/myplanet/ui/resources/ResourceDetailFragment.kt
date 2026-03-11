@@ -35,8 +35,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUser? = null
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
-        return resourcesRepository.getLibraryItemById(libraryId)
-            ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
+        return containerFacade.resourcesRepository.getLibraryItemById(libraryId)
+            ?: containerFacade.resourcesRepository.getLibraryItemByResourceId(libraryId)
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +61,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 val updatedLibrary = when {
                     backgroundLibrary == null -> null
                     backgroundLibrary.userId?.contains(userId) != true && userId != null ->
-                        resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
+                        containerFacade.resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
                     else -> backgroundLibrary
                 }
                 if (updatedLibrary != null) {
@@ -222,7 +222,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
                 val updatedLibrary = try {
                     if (userId != null) {
-                        resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                        containerFacade.resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
                     } else {
                         null
                     }

@@ -152,7 +152,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (checkScheduledReminders()) {
                 return@launch
             }
-            val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
+            val pendingSurveys = resourceUIFacade.submissionsRepository.getUniquePendingSurveys(user?.id)
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
@@ -165,7 +165,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     pendingSurveys.size,
                     if (pendingSurveys.size > 1) "surveys" else "survey"
                 )
-                val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+                val surveyTitles = resourceUIFacade.submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
                 showSurveyListDialog(pendingSurveys, title, surveyTitles)
             } else {
                 checkScheduledReminders()
@@ -272,7 +272,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (surveyIdList.isEmpty()) {
                 continue
             }
-            val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
+            val submissions = resourceUIFacade.submissionsRepository.getSubmissionsByIds(surveyIdList)
             val submissionsById = submissions.associateBy { it.id }
             val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }
                 .filter { it.status == "pending" }
@@ -302,7 +302,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 pendingSurveys.size,
                 if (pendingSurveys.size > 1) "surveys" else "survey"
             )
-            val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+            val surveyTitles = resourceUIFacade.submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
             showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = true)
         }
     }
@@ -394,7 +394,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setColor(courseId: String?, star: ImageView) {
         viewLifecycleOwner.lifecycleScope.launch {
-            if (courseId != null && coursesRepository.isCourseCertified(courseId)) {
+            if (courseId != null && resourceUIFacade.coursesRepository.isCourseCertified(courseId)) {
                 star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
             } else {
                 star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
