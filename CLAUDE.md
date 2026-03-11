@@ -815,487 +815,64 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Adding a New Data Model
 
-1. **Create Model Class**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/model/RealmMyNewModel.kt
-   package org.ole.planet.myplanet.model
-
-   import io.realm.RealmObject
-   import io.realm.annotations.PrimaryKey
-
-   open class RealmMyNewModel : RealmObject() {
-       @PrimaryKey
-       var _id: String = ""
-       var title: String? = null
-       var createdDate: Long = 0
-
-       companion object {
-           fun insert(realm: Realm, data: JsonObject) {
-               val model = realm.createObject(RealmMyNewModel::class.java, data.get("_id").asString)
-               model.title = data.get("title")?.asString
-               model.createdDate = System.currentTimeMillis()
-           }
-       }
-   }
-   ```
-
-2. **Update API Interface**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
-   @GET("myendpoint")
-   suspend fun getMyNewModels(): Response<List<JsonObject>>
-   ```
-
-3. **Create Repository**
-   ```kotlin
-   // Interface
-   interface MyNewModelRepository {
-       suspend fun getModels(): List<RealmMyNewModel>
-       suspend fun syncModels(): Result<Unit>
-   }
-
-   // Implementation
-   class MyNewModelRepositoryImpl @Inject constructor(
-       private val apiInterface: ApiInterface,
-       private val databaseService: DatabaseService
-   ) : MyNewModelRepository {
-       // Implementation
-   }
-   ```
-
-4. **Register in DI Module**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt
-   @Binds
-   abstract fun bindMyNewModelRepository(
-       impl: MyNewModelRepositoryImpl
-   ): MyNewModelRepository
-   ```
+1. Create Realm model in `model/` extending `RealmObject` with `@PrimaryKey` and companion `insert()` method
+2. Add API endpoint in `ApiInterface.kt`
+3. Create repository interface + implementation in `repository/`
+4. Bind in `RepositoryModule.kt` using `@Binds`
 
 ### Adding a New Screen
 
-1. **Create Layout**
-   ```xml
-   <!-- app/src/main/res/layout/activity_my_feature.xml -->
-   <?xml version="1.0" encoding="utf-8"?>
-   <androidx.constraintlayout.widget.ConstraintLayout
-       xmlns:android="http://schemas.android.com/apk/res/android"
-       android:layout_width="match_parent"
-       android:layout_height="match_parent">
-
-       <!-- UI components -->
-
-   </androidx.constraintlayout.widget.ConstraintLayout>
-   ```
-
-2. **Create Activity/Fragment**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/ui/myfeature/MyFeatureActivity.kt
-   package org.ole.planet.myplanet.ui.myfeature
-
-   import android.os.Bundle
-   import dagger.hilt.android.AndroidEntryPoint
-   import org.ole.planet.myplanet.base.BaseActivity
-   import org.ole.planet.myplanet.databinding.ActivityMyFeatureBinding
-
-   @AndroidEntryPoint
-   class MyFeatureActivity : BaseActivity() {
-       private lateinit var binding: ActivityMyFeatureBinding
-
-       override fun onCreate(savedInstanceState: Bundle?) {
-           super.onCreate(savedInstanceState)
-           binding = ActivityMyFeatureBinding.inflate(layoutInflater)
-           setContentView(binding.root)
-
-           setupUI()
-       }
-
-       private fun setupUI() {
-           // Initialize UI components
-       }
-   }
-   ```
-
-3. **Register in Manifest**
-   ```xml
-   <!-- app/src/main/AndroidManifest.xml -->
-   <activity
-       android:name=".ui.myfeature.MyFeatureActivity"
-       android:label="@string/my_feature_title"
-       android:theme="@style/AppTheme" />
-   ```
-
-4. **Add Navigation**
-   ```kotlin
-   // From another activity/fragment
-   val intent = Intent(context, MyFeatureActivity::class.java)
-   startActivity(intent)
-   ```
+1. Create layout XML in `res/layout/` (activity_*.xml or fragment_*.xml)
+2. Create `@AndroidEntryPoint` Activity/Fragment in `ui/<feature>/` using view binding
+3. Register activity in `AndroidManifest.xml`
+4. Add navigation via `Intent` from calling code
 
 ### Adding a New API Endpoint
 
-1. **Update ApiInterface**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
-   @POST("api/endpoint")
-   suspend fun postData(
-       @Body data: JsonObject,
-       @Header("Authorization") auth: String
-   ): Response<JsonObject>
-   ```
-
-2. **Use in Repository**
-   ```kotlin
-   override suspend fun submitData(data: MyData): Result<Unit> = withContext(Dispatchers.IO) {
-       try {
-           val jsonData = convertToJson(data)
-           val response = apiInterface.postData(jsonData, getAuthHeader())
-           if (response.isSuccessful) {
-               Result.success(Unit)
-           } else {
-               Result.failure(Exception("API error: ${response.code()}"))
-           }
-       } catch (e: Exception) {
-           Result.failure(e)
-       }
-   }
-   ```
+1. Add method to `ApiInterface.kt` with Retrofit annotations (`@GET`, `@POST`, etc.)
+2. Call from repository implementation using `withContext(Dispatchers.IO)`
 
 ### Implementing Offline Sync
 
-1. **Download Data**
-   ```kotlin
-   suspend fun syncFromServer() {
-       val response = apiInterface.getData()
-       if (response.isSuccessful) {
-           response.body()?.let { data ->
-               saveToRealm(data)
-           }
-       }
-   }
-
-   private fun saveToRealm(data: List<JsonObject>) {
-       mRealm.executeTransaction { realm ->
-           data.forEach { item ->
-               RealmMyModel.insert(realm, item)
-           }
-       }
-   }
-   ```
-
-2. **Upload Changes**
-   ```kotlin
-   suspend fun syncToServer() {
-       val pendingChanges = mRealm.where(RealmMyModel::class.java)
-           .equalTo("synced", false)
-           .findAll()
-
-       pendingChanges.forEach { item ->
-           val response = apiInterface.postData(item.toJson())
-           if (response.isSuccessful) {
-               markAsSynced(item._id)
-           }
-       }
-   }
-   ```
+1. Download: Fetch from API, save to Realm via `executeTransaction`
+2. Upload: Query unsynced items from Realm, POST to server, mark as synced
 
 ### Adding Background Work
 
-1. **Create Worker**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/services/MyWorker.kt
-   class MyWorker(
-       context: Context,
-       params: WorkerParameters
-   ) : CoroutineWorker(context, params) {
-
-       override suspend fun doWork(): Result {
-           return try {
-               // Perform background task
-               Result.success()
-           } catch (e: Exception) {
-               Result.retry()
-           }
-       }
-   }
-   ```
-
-2. **Schedule Work**
-   ```kotlin
-   val workRequest = PeriodicWorkRequestBuilder<MyWorker>(
-       1, TimeUnit.HOURS
-   ).setConstraints(
-       Constraints.Builder()
-           .setRequiredNetworkType(NetworkType.CONNECTED)
-           .build()
-   ).build()
-
-   WorkManager.getInstance(context)
-       .enqueueUniquePeriodicWork(
-           "MyWork",
-           ExistingPeriodicWorkPolicy.REPLACE,
-           workRequest
-       )
-   ```
+1. Create `CoroutineWorker` subclass in `services/`
+2. Schedule via `WorkManager.enqueueUniquePeriodicWork()` with appropriate constraints
+3. Use `EntryPointAccessors` for Hilt dependency injection in workers
 
 ---
 
 ## Testing Guidelines
 
-### Current State
-- No formal testing framework currently configured
-- Manual testing on devices/emulators
-
-### Recommended Testing Approach
-
-**Unit Testing:**
-```kotlin
-// Add to app/build.gradle
-testImplementation 'junit:junit:4.13.2'
-testImplementation 'org.mockito:mockito-core:5.3.1'
-testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
-
-// Example unit test
-class CourseRepositoryTest {
-    @Test
-    fun `syncCourses returns success when API call succeeds`() = runTest {
-        // Arrange
-        val mockApi = mock(ApiInterface::class.java)
-        val repository = CourseRepositoryImpl(mockApi, mockDatabase)
-
-        // Act
-        val result = repository.syncCourses()
-
-        // Assert
-        assertTrue(result.isSuccess)
-    }
-}
-```
-
-**Instrumented Testing:**
-```kotlin
-// Add to app/build.gradle
-androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-
-// Example instrumented test
-@RunWith(AndroidJUnit4::class)
-class LoginActivityTest {
-    @Test
-    fun loginButton_clickWithValidCredentials_navigatesToDashboard() {
-        // Test UI interaction
-    }
-}
-```
-
-### Manual Testing Checklist
-
-When making changes, verify:
-- [ ] App builds successfully (`./gradlew assembleDefaultDebug`)
-- [ ] Feature works in offline mode
-- [ ] Synchronization works correctly
-- [ ] UI renders on different screen sizes (use `values-sw*` breakpoints)
-- [ ] Dark theme works correctly (check `values-night/` and `layout-night/`)
-- [ ] All supported languages display correctly
-- [ ] Permissions are requested appropriately
-- [ ] Background sync continues to work
+- No formal testing framework currently configured; manual testing on devices/emulators
+- When making changes, verify: app builds (`./gradlew assembleDefaultDebug`), offline mode works, sync works, UI renders on different screen sizes, dark theme works, translations display correctly, permissions requested appropriately
 
 ---
 
 ## Security Considerations
 
-### Sensitive Data Handling
-
-**Never hardcode:**
-- API keys
-- Passwords
-- Server URLs (use gradle.properties)
-- User credentials
-
-**Use gradle.properties for configuration:**
-```properties
-# gradle.properties (gitignored)
-PLANET_LEARNING_URL=https://example.org
-PLANET_LEARNING_PIN=1234
-```
-
-**Access in code:**
-```kotlin
-val serverUrl = BuildConfig.PLANET_LEARNING_URL
-```
-
-### Network Security
-
-**Network Security Config:**
-- Location: `app/src/main/res/xml/network_security_config.xml`
-- Configure trusted certificates
-- Set cleartext traffic policies
-
-**HTTPS Enforcement:**
-```kotlin
-// Prefer HTTPS URLs
-val baseUrl = "https://example.org/"
-
-// Validate URLs
-if (!url.startsWith("https://")) {
-    throw SecurityException("Only HTTPS URLs allowed")
-}
-```
-
-### Data Encryption
-
-**Encrypted SharedPreferences:**
-```kotlin
-val encryptedPrefs = EncryptedSharedPreferences.create(
-    context,
-    "secure_prefs",
-    masterKey,
-    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-)
-```
-
-**Password Hashing:**
-```kotlin
-// Use PBKDF2 for password hashing (via Sha256Utils)
-val hashedPassword = Sha256Utils.hash(password)
-```
-
-### Permissions
-
-**Request at Runtime:**
-```kotlin
-// Check permission
-if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-    != PackageManager.PERMISSION_GRANTED) {
-
-    // Request permission
-    ActivityCompat.requestPermissions(
-        this,
-        arrayOf(Manifest.permission.CAMERA),
-        REQUEST_CAMERA
-    )
-}
-```
-
-**Declared Manifest Permissions:**
-- Network: `INTERNET`, `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_STATE`, `CHANGE_NETWORK_STATE`
-- Device: `CAMERA`, `RECORD_AUDIO`, `WAKE_LOCK`
-- System: `REQUEST_INSTALL_PACKAGES` (default flavor only), `SYSTEM_ALERT_WINDOW`, `REQUEST_WRITE_PERMISSION`
-- Notifications: `POST_NOTIFICATIONS`, `C2DM RECEIVE`
-- Services: `FOREGROUND_SERVICE_DATA_SYNC`
-- Downloads: `SEND_DOWNLOAD_COMPLETED_INTENTS`
-
-### ProGuard/R8
-
-**Current state:** `minifyEnabled` is `false` for both debug and release builds. If enabling for release:
-```gradle
-buildTypes {
-    release {
-        minifyEnabled true
-        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-    }
-}
-```
+- **Never hardcode** API keys, passwords, server URLs, or credentials. Use `gradle.properties` (gitignored) and access via `BuildConfig`
+- **Network security config**: `app/src/main/res/xml/network_security_config.xml`. Prefer HTTPS
+- **Encryption**: Use `EncryptedSharedPreferences` for sensitive data, `Sha256Utils` for password hashing (Tink library)
+- **Runtime permissions**: Check with `ContextCompat.checkSelfPermission`, request via `ActivityCompat.requestPermissions`
+- **ProGuard/R8**: Currently `minifyEnabled = false` for both debug and release
 
 ---
 
 ## Troubleshooting
 
-### Common Build Issues
-
-**Issue: Gradle sync failed**
-```bash
-# Solution: Clean and rebuild
-./gradlew clean
-./gradlew build --refresh-dependencies
-```
-
-**Issue: KAPT/KSP annotation processing errors**
-```bash
-# Solution: Clean build cache
-./gradlew clean
-rm -rf .gradle/
-./gradlew build
-```
-
-**Issue: Realm schema migration errors**
-```kotlin
-// Solution: Increment schema version or delete and rebuild
-val config = RealmConfiguration.Builder()
-    .deleteRealmIfMigrationNeeded()  // Development only!
-    .build()
-```
-
-**Issue: Hilt dependency not found**
-- Ensure `@AndroidEntryPoint` annotation is present
-- Verify module provides the dependency
-- Check injection point is correct (constructor vs field)
-
-### Runtime Issues
-
-**Issue: Network requests fail**
-```kotlin
-// Debug: Check network state
-val isConnected = NetworkUtils.isNetworkAvailable(context)
-Log.d(TAG, "Network available: $isConnected")
-
-// Debug: Log request/response
-val loggingInterceptor = HttpLoggingInterceptor().apply {
-    level = HttpLoggingInterceptor.Level.BODY
-}
-```
-
-**Issue: Realm database locked**
-```kotlin
-// Solution: Ensure realm is closed properly
-override fun onDestroy() {
-    super.onDestroy()
-    if (::mRealm.isInitialized && !mRealm.isClosed) {
-        mRealm.close()
-    }
-}
-```
-
-**Issue: Out of memory with images**
-```kotlin
-// Solution: Use Glide with proper sizing
-Glide.with(context)
-    .load(imageUrl)
-    .override(800, 600)  // Limit size
-    .into(imageView)
-```
-
-### Git Issues
-
-**Issue: Push fails with 403**
-- Ensure branch name starts with `claude/`
-- Ensure branch name ends with matching session ID
-- Use `git push -u origin <branch-name>`
-
-**Issue: Merge conflicts**
-```bash
-# Solution: Fetch latest and rebase
-git fetch origin
-git rebase origin/master
-
-# Resolve conflicts in files
-# Then:
-git add .
-git rebase --continue
-```
-
-### CI/CD Issues
-
-**Issue: Build workflow fails**
-- Check Gradle version compatibility
-- Verify all dependencies are accessible
-- Review workflow logs in GitHub Actions
-
-**Issue: Release workflow fails**
-- Ensure signing credentials are configured
-- Verify Play Store API access
-- Check bundle/APK generation
+- **Gradle sync failed**: `./gradlew clean && ./gradlew build --refresh-dependencies`
+- **KAPT/KSP errors**: `./gradlew clean && rm -rf .gradle/ && ./gradlew build`
+- **Realm migration errors**: Increment schema version or use `deleteRealmIfMigrationNeeded()` (dev only)
+- **Hilt not found**: Ensure `@AndroidEntryPoint`, verify module provides dependency, check injection point
+- **Network requests fail**: Check `NetworkUtils.isNetworkAvailable()`, add `HttpLoggingInterceptor`
+- **Realm database locked**: Ensure realm is closed in `onDestroy()`
+- **OOM with images**: Use `Glide.with(context).load(url).override(800, 600)`
+- **Git push 403**: Branch must start with `claude/` and end with session ID; use `-u` flag
+- **Merge conflicts**: `git fetch origin && git rebase origin/master`, resolve, `git add . && git rebase --continue`
 
 ---
 
@@ -1361,61 +938,13 @@ git push -u origin claude/feature-id   # Push to remote
 
 ---
 
-## Codebase Inventory Summary
+## Key Principles
 
-### Source Files (421 total Kotlin files)
-
-| Component | Files | Purpose |
-|-----------|-------|---------|
-| `model/` | 75 | Realm database models (40) + DTOs (35) |
-| `repository/` | 42 | Data access abstraction (21 domains + utilities) |
-| `ui/` | 153 | User interface across 28+ feature packages |
-| `services/` | 38 | Background tasks & managers (21 root + 3 sub-packages) |
-| `utils/` | 40 | Helper utilities |
-| `callback/` | 34 | Event listeners and interfaces |
-| `di/` | 18 | Dependency injection (6 modules + 12 entry points) |
-| `base/` | 12 | Reusable base classes |
-| `data/` | 7 | Data services, API, auth |
-| Root | 1 | MainApplication.kt |
-
-### Resource Files
-
-| Category | Count / Detail |
-|----------|---------------|
-| Layout files (main) | 170 |
-| Layout variants | layout-night, layout-w600dp, layout-large-land, layout-xlarge-land, layout-normal-land |
-| Drawable files | ~129 |
-| Translation languages | 5 (ar, es, fr, ne, so) |
-| Theme variants | values-night (dark theme) |
-| Screen size variants | values-sw320dp, values-sw400dp, values-sw600dp, values-normal |
-| Menu files | 2 |
-| XML config files | ~3 |
-
-### AndroidManifest Permissions
-
-**Network**: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, CHANGE_NETWORK_STATE
-**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK
-**System**: REQUEST_INSTALL_PACKAGES (default flavor only), SYSTEM_ALERT_WINDOW, REQUEST_WRITE_PERMISSION
-**Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
-**Services**: FOREGROUND_SERVICE_DATA_SYNC
-**Downloads**: SEND_DOWNLOAD_COMPLETED_INTENTS
-
----
-
-## Conclusion
-
-This document provides a comprehensive guide for AI assistants working on myPlanet. Key principles:
-
-1. **Understand the architecture** - Layered architecture with clear separation
-2. **Follow conventions** - Consistent naming, patterns, and structure
-3. **Use dependency injection** - Hilt for all dependency management
-4. **Think offline-first** - All features should work offline when possible
-5. **Leverage existing patterns** - Base classes, repositories, utilities
-6. **Test thoroughly** - Build, offline mode, sync, multiple screen sizes
-7. **Document changes** - Clear commit messages and code comments
-8. **Security first** - Never hardcode secrets, use encryption
-
-For questions or clarifications, refer to the Discord community or GitHub issues.
+1. **Layered architecture** with clear separation of concerns
+2. **Hilt DI** for all dependency management
+3. **Offline-first** - all features should work without connectivity
+4. **Follow existing patterns** - base classes, repositories, naming conventions
+5. **Security first** - never hardcode secrets, use encryption
 
 ---
 
