@@ -348,28 +348,47 @@ class CoursesRepositoryImpl @Inject constructor(
         userId: String?,
         questionsByExamId: Map<String?, List<RealmExamQuestion>>
     ) {
-        exams.forEach { it ->
-            it.id?.let { it1 ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it1).equalTo("type", "exam").findAll()
-            }?.map { submission ->
-                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", submission.id).findAll()
-                var examId = submission.parentId
-                if (submission.parentId?.contains("@") == true) {
-                    examId = submission.parentId!!.split("@")[0]
-                }
-                val questions = questionsByExamId[examId] ?: emptyList()
-                val questionCount = questions.size
-                if (questionCount == 0) {
-                    ob.addProperty("completed", false)
-                    ob.addProperty("percentage", 0)
-                } else {
-                    ob.addProperty("completed", answers.size == questionCount)
-                    val percentage = (answers.size.toDouble() / questionCount) * 100
-                    ob.addProperty("percentage", percentage)
-                }
-                ob.addProperty("status", submission.status)
+        val submissionsList = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
+        exams.forEach { exam ->
+            exam.id?.let { examId ->
+                val submissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .contains("parentId", examId)
+                    .equalTo("type", "exam")
+                    .findAll()
+                submissionsList.addAll(submissions)
             }
+        }
+
+        val submissionIds = submissionsList.mapNotNull { it.id }
+        val allAnswers = mutableListOf<org.ole.planet.myplanet.model.RealmAnswer>()
+        if (submissionIds.isNotEmpty()) {
+            submissionIds.chunked(1000).forEach { chunk ->
+                val chunkAnswers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
+                    .`in`("submissionId", chunk.toTypedArray())
+                    .findAll()
+                allAnswers.addAll(chunkAnswers)
+            }
+        }
+        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+
+        submissionsList.forEach { submission ->
+            val answers = answersBySubmissionId[submission.id] ?: emptyList()
+            var examId = submission.parentId
+            if (submission.parentId?.contains("@") == true) {
+                examId = submission.parentId!!.split("@")[0]
+            }
+            val questions = questionsByExamId[examId] ?: emptyList()
+            val questionCount = questions.size
+            if (questionCount == 0) {
+                ob.addProperty("completed", false)
+                ob.addProperty("percentage", 0)
+            } else {
+                ob.addProperty("completed", answers.size == questionCount)
+                val percentage = (answers.size.toDouble() / questionCount) * 100
+                ob.addProperty("percentage", percentage)
+            }
+            ob.addProperty("status", submission.status)
         }
     }
 
