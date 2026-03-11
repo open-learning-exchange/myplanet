@@ -279,15 +279,13 @@ object FileUtils {
 
     @JvmStatic
     fun totalAvailableMemoryRatio(context: Context): Long {
-        val total = totalMemoryCapacity(context)
-        val available = totalAvailableMemory(context)
-        return Math.round(available.toDouble() / total.toDouble() * 100)
+        val (total, available) = getStorageStats(context)
+        return if (total == 0L) 0L else Math.round(available.toDouble() / total.toDouble() * 100)
     }
 
     @JvmStatic
     fun availableOverTotalMemoryFormattedString(context: Context): String {
-        val available = totalAvailableMemory(context)
-        val total = totalMemoryCapacity(context)
+        val (total, available) = getStorageStats(context)
         return formatSize(context, available) + "/" + formatSize(context, total)
     }
 

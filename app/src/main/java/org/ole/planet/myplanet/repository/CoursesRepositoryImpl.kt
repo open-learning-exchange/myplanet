@@ -339,7 +339,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
-                getExamObject(exams, ob, questionsByExamId, userSubmissions)
+                getExamObject(realm, exams, ob, questionsByExamId, userSubmissions)
                 array.add(ob)
             }
             org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
@@ -347,32 +347,49 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun getExamObject(
+        realm: io.realm.Realm,
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
         questionsByExamId: Map<String?, List<RealmExamQuestion>>,
         userSubmissions: List<org.ole.planet.myplanet.model.RealmSubmission>
     ) {
+        val submissionsList = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
         exams.forEach { exam ->
             exam.id?.let { examId ->
-                userSubmissions.filter { it.parentId?.contains(examId) == true }
-            }?.map { submission ->
-                val answersSize = submission.answers?.size ?: 0
-                var examIdForQuestions = submission.parentId
-                if (submission.parentId?.contains("@") == true) {
-                    examIdForQuestions = submission.parentId!!.split("@")[0]
-                }
-                val questions = questionsByExamId[examIdForQuestions] ?: emptyList()
-                val questionCount = questions.size
-                if (questionCount == 0) {
-                    ob.addProperty("completed", false)
-                    ob.addProperty("percentage", 0)
-                } else {
-                    ob.addProperty("completed", answersSize == questionCount)
-                    val percentage = (answersSize.toDouble() / questionCount) * 100
-                    ob.addProperty("percentage", percentage)
-                }
-                ob.addProperty("status", submission.status)
+                val submissions = userSubmissions.filter { it.parentId?.contains(examId) == true }
+                submissionsList.addAll(submissions)
             }
+        }
+
+        val submissionIds = submissionsList.mapNotNull { it.id }
+        val allAnswers = mutableListOf<org.ole.planet.myplanet.model.RealmAnswer>()
+        if (submissionIds.isNotEmpty()) {
+            submissionIds.chunked(1000).forEach { chunk ->
+                val chunkAnswers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
+                    .`in`("submissionId", chunk.toTypedArray())
+                    .findAll()
+                allAnswers.addAll(chunkAnswers)
+            }
+        }
+        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+
+        submissionsList.forEach { submission ->
+            val answers = answersBySubmissionId[submission.id] ?: emptyList()
+            var examId = submission.parentId
+            if (submission.parentId?.contains("@") == true) {
+                examId = submission.parentId!!.split("@")[0]
+            }
+            val questions = questionsByExamId[examId] ?: emptyList()
+            val questionCount = questions.size
+            if (questionCount == 0) {
+                ob.addProperty("completed", false)
+                ob.addProperty("percentage", 0)
+            } else {
+                ob.addProperty("completed", answers.size == questionCount)
+                val percentage = (answers.size.toDouble() / questionCount) * 100
+                ob.addProperty("percentage", percentage)
+            }
+            ob.addProperty("status", submission.status)
         }
     }
 
