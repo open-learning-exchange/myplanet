@@ -21,8 +21,7 @@ import org.ole.planet.myplanet.repository.ChatRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val chatRepository: ChatRepository,
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+    private val chatRepository: ChatRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -78,7 +77,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").notEqualTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(activitiesRepository::serializeResourceActivities),
+        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
         idExtractor = { it._id }
     )
 
@@ -88,7 +87,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").equalTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(activitiesRepository::serializeResourceActivities),
+        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
         idExtractor = { it._id }
     )
 

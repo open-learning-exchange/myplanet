@@ -18,5 +18,4 @@ interface ActivitiesRepository {
     suspend fun getResourceOpenCount(userName: String, type: String): Long
     suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>?
     suspend fun recordSyncActivity(userId: String)
-    fun serializeResourceActivities(realmResourceActivities: org.ole.planet.myplanet.model.RealmResourceActivity): com.google.gson.JsonObject
 }

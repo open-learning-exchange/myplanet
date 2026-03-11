@@ -22,4 +22,21 @@ open class RealmResourceActivity : RealmObject() {
     var type: String? = null
     var user: String? = null
     var androidId: String? = null
+
+    companion object {
+        @JvmStatic
+        fun serializeResourceActivities(realmResourceActivities: RealmResourceActivity): JsonObject {
+            val ob = JsonObject()
+            ob.addProperty("user", realmResourceActivities.user)
+            ob.addProperty("resourceId", realmResourceActivities.resourceId)
+            ob.addProperty("type", realmResourceActivities.type)
+            ob.addProperty("title", realmResourceActivities.title)
+            ob.addProperty("time", realmResourceActivities.time)
+            ob.addProperty("createdOn", realmResourceActivities.createdOn)
+            ob.addProperty("parentCode", realmResourceActivities.parentCode)
+            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
+            return ob
+        }
+    }
 }
