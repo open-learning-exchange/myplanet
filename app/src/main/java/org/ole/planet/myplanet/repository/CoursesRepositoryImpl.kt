@@ -329,12 +329,29 @@ class CoursesRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
+            val allSubmissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "exam")
+                .findAll()
+
+            val submissionIds = allSubmissions.mapNotNull { it.id }
+            val allAnswers = mutableListOf<org.ole.planet.myplanet.model.RealmAnswer>()
+            if (submissionIds.isNotEmpty()) {
+                submissionIds.chunked(1000).forEach { chunk ->
+                    val chunkAnswers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
+                        .`in`("submissionId", chunk.toTypedArray())
+                        .findAll()
+                    allAnswers.addAll(chunkAnswers)
+                }
+            }
+            val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
-                getExamObject(realm, exams, ob, userId, questionsByExamId)
+                getExamObject(realm, exams, ob, userId, questionsByExamId, allSubmissions, answersBySubmissionId)
                 array.add(ob)
             }
             org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
@@ -346,31 +363,17 @@ class CoursesRepositoryImpl @Inject constructor(
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
         userId: String?,
-        questionsByExamId: Map<String?, List<RealmExamQuestion>>
+        questionsByExamId: Map<String?, List<RealmExamQuestion>>,
+        allSubmissions: List<org.ole.planet.myplanet.model.RealmSubmission>,
+        answersBySubmissionId: Map<String?, List<org.ole.planet.myplanet.model.RealmAnswer>>
     ) {
         val submissionsList = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
         exams.forEach { exam ->
             exam.id?.let { examId ->
-                val submissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .contains("parentId", examId)
-                    .equalTo("type", "exam")
-                    .findAll()
+                val submissions = allSubmissions.filter { it.parentId?.contains(examId) == true }
                 submissionsList.addAll(submissions)
             }
         }
-
-        val submissionIds = submissionsList.mapNotNull { it.id }
-        val allAnswers = mutableListOf<org.ole.planet.myplanet.model.RealmAnswer>()
-        if (submissionIds.isNotEmpty()) {
-            submissionIds.chunked(1000).forEach { chunk ->
-                val chunkAnswers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
-                    .`in`("submissionId", chunk.toTypedArray())
-                    .findAll()
-                allAnswers.addAll(chunkAnswers)
-            }
-        }
-        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
 
         submissionsList.forEach { submission ->
             val answers = answersBySubmissionId[submission.id] ?: emptyList()
