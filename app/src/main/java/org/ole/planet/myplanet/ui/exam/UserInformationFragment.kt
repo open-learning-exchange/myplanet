@@ -215,8 +215,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             val phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
             if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
 
-            if (!dob.isNullOrEmpty()) {
-                val birthDateISO = TimeUtils.convertToISO8601(dob!!)
+            val dobValue = dob
+            if (!dobValue.isNullOrEmpty()) {
+                val birthDateISO = TimeUtils.convertToISO8601(dobValue)
                 user.addProperty("birthDate", birthDateISO)
             }
         }
