@@ -186,94 +186,94 @@ class SyncManager @Inject constructor(
             coroutineScope {
                 val syncJobs = listOf(
                     async {
-                        logger.startProcess("${SyncTables.Core.TABLET_USERS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.TABLET_USERS))
                         transactionSyncManager.syncDb(SyncTables.Core.TABLET_USERS)
-                        logger.endProcess("${SyncTables.Core.TABLET_USERS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.TABLET_USERS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.EXAMS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.EXAMS))
                         transactionSyncManager.syncDb(SyncTables.Core.EXAMS)
-                        logger.endProcess("${SyncTables.Core.EXAMS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.EXAMS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.RATINGS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.RATINGS))
                         transactionSyncManager.syncDb(SyncTables.Core.RATINGS)
-                        logger.endProcess("${SyncTables.Core.RATINGS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.RATINGS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.COURSES_PROGRESS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.COURSES_PROGRESS))
                         transactionSyncManager.syncDb(SyncTables.Core.COURSES_PROGRESS)
-                        logger.endProcess("${SyncTables.Core.COURSES_PROGRESS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.COURSES_PROGRESS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.ACHIEVEMENTS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.ACHIEVEMENTS))
                         transactionSyncManager.syncDb(SyncTables.Core.ACHIEVEMENTS)
-                        logger.endProcess("${SyncTables.Core.ACHIEVEMENTS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.ACHIEVEMENTS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.TAGS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.TAGS))
                         transactionSyncManager.syncDb(SyncTables.Core.TAGS)
-                        logger.endProcess("${SyncTables.Core.TAGS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.TAGS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.SUBMISSIONS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.SUBMISSIONS))
                         transactionSyncManager.syncDb(SyncTables.Core.SUBMISSIONS)
-                        logger.endProcess("${SyncTables.Core.SUBMISSIONS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.SUBMISSIONS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.NEWS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.NEWS))
                         transactionSyncManager.syncDb(SyncTables.Core.NEWS)
-                        logger.endProcess("${SyncTables.Core.NEWS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.NEWS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.FEEDBACK}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.FEEDBACK))
                         transactionSyncManager.syncDb(SyncTables.Core.FEEDBACK)
-                        logger.endProcess("${SyncTables.Core.FEEDBACK}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.FEEDBACK))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.TASKS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.TASKS))
                         transactionSyncManager.syncDb(SyncTables.Core.TASKS)
-                        logger.endProcess("${SyncTables.Core.TASKS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.TASKS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.LOGIN_ACTIVITIES}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.LOGIN_ACTIVITIES))
                         transactionSyncManager.syncDb(SyncTables.Core.LOGIN_ACTIVITIES)
-                        logger.endProcess("${SyncTables.Core.LOGIN_ACTIVITIES}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.LOGIN_ACTIVITIES))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Health.HEALTH}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Health.HEALTH))
                         transactionSyncManager.syncDb(SyncTables.Health.HEALTH)
-                        logger.endProcess("${SyncTables.Health.HEALTH}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Health.HEALTH))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Health.CERTIFICATIONS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Health.CERTIFICATIONS))
                         transactionSyncManager.syncDb(SyncTables.Health.CERTIFICATIONS)
-                        logger.endProcess("${SyncTables.Health.CERTIFICATIONS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Health.CERTIFICATIONS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Teams.TEAM_ACTIVITIES}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Teams.TEAM_ACTIVITIES))
                         transactionSyncManager.syncDb(SyncTables.Teams.TEAM_ACTIVITIES)
-                        logger.endProcess("${SyncTables.Teams.TEAM_ACTIVITIES}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Teams.TEAM_ACTIVITIES))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Social.CHAT_HISTORY}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Social.CHAT_HISTORY))
                         transactionSyncManager.syncDb(SyncTables.Social.CHAT_HISTORY)
-                        logger.endProcess("${SyncTables.Social.CHAT_HISTORY}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Social.CHAT_HISTORY))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Teams.TEAMS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Teams.TEAMS))
                         transactionSyncManager.syncDb(SyncTables.Teams.TEAMS)
-                        logger.endProcess("${SyncTables.Teams.TEAMS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Teams.TEAMS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Social.MEETUPS}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Social.MEETUPS))
                         transactionSyncManager.syncDb(SyncTables.Social.MEETUPS)
-                        logger.endProcess("${SyncTables.Social.MEETUPS}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Social.MEETUPS))
                     },
                     async {
-                        logger.startProcess("${SyncTables.Core.COURSES}_sync")
+                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.COURSES))
                         transactionSyncManager.syncDb(SyncTables.Core.COURSES)
-                        logger.endProcess("${SyncTables.Core.COURSES}_sync")
+                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.COURSES))
                     }
                 )
                 syncJobs.awaitAll()

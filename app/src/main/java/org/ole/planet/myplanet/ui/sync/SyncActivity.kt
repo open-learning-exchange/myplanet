@@ -656,7 +656,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            transactionSyncManager.syncDb("login_activities")
+                            transactionSyncManager.syncDb(org.ole.planet.myplanet.services.sync.SyncTables.Core.LOGIN_ACTIVITIES)
                         }
                     }
                 }

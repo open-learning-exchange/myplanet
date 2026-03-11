@@ -30,4 +30,6 @@ object SyncTables {
         const val CHAT_HISTORY = "chat_history"
         const val MEETUPS = "meetups"
     }
+
+    fun syncKey(table: String) = "${table}_sync"
 }
