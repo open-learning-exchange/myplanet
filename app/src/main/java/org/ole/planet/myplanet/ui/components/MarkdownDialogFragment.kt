@@ -93,7 +93,7 @@ class MarkdownDialogFragment : DialogFragment() {
         val earnedDollarsVoice = allVoiceCount * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
-        val progressValue = ((total.toDouble() / 500) * 100).toInt().coerceAtMost(100)
+        val progressValue = ((total.toDouble() / 500) * 100).toInt().coerceIn(0, 100)
         dialogCampaignChallengeBinding.progressBar.progress = progressValue
     }
 

@@ -6,7 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -63,9 +65,11 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
             val model = userSessionManager.getUserModel()
-            personalsRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
-                personalAdapter?.submitList(realmMyPersonals)
-                showNodata()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                personalsRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
+                    personalAdapter?.submitList(realmMyPersonals)
+                    showNodata()
+                }
             }
         }
         showNodata()

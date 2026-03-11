@@ -4,25 +4,20 @@ import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.model.CourseProgressData
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
-    var user: RealmUser? = null
+    private val viewModel: CourseProgressViewModel by viewModels()
     lateinit var courseId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,16 +31,19 @@ class CourseProgressActivity : BaseActivity() {
         binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
 
         lifecycleScope.launch {
-            user = userSessionManager.getUserModel()
-            val data = coursesRepository.getCourseProgress(courseId, user?._id)
-            if (data != null) {
-                updateUI(data)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.courseProgress.collect { data ->
+                    if (data != null) {
+                        updateUI(data)
+                    }
+                }
             }
         }
+        viewModel.loadProgress(courseId)
     }
 
     private fun updateUI(data: CourseProgressData) {
-        if (data.max != 0) {
+        if (data.max > 0) {
             binding.progressView.setProgress((data.current.toDouble() / data.max.toDouble() * 100).toInt(), true)
         } else {
             binding.progressView.setProgress(0, true)
