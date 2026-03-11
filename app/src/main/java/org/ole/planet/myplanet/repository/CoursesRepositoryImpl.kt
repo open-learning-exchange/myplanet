@@ -352,19 +352,19 @@ class CoursesRepositoryImpl @Inject constructor(
         if (examIds.isEmpty()) return
 
         val submissions = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
+        // Chunk to avoid Realm/SQLite query complexity limits
         examIds.chunked(250).forEach { chunk ->
             var query = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
                 .equalTo("userId", userId)
                 .equalTo("type", "exam")
 
-            if (chunk.isNotEmpty()) {
-                query = query.and().beginGroup()
-                chunk.forEachIndexed { index, id ->
-                    if (index > 0) query = query.or()
-                    query = query.contains("parentId", id)
-                }
-                query = query.endGroup()
+            query = query.beginGroup()
+            chunk.forEachIndexed { index, id ->
+                if (index > 0) query = query.or()
+                query = query.contains("parentId", id)
             }
+            query = query.endGroup()
+
             submissions.addAll(query.findAll())
         }
 
