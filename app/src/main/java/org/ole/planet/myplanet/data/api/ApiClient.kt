@@ -56,10 +56,14 @@ object ApiClient {
         return result
     }
 
+    internal fun getStackTrace(): Array<StackTraceElement> {
+        return Thread.currentThread().stackTrace
+    }
+
     private fun extractEndpointFromStackTrace(): String {
         // Try to extract endpoint from stack trace for logging
         return try {
-            val stackTrace = Thread.currentThread().stackTrace
+            val stackTrace = getStackTrace()
             stackTrace.find { it.className.contains("SyncManager") || it.className.contains("TransactionSyncManager") }
                 ?.let { "${it.className.substringAfterLast(".")}.${it.methodName}" }
                 ?: "unknown_endpoint"
