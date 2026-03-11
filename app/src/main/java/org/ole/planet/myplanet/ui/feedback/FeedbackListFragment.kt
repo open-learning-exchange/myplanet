@@ -39,7 +39,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel.startFeedbackSync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -85,6 +84,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         binding.rvFeedback.adapter = feedbackAdapter
         observeFeedbackList()
+        viewModel.startFeedbackSync()
     }
 
     private fun observeFeedbackList() {

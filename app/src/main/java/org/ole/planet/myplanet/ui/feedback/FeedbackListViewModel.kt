@@ -4,11 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -65,18 +69,18 @@ class FeedbackListViewModel @Inject constructor(
         val serverUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.IO) {
             serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                org.ole.planet.myplanet.MainApplication.isServerReachable(url)
+                MainApplication.isServerReachable(url)
             }
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+            withContext(Dispatchers.Main) {
                 startSyncManager()
             }
         }
     }
 
     private fun startSyncManager() {
-        syncManager.start(object : org.ole.planet.myplanet.callback.OnSyncListener {
+        syncManager.start(object : OnSyncListener {
             override fun onSyncStarted() {
                 _syncState.value = SyncState.Syncing
             }
