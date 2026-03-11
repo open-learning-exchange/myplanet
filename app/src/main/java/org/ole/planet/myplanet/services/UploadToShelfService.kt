@@ -13,10 +13,10 @@ import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient.client
@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -47,13 +48,15 @@ class UploadToShelfService @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    @ApplicationScope private val appScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider
 ) {
     lateinit var mRealm: Realm
 
     fun uploadUserData(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        appScope.launch(dispatcherProvider.io) {
             try {
                 val userModels = userRepository.getPendingSyncUsers(100)
 
@@ -81,7 +84,7 @@ class UploadToShelfService @Inject constructor(
                     }
                 })
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
                 }
             }
@@ -90,7 +93,7 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadSingleUserData(userName: String?, listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        appScope.launch(dispatcherProvider.io) {
             try {
                 val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
@@ -112,7 +115,7 @@ class UploadToShelfService @Inject constructor(
                 }
                 uploadSingleUserToShelf(userName, listener)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
                 }
             }
@@ -250,7 +253,7 @@ class UploadToShelfService @Inject constructor(
         val retryDelayMs = 2000L
         val dbUrl = "${UrlUtils.getUrl()}/$table"
         
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 apiInterface.putDoc(header, "application/json", dbUrl, JsonObject())
             } catch (e: Exception) {
@@ -258,7 +261,7 @@ class UploadToShelfService @Inject constructor(
             }
         }
 
-        val response = withContext(Dispatchers.IO) {
+        val response = withContext(dispatcherProvider.io) {
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
                 delayMs = retryDelayMs,
@@ -283,7 +286,7 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadHealth() {
         val apiInterface = client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        appScope.launch(dispatcherProvider.io) {
             val myHealths = dbService.withRealm { realm ->
                 realm.where(RealmHealthExamination::class.java)
                     .equalTo("isUpdated", true)
@@ -324,7 +327,7 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadSingleUserHealth(userId: String?, listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        appScope.launch(dispatcherProvider.io) {
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
@@ -369,11 +372,11 @@ class UploadToShelfService @Inject constructor(
                     }
                 }
 
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Error uploading health data for user $userId: ${e.localizedMessage}")
                 }
             }
@@ -382,7 +385,7 @@ class UploadToShelfService @Inject constructor(
 
     private fun uploadToShelf(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        appScope.launch(dispatcherProvider.io) {
             val unmanagedUsers = dbService.withRealm { realm ->
                 realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().let {
                     realm.copyFromRealm(it)
@@ -390,7 +393,7 @@ class UploadToShelfService @Inject constructor(
             }
 
             if (unmanagedUsers.isEmpty()) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
                 }
                 return@launch
@@ -417,12 +420,12 @@ class UploadToShelfService @Inject constructor(
                         e.printStackTrace()
                     }
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
                 }
             }
@@ -431,7 +434,7 @@ class UploadToShelfService @Inject constructor(
 
     private fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        appScope.launch(dispatcherProvider.io) {
             try {
                 val model = dbService.withRealm { realm ->
                     realm.where(RealmUser::class.java)
@@ -456,12 +459,12 @@ class UploadToShelfService @Inject constructor(
                         apiInterface.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
                     }
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Single user shelf sync completed successfully")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Unable to update document: ${e.localizedMessage}")
                 }
             }

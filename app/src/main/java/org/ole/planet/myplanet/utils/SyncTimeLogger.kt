@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
@@ -12,6 +11,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 
@@ -73,10 +73,10 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             MainApplication.createLog("sync summary", summary)
-            val updateUrl = "${settings.getString("serverURL", "")}"
+            val updateUrl = spm.getServerUrl()
             val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, ServerUrlMapperEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
@@ -88,15 +88,15 @@ object SyncTimeLogger {
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-
+                    val prefs = spm.rawPreferences
+                    val editor = prefs.edit()
 
                     serverUrlMapper.updateUrlPreferences(
                         editor,
                         uri,
                         alternativeUrl,
                         mapping.primaryUrl,
-                        settings
+                        prefs
                     )
                 }
             }
@@ -292,15 +292,15 @@ object SyncTimeLogger {
         return summaryBuilder.toString()
     }
 
-    private fun formatTime(timeMs: Long): String {
+    private fun formatTime(time: Long): String {
         return when {
-            timeMs < 1000 -> "${timeMs}ms"
-            timeMs < 60000 -> String.format(Locale.US, "%.2fs", timeMs / 1000.0)
+            time < 1000 -> "${time}ms"
+            time < 60000 -> String.format(Locale.US, "%.2fs", time / 1000.0)
             else -> {
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(timeMs)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(timeMs) % 60
-                val millis = timeMs % 1000
-                "${minutes}m ${seconds}.${millis}s"
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(time)
+                val seconds = TimeUnit.MILLISECONDS.toSeconds(time) % 60
+                val millis = time % 1000
+                String.format(Locale.US, "%02dm %02d.%03ds", minutes, seconds, millis)
             }
         }
     }

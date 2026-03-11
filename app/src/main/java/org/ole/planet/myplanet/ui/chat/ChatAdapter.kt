@@ -9,10 +9,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlin.coroutines.coroutineContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
@@ -21,13 +17,16 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.Utilities
 
-class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, private val scope: CoroutineScope?) :
-    ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
-        DiffUtils.itemCallback(
-            { old, new -> old == new },
-            { old, new -> old == new }
-        )
-    ) {
+class ChatAdapter(
+    val context: Context,
+    private val recyclerView: RecyclerView,
+    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+) : ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
+    DiffUtils.itemCallback(
+        { old, new -> old == new },
+        { old, new -> old == new }
+    )
+) {
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
 
@@ -53,26 +52,29 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
         private val recyclerView: RecyclerView,
-        private val coroutineScope: CoroutineScope?
+        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
-        internal var animationJob: kotlinx.coroutines.Job? = null
-        fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
+        internal var cancelAnimation: (() -> Unit)? = null
+
+        fun bind(response: String, responseSource: Int, shouldAnimate: Boolean, markAnimated: () -> Unit) {
             textAiMessageBinding.textGchatMessageOther.visibility = View.VISIBLE
-            animationJob?.cancel()
+            cancelAnimation?.invoke()
             if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
-                if (shouldAnimate && coroutineScope != null) {
+                if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
-                    animationJob = coroutineScope.launch {
-                        animateTyping(response, markAnimated)
-                    }
-                } else{
+                    cancelAnimation = onAnimateTyping(response, { text ->
+                        textAiMessageBinding.textGchatMessageOther.text = text
+                        recyclerView.scrollToPosition(bindingAdapterPosition)
+                    }, {
+                        markAnimated()
+                    })
+                } else {
                     textAiMessageBinding.textGchatMessageOther.text = response
                 }
-
             } else if (responseSource == ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL) {
                 if (response.isNotEmpty()) {
                     textAiMessageBinding.textGchatMessageOther.text = response
-                } else{
+                } else {
                     textAiMessageBinding.textGchatMessageOther.visibility = View.GONE
                 }
             }
@@ -80,20 +82,6 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
                 copyToClipboard(response)
                 true
             }
-        }
-
-        private suspend fun animateTyping(response: String, markAnimated: () -> Unit) {
-            var currentIndex = 0
-            while (currentIndex < response.length) {
-                if (coroutineContext[Job]?.isActive == false) {
-                    return
-                }
-                textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
-                recyclerView.scrollToPosition(bindingAdapterPosition)
-                currentIndex++
-                delay(10L)
-            }
-            markAnimated()
         }
     }
 
@@ -150,7 +138,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
             }
             ChatMessage.RESPONSE -> {
                 val aiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(aiMessageBinding, this::copyToClipboard, context, recyclerView, scope)
+                ResponseViewHolder(aiMessageBinding, this::copyToClipboard, context, recyclerView, onAnimateTyping)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
@@ -179,7 +167,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView, 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is ResponseViewHolder) {
-            holder.animationJob?.cancel()
+            holder.cancelAnimation?.invoke()
         }
     }
 
