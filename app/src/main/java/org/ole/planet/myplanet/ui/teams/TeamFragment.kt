@@ -108,17 +108,13 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                     } else {
                         "sync"
                     }
-                val currentUser = viewModel.user
                 when {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
                         val failureMessage = getString(R.string.request_failed_please_retry)
-                        val userModel = currentUser ?: run {
-                            Utilities.toast(activity, failureMessage)
-                            return@setOnClickListener
-                        }
+
                         viewLifecycleOwner.lifecycleScope.launch {
                             if (team == null) {
                                 val result = viewModel.createTeam(
@@ -128,8 +124,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                                     rules = rules,
                                     teamType = selectedTeamType,
                                     isPublic = alertCreateTeamBinding.switchPublic.isChecked,
-                                    category = type,
-                                    userModel = userModel
+                                    category = type
                                 )
                                 when (result) {
                                     is TeamActionResult.NameExists -> {
@@ -150,7 +145,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                                             getString(R.string.team_created)
                                         }
                                         Utilities.toast(activity, successMessage)
-                                        refreshTeamList()
+                                        viewModel.reloadTeams(type, fromDashboard)
                                         dialog.dismiss()
                                     }
                                     is TeamActionResult.Failure -> {
@@ -178,19 +173,23 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                                     Utilities.toast(activity, failureMessage)
                                     return@launch
                                 }
+                                val currentUserId = viewModel.userId ?: run {
+                                    Utilities.toast(activity, failureMessage)
+                                    return@launch
+                                }
                                 teamsRepository.updateTeam(
                                     teamId = targetTeamId,
                                     name = name,
                                     description = description,
                                     services = services,
                                     rules = rules,
-                                    updatedBy = userModel._id,
+                                    updatedBy = currentUserId,
                                 ).onSuccess { updated ->
                                     if (updated) {
                                         binding.etSearch.visibility = View.VISIBLE
                                         binding.tableTitle.visibility = View.VISIBLE
                                         Utilities.toast(activity, getString(R.string.team_created))
-                                        refreshTeamList()
+                                        viewModel.reloadTeams(type, fromDashboard)
                                         dialog.dismiss()
                                     } else {
                                         Utilities.toast(activity, failureMessage)
@@ -210,25 +209,25 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.user = userSessionManager.getUserModel()
-            if (viewModel.user?.isGuest() == true) {
+            val user = userSessionManager.getUserModel()
+            if (user?.isGuest() == true) {
                 binding.addTeam.visibility = View.GONE
             } else {
                 binding.addTeam.visibility = View.VISIBLE
             }
-            setupRecyclerView()
+            setupRecyclerView(user)
             observeTeamData()
-            refreshTeamList()
+            viewModel.loadTeams(type, fromDashboard)
             setupTextWatcher()
         }
     }
 
-    private fun setupRecyclerView() {
+    private fun setupRecyclerView(user: RealmUser?) {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         teamListAdapter = TeamsAdapter(
             requireActivity(),
             childFragmentManager,
-            viewModel.user,
+            user,
             sharedPrefManager
         ).apply {
             setType(type)
@@ -253,83 +252,11 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                val filteredList = if (TextUtils.isEmpty(charSequence)) {
-                    viewModel.teamList
-                } else {
-                    viewModel.teamList.filter {
-                        it.name.contains(charSequence.toString(), ignoreCase = true) == true
-                    }
-                }
-                viewModel.prepareTeamData(filteredList, viewModel.user?.id)
+                viewModel.onSearchTextChanged(charSequence.toString())
             }
             override fun afterTextChanged(editable: Editable) {}
         }
         binding.etSearch.addTextChangedListener(textWatcher)
-    }
-
-
-    private fun getList(searchText: String): Pair<List<TeamSummary>, Boolean> {
-        val nameFilteredList = viewModel.teamList.filter {
-            it.name.contains(searchText, ignoreCase = true)
-        }
-
-        val typeFilteredList: List<TeamSummary>
-        val newConditionApplied: Boolean
-
-        if (TextUtils.isEmpty(type) || type == "team") {
-            typeFilteredList = nameFilteredList.filter { it.type != "enterprise" }
-            newConditionApplied = false
-        } else {
-            typeFilteredList = nameFilteredList.filter { it.type == "enterprise" }
-            newConditionApplied = true
-        }
-
-        return Pair(typeFilteredList, newConditionApplied)
-    }
-
-    private fun setTeamList() {
-        viewModel.prepareTeamData(viewModel.teamList, viewModel.user?.id)
-        listContentDescription(viewModel.conditionApplied)
-    }
-
-    private fun refreshTeamList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            when {
-                fromDashboard -> {
-                    viewModel.user?._id?.let { userId ->
-                        teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
-                            viewModel.teamList = list.mapNotNull {
-                                val id = it._id ?: return@mapNotNull null
-                                org.ole.planet.myplanet.model.TeamSummary(
-                                    _id = id,
-                                    name = it.name ?: "",
-                                    teamType = it.teamType,
-                                    teamPlanetCode = it.teamPlanetCode,
-                                    createdDate = it.createdDate,
-                                    type = it.type,
-                                    status = it.status,
-                                    teamId = it.teamId,
-                                    description = it.description,
-                                    services = it.services,
-                                    rules = it.rules
-                                )
-                            }
-                            setTeamList()
-                        }
-                    }
-                }
-                type == "enterprise" -> {
-                    viewModel.conditionApplied = true
-                    viewModel.teamList = teamsRepository.getShareableEnterpriseSummaries()
-                    setTeamList()
-                }
-                else -> {
-                    viewModel.conditionApplied = false
-                    viewModel.teamList = teamsRepository.getTeamSummaries()
-                    setTeamList()
-                }
-            }
-        }
     }
 
     override fun onEditTeam(team: TeamDetails?) {
@@ -340,14 +267,14 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
-                viewModel.leaveTeam(team._id!!, user?.id)
+                viewModel.leaveTeam(team._id!!, viewModel.userId)
             }
             .setNegativeButton(R.string.no, null)
             .show()
     }
 
     override fun onRequestToJoin(team: TeamDetails, user: RealmUser?) {
-        viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+        viewModel.requestToJoin(team._id!!, viewModel.userId, viewModel.userPlanetCode, team.teamType)
     }
 
     override fun onUpdateComplete(itemCount: Int) {
