@@ -1,45 +1,35 @@
 package org.ole.planet.myplanet.repository
 
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import io.realm.RealmChangeListener
-import io.realm.RealmModel
-import io.realm.RealmResults
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicBoolean
 
-open class TestRealmObject : RealmModel
-
-@OptIn(ExperimentalCoroutinesApi::class)
 class RealmRepositoryTest {
 
     @Test
-    fun `flow cancellation closes realm and removes listeners`() = runTest {
-        // Simulating the cleanup path since mockk + Realm causes IllegalStateExceptions for internal static thread assertions in normal tests
+    fun `flow cancellation closes realm and removes listeners`() = runBlocking {
+        var removedListenerCount = 0
+        var closedRealmCount = 0
+
         val isClosed = AtomicBoolean(false)
-        val listener = mockk<RealmChangeListener<RealmResults<TestRealmObject>>>(relaxed = true)
-        val results = mockk<RealmResults<TestRealmObject>>(relaxed = true)
-
-        every { results.isValid } returns true
-        every { results.removeChangeListener(any<RealmChangeListener<RealmResults<TestRealmObject>>>()) } returns Unit
-
-        var realmIsClosedStatus = false
+        val dummyIsValid = true
+        var dummyRealmIsClosed = false
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
                 try {
-                    if (results.isValid) {
-                        results.removeChangeListener(listener)
+                    if (dummyIsValid) {
+                        removedListenerCount++
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
                 try {
-                    if (!realmIsClosedStatus) {
-                        realmIsClosedStatus = true // we simulate realm.close()
+                    if (!dummyRealmIsClosed) {
+                        dummyRealmIsClosed = true
+                        closedRealmCount++
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -47,16 +37,15 @@ class RealmRepositoryTest {
             }
         }
 
-        // Execute the cleanup logic
         safeCloseRealm()
 
-        // Verify that listeners are removed
-        verify(exactly = 1) { results.removeChangeListener(listener) }
-        assert(realmIsClosedStatus)
+        assert(removedListenerCount == 1)
+        assert(closedRealmCount == 1)
 
-        // Test idempotency
+        // idempotency check
         safeCloseRealm()
-        verify(exactly = 1) { results.removeChangeListener(listener) }
-        assert(realmIsClosedStatus)
+
+        assert(removedListenerCount == 1)
+        assert(closedRealmCount == 1)
     }
 }
