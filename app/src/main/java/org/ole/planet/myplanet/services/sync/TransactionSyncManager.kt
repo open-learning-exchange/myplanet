@@ -16,16 +16,28 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -292,31 +304,21 @@ class TransactionSyncManager @Inject constructor(
 
     private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
         when (table) {
-            "exams" -> {
-                insertCourseStepsExams("", "", jsonDoc, mRealm)
-            }
-            "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
-            }
-            else -> {
-                callMethod(mRealm, jsonDoc, table)
-            }
-        }
-    }
-
-    private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
-        try {
-            val methods = Constants.classList[type]?.methods
-            methods?.let {
-                for (m in it) {
-                    if ("insert" == m.name) {
-                        m.invoke(null, mRealm, jsonDoc)
-                        break
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+            "exams" -> insertCourseStepsExams("", "", jsonDoc, mRealm)
+            "tablet_users" -> populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+            "tags" -> RealmTag.insert(mRealm, jsonDoc)
+            "login_activities" -> RealmOfflineActivity.insert(mRealm, jsonDoc)
+            "ratings" -> RealmRating.insert(mRealm, jsonDoc)
+            "submissions" -> RealmSubmission.insert(mRealm, jsonDoc)
+            "courses" -> RealmMyCourse.insert(mRealm, jsonDoc)
+            "achievements" -> RealmAchievement.insert(mRealm, jsonDoc)
+            "teams" -> RealmMyTeam.insert(mRealm, jsonDoc)
+            "tasks" -> RealmTeamTask.insert(mRealm, jsonDoc)
+            "meetups" -> RealmMeetup.insert(mRealm, jsonDoc)
+            "health" -> RealmHealthExamination.insert(mRealm, jsonDoc)
+            "certifications" -> RealmCertification.insert(mRealm, jsonDoc)
+            "team_activities" -> RealmTeamLog.insert(mRealm, jsonDoc)
+            "courses_progress" -> RealmCourseProgress.insert(mRealm, jsonDoc)
         }
     }
 }
