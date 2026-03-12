@@ -108,7 +108,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="right|bottom"
         android:layout_margin="@dimen/padding_large"
-        android:contentDescription="@string/add_survey"
         android:src="@drawable/ic_add_white"
         android:visibility="invisible" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

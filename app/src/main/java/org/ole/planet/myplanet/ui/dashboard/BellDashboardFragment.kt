@@ -56,6 +56,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
+    companion object {
+        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
         val view = binding.root
@@ -152,7 +156,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-                if (sharedPrefManager.containsSurveyReminder("reminder_time_$surveyIds")) {
+                val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+                if (preferences.contains("reminder_time_$surveyIds")) {
                     return@launch
                 }
                 val title = getString(
@@ -224,7 +229,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
 
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-        sharedPrefManager.setSurveyReminder(surveyIds, reminderTime)
+        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+        preferences.edit {
+            putLong("reminder_time_$surveyIds", reminderTime)
+                .putString("reminder_surveys_$surveyIds", surveyIds)
+        }
 
         startReminderCheck()
     }
@@ -240,15 +249,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun checkScheduledReminders(): Boolean {
+        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
         val currentTime = System.currentTimeMillis()
 
         val remindersToShow = mutableListOf<String>()
         val remindersToRemove = mutableListOf<String>()
 
-        for (entry in sharedPrefManager.getSurveyReminders()) {
+        for (entry in preferences.all) {
             if (entry.key.startsWith("reminder_time_")) {
                 val surveyIds = entry.key.removePrefix("reminder_time_")
-                val reminderTime = sharedPrefManager.getSurveyReminderTime(entry.key)
+                val reminderTime = preferences.getLong(entry.key, 0)
 
                 if (reminderTime <= currentTime) {
                     remindersToShow.add(surveyIds)
@@ -272,7 +282,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
 
-        sharedPrefManager.removeSurveyReminders(remindersToRemove)
+        preferences.edit {
+            for (surveyIds in remindersToRemove) {
+                remove("reminder_time_$surveyIds")
+                remove("reminder_surveys_$surveyIds")
+            }
+        }
 
         return remindersToShow.isNotEmpty()
 
@@ -314,19 +329,18 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
-        val dialog = surveyListDialog ?: return
         val adapter = DashboardSurveysAdapter({ position ->
             val selectedSurvey = pendingSurveys[position]
             SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey.id, true, false, "")
-        }, dialog)
+        }, surveyListDialog!!)
         recyclerView.adapter = adapter
         adapter.submitList(surveyTitles)
-        dialog.show()
-        dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        surveyListDialog?.show()
+        surveyListDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
 
-        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
-            showRemindLaterDialog(pendingSurveys, dialog)
-            if (dismissOnNeutral) dialog.dismiss()
+        surveyListDialog?.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
+            showRemindLaterDialog(pendingSurveys, surveyListDialog!!)
+            if (dismissOnNeutral) surveyListDialog?.dismiss()
         }
     }
 

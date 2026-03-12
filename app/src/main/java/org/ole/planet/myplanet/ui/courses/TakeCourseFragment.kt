@@ -83,7 +83,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            steps = coursesRepository.getCourseSteps(courseId ?: return@launch)
+            steps = coursesRepository.getCourseSteps(courseId!!)
 
             if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                 try {
@@ -399,7 +399,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         super.onDestroyView()
     }
 
-    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter?.let { binding.viewPager2.currentItem < it.itemCount } == true
+    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem < binding.viewPager2.adapter?.itemCount!!
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {

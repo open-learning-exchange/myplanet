@@ -54,14 +54,18 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveNewChat(chat: JsonObject) {
-        executeTransaction { realm ->
-            RealmChatHistory.insert(realm, chat)
+        withRealmAsync { realm ->
+            realm.executeTransaction {
+                RealmChatHistory.insert(it, chat)
+            }
         }
     }
 
     override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
-        executeTransaction { realm ->
-            addConversationToChatHistory(realm, id, query, response, rev)
+        withRealmAsync { realm ->
+            realm.executeTransaction {
+                addConversationToChatHistory(it, id, query, response, rev)
+            }
         }
     }
 

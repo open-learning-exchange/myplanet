@@ -20,7 +20,6 @@
             android:id="@+id/iv_resource_preview"
             android:layout_width="match_parent"
             android:layout_height="180dp"
-            android:contentDescription="@null"
             android:scaleType="centerCrop"
             android:visibility="gone" />
         <FrameLayout
@@ -33,14 +32,12 @@
                 android:id="@+id/iv_video_thumbnail"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:contentDescription="@null"
                 android:scaleType="centerCrop"
                 android:background="@color/md_black_1000" />
             <ImageView
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_gravity="center"
-                android:contentDescription="@null"
                 android:src="@drawable/ic_play_white"
                 app:tint="@android:color/white" />
         </FrameLayout>
@@ -71,7 +68,6 @@
                 android:id="@+id/iv_audio_play"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:contentDescription="@string/audio_play_pause"
                 android:padding="@dimen/_4dp"
                 android:src="@drawable/ic_play"
                 app:tint="@color/daynight_textColor" />
@@ -101,7 +97,6 @@
                 android:id="@+id/iv_resource_icon"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
-                android:contentDescription="@null"
                 android:src="@drawable/ic_folder" />
             <TextView
                 android:id="@+id/tv_resource_title"
@@ -122,7 +117,6 @@
                 android:id="@+id/iv_status"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:contentDescription="@string/resource_status"
                 android:src="@drawable/ic_eye"
                 android:visibility="gone" />
         </LinearLayout>

@@ -24,7 +24,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"
         android:layout_margin="@dimen/padding_normal"
-        android:contentDescription="@string/add_resource_to_team"
         android:src="@drawable/ic_add"
         app:fab_label="Add Resource" />
 </FrameLayout>

@@ -24,7 +24,6 @@
             android:layout_width="@dimen/_30dp"
             android:layout_height="@dimen/_30dp"
             android:layout_gravity="center"
-            android:contentDescription="@null"
             android:padding="@dimen/padding_small"
             app:tint="@color/daynight_textColor" />
 

@@ -29,29 +29,26 @@ import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
-import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils.header
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class DownloadService : Service() {
     @Inject
     lateinit var downloadRepository: DownloadRepository
-    @Inject
-    lateinit var broadcastService: BroadcastService
 
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
@@ -229,6 +226,7 @@ class DownloadService : Service() {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
                 downloadScope.launch {
+                    val broadcastService = getBroadcastService(this@DownloadService)
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -332,6 +330,7 @@ class DownloadService : Service() {
             putExtra("fromSync", fromSync)
         }
         downloadScope.launch {
+            val broadcastService = getBroadcastService(this@DownloadService)
             broadcastService.sendBroadcast(intent)
         }
     }

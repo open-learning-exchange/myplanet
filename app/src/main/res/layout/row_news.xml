@@ -214,7 +214,6 @@
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
-                    android:contentDescription="@string/edit"
                     android:visibility="visible"
                     app:srcCompat="@drawable/ic_edit"
                     app:tint="@color/daynight_textColor" />
@@ -224,7 +223,6 @@
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
-                    android:contentDescription="@string/delete_item"
                     app:srcCompat="@drawable/ic_delete"
                     app:tint="@color/daynight_textColor" />
             </LinearLayout>
