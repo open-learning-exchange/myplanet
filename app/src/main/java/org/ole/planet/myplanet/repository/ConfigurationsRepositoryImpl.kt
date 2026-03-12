@@ -47,7 +47,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider
-) : ConfigurationsRepository {
+) : RealmRepository(databaseService), ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: OnSuccessListener) {
@@ -210,7 +210,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearAllData() {
-        databaseService.executeTransactionAsync { it.deleteAll() }
+        executeTransaction { it.deleteAll() }
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {

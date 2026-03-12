@@ -54,7 +54,7 @@ class RequestsViewModel @Inject constructor(
         _uiState.value = optimisticState
 
         viewModelScope.launch(dispatcherProvider.io) {
-            val result = teamsRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
+            val result = teamsRepository.respondToMemberRequest(teamId, user.id ?: return@launch, isAccepted)
             if (result.isSuccess) {
                 teamsRepository.syncTeamActivities()
                 _successAction.emit(Unit)

@@ -251,7 +251,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun handleGuestAccess(): Boolean {
-        if (user != null && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
+        val u = user
+        if (u != null && u.rolesList?.isEmpty() == true && u.userAdmin != true) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return true
