@@ -444,41 +444,37 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun batchInsertResources(documents: List<JsonObject>): List<String> {
         return try {
-            withRealm { realm ->
-                val savedIds = mutableListOf<String>()
-                val chunkSize = 50
-                documents.chunked(chunkSize).forEach { chunk ->
-                    realm.executeTransaction { realmTx ->
-                        val chunkDocuments = JsonArray()
-                        chunk.forEach { doc ->
-                            val wrapper = JsonObject()
-                            wrapper.add("doc", doc)
-                            chunkDocuments.add(wrapper)
-                        }
-                        savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx))
+            val savedIds = mutableListOf<String>()
+            val chunkSize = 50
+            documents.chunked(chunkSize).forEach { chunk ->
+                executeTransaction { realmTx ->
+                    val chunkDocuments = JsonArray()
+                    chunk.forEach { doc ->
+                        val wrapper = JsonObject()
+                        wrapper.add("doc", doc)
+                        chunkDocuments.add(wrapper)
                     }
+                    savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx))
                 }
-                savedIds
             }
+            savedIds
         } catch (e: Exception) {
             e.printStackTrace()
-            withRealm { realm ->
-                val savedIds = mutableListOf<String>()
-                documents.forEach { doc ->
-                    try {
-                        realm.executeTransaction { realmTx ->
-                            val singleDocArray = JsonArray()
-                            val wrapper = JsonObject()
-                            wrapper.add("doc", doc)
-                            singleDocArray.add(wrapper)
-                            savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx))
-                        }
-                    } catch (e2: Exception) {
-                        e2.printStackTrace()
+            val savedIds = mutableListOf<String>()
+            documents.forEach { doc ->
+                try {
+                    executeTransaction { realmTx ->
+                        val singleDocArray = JsonArray()
+                        val wrapper = JsonObject()
+                        wrapper.add("doc", doc)
+                        singleDocArray.add(wrapper)
+                        savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx))
                     }
+                } catch (e2: Exception) {
+                    e2.printStackTrace()
                 }
-                savedIds
             }
+            savedIds
         }
     }
 
