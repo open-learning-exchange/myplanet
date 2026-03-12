@@ -445,7 +445,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            val activitiesToUpload = uploadRepository.getActivitiesForUpload(context)
+            val activitiesToUpload = uploadRepository.getActivitiesForUpload()
 
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUpdates = mutableMapOf<String, JsonObject?>()
@@ -485,7 +485,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        val logsData = uploadRepository.getTeamLogsForUpload(context)
+        val logsData = uploadRepository.getTeamLogsForUpload()
         val successfulUploads = mutableListOf<UploadResultDto>()
 
         logsData.forEach { logData ->
@@ -522,7 +522,7 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
 
-        val newsItems = uploadRepository.getNewsForUpload(chatRepository)
+        val newsItems = uploadRepository.getNewsForUpload()
 
         withContext(Dispatchers.IO) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->

@@ -60,10 +60,10 @@ interface UploadRepository {
     suspend fun getResourcesForUpload(user: RealmUser?): List<ResourceData>
     suspend fun updateResourceAfterUpload(libraryId: String?, rev: String?, id: String?, isPrivate: Boolean, privateFor: String?, title: String?, userPlanetCode: String?, sharedPrefPlanetCode: String?)
     suspend fun getLibraryForUpload(libraryId: String?): RealmMyLibrary?
-    suspend fun getActivitiesForUpload(context: android.content.Context): List<ActivityData>
+    suspend fun getActivitiesForUpload(): List<ActivityData>
     suspend fun updateActivitiesAfterUpload(successfulUpdates: Map<String, JsonObject?>)
-    suspend fun getTeamLogsForUpload(context: android.content.Context): List<TeamLogData>
+    suspend fun getTeamLogsForUpload(): List<TeamLogData>
     suspend fun updateTeamLogsAfterUpload(successfulUploads: List<UploadResultDto>)
-    suspend fun getNewsForUpload(chatRepository: ChatRepository): List<NewsUploadData>
+    suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun updateNewsAfterUpload(successfulUpdates: List<NewsUpdateData>)
 }

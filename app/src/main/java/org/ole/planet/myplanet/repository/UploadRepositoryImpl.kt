@@ -14,12 +14,15 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import java.util.UUID
 import javax.inject.Inject
 
 class UploadRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    @ApplicationContext private val context: Context,
+    private val chatRepository: ChatRepository
 ) : RealmRepository(databaseService), UploadRepository {
 
     override suspend fun getAchievementsForUpload(): List<RealmAchievement> = withContext(Dispatchers.IO) {
@@ -98,7 +101,7 @@ class UploadRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getActivitiesForUpload(context: Context): List<ActivityData> = withContext(Dispatchers.IO) {
+    override suspend fun getActivitiesForUpload(): List<ActivityData> = withContext(Dispatchers.IO) {
         withRealm { realm ->
             val activities = realm.where(RealmOfflineActivity::class.java)
                 .isNull("_rev").equalTo("type", "login").findAll()
@@ -133,7 +136,7 @@ class UploadRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamLogsForUpload(context: Context): List<TeamLogData> = withContext(Dispatchers.IO) {
+    override suspend fun getTeamLogsForUpload(): List<TeamLogData> = withContext(Dispatchers.IO) {
         withRealm { realm ->
             val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
             results.map { log ->
@@ -204,7 +207,7 @@ class UploadRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getNewsForUpload(chatRepository: ChatRepository): List<NewsUploadData> = withContext(Dispatchers.IO) {
+    override suspend fun getNewsForUpload(): List<NewsUploadData> = withContext(Dispatchers.IO) {
         withRealm { realm ->
             realm.where(RealmNews::class.java)
                 .findAll()
