@@ -30,7 +30,7 @@ class AdaptiveBatchProcessor(private val context: Context) {
         val capabilities = getSystemCapabilities()
         return when (table) {
             "resources" -> getResourceSyncConfig(capabilities)
-            "courses", "exams", "submissions" -> getCourseSyncConfig(capabilities)
+            SyncTables.Core.COURSES, SyncTables.Core.EXAMS, SyncTables.Core.SUBMISSIONS -> getCourseSyncConfig(capabilities)
             "library", "shelf" -> getLibrarySyncConfig(capabilities)
             else -> getStandardSyncConfig(capabilities)
         }
