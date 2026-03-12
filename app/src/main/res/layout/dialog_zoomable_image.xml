@@ -15,6 +15,7 @@
         android:layout_gravity="top|end"
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/close_dialog"
         android:padding="12dp"
         android:src="@android:drawable/ic_menu_close_clear_cancel" />
 </FrameLayout>

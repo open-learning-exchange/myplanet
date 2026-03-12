@@ -14,7 +14,7 @@
         android:layout_marginTop="50dp"
         android:layout_marginBottom="24dp"
         android:background="@drawable/rounded_corner_bg"
-        android:contentDescription="Album Art"
+        android:contentDescription="@string/image_resource"
         android:elevation="4dp"
         android:scaleType="centerInside"
         android:src="@drawable/musical_note"
@@ -66,6 +66,7 @@
             android:id="@+id/backgroundImage"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:contentDescription="@null"
             android:scaleType="centerCrop"
             android:alpha="0.8" />
         <androidx.media3.ui.PlayerView
