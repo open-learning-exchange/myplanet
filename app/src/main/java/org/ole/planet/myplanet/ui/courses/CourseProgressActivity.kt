@@ -43,7 +43,7 @@ class CourseProgressActivity : BaseActivity() {
     }
 
     private fun updateUI(data: CourseProgressData) {
-        if (data.max != 0) {
+        if (data.max > 0) {
             binding.progressView.setProgress((data.current.toDouble() / data.max.toDouble() * 100).toInt(), true)
         } else {
             binding.progressView.setProgress(0, true)
