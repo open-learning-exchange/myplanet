@@ -151,13 +151,22 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         if (userId != null && (key != null || iv != null)) {
-            executeTransaction { transactionRealm ->
-                val userToUpdate = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-                userToUpdate?.let { user ->
-                    key?.let { user.key = it }
-                    iv?.let { user.iv = it }
+            try {
+                executeTransaction { transactionRealm ->
+                    val userToUpdate = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+                    userToUpdate?.let { user ->
+                        key?.let { user.key = it }
+                        iv?.let { user.iv = it }
+                    }
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("UserRepositoryImpl", "Failed to save security keys for user $userId", e)
             }
+        }
+
+        if (userId == null) {
+            android.util.Log.e("UserRepositoryImpl", "Failed to save user: userId is null after populateUsersTable")
+            return null
         }
 
         return withRealm { realm ->
