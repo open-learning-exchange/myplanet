@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
@@ -584,9 +585,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices!!) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+        val items = selectedItems.orEmpty()
+        if (items.size <= 5) {
+            for (i in items.indices) {
+                msg += " - ${items[i]?.courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
@@ -665,6 +667,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         filterCoursesAndUpdateUi()
         showTagText(searchTags, tvSelected)
         scrollToTop()
+    }
+
+    override suspend fun deleteSelected(deleteProgress: Boolean) {
+        val userId = profileDbHandler.getUserModel()?.id
+        val courseIdsToRemove = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+
+        if (userId != null && courseIdsToRemove.isNotEmpty()) {
+            if (deleteProgress) {
+                coursesRepository.removeCoursesAndProgress(courseIdsToRemove, userId)
+            } else {
+                coursesRepository.removeCoursesFromShelf(courseIdsToRemove, userId)
+            }
+
+            if (view == null || !isAdded || requireActivity().isFinishing) return
+            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            selectedItems?.clear()
+        }
     }
 
     private fun updateCheckBoxState(programmaticState: Boolean) {
