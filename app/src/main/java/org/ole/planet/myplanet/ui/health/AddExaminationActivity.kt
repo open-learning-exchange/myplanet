@@ -105,12 +105,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
         lifecycleScope.launch {
-            if (userId != null) {
-                val (u, p) = healthRepository.getHealthEntry(userId!!)
+            val uid = userId
+            if (uid != null) {
+                val (u, p) = healthRepository.getHealthEntry(uid)
                 user = u
                 pojo = p
 
-                val updatedUser = userRepository.ensureUserSecurityKeys(userId!!)
+                val updatedUser = userRepository.ensureUserSecurityKeys(uid)
                 if (updatedUser != null) {
                     user = updatedUser
                 }
@@ -287,7 +288,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             examination?.profileId = health?.userKey
             examination?.creatorId = health?.userKey
             examination?.gender = user?.gender
-            examination?.age = user?.dob?.let { getAge(it) }!!
+            examination?.age = user?.dob?.let { getAge(it) } ?: 0
             examination?.isSelfExamination = currentUser?._id == pojo?._id
             examination?.date = Date().time
             examination?.planetCode = user?.planetCode

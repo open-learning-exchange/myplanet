@@ -585,9 +585,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices!!) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+        val items = selectedItems.orEmpty()
+        if (items.size <= 5) {
+            for (i in items.indices) {
+                msg += " - ${items[i]?.courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
