@@ -259,7 +259,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                             type = type,
                             note = note,
                             amount = amountValue,
-                            date = date!!.timeInMillis,
+                            date = date?.timeInMillis ?: return@launch,
                             parentCode = user?.parentCode,
                             planetCode = user?.planetCode,
                         )
@@ -278,7 +278,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private fun setUpAlertUi(): View {
         addTransactionBinding = AddTransactionBinding.inflate(LayoutInflater.from(activity))
         addTransactionBinding.tvSelectDate.setOnClickListener {
-            android.app.DatePickerDialog(requireActivity(), listener, date!![Calendar.YEAR], date!![Calendar.MONTH], date!![Calendar.DAY_OF_MONTH]).show()
+            val d = date ?: return@setOnClickListener
+            android.app.DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
         }
         return addTransactionBinding.root
     }
