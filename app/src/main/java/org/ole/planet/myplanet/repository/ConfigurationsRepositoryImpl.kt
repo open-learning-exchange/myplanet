@@ -44,7 +44,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService), ConfigurationsRepository {
