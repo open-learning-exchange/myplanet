@@ -1202,5 +1202,27 @@
     <string name="select_open_with">Fur</string>
     <string name="select_media">Warbaahinta</string>
     <string name="select_resource_type">Nooca Kheyraadka</string>
+    <string name="add_personal">Ku dar qoraallo shakhsi ah</string>
+    <string name="add_survey">Ku dar xog-ururin</string>
+    <string name="add_finance_entry">Ku dar macaamilad</string>
+    <string name="add_resource_to_team">Ku dar agab kooxda</string>
+    <string name="rewind">Dib u celi</string>
+    <string name="pause">Jooji</string>
+    <string name="fast_forward">Dul mar si dhakhso ah</string>
+    <string name="next_question">Su\'aasha xigta</string>
+    <string name="more_options">Xulasho dheeraad ah</string>
+    <string name="upload_item">Soo geli</string>
+    <string name="join_or_leave_team">Ku biir ama ka tag kooxda</string>
+    <string name="team_feedback">Jawaab celin kooxda</string>
+    <string name="close_dialog">Xir wada-hadalka</string>
+    <string name="go_back">Ku noqo</string>
+    <string name="audio_play_pause">Ciyaar ama jooji codka</string>
+    <string name="resource_status">Xaalada agabka</string>
+    <string name="download_status">Xaalada soo dejinta</string>
+    <string name="sort_by_date_column">Kala sooc taariikhda</string>
+    <string name="user_avatar">Sawirka isticmaalaha</string>
+    <string name="send_diagnosis">Ku dar baaritaan</string>
+    <string name="delete_item">Tirtir</string>
+    <string name="toggle_visibility">Bedel muuqaalka</string>
 
 </resources>

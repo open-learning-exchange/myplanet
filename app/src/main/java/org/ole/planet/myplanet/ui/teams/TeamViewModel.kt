@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -19,6 +20,8 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
+import org.ole.planet.myplanet.services.UserSessionManager
+
 sealed class TeamActionResult {
     object Success : TeamActionResult()
     data class Failure(val message: String?) : TeamActionResult()
@@ -28,12 +31,29 @@ sealed class TeamActionResult {
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
+
+    var userId: String? = null
+    var isGuestUser: Boolean = false
+    var userPlanetCode: String? = null
+
+    private var teamList: List<TeamSummary> = emptyList()
+    var conditionApplied: Boolean = false
+        private set
     private var currentTeams: List<TeamSummary> = emptyList()
 
+    init {
+        viewModelScope.launch {
+            val user = userSessionManager.getUserModel()
+            userId = user?.id
+            isGuestUser = user?.isGuest() ?: false
+            userPlanetCode = user?.planetCode
+        }
+    }
 
     fun prepareTeamData(teams: List<TeamSummary>, userId: String?) {
         currentTeams = teams
@@ -110,6 +130,64 @@ class TeamViewModel @Inject constructor(
         }
     }
 
+    fun reloadTeams(type: String?, fromDashboard: Boolean) {
+        teamList = emptyList()
+        loadTeams(type, fromDashboard)
+    }
+
+    fun loadTeams(type: String?, fromDashboard: Boolean) {
+        if (teamList.isNotEmpty()) return
+
+        viewModelScope.launch {
+            when {
+                fromDashboard -> {
+                    userId?.let { uid ->
+                        teamsRepository.getMyTeamsFlow(uid).collectLatest { list ->
+                            teamList = list.mapNotNull {
+                                val id = it._id ?: return@mapNotNull null
+                                TeamSummary(
+                                    _id = id,
+                                    name = it.name ?: "",
+                                    teamType = it.teamType,
+                                    teamPlanetCode = it.teamPlanetCode,
+                                    createdDate = it.createdDate,
+                                    type = it.type,
+                                    status = it.status,
+                                    teamId = it.teamId,
+                                    description = it.description,
+                                    services = it.services,
+                                    rules = it.rules
+                                )
+                            }
+                            prepareTeamData(teamList, userId)
+                        }
+                    }
+                }
+                type == "enterprise" -> {
+                    conditionApplied = true
+                    teamList = teamsRepository.getShareableEnterpriseSummaries()
+                    prepareTeamData(teamList, userId)
+                }
+                else -> {
+                    conditionApplied = false
+                    teamList = teamsRepository.getTeamSummaries()
+                    prepareTeamData(teamList, userId)
+                }
+            }
+        }
+    }
+
+    fun onSearchTextChanged(searchText: String) {
+        val filteredList = if (searchText.isEmpty()) {
+            teamList
+        } else {
+            teamList.filter {
+                it.name.contains(searchText, ignoreCase = true) == true
+            }
+        }
+        prepareTeamData(filteredList, userId)
+    }
+
     suspend fun createTeam(
         name: String,
         description: String,
@@ -117,8 +195,7 @@ class TeamViewModel @Inject constructor(
         rules: String,
         teamType: String,
         isPublic: Boolean,
-        category: String?,
-        userModel: RealmUser
+        category: String?
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {
@@ -134,6 +211,8 @@ class TeamViewModel @Inject constructor(
             isPublic = isPublic,
             category = category
         )
+
+        val userModel = userSessionManager.getUserModel() ?: return TeamActionResult.Failure("User not found")
 
         return teamsRepository.createTeamAndAddMember(request, userModel)
             .fold(
