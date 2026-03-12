@@ -19,4 +19,6 @@ interface ProgressRepository {
         passed: Boolean?
     )
     suspend fun hasUserCompletedSync(userId: String): Boolean
+    suspend fun insertFromJson(act: JsonObject)
+    fun serializeProgress(progress: RealmCourseProgress): JsonObject
 }

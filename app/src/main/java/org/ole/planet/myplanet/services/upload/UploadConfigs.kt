@@ -18,10 +18,12 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val progressRepository: ProgressRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -39,7 +41,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query -> query.isNull("_id") },
         filterGuests = true,
         guestUserIdExtractor = { it.userId },
-        serializer = UploadSerializer.Simple(RealmCourseProgress::serializeProgress),
+        serializer = UploadSerializer.Simple(progressRepository::serializeProgress),
         idExtractor = { it.id }
     )
 
