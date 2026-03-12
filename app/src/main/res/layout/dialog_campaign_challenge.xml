@@ -11,7 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="close dialog"
+        android:contentDescription="@string/close_dialog"
         android:src="@drawable/baseline_close_24"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -19,7 +19,7 @@
         android:id="@+id/markdownImage"
         android:layout_width="match_parent"
         android:layout_height="150dp"
-        android:contentDescription="markdown image"
+        android:contentDescription="@string/image_resource"
         android:scaleType="fitCenter"
         android:src="@drawable/december_challenge"
         app:layout_constraintEnd_toEndOf="parent"
