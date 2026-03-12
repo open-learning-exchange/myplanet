@@ -36,6 +36,7 @@
             android:layout_marginBottom="@dimen/_20dp"
             android:layout_toStartOf="@id/edit_image_button"
             android:padding="@dimen/padding_normal"
+            android:contentDescription="@string/toggle_visibility"
             app:srcCompat="@drawable/ic_visibility"
             app:tint="@color/daynight_textColor"
             android:background="@color/daynight_grey" />
@@ -47,6 +48,7 @@
             android:layout_marginBottom="@dimen/_20dp"
             android:layout_toStartOf="@id/drag_image_button"
             android:padding="@dimen/padding_normal"
+            android:contentDescription="@string/edit"
             app:srcCompat="@drawable/ic_edit"
             android:background="@color/daynight_grey" />
         <ImageButton
@@ -58,6 +60,7 @@
             android:layout_marginBottom="10dp"
             android:adjustViewBounds="true"
             android:background="@null"
+            android:contentDescription="@null"
             android:enabled="false"
             android:padding="@dimen/padding_normal"
             android:scaleType="fitCenter"

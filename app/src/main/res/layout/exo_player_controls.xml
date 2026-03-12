@@ -18,19 +18,23 @@
 
         <ImageButton
             android:id="@id/exo_rew"
+            android:contentDescription="@string/rewind"
             app:tint="@color/daynight_textColor"
             style="@style/ExoMediaButton.Rewind"/>
         <ImageButton
             android:id="@id/exo_play"
+            android:contentDescription="@string/play_audio"
             app:tint="@color/daynight_textColor"
             android:visibility="gone"
             style="@style/ExoMediaButton.Play"/>
         <ImageButton
             android:id="@id/exo_pause"
+            android:contentDescription="@string/pause"
             app:tint="@color/daynight_textColor"
             style="@style/ExoMediaButton.Pause"/>
         <ImageButton
             android:id="@id/exo_ffwd"
+            android:contentDescription="@string/fast_forward"
             app:tint="@color/daynight_textColor"
             style="@style/ExoMediaButton.FastForward"/>
     </LinearLayout>

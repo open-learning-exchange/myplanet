@@ -1202,5 +1202,27 @@
     <string name="select_open_with">खोल्नुहोस्</string>
     <string name="select_media">मिडिया</string>
     <string name="select_resource_type">स्रोत प्रकार</string>
+    <string name="add_personal">व्यक्तिगत नोट थप्नुहोस्</string>
+    <string name="add_survey">सर्वेक्षण थप्नुहोस्</string>
+    <string name="add_finance_entry">लेनदेन थप्नुहोस्</string>
+    <string name="add_resource_to_team">टोलीमा स्रोत थप्नुहोस्</string>
+    <string name="rewind">पछाडि जानुहोस्</string>
+    <string name="pause">रोक्नुहोस्</string>
+    <string name="fast_forward">अगाडि जानुहोस्</string>
+    <string name="next_question">अर्को प्रश्न</string>
+    <string name="more_options">थप विकल्पहरू</string>
+    <string name="upload_item">अपलोड गर्नुहोस्</string>
+    <string name="join_or_leave_team">टोली सामेल वा छोड्नुहोस्</string>
+    <string name="team_feedback">टोली प्रतिक्रिया</string>
+    <string name="close_dialog">संवाद बन्द गर्नुहोस्</string>
+    <string name="go_back">पछाडि जानुहोस्</string>
+    <string name="audio_play_pause">अडियो बजाउनुहोस् वा रोक्नुहोस्</string>
+    <string name="resource_status">स्रोत स्थिति</string>
+    <string name="download_status">डाउनलोड स्थिति</string>
+    <string name="sort_by_date_column">मितिद्वारा क्रमबद्ध गर्नुहोस्</string>
+    <string name="user_avatar">प्रयोगकर्ता अवतार</string>
+    <string name="send_diagnosis">निदान थप्नुहोस्</string>
+    <string name="delete_item">मेटाउनुहोस्</string>
+    <string name="toggle_visibility">दृश्यता टगल गर्नुहोस्</string>
 
 </resources>
