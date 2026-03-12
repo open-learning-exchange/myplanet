@@ -23,6 +23,8 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -492,26 +494,66 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun removeCourseAndProgress(courseId: String, userId: String) {
-        executeTransaction { realm ->
-            // 1. Delete progress
-            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
-            val examIds = examList.mapNotNull { it.id }.toTypedArray()
-            if (examIds.isNotEmpty()) {
-                realm.where(RealmSubmission::class.java)
-                    .`in`("parentId", examIds)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
+        removeCoursesAndProgress(listOf(courseId), userId)
+    }
+
+    override suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String) {
+        if (courseIds.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            executeTransaction { realm ->
+                val courses = realm.where(RealmMyCourse::class.java)
+                    .`in`("courseId", courseIds.toTypedArray())
+                    .findAll()
+
+                courses.forEach { course ->
+                    course.removeUserId(userId)
+                    course.courseId?.let { courseId ->
+                        RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+                    }
+                }
+            }
+        }
+        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+    }
+
+    override suspend fun removeCoursesAndProgress(courseIds: List<String>, userId: String) {
+        if (courseIds.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            executeTransaction { realm ->
+                val courseIdsArray = courseIds.toTypedArray()
+
+                // 1. Delete progress
+                realm.where(RealmCourseProgress::class.java)
+                    .`in`("courseId", courseIdsArray)
                     .findAll()
                     .deleteAllFromRealm()
-            }
 
-            // 2. Remove from shelf (leave course)
-            val course = realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()
-            course?.removeUserId(userId)
-            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+                val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java)
+                    .`in`("courseId", courseIdsArray)
+                    .findAll()
+                val examIds = examList.mapNotNull { it.id }.toTypedArray()
+
+                if (examIds.isNotEmpty()) {
+                    realm.where(RealmSubmission::class.java)
+                        .`in`("parentId", examIds)
+                        .notEqualTo("type", "survey")
+                        .equalTo("uploaded", false)
+                        .findAll()
+                        .deleteAllFromRealm()
+                }
+
+                // 2. Remove from shelf (leave courses)
+                val courses = realm.where(RealmMyCourse::class.java)
+                    .`in`("courseId", courseIdsArray)
+                    .findAll()
+
+                courses.forEach { course ->
+                    course.removeUserId(userId)
+                    course.courseId?.let { courseId ->
+                        RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
+                    }
+                }
+            }
         }
         RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
     }
