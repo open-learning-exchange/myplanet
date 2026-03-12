@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
@@ -70,7 +71,8 @@ class UploadManager @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val ratingsRepository: RatingsRepository
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {

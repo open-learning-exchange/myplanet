@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
+import org.ole.planet.myplanet.model.RealmRating
+
 interface RatingsRepository {
     suspend fun getRatings(type: String?, userId: String?): HashMap<String?, com.google.gson.JsonObject>
     suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): com.google.gson.JsonObject?
@@ -15,6 +18,10 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
+
+    suspend fun insertRatingsList(ratings: List<JsonObject>)
+    suspend fun insertFromJson(act: JsonObject)
+    fun serializeRating(realmRating: RealmRating): JsonObject
 }
 
 data class RatingEntry(

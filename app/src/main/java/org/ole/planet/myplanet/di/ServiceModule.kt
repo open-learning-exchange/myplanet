@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.ImprovedSyncManager
@@ -69,9 +70,10 @@ object ServiceModule {
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
-        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>
+        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
+        ratingsRepository: RatingsRepository
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository, ratingsRepository)
     }
 
     @Provides
@@ -98,8 +100,9 @@ object ServiceModule {
         @ApplicationContext context: Context,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+        ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository, feedbackRepository, sharedPrefManager)
+        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository, feedbackRepository, sharedPrefManager, ratingsRepository)
     }
 }

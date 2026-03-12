@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -52,7 +53,8 @@ class TransactionSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val ratingsRepository: RatingsRepository
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -232,6 +234,22 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "ratings") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    ratingsRepository.insertRatingsList(docs)
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch", table, insertDuration, arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
@@ -308,7 +326,6 @@ class TransactionSyncManager @Inject constructor(
             "tablet_users" -> populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
             "tags" -> RealmTag.insert(mRealm, jsonDoc)
             "login_activities" -> RealmOfflineActivity.insert(mRealm, jsonDoc)
-            "ratings" -> RealmRating.insert(mRealm, jsonDoc)
             "submissions" -> RealmSubmission.insert(mRealm, jsonDoc)
             "courses" -> RealmMyCourse.insert(mRealm, jsonDoc)
             "achievements" -> RealmAchievement.insert(mRealm, jsonDoc)

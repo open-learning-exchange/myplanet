@@ -9,6 +9,9 @@ import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -109,6 +112,57 @@ class RatingsRepositoryImpl @Inject constructor(
         }
 
         return getRatingSummary(type, itemId, resolvedUserId)
+    }
+
+    override suspend fun insertRatingsList(ratings: List<JsonObject>) {
+        executeTransaction { mRealm ->
+            ratings.forEach { act ->
+                var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+                if (rating == null) {
+                    rating = mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
+                }
+                rating?.let {
+                    it._rev = JsonUtils.getString("_rev", act)
+                    it._id = JsonUtils.getString("_id", act)
+                    it.time = JsonUtils.getLong("time", act)
+                    it.title = JsonUtils.getString("title", act)
+                    it.type = JsonUtils.getString("type", act)
+                    it.item = JsonUtils.getString("item", act)
+                    it.rate = JsonUtils.getInt("rate", act)
+                    it.isUpdated = false
+                    it.comment = JsonUtils.getString("comment", act)
+                    it.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", act))
+                    it.userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act))
+                    it.parentCode = JsonUtils.getString("parentCode", act)
+                    it.planetCode = JsonUtils.getString("planetCode", act)
+                    it.createdOn = JsonUtils.getString("createdOn", act)
+                }
+            }
+        }
+    }
+
+    override suspend fun insertFromJson(act: JsonObject) {
+        insertRatingsList(listOf(act))
+    }
+
+    override fun serializeRating(realmRating: RealmRating): JsonObject {
+        val ob = JsonObject()
+        if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
+        if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
+        ob.add("user", JsonUtils.gson.fromJson(realmRating.user, JsonObject::class.java))
+        ob.addProperty("item", realmRating.item)
+        ob.addProperty("type", realmRating.type)
+        ob.addProperty("title", realmRating.title)
+        ob.addProperty("time", realmRating.time)
+        ob.addProperty("comment", realmRating.comment)
+        ob.addProperty("rate", realmRating.rate)
+        ob.addProperty("createdOn", realmRating.createdOn)
+        ob.addProperty("parentCode", realmRating.parentCode)
+        ob.addProperty("planetCode", realmRating.planetCode)
+        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        return ob
     }
 
     private fun RealmRating.toRatingEntry(): RatingEntry =
