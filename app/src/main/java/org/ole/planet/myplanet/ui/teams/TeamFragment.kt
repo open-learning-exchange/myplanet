@@ -267,14 +267,15 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
-                viewModel.leaveTeam(team._id!!, viewModel.userId)
+                team._id?.let { viewModel.leaveTeam(it, viewModel.userId) }
             }
             .setNegativeButton(R.string.no, null)
             .show()
     }
 
     override fun onRequestToJoin(team: TeamDetails, user: RealmUser?) {
-        viewModel.requestToJoin(team._id!!, viewModel.userId, viewModel.userPlanetCode, team.teamType)
+        val teamId = team._id ?: return
+        viewModel.requestToJoin(teamId, viewModel.userId, viewModel.userPlanetCode, team.teamType)
     }
 
     override fun onUpdateComplete(itemCount: Int) {

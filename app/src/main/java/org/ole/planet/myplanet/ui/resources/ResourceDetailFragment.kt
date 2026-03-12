@@ -55,13 +55,14 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (!isAdded) {
                 return@launch
             }
+            val libId = libraryId ?: return@launch
             val userId = profileDbHandler.getUserModel()?.id
             try {
-                val backgroundLibrary = fetchLibrary(libraryId!!)
+                val backgroundLibrary = fetchLibrary(libId)
                 val updatedLibrary = when {
                     backgroundLibrary == null -> null
                     backgroundLibrary.userId?.contains(userId) != true && userId != null ->
-                        resourcesRepository.updateUserLibrary(libraryId!!, userId, true)
+                        resourcesRepository.updateUserLibrary(libId, userId, true)
                     else -> backgroundLibrary
                 }
                 if (updatedLibrary != null) {
@@ -216,13 +217,14 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
         binding.btnRemove.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
+                val libId = libraryId ?: return@launch
                 val userId = profileDbHandler.getUserModel()?.id
                 if (!isAdded) {
                     return@launch
                 }
                 val updatedLibrary = try {
                     if (userId != null) {
-                        resourcesRepository.updateUserLibrary(libraryId!!, userId, isAdd)
+                        resourcesRepository.updateUserLibrary(libId, userId, isAdd)
                     } else {
                         null
                     }

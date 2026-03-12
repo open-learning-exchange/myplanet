@@ -490,7 +490,7 @@ class VoicesAdapter(
         isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
 
     private fun canShare(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
+        isLoggedInAndMember() && news?.isCommunityNews != true && !isGuestUser()
 
     private fun View.setVisibility(condition: Boolean) {
         visibility = if (condition) View.VISIBLE else View.GONE

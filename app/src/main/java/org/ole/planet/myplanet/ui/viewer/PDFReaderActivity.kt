@@ -53,7 +53,7 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
             val resourceID = intent.getStringExtra("resourceId")
             lifecycleScope.launch {
                 resourceID?.let {
-                    library = resourcesRepository.getLibraryItemById(it)!!
+                    library = resourcesRepository.getLibraryItemById(it) ?: return@launch
                 }
             }
         }
@@ -137,7 +137,7 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
     private fun updateTranslation(outputFile: String?) {
         if (this::library.isInitialized) {
             lifecycleScope.launch {
-                resourcesRepository.updateLibraryItem(library.id!!) {
+                resourcesRepository.updateLibraryItem(library.id ?: return@launch) {
                     it.translationAudioPath = outputFile
                 }
                 library.translationAudioPath = outputFile
