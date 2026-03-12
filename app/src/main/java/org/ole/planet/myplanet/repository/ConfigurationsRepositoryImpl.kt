@@ -43,9 +43,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
     private val serverUrlMapper: ServerUrlMapper
-) : ConfigurationsRepository {
+) : RealmRepository(databaseService), ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: OnSuccessListener) {
@@ -208,7 +208,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearAllData() {
-        databaseService.executeTransactionAsync { it.deleteAll() }
+        executeTransaction { it.deleteAll() }
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {
