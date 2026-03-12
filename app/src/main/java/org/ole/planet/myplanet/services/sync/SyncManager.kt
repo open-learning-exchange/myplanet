@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
+import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
@@ -69,8 +70,7 @@ class SyncManager @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
-    @param:ApplicationScope private val syncScope: CoroutineScope,
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -186,94 +186,94 @@ class SyncManager @Inject constructor(
             coroutineScope {
                 val syncJobs = listOf(
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.TABLET_USERS))
-                        transactionSyncManager.syncDb(SyncTables.Core.TABLET_USERS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.TABLET_USERS))
+                        logger.startProcess("tablet_users_sync")
+                        transactionSyncManager.syncDb("tablet_users")
+                        logger.endProcess("tablet_users_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.EXAMS))
-                        transactionSyncManager.syncDb(SyncTables.Core.EXAMS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.EXAMS))
+                        logger.startProcess("exams_sync")
+                        transactionSyncManager.syncDb("exams")
+                        logger.endProcess("exams_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.RATINGS))
-                        transactionSyncManager.syncDb(SyncTables.Core.RATINGS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.RATINGS))
+                        logger.startProcess("ratings_sync")
+                        transactionSyncManager.syncDb("ratings")
+                        logger.endProcess("ratings_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.COURSES_PROGRESS))
-                        transactionSyncManager.syncDb(SyncTables.Core.COURSES_PROGRESS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.COURSES_PROGRESS))
+                        logger.startProcess("courses_progress_sync")
+                        transactionSyncManager.syncDb("courses_progress")
+                        logger.endProcess("courses_progress_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.ACHIEVEMENTS))
-                        transactionSyncManager.syncDb(SyncTables.Core.ACHIEVEMENTS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.ACHIEVEMENTS))
+                        logger.startProcess("achievements_sync")
+                        transactionSyncManager.syncDb("achievements")
+                        logger.endProcess("achievements_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.TAGS))
-                        transactionSyncManager.syncDb(SyncTables.Core.TAGS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.TAGS))
+                        logger.startProcess("tags_sync")
+                        transactionSyncManager.syncDb("tags")
+                        logger.endProcess("tags_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.SUBMISSIONS))
-                        transactionSyncManager.syncDb(SyncTables.Core.SUBMISSIONS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.SUBMISSIONS))
+                        logger.startProcess("submissions_sync")
+                        transactionSyncManager.syncDb("submissions")
+                        logger.endProcess("submissions_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.NEWS))
-                        transactionSyncManager.syncDb(SyncTables.Core.NEWS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.NEWS))
+                        logger.startProcess("news_sync")
+                        transactionSyncManager.syncDb("news")
+                        logger.endProcess("news_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.FEEDBACK))
-                        transactionSyncManager.syncDb(SyncTables.Core.FEEDBACK)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.FEEDBACK))
+                        logger.startProcess("feedback_sync")
+                        transactionSyncManager.syncDb("feedback")
+                        logger.endProcess("feedback_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.TASKS))
-                        transactionSyncManager.syncDb(SyncTables.Core.TASKS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.TASKS))
+                        logger.startProcess("tasks_sync")
+                        transactionSyncManager.syncDb("tasks")
+                        logger.endProcess("tasks_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.LOGIN_ACTIVITIES))
-                        transactionSyncManager.syncDb(SyncTables.Core.LOGIN_ACTIVITIES)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.LOGIN_ACTIVITIES))
+                        logger.startProcess("login_activities_sync")
+                        transactionSyncManager.syncDb("login_activities")
+                        logger.endProcess("login_activities_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Health.HEALTH))
-                        transactionSyncManager.syncDb(SyncTables.Health.HEALTH)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Health.HEALTH))
+                        logger.startProcess("health_sync")
+                        transactionSyncManager.syncDb("health")
+                        logger.endProcess("health_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Health.CERTIFICATIONS))
-                        transactionSyncManager.syncDb(SyncTables.Health.CERTIFICATIONS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Health.CERTIFICATIONS))
+                        logger.startProcess("certifications_sync")
+                        transactionSyncManager.syncDb("certifications")
+                        logger.endProcess("certifications_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Teams.TEAM_ACTIVITIES))
-                        transactionSyncManager.syncDb(SyncTables.Teams.TEAM_ACTIVITIES)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Teams.TEAM_ACTIVITIES))
+                        logger.startProcess("team_activities_sync")
+                        transactionSyncManager.syncDb("team_activities")
+                        logger.endProcess("team_activities_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Social.CHAT_HISTORY))
-                        transactionSyncManager.syncDb(SyncTables.Social.CHAT_HISTORY)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Social.CHAT_HISTORY))
+                        logger.startProcess("chat_history_sync")
+                        transactionSyncManager.syncDb("chat_history")
+                        logger.endProcess("chat_history_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Teams.TEAMS))
-                        transactionSyncManager.syncDb(SyncTables.Teams.TEAMS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Teams.TEAMS))
+                        logger.startProcess("teams_sync")
+                        transactionSyncManager.syncDb("teams")
+                        logger.endProcess("teams_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Social.MEETUPS))
-                        transactionSyncManager.syncDb(SyncTables.Social.MEETUPS)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Social.MEETUPS))
+                        logger.startProcess("meetups_sync")
+                        transactionSyncManager.syncDb("meetups")
+                        logger.endProcess("meetups_sync")
                     },
                     async {
-                        logger.startProcess(SyncTables.syncKey(SyncTables.Core.COURSES))
-                        transactionSyncManager.syncDb(SyncTables.Core.COURSES)
-                        logger.endProcess(SyncTables.syncKey(SyncTables.Core.COURSES))
+                        logger.startProcess("courses_sync")
+                        transactionSyncManager.syncDb("courses")
+                        logger.endProcess("courses_sync")
                     }
                 )
                 syncJobs.awaitAll()
@@ -294,9 +294,11 @@ class SyncManager @Inject constructor(
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
-            logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
-            logger.endProcess("on_synced")
+            databaseService.withRealm { realm ->
+                logger.startProcess("on_synced")
+                onSynced(realm, sharedPrefManager.rawPreferences)
+                logger.endProcess("on_synced")
+            }
 
             logger.stopLogging()
 
@@ -506,9 +508,11 @@ class SyncManager @Inject constructor(
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
-            logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
-            logger.endProcess("on_synced")
+            databaseService.withRealm { realm ->
+                logger.startProcess("on_synced")
+                onSynced(realm, sharedPrefManager.rawPreferences)
+                logger.endProcess("on_synced")
+            }
 
             logger.stopLogging()
         } catch (err: Exception) {

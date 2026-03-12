@@ -156,7 +156,6 @@
                     android:layout_width="@dimen/icon_size_mid"
                     android:layout_height="@dimen/icon_size_mid"
                     android:layout_gravity="center"
-                    android:contentDescription="@string/sort_by_date_column"
                     app:srcCompat="@drawable/ic_down" />
             </LinearLayout>
 
@@ -282,7 +281,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"
         android:layout_margin="@dimen/padding_large"
-        android:contentDescription="@string/add_finance_entry"
         android:src="@drawable/ic_add_white"
         app:fab_label="Add Transaction" />
 </FrameLayout>

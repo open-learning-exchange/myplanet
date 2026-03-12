@@ -68,7 +68,6 @@
                         android:layout_gravity="center"
                         android:layout_marginLeft="16dp"
                         android:layout_marginRight="16dp"
-                        android:contentDescription="@null"
                         app:srcCompat="@drawable/my_achievement"
                         app:tint="@color/hint_color" />
                     <TextView
@@ -81,7 +80,6 @@
                         android:layout_gravity="center"
                         android:layout_marginLeft="16dp"
                         android:layout_marginRight="16dp"
-                        android:contentDescription="@null"
                         app:srcCompat="@drawable/my_achievement"
                         app:tint="@color/hint_color" />
                 </LinearLayout>

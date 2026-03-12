@@ -656,7 +656,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                             withContext(Dispatchers.Main) {
                                 startUpload("login")
                             }
-                            transactionSyncManager.syncDb(org.ole.planet.myplanet.services.sync.SyncTables.Core.LOGIN_ACTIVITIES)
+                            transactionSyncManager.syncDb("login_activities")
                         }
                     }
                 }
@@ -665,8 +665,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun settingDialog() {
-        val binding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-        serverDialogBinding = binding
+        serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        val binding = serverDialogBinding!!
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)

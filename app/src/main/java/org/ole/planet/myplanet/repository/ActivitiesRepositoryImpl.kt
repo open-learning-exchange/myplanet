@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import java.util.Date
-import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -170,23 +168,6 @@ class ActivitiesRepositoryImpl @Inject constructor(
             } else {
                 Pair(maxEntry.value.second!!, maxEntry.value.first)
             }
-        }
-    }
-
-    override suspend fun recordSyncActivity(userId: String) {
-        executeTransaction { realm ->
-            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            if (user == null || user.id?.startsWith("guest") == true) {
-                return@executeTransaction
-            }
-            val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
-            activities.user = user.name
-            activities._rev = null
-            activities._id = null
-            activities.parentCode = user.parentCode
-            activities.createdOn = user.planetCode
-            activities.type = "sync"
-            activities.time = Date().time
         }
     }
 }

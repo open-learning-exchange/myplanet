@@ -360,8 +360,7 @@ class MyHealthFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = userModel
-            val uid = userId
-            if (currentUser == null || uid.isNullOrEmpty()) {
+            if (currentUser == null || userId.isNullOrEmpty()) {
                 binding.layoutUserDetail.visibility = View.GONE
                 binding.tvMessage.visibility = View.VISIBLE
                 binding.tvMessage.text = getString(R.string.health_record_not_available)
@@ -383,7 +382,7 @@ class MyHealthFragment : Fragment() {
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
-            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(uid, currentUser)
+            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord

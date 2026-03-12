@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 @Singleton
 class SharedPrefManager @Inject constructor(@ApplicationContext context: Context) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private var surveyPref: SharedPreferences = context.getSharedPreferences("survey_reminders", Context.MODE_PRIVATE)
     private val gson = Gson()
     val rawPreferences: SharedPreferences get() = pref
 
@@ -296,26 +295,4 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
     fun removeKey(key: String) = pref.edit { remove(key) }
-
-    fun containsSurveyReminder(key: String): Boolean = surveyPref.contains(key)
-
-    fun setSurveyReminder(surveyIds: String, reminderTime: Long) {
-        surveyPref.edit {
-            putLong("reminder_time_$surveyIds", reminderTime)
-            putString("reminder_surveys_$surveyIds", surveyIds)
-        }
-    }
-
-    fun getSurveyReminders(): Map<String, *> = surveyPref.all
-
-    fun getSurveyReminderTime(key: String): Long = surveyPref.getLong(key, 0)
-
-    fun removeSurveyReminders(remindersToRemove: List<String>) {
-        surveyPref.edit {
-            for (surveyIds in remindersToRemove) {
-                remove("reminder_time_$surveyIds")
-                remove("reminder_surveys_$surveyIds")
-            }
-        }
-    }
 }

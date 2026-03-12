@@ -7,6 +7,8 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ActivitiesRepositoryImpl
+import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -53,6 +55,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindActivitiesRepository(impl: ActivitiesRepositoryImpl): ActivitiesRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDownloadRepository(impl: DownloadRepositoryImpl): DownloadRepository
 
     @Binds
     @Singleton
@@ -105,10 +111,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindResourcesRepository(impl: ResourcesRepositoryImpl): ResourcesRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindRetryRepository(impl: org.ole.planet.myplanet.repository.retry.RetryRepositoryImpl): org.ole.planet.myplanet.repository.retry.RetryRepository
 
     @Binds
     @Singleton

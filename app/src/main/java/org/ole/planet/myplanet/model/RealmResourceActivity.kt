@@ -38,5 +38,38 @@ open class RealmResourceActivity : RealmObject() {
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             return ob
         }
+
+        @JvmStatic
+        fun onSynced(realm: Realm, settings: SharedPreferences) {
+            val startedTransaction = !realm.isInTransaction
+            if (startedTransaction) {
+                realm.beginTransaction()
+            }
+            try {
+                val user = realm.where(RealmUser::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
+                if (user == null || user.id?.startsWith("guest") == true) {
+                    if (startedTransaction && realm.isInTransaction) {
+                        realm.cancelTransaction()
+                    }
+                    return
+                }
+                val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
+                activities.user = user.name
+                activities._rev = null
+                activities._id = null
+                activities.parentCode = user.parentCode
+                activities.createdOn = user.planetCode
+                activities.type = "sync"
+                activities.time = Date().time
+                if (startedTransaction) {
+                    realm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
+                throw e
+            }
+        }
     }
 }

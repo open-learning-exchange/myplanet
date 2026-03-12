@@ -50,7 +50,7 @@ class SendSurveyFragment : BaseDialogFragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
                     val u = users[i]
-                    submissionsRepository.createSurveySubmission(id ?: return@launch, u.id)
+                    submissionsRepository.createSurveySubmission(id!!, u.id)
                 }
                 Utilities.toast(activity, getString(R.string.survey_sent_to_users))
                 dismiss()

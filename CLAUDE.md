@@ -26,13 +26,13 @@ This document provides comprehensive guidance for AI assistants working on the m
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.48.54 (versionCode: 4854)
-- **Build System**: Gradle 9.1.0 with Android Gradle Plugin 9.1.0
+- **Current Version**: 0.46.0 (versionCode: 4600)
+- **Build System**: Gradle 9.3.1 with Android Gradle Plugin 9.0.0
 - **License**: AGPL v3
 
 ### Build Flavors
-- **default**: Full-featured version (includes `REQUEST_INSTALL_PACKAGES` permission, `LITE = false`)
-- **lite**: Lightweight version with reduced features (`LITE = true` BuildConfig flag, `-lite` version suffix)
+- **default**: Full-featured version
+- **lite**: Lightweight version with reduced features
 
 ---
 
@@ -44,7 +44,7 @@ This document provides comprehensive guidance for AI assistants working on the m
 myplanet/
 ├── .github/                    # CI/CD workflows and Dependabot config
 │   └── workflows/
-│       ├── build.yml          # Build workflow for all branches except master
+│       ├── build.yml          # Build workflow for all branches
 │       └── release.yml        # Release and Play Store publishing
 ├── app/                       # Main application module
 │   ├── src/
@@ -55,23 +55,15 @@ myplanet/
 │   │   │   │   ├── callback/                # Event listeners and interfaces
 │   │   │   │   ├── data/                    # Data services and API
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Realm data models (40 Realm classes, 75 total)
+│   │   │   │   ├── model/                   # Realm data models (40 Realm classes, 67 total)
 │   │   │   │   ├── repository/              # Repository pattern implementations
 │   │   │   │   ├── services/                # Background services and workers
-│   │   │   │   ├── ui/                      # UI components (28+ packages)
+│   │   │   │   ├── ui/                      # UI components (28 packages)
 │   │   │   │   └── utils/                   # Helper utilities
 │   │   │   ├── res/                         # Android resources
-│   │   │   │   ├── layout/                  # 170 layout files
-│   │   │   │   ├── layout-night/            # Dark mode layout overrides
-│   │   │   │   ├── layout-w600dp/           # Tablet layout overrides
-│   │   │   │   ├── layout-large-land/       # Large landscape layouts
-│   │   │   │   ├── layout-xlarge-land/      # Extra-large landscape layouts
+│   │   │   │   ├── layout/                  # 169 layout files
 │   │   │   │   ├── values/                  # Strings, colors, styles
 │   │   │   │   ├── values-{lang}/           # Translations (ar, es, fr, ne, so)
-│   │   │   │   ├── values-night/            # Dark theme values
-│   │   │   │   ├── values-sw320dp/          # Small screen values
-│   │   │   │   ├── values-sw400dp/          # Medium screen values
-│   │   │   │   ├── values-sw600dp/          # Tablet values
 │   │   │   │   └── drawable*/               # Images and icons
 │   │   │   └── AndroidManifest.xml
 │   │   └── lite/
@@ -92,74 +84,69 @@ myplanet/
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 12 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 34 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and 29 more |
-| `data/` | Data access and API services | 7 | DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 18 | 6 modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule) + 12 entry points |
-| `model/` | Realm database models and DTOs | 75 | 40 Realm models + 35 DTOs including ChatMessage, ChatRequest, ChatResponse, ChatShareTargets, CourseProgressData, Download, ServerAddress, User, TeamNotificationInfo, TaskNotificationResult |
-| `repository/` | Repository pattern implementations | 42 | 21 repositories with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
-| `services/` | Background services and workers | 38 | 21 root-level + `sync/` (11), `upload/` (4), `retry/` (2) |
-| `ui/` | User interface components | 153 | 28+ feature packages with 20 ViewModels (courses, resources, teams, chat, etc.) |
-| `utils/` | Helper functions | 40 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, EdgeToEdgeUtils, and 32 more |
+| `data/` | Data access and API services | 8 | DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
+| `di/` | Hilt dependency injection | 16 | 5 modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule) + 11 entry points |
+| `model/` | Realm database models and DTOs | 67 | 40 Realm models + 27 DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
+| `repository/` | Repository pattern implementations | 38 | 19 repositories with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
+| `services/` | Background services and workers | 37 | 20 root-level + `sync/` (11), `upload/` (4), `retry/` (2) |
+| `ui/` | User interface components | 147 | 28 feature packages with 16 ViewModels (courses, resources, teams, chat, etc.) |
+| `utils/` | Helper functions | 39 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and 32 more |
 
-### UI Sub-packages (28+ feature packages, 153 files)
+### UI Sub-packages (28 feature packages, 147 files)
 
 | Package | Files | Key Components |
 |---------|-------|----------------|
 | `ui/calendar/` | 1 | CalendarFragment |
-| `ui/chat/` | 6 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel, ChatAdapter, ChatHistoryAdapter, ChatShareTargetAdapter |
-| `ui/community/` | 6 | CommunityTabFragment, LeadersFragment, CommunityServicesFragment, CommunityPagerAdapter, CommunityLeadersAdapter, HomeCommunityDialogFragment |
-| `ui/components/` | 5 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator, CheckboxListView, CustomClickableSpan |
-| `ui/courses/` | 15 | CourseDetailFragment, CourseDetailViewModel, TakeCourseFragment, ProgressViewModel, CourseProgressActivity, CourseProgressViewModel, CoursesFragment, CoursesAdapter, CoursesStepsAdapter, CoursesProgressAdapter, CoursesProgressFragment, CoursesPagerAdapter, InlineResourceAdapter, ProgressGridAdapter, CourseStepFragment |
-| `ui/dashboard/` | 11 | DashboardActivity, DashboardViewModel, BellDashboardViewModel, BellDashboardFragment, DashboardElementActivity, DashboardPluginFragment, DashboardSurveysAdapter, ActivitiesFragment, AboutFragment, DisclaimerFragment, InactiveDashboardFragment |
+| `ui/chat/` | 6 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
+| `ui/community/` | 6 | CommunityTabFragment, LeadersFragment |
+| `ui/components/` | 5 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
+| `ui/courses/` | 12 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
+| `ui/dashboard/` | 11 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
 | `ui/dictionary/` | 1 | DictionaryActivity |
-| `ui/enterprises/` | 5 | EnterprisesViewModel, EnterprisesFinancesFragment, EnterprisesFinancesAdapter, EnterprisesReportsFragment, EnterprisesReportsAdapter |
+| `ui/enterprises/` | 5 | EnterprisesViewModel, FinancesFragment, ReportsFragment |
 | `ui/events/` | 2 | EventsDetailFragment, EventsAdapter |
 | `ui/exam/` | 2 | ExamTakingFragment, UserInformationFragment |
-| `ui/feedback/` | 6 | FeedbackFragment, FeedbackListFragment, FeedbackDetailActivity, FeedbackListViewModel, FeedbackDetailViewModel, FeedbackAdapter |
-| `ui/health/` | 6 | MyHealthFragment, AddExaminationActivity, AddExaminationViewModel, AddHealthActivity, HealthExaminationAdapter, HealthUsersAdapter |
+| `ui/feedback/` | 6 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
+| `ui/health/` | 5 | MyHealthFragment, AddExaminationActivity |
 | `ui/life/` | 2 | LifeFragment, LifeAdapter |
 | `ui/maps/` | 1 | OfflineMapsActivity |
-| `ui/notifications/` | 3 | NotificationsFragment, NotificationsViewModel, NotificationsAdapter |
+| `ui/notifications/` | 3 | NotificationsFragment, NotificationsViewModel |
 | `ui/onboarding/` | 2 | OnboardingActivity, OnboardingAdapter |
 | `ui/personals/` | 2 | PersonalsFragment, PersonalsAdapter |
 | `ui/ratings/` | 2 | RatingsFragment, RatingsViewModel |
 | `ui/references/` | 2 | ReferencesFragment, ReferencesAdapter |
-| `ui/resources/` | 8 | ResourcesFragment, AddResourceActivity, AddResourceFragment, CollectionsFragment, ResourceDetailFragment, ResourcesAdapter, ResourcesFilterFragment, ResourcesTagsAdapter |
+| `ui/resources/` | 8 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
 | `ui/settings/` | 1 | SettingsActivity |
-| `ui/submissions/` | 8 | SubmissionsFragment, SubmissionListFragment, SubmissionDetailFragment, SubmissionViewModel, SubmissionDetailViewModel, SubmissionsAdapter, SubmissionsListAdapter, QuestionAnswerAdapter |
-| `ui/surveys/` | 5 | SurveyFragment, SendSurveyFragment, SurveysAdapter, SurveysViewModel, SurveyFormState |
-| `ui/sync/` | 8 | LoginActivity, SyncActivity, ProcessUserDataActivity, GuestLoginExtensions, RealtimeSyncMixin, ServerAddressAdapter, ServerDialogExtensions, SyncConfigurationCoordinator |
-| `ui/teams/` | 9 | TeamFragment, TeamDetailFragment, TeamViewModel, TeamsAdapter, TeamsSelectionAdapter, PlanFragment, TeamCalendarFragment, TeamPageConfig, TeamPagerAdapter |
-| `ui/teams/courses/` | 2 | TeamCoursesFragment, TeamCoursesAdapter |
-| `ui/teams/members/` | 6 | MembersFragment, MembersDetailFragment, MembersAdapter, RequestsFragment, RequestsViewModel, RequestsAdapter |
-| `ui/teams/resources/` | 2 | TeamResourcesFragment, TeamResourcesAdapter |
-| `ui/teams/tasks/` | 2 | TeamsTasksFragment, TeamsTasksAdapter |
-| `ui/teams/voices/` | 1 | TeamsVoicesFragment |
-| `ui/user/` | 7 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity, AchievementFragment, EditAchievementFragment, UserArrayAdapter, UsersAdapter |
-| `ui/viewer/` | 8 | ImageViewerActivity, VideoViewerActivity, AudioPlayerActivity, PDFReaderActivity, WebViewActivity, MarkdownViewerActivity, TextFileViewerActivity, CSVViewerActivity |
-| `ui/voices/` | 6 | VoicesFragment, NewsViewModel, ReplyActivity, ReplyViewModel, VoicesAdapter, VoicesActions |
+| `ui/submissions/` | 8 | SubmissionsFragment, SubmissionViewModel |
+| `ui/surveys/` | 4 | SurveyFragment, SendSurveyFragment |
+| `ui/sync/` | 7 | LoginActivity, SyncActivity, ProcessUserDataActivity |
+| `ui/teams/` | 22 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
+| `ui/user/` | 7 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity |
+| `ui/viewer/` | 8 | ImageViewer, VideoViewer, AudioPlayer, PDFReader, WebView, MarkdownViewer, TextFileViewer, CSVViewer |
+| `ui/voices/` | 6 | VoicesFragment, NewsViewModel, ReplyActivity |
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (~449 lines)
+1. **`MainApplication.kt`** (~448 lines)
    - Application initialization with Hilt DI
    - WorkManager scheduling (AutoSyncWorker, StayOnlineWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
    - Server reachability checking with alternative URL mapping
    - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`SyncManager.kt`** (~1022 lines)
+2. **`SyncManager.kt`** (~1058 lines)
    - Orchestrates data synchronization with server via StateFlow-based state management
    - Integrates with ImprovedSyncManager, TransactionSyncManager, RealtimeSyncManager
    - Semaphore-based concurrency control, adaptive batch processing
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-3. **`UploadManager.kt`** (~883 lines)
+3. **`UploadManager.kt`** (~770 lines)
    - File and data uploads with batch processing (BATCH_SIZE = 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-4. **`TeamsRepositoryImpl.kt`** (~1243 lines)
+4. **`TeamsRepositoryImpl.kt`** (~1097 lines)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
@@ -177,9 +164,9 @@ myplanet/
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
 | **Language** | Kotlin | 2.3.10 | Primary development language |
-| **Build System** | Gradle | 9.1.0 | Build automation |
-| **Build Plugin** | Android Gradle Plugin | 9.1.0 | Android build tooling |
-| **DI Framework** | Dagger Hilt | 2.59.2 | Dependency injection |
+| **Build System** | Gradle | 9.3.1 | Build automation |
+| **Build Plugin** | Android Gradle Plugin | 9.0.0 | Android build tooling |
+| **DI Framework** | Dagger Hilt | 2.59.1 | Dependency injection |
 | **Database** | Realm | 10.19.0 | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
@@ -194,14 +181,13 @@ myplanet/
 | **Encryption** | Tink | 1.20.0 | Cryptographic operations |
 | **Serialization** | Kotlin Serialization | 1.10.0 | Kotlin-native serialization |
 | **CSV** | OpenCSV | 5.12.0 | CSV file parsing |
-| **Charts** | MPAndroidChart | v3.1.0 | Chart rendering |
-| **GIF** | android-gif-drawable | 1.2.31 | GIF image support |
 
 ### Build Configuration
 
 **Gradle Plugins:**
 - `com.android.application`
-- `com.android.legacy-kapt` (Annotation processing)
+- `kotlin-android`
+- `kotlin-kapt` (Annotation processing)
 - `com.google.devtools.ksp` (Symbol processing)
 - `com.google.dagger.hilt.android`
 - `realm-android`
@@ -212,13 +198,6 @@ myplanet/
 - View Binding: Enabled
 - Data Binding: Enabled
 - BuildConfig: Enabled
-- Kotlin compiler arg: `-Xannotation-default-target=param-property`
-
-**Pre-configured Server URLs (via `gradle.properties`):**
-The build supports many pre-configured server instances via BuildConfig fields:
-`PLANET_LEARNING`, `PLANET_GUATEMALA`, `PLANET_SANPABLO`, `PLANET_SANPABLO_CLONE`, `PLANET_EARTH`, `PLANET_SOMALIA`, `PLANET_VI`, `PLANET_XELA`, `PLANET_URIUR`, `PLANET_URIUR_CLONE`, `PLANET_RUIRU`, `PLANET_EMBAKASI`, `PLANET_EMBAKASI_CLONE`, `PLANET_CAMBRIDGE`
-
-Each has a `_URL` and `_PIN` variant. Leave empty in local development; set in CI via GitHub Secrets.
 
 ---
 
@@ -231,11 +210,11 @@ Each has a `_URL` and `_PIN` variant. Leave empty in local development; set in C
 │     UI Layer (Activities/Fragments)     │
 │  - User interaction & view binding      │
 │  - Lifecycle management                 │
-│  - 20 ViewModels for state management   │
+│  - 16 ViewModels for state management   │
 └──────────────┬──────────────────────────┘
                │
 ┌──────────────▼──────────────────────────┐
-│     Repository Layer (21 domains)       │
+│     Repository Layer (19 domains)       │
 │  - Data access abstraction              │
 │  - Interface + Implementation pairs     │
 │  - Reactive Flow-based queries          │
@@ -258,18 +237,16 @@ Each has a `_URL` and `_PIN` variant. Leave empty in local development; set in C
 
 ### 2. MVVM with ViewModels
 
-The UI layer uses ViewModels for state management:
+The UI layer uses ViewModels for state management across 16 feature areas:
 
 | ViewModel | Package | Purpose |
 |-----------|---------|---------|
 | `ChatViewModel` | `ui/chat/` | Chat message state and AI interactions |
 | `TeamViewModel` | `ui/teams/` | Team data and operations |
-| `RequestsViewModel` | `ui/teams/members/` | Team join requests |
+| `RequestsViewModel` | `ui/teams/` | Team join requests |
 | `DashboardViewModel` | `ui/dashboard/` | Dashboard data aggregation |
 | `BellDashboardViewModel` | `ui/dashboard/` | Bell community dashboard |
-| `CourseDetailViewModel` | `ui/courses/` | Course detail data |
-| `CourseProgressViewModel` | `ui/courses/` | Course progress tracking |
-| `ProgressViewModel` | `ui/courses/` | Progress grid display |
+| `ProgressViewModel` | `ui/courses/` | Course progress tracking |
 | `EnterprisesViewModel` | `ui/enterprises/` | Enterprise finances and reports |
 | `RatingsViewModel` | `ui/ratings/` | Resource ratings |
 | `NewsViewModel` | `ui/voices/` | News/voices feed |
@@ -280,12 +257,10 @@ The UI layer uses ViewModels for state management:
 | `SubmissionDetailViewModel` | `ui/submissions/` | Submission details |
 | `UserProfileViewModel` | `ui/user/` | User profile data |
 | `NotificationsViewModel` | `ui/notifications/` | Notification management |
-| `AddExaminationViewModel` | `ui/health/` | Health examination form |
-| `SurveysViewModel` | `ui/surveys/` | Survey state management |
 
 ### 3. Repository Pattern
 
-**Convention**: Each data domain has an interface and implementation.
+**Convention**: Each data domain has an interface and implementation
 
 ```kotlin
 // Interface
@@ -304,8 +279,8 @@ class CourseRepositoryImpl @Inject constructor(
 }
 ```
 
-**All 21 Domain Repositories:**
-Activities, Chat, Community, Configurations, Courses, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Submissions, Surveys, Tags, Teams, User, Voices
+**All 19 Domain Repositories:**
+Activities, Chat, Configurations, Courses, Events, Feedback, Life, Notifications, Personals, Progress, Ratings, Resources, Submissions, Surveys, Tags, Teams, User, Voices
 
 **Utility Classes:**
 - `RealmRepository` - Generic base repository
@@ -321,13 +296,12 @@ Activities, Chat, Community, Configurations, Courses, Events, Feedback, Health, 
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
-- `DispatcherModule.kt` - Provides coroutine dispatchers via `DispatcherProvider`
 
-**Entry Points for Workers (12 entry point files):**
+**Entry Points for Workers (11 entry point files):**
 - `AutoSyncEntryPoint`, `ApiClientEntryPoint`, `ApiInterfaceEntryPoint`
 - `ApplicationScopeEntryPoint`, `BroadcastServiceEntryPoint`, `DatabaseServiceEntryPoint`
-- `RepositoryEntryPoint`, `RetryQueueEntryPoint`, `ServerUrlMapperEntryPoint`
-- `ServiceEntryPoint`, `TeamsRepositoryEntryPoint`, `WorkerDependenciesEntryPoint`
+- `RepositoryEntryPoint`, `RetryQueueEntryPoint`, `ServiceEntryPoint`
+- `TeamsRepositoryEntryPoint`, `WorkerDependenciesEntryPoint`
 
 ```kotlin
 @EntryPoint
@@ -371,22 +345,21 @@ interface AutoSyncEntryPoint {
 - `StayOnlineWorker` - Keeps connection alive
 - `RetryQueueWorker` - Retries failed operations (`services/retry/`)
 
-**Services and Managers (21 root-level files):**
+**Services and Managers (20 root-level files):**
 - `SyncManager` - Manual synchronization (`services/sync/`)
 - `UploadManager` - File upload coordination (extends FileUploader)
 - `UploadToShelfService` - Shelf upload operations
 - `UploadCoordinator` - Upload orchestration (`services/upload/`)
-- `ResourceDownloadCoordinator` - Resource download orchestration
-- `SubmissionUploadExecutor` - Dedicated submission upload execution
 - `AudioRecorder` - Audio recording
 - `BroadcastService` - Service broadcasting
-- `ChallengePrompter` - Challenge prompt generation
+- `ConfigurationManager` - Configuration management
 - `SharedPrefManager` - SharedPreferences management
 - `UserSessionManager` - User session handling
 - `ThemeManager` - App theming
 - `FileUploader` - File upload utilities
 - `DownloadService` - Background file download service (foreground service)
 - `VoicesLabelManager` - Voice/discussion forum label management
+- `ChallengePrompter` - Challenge prompt generation
 - `NotificationActionReceiver` - Broadcast receiver for notification actions
 
 **Sync Sub-package (`services/sync/` - 11 files):**
@@ -470,7 +443,7 @@ git push -u origin claude/feature-name-sessionid
 - Runs on Ubuntu 24.04
 - Matrix builds both `default` and `lite` flavors with fail-fast disabled
 - Uses `gradle/actions/setup-gradle@v5` with caching
-- Build command: `./gradlew assemble${FLAVOR}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4`
+- Build command: `./gradlew assemble${FLAVOR}Debug --parallel --max-workers=4`
 
 **Release Workflow** (`.github/workflows/release.yml`)
 - Triggers: `master` branch push or manual dispatch
@@ -558,10 +531,6 @@ git push -u origin claude/feature-name-sessionid
 - Repositories: `*Repository.kt` and `*RepositoryImpl.kt`
 - Models: `Realm*.kt` for Realm objects
 - Workers: `*Worker.kt` (e.g., `AutoSyncWorker.kt`)
-- Extensions: `*Extensions.kt` (e.g., `GuestLoginExtensions.kt`, `ServerDialogExtensions.kt`)
-- Mixins: `*Mixin.kt` (e.g., `RealtimeSyncMixin.kt`)
-- Coordinators: `*Coordinator.kt` (e.g., `SyncConfigurationCoordinator.kt`, `ResourceDownloadCoordinator.kt`)
-- Executors: `*Executor.kt` (e.g., `SubmissionUploadExecutor.kt`)
 
 **Layout Naming:**
 - Activities: `activity_*.xml`
@@ -640,16 +609,6 @@ class AutoSyncWorker(
         val apiInterface = entryPoint.apiInterface()
         // ... use injected dependencies
     }
-}
-```
-
-**Coroutine Dispatchers:**
-Use the injected `DispatcherProvider` (from `DispatcherModule`) rather than hardcoded dispatchers for testability:
-```kotlin
-class MyRepositoryImpl @Inject constructor(
-    private val dispatchers: DispatcherProvider
-) {
-    suspend fun doWork() = withContext(dispatchers.io) { ... }
 }
 ```
 
@@ -815,64 +774,484 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Adding a New Data Model
 
-1. Create Realm model in `model/` extending `RealmObject` with `@PrimaryKey` and companion `insert()` method
-2. Add API endpoint in `ApiInterface.kt`
-3. Create repository interface + implementation in `repository/`
-4. Bind in `RepositoryModule.kt` using `@Binds`
+1. **Create Model Class**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/model/RealmMyNewModel.kt
+   package org.ole.planet.myplanet.model
+
+   import io.realm.RealmObject
+   import io.realm.annotations.PrimaryKey
+
+   open class RealmMyNewModel : RealmObject() {
+       @PrimaryKey
+       var _id: String = ""
+       var title: String? = null
+       var createdDate: Long = 0
+
+       companion object {
+           fun insert(realm: Realm, data: JsonObject) {
+               val model = realm.createObject(RealmMyNewModel::class.java, data.get("_id").asString)
+               model.title = data.get("title")?.asString
+               model.createdDate = System.currentTimeMillis()
+           }
+       }
+   }
+   ```
+
+2. **Update API Interface**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
+   @GET("myendpoint")
+   suspend fun getMyNewModels(): Response<List<JsonObject>>
+   ```
+
+3. **Create Repository**
+   ```kotlin
+   // Interface
+   interface MyNewModelRepository {
+       suspend fun getModels(): List<RealmMyNewModel>
+       suspend fun syncModels(): Result<Unit>
+   }
+
+   // Implementation
+   class MyNewModelRepositoryImpl @Inject constructor(
+       private val apiInterface: ApiInterface,
+       private val databaseService: DatabaseService
+   ) : MyNewModelRepository {
+       // Implementation
+   }
+   ```
+
+4. **Register in DI Module**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt
+   @Binds
+   abstract fun bindMyNewModelRepository(
+       impl: MyNewModelRepositoryImpl
+   ): MyNewModelRepository
+   ```
 
 ### Adding a New Screen
 
-1. Create layout XML in `res/layout/` (activity_*.xml or fragment_*.xml)
-2. Create `@AndroidEntryPoint` Activity/Fragment in `ui/<feature>/` using view binding
-3. Register activity in `AndroidManifest.xml`
-4. Add navigation via `Intent` from calling code
+1. **Create Layout**
+   ```xml
+   <!-- app/src/main/res/layout/activity_my_feature.xml -->
+   <?xml version="1.0" encoding="utf-8"?>
+   <androidx.constraintlayout.widget.ConstraintLayout
+       xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+       android:layout_height="match_parent">
+
+       <!-- UI components -->
+
+   </androidx.constraintlayout.widget.ConstraintLayout>
+   ```
+
+2. **Create Activity/Fragment**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/ui/myfeature/MyFeatureActivity.kt
+   package org.ole.planet.myplanet.ui.myfeature
+
+   import android.os.Bundle
+   import dagger.hilt.android.AndroidEntryPoint
+   import org.ole.planet.myplanet.base.BaseActivity
+   import org.ole.planet.myplanet.databinding.ActivityMyFeatureBinding
+
+   @AndroidEntryPoint
+   class MyFeatureActivity : BaseActivity() {
+       private lateinit var binding: ActivityMyFeatureBinding
+
+       override fun onCreate(savedInstanceState: Bundle?) {
+           super.onCreate(savedInstanceState)
+           binding = ActivityMyFeatureBinding.inflate(layoutInflater)
+           setContentView(binding.root)
+
+           setupUI()
+       }
+
+       private fun setupUI() {
+           // Initialize UI components
+       }
+   }
+   ```
+
+3. **Register in Manifest**
+   ```xml
+   <!-- app/src/main/AndroidManifest.xml -->
+   <activity
+       android:name=".ui.myfeature.MyFeatureActivity"
+       android:label="@string/my_feature_title"
+       android:theme="@style/AppTheme" />
+   ```
+
+4. **Add Navigation**
+   ```kotlin
+   // From another activity/fragment
+   val intent = Intent(context, MyFeatureActivity::class.java)
+   startActivity(intent)
+   ```
 
 ### Adding a New API Endpoint
 
-1. Add method to `ApiInterface.kt` with Retrofit annotations (`@GET`, `@POST`, etc.)
-2. Call from repository implementation using `withContext(Dispatchers.IO)`
+1. **Update ApiInterface**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/data/ApiInterface.kt
+   @POST("api/endpoint")
+   suspend fun postData(
+       @Body data: JsonObject,
+       @Header("Authorization") auth: String
+   ): Response<JsonObject>
+   ```
+
+2. **Use in Repository**
+   ```kotlin
+   override suspend fun submitData(data: MyData): Result<Unit> = withContext(Dispatchers.IO) {
+       try {
+           val jsonData = convertToJson(data)
+           val response = apiInterface.postData(jsonData, getAuthHeader())
+           if (response.isSuccessful) {
+               Result.success(Unit)
+           } else {
+               Result.failure(Exception("API error: ${response.code()}"))
+           }
+       } catch (e: Exception) {
+           Result.failure(e)
+       }
+   }
+   ```
 
 ### Implementing Offline Sync
 
-1. Download: Fetch from API, save to Realm via `executeTransaction`
-2. Upload: Query unsynced items from Realm, POST to server, mark as synced
+1. **Download Data**
+   ```kotlin
+   suspend fun syncFromServer() {
+       val response = apiInterface.getData()
+       if (response.isSuccessful) {
+           response.body()?.let { data ->
+               saveToRealm(data)
+           }
+       }
+   }
+
+   private fun saveToRealm(data: List<JsonObject>) {
+       mRealm.executeTransaction { realm ->
+           data.forEach { item ->
+               RealmMyModel.insert(realm, item)
+           }
+       }
+   }
+   ```
+
+2. **Upload Changes**
+   ```kotlin
+   suspend fun syncToServer() {
+       val pendingChanges = mRealm.where(RealmMyModel::class.java)
+           .equalTo("synced", false)
+           .findAll()
+
+       pendingChanges.forEach { item ->
+           val response = apiInterface.postData(item.toJson())
+           if (response.isSuccessful) {
+               markAsSynced(item._id)
+           }
+       }
+   }
+   ```
 
 ### Adding Background Work
 
-1. Create `CoroutineWorker` subclass in `services/`
-2. Schedule via `WorkManager.enqueueUniquePeriodicWork()` with appropriate constraints
-3. Use `EntryPointAccessors` for Hilt dependency injection in workers
+1. **Create Worker**
+   ```kotlin
+   // app/src/main/java/org/ole/planet/myplanet/services/MyWorker.kt
+   class MyWorker(
+       context: Context,
+       params: WorkerParameters
+   ) : CoroutineWorker(context, params) {
+
+       override suspend fun doWork(): Result {
+           return try {
+               // Perform background task
+               Result.success()
+           } catch (e: Exception) {
+               Result.retry()
+           }
+       }
+   }
+   ```
+
+2. **Schedule Work**
+   ```kotlin
+   val workRequest = PeriodicWorkRequestBuilder<MyWorker>(
+       1, TimeUnit.HOURS
+   ).setConstraints(
+       Constraints.Builder()
+           .setRequiredNetworkType(NetworkType.CONNECTED)
+           .build()
+   ).build()
+
+   WorkManager.getInstance(context)
+       .enqueueUniquePeriodicWork(
+           "MyWork",
+           ExistingPeriodicWorkPolicy.REPLACE,
+           workRequest
+       )
+   ```
 
 ---
 
 ## Testing Guidelines
 
-- No formal testing framework currently configured; manual testing on devices/emulators
-- When making changes, verify: app builds (`./gradlew assembleDefaultDebug`), offline mode works, sync works, UI renders on different screen sizes, dark theme works, translations display correctly, permissions requested appropriately
+### Current State
+- No formal testing framework currently configured
+- Manual testing on devices/emulators
+
+### Recommended Testing Approach
+
+**Unit Testing:**
+```kotlin
+// Add to app/build.gradle
+testImplementation 'junit:junit:4.13.2'
+testImplementation 'org.mockito:mockito-core:5.3.1'
+testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
+
+// Example unit test
+class CourseRepositoryTest {
+    @Test
+    fun `syncCourses returns success when API call succeeds`() = runTest {
+        // Arrange
+        val mockApi = mock(ApiInterface::class.java)
+        val repository = CourseRepositoryImpl(mockApi, mockDatabase)
+
+        // Act
+        val result = repository.syncCourses()
+
+        // Assert
+        assertTrue(result.isSuccess)
+    }
+}
+```
+
+**Instrumented Testing:**
+```kotlin
+// Add to app/build.gradle
+androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+// Example instrumented test
+@RunWith(AndroidJUnit4::class)
+class LoginActivityTest {
+    @Test
+    fun loginButton_clickWithValidCredentials_navigatesToDashboard() {
+        // Test UI interaction
+    }
+}
+```
+
+### Manual Testing Checklist
+
+When making changes, verify:
+- [ ] App builds successfully
+- [ ] Feature works in offline mode
+- [ ] Synchronization works correctly
+- [ ] UI renders on different screen sizes
+- [ ] Dark theme works correctly (if applicable)
+- [ ] All supported languages display correctly
+- [ ] Permissions are requested appropriately
+- [ ] Background sync continues to work
 
 ---
 
 ## Security Considerations
 
-- **Never hardcode** API keys, passwords, server URLs, or credentials. Use `gradle.properties` (gitignored) and access via `BuildConfig`
-- **Network security config**: `app/src/main/res/xml/network_security_config.xml`. Prefer HTTPS
-- **Encryption**: Use `EncryptedSharedPreferences` for sensitive data, `Sha256Utils` for password hashing (Tink library)
-- **Runtime permissions**: Check with `ContextCompat.checkSelfPermission`, request via `ActivityCompat.requestPermissions`
-- **ProGuard/R8**: Currently `minifyEnabled = false` for both debug and release
+### Sensitive Data Handling
+
+**Never hardcode:**
+- API keys
+- Passwords
+- Server URLs (use gradle.properties)
+- User credentials
+
+**Use gradle.properties for configuration:**
+```properties
+# gradle.properties (gitignored)
+myplanet.server.url=https://example.org
+myplanet.server.pin=1234
+```
+
+**Access in code:**
+```kotlin
+val serverUrl = BuildConfig.SERVER_URL
+```
+
+### Network Security
+
+**Network Security Config:**
+- Location: `app/src/main/res/xml/network_security_config.xml`
+- Configure trusted certificates
+- Set cleartext traffic policies
+
+**HTTPS Enforcement:**
+```kotlin
+// Prefer HTTPS URLs
+val baseUrl = "https://example.org/"
+
+// Validate URLs
+if (!url.startsWith("https://")) {
+    throw SecurityException("Only HTTPS URLs allowed")
+}
+```
+
+### Data Encryption
+
+**Encrypted SharedPreferences:**
+```kotlin
+val encryptedPrefs = EncryptedSharedPreferences.create(
+    context,
+    "secure_prefs",
+    masterKey,
+    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+)
+```
+
+**Password Hashing:**
+```kotlin
+// Use PBKDF2 for password hashing
+val hashedPassword = Sha256Utils.hash(password)
+```
+
+### Permissions
+
+**Request at Runtime:**
+```kotlin
+// Check permission
+if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+    != PackageManager.PERMISSION_GRANTED) {
+
+    // Request permission
+    ActivityCompat.requestPermissions(
+        this,
+        arrayOf(Manifest.permission.CAMERA),
+        REQUEST_CAMERA
+    )
+}
+```
+
+**Declare in Manifest:**
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+```
+
+### ProGuard/R8
+
+**Current state:** `minifyEnabled` is `false` for both debug and release builds. If enabling for release:
+```gradle
+buildTypes {
+    release {
+        minifyEnabled true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+}
+```
 
 ---
 
 ## Troubleshooting
 
-- **Gradle sync failed**: `./gradlew clean && ./gradlew build --refresh-dependencies`
-- **KAPT/KSP errors**: `./gradlew clean && rm -rf .gradle/ && ./gradlew build`
-- **Realm migration errors**: Increment schema version or use `deleteRealmIfMigrationNeeded()` (dev only)
-- **Hilt not found**: Ensure `@AndroidEntryPoint`, verify module provides dependency, check injection point
-- **Network requests fail**: Check `NetworkUtils.isNetworkAvailable()`, add `HttpLoggingInterceptor`
-- **Realm database locked**: Ensure realm is closed in `onDestroy()`
-- **OOM with images**: Use `Glide.with(context).load(url).override(800, 600)`
-- **Git push 403**: Branch must start with `claude/` and end with session ID; use `-u` flag
-- **Merge conflicts**: `git fetch origin && git rebase origin/master`, resolve, `git add . && git rebase --continue`
+### Common Build Issues
+
+**Issue: Gradle sync failed**
+```bash
+# Solution: Clean and rebuild
+./gradlew clean
+./gradlew build --refresh-dependencies
+```
+
+**Issue: KAPT/KSP annotation processing errors**
+```bash
+# Solution: Clean build cache
+./gradlew clean
+rm -rf .gradle/
+./gradlew build
+```
+
+**Issue: Realm schema migration errors**
+```kotlin
+// Solution: Increment schema version or delete and rebuild
+val config = RealmConfiguration.Builder()
+    .deleteRealmIfMigrationNeeded()  // Development only!
+    .build()
+```
+
+**Issue: Hilt dependency not found**
+- Ensure `@AndroidEntryPoint` annotation is present
+- Verify module provides the dependency
+- Check injection point is correct (constructor vs field)
+
+### Runtime Issues
+
+**Issue: Network requests fail**
+```kotlin
+// Debug: Check network state
+val isConnected = NetworkUtils.isNetworkAvailable(context)
+Log.d(TAG, "Network available: $isConnected")
+
+// Debug: Log request/response
+val loggingInterceptor = HttpLoggingInterceptor().apply {
+    level = HttpLoggingInterceptor.Level.BODY
+}
+```
+
+**Issue: Realm database locked**
+```kotlin
+// Solution: Ensure realm is closed properly
+override fun onDestroy() {
+    super.onDestroy()
+    if (::mRealm.isInitialized && !mRealm.isClosed) {
+        mRealm.close()
+    }
+}
+```
+
+**Issue: Out of memory with images**
+```kotlin
+// Solution: Use Glide with proper sizing
+Glide.with(context)
+    .load(imageUrl)
+    .override(800, 600)  // Limit size
+    .into(imageView)
+```
+
+### Git Issues
+
+**Issue: Push fails with 403**
+- Ensure branch name starts with `claude/`
+- Ensure branch name ends with matching session ID
+- Use `git push -u origin <branch-name>`
+
+**Issue: Merge conflicts**
+```bash
+# Solution: Fetch latest and rebase
+git fetch origin
+git rebase origin/master
+
+# Resolve conflicts in files
+# Then:
+git add .
+git rebase --continue
+```
+
+### CI/CD Issues
+
+**Issue: Build workflow fails**
+- Check Gradle version compatibility
+- Verify all dependencies are accessible
+- Review workflow logs in GitHub Actions
+
+**Issue: Release workflow fails**
+- Ensure signing credentials are configured
+- Verify Play Store API access
+- Check bundle/APK generation
 
 ---
 
@@ -893,14 +1272,14 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~449 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~448 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1022 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~883 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1058 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~770 |
 | Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~309 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1243 |
-| Build configuration | `app/build.gradle` | ~210 |
-| Dependency versions | `gradle/libs.versions.toml` | ~105 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1097 |
+| Build configuration | `app/build.gradle` | ~250 |
+| Dependency versions | `gradle/libs.versions.toml` | ~200 |
 
 ---
 
@@ -926,7 +1305,6 @@ val color = ContextCompat.getColor(context, R.color.primary)
 ./gradlew build --scan                 # Build with build scan
 ./gradlew build --stacktrace          # Build with stack traces
 ./gradlew build --info                # Build with info logging
-./gradlew assembleDefaultDebug --configuration-cache-problems=warn  # Warn on cache issues
 
 # Git Commands
 git status                             # Check current state
@@ -938,16 +1316,62 @@ git push -u origin claude/feature-id   # Push to remote
 
 ---
 
-## Key Principles
+## Codebase Inventory Summary
 
-1. **Layered architecture** with clear separation of concerns
-2. **Hilt DI** for all dependency management
-3. **Offline-first** - all features should work without connectivity
-4. **Follow existing patterns** - base classes, repositories, naming conventions
-5. **Security first** - never hardcode secrets, use encryption
+### Source Files (394 total Kotlin files)
+
+| Component | Files | Purpose |
+|-----------|-------|---------|
+| `model/` | 67 | Realm database models (40) + DTOs (27) |
+| `repository/` | 38 | Data access abstraction (19 domains + utilities) |
+| `ui/` | 147 | User interface across 28 feature packages |
+| `services/` | 37 | Background tasks & managers (20 root + 3 sub-packages) |
+| `di/` | 16 | Dependency injection (5 modules + 11 entry points) |
+| `base/` | 12 | Reusable base classes |
+| `callback/` | 34 | Event listeners and interfaces |
+| `data/` | 8 | Data services, API, auth |
+| `utils/` | 39 | Helper utilities |
+| Root | 1 | MainApplication.kt |
+
+### Resource Files
+
+| Category | Count |
+|----------|-------|
+| Layout files (main) | 169 |
+| Layout files (all variants) | 181 |
+| Drawable files | 129 |
+| Translation languages | 5 (ar, es, fr, ne, so) |
+| String resources | ~1,194 lines |
+| Menu files | 2 |
+| XML config files | 3 |
+
+### AndroidManifest Permissions (23 total)
+
+**Network**: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, CHANGE_NETWORK_STATE
+**Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK
+**System**: PACKAGE_USAGE_STATS, REQUEST_INSTALL_PACKAGES (default flavor only)
+**Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
+**Other**: BLUETOOTH, FOREGROUND_SERVICE_DATA_SYNC, SYSTEM_ALERT_WINDOW
 
 ---
 
-**Last Updated**: 2026-03-11
-**Version**: 0.48.54
+## Conclusion
+
+This document provides a comprehensive guide for AI assistants working on myPlanet. Key principles:
+
+1. **Understand the architecture** - Layered architecture with clear separation
+2. **Follow conventions** - Consistent naming, patterns, and structure
+3. **Use dependency injection** - Hilt for all dependency management
+4. **Think offline-first** - All features should work offline when possible
+5. **Leverage existing patterns** - Base classes, repositories, utilities
+6. **Test thoroughly** - Build, offline mode, sync, multiple screen sizes
+7. **Document changes** - Clear commit messages and code comments
+8. **Security first** - Never hardcode secrets, use encryption
+
+For questions or clarifications, refer to the Discord community or GitHub issues.
+
+---
+
+**Last Updated**: 2026-02-10
+**Version**: 0.46.0
 **Maintainer**: Open Learning Exchange

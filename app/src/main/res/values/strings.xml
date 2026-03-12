@@ -1202,27 +1202,5 @@
     <string name="select_open_with">Open</string>
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
-    <string name="add_personal">Add personal note</string>
-    <string name="add_survey">Add survey</string>
-    <string name="add_finance_entry">Add transaction</string>
-    <string name="add_resource_to_team">Add resource to team</string>
-    <string name="rewind">Rewind</string>
-    <string name="pause">Pause</string>
-    <string name="fast_forward">Fast forward</string>
-    <string name="next_question">Next question</string>
-    <string name="more_options">More options</string>
-    <string name="upload_item">Upload</string>
-    <string name="join_or_leave_team">Join or leave team</string>
-    <string name="team_feedback">Team feedback</string>
-    <string name="close_dialog">Close dialog</string>
-    <string name="go_back">Go back</string>
-    <string name="audio_play_pause">Play or pause audio</string>
-    <string name="resource_status">Resource status</string>
-    <string name="download_status">Download status</string>
-    <string name="sort_by_date_column">Sort by date</string>
-    <string name="user_avatar">User avatar</string>
-    <string name="send_diagnosis">Add diagnosis</string>
-    <string name="delete_item">Delete</string>
-    <string name="toggle_visibility">Toggle visibility</string>
 
 </resources>

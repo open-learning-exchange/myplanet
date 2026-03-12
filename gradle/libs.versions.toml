@@ -12,7 +12,7 @@ annotation = "1.9.1"
 appcompat = "1.7.1"
 cardview = "1.0.0"
 constraintlayout = "2.2.1"
-coreKtx = "1.18.0"
+coreKtx = "1.17.0"
 preferenceKtx = "1.2.1"
 recyclerview = "1.4.0"
 securityCrypto = "1.1.0"
@@ -39,10 +39,6 @@ kotlinxCoroutinesAndroid = "1.10.2"
 androidGifDrawable = "1.2.31"
 webkit = "1.15.0"
 tink = "1.20.0"
-junit = "4.13.2"
-mockk = "1.14.9"
-robolectric = "4.16.1"
-testcore = "1.7.0"
 
 [plugins]
 application = { id = "com.android.application" }
@@ -106,8 +102,3 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
-junit = { module = "junit:junit", version.ref = "junit" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
-testcore = { module = "androidx.test:core", version.ref = "testcore" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesAndroid" }

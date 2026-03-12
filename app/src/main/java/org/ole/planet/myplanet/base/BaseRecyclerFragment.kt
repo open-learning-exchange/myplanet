@@ -84,11 +84,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            requireRealmInstance()
+            mRealm = databaseService.createManagedRealmInstance()
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
-            onAdapterReady(adapter)
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
@@ -102,8 +101,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             requireActivity().reportFullyDrawn()
         }
     }
-
-    protected open suspend fun onAdapterReady(adapter: RecyclerView.Adapter<*>) {}
 
     private fun initDeleteButton() {
         tvDelete?.let {
@@ -202,16 +199,42 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open suspend fun deleteSelected(deleteProgress: Boolean) {
+        val courseIds = mutableListOf<String>()
         val objectsToRemove = mutableListOf<RealmObject>()
 
         selectedItems?.forEach { item ->
             val `object` = item as RealmObject
             objectsToRemove.add(`object`)
+            if (`object` is RealmMyCourse) {
+                `object`.courseId?.let { courseIds.add(it) }
+            }
         }
 
         try {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
+            }
+
+            if (deleteProgress && courseIds.isNotEmpty()) {
+                val courseIdsArray = courseIds.toTypedArray()
+                mRealm.where(RealmCourseProgress::class.java)
+                    .`in`("courseId", courseIdsArray)
+                    .findAll()
+                    .deleteAllFromRealm()
+
+                val examList = mRealm.where(RealmStepExam::class.java)
+                    .`in`("courseId", courseIdsArray)
+                    .findAll()
+                val examIds = examList.mapNotNull { it.id }.toTypedArray()
+
+                if (examIds.isNotEmpty()) {
+                    mRealm.where(RealmSubmission::class.java)
+                        .`in`("parentId", examIds)
+                        .notEqualTo("type", "survey")
+                        .equalTo("uploaded", false)
+                        .findAll()
+                        .deleteAllFromRealm()
+                }
             }
 
             objectsToRemove.forEach { `object` ->
@@ -335,6 +358,33 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val lan = languages.isEmpty() || languages.contains(l.language)
         val med = mediums.isEmpty() || mediums.contains(l.mediaType)
         return sub && lev && lan && med
+    }
+
+    override fun onDestroy() {
+        cleanupRealm()
+        super.onDestroy()
+    }
+
+    private fun cleanupRealm() {
+        if (isRealmInitialized()) {
+            try {
+                mRealm.removeAllChangeListeners()
+
+                if (mRealm.isInTransaction) {
+                    try {
+                        mRealm.commitTransaction()
+                    } catch (_: Exception) {
+                        mRealm.cancelTransaction()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                if (!mRealm.isClosed) {
+                    mRealm.close()
+                }
+            }
+        }
     }
 
     override fun onDetach() {

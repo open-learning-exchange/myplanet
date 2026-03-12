@@ -50,7 +50,6 @@
                 android:layout_gravity="center"
                 android:layout_marginLeft="8dp"
                 android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/upload_item"
                 android:visibility="visible"
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_file_upload" />
@@ -61,7 +60,6 @@
                 android:layout_gravity="center"
                 android:layout_marginLeft="8dp"
                 android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/edit"
                 android:visibility="visible"
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_edit" />
@@ -73,7 +71,6 @@
                 android:layout_marginLeft="8dp"
                 android:layout_marginRight="8dp"
                 android:background="?attr/selectableItemBackground"
-                android:contentDescription="@string/delete_item"
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_delete" />
         </LinearLayout>
