@@ -215,10 +215,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     adapterCourses.setListener(this@CoursesFragment)
                     adapterCourses.setRatingChangeListener(this@CoursesFragment)
                 }
-                adapterCourses.updateData(courses, map, progressMap)
-                adapterCourses.submitList(courses)
+                adapterCourses.setRatingMap(map ?: HashMap()); adapterCourses.setProgressMap(progressMap)
+                adapterCourses.submitList(courses) {
+                    if (isAdded && view != null && ::selectAll.isInitialized) {
+                        adapterCourses.cleanupSelectedItems()
+                        checkList()
+                    }
+                }
                 recyclerView.adapter = adapterCourses
-                checkList()
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -226,7 +230,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun createOrUpdateAdapter(): RecyclerView.Adapter<*> {
         if (userModel == null) {
             userModel = userSessionManager.getUserModel()
         }
@@ -273,9 +277,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             adapterCourses.setListener(this@CoursesFragment)
             adapterCourses.setRatingChangeListener(this@CoursesFragment)
         }
-        adapterCourses.updateData(courses, map, progressMap)
+        adapterCourses.setRatingMap(map ?: HashMap()); adapterCourses.setProgressMap(progressMap)
         adapterCourses.submitList(courses) {
             if (isAdded && view != null && ::selectAll.isInitialized) {
+                adapterCourses.cleanupSelectedItems()
                 checkList()
             }
         }
@@ -577,7 +582,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 Triple(finalCourses, ratings, progress)
             }
             val courses = filteredCourses.map { it.toCourse() }
-            adapterCourses.updateData(courses, map, progressMap)
+            adapterCourses.setRatingMap(map ?: HashMap()); adapterCourses.setProgressMap(progressMap)
+            adapterCourses.submitList(courses) {
+                adapterCourses.cleanupSelectedItems()
+                checkList()
+            }
             scrollToTop()
             showNoData(tvMessage, filteredCourses.size, "courses")
         }
@@ -803,7 +812,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     }
                     val courses = courseList.map { it.toCourse() }
-                    adapterCourses.updateData(courses, map, progressMap)
+                    adapterCourses.setRatingMap(map ?: HashMap()); adapterCourses.setProgressMap(progressMap)
+                    adapterCourses.submitList(courses) {
+                        adapterCourses.cleanupSelectedItems()
+                        checkList()
+                    }
                 }
             } else {
                 loadDataAsync()

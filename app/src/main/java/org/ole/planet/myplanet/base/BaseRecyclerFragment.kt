@@ -48,7 +48,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun createOrUpdateAdapter(): RecyclerView.Adapter<*>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,7 +86,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         viewLifecycleOwner.lifecycleScope.launch {
             mRealm = databaseService.createManagedRealmInstance()
             model = profileDbHandler.getUserModel()
-            val adapter = getAdapter()
+            val adapter = createOrUpdateAdapter()
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
@@ -115,7 +115,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onRatingChanged() {
         viewLifecycleOwner.lifecycleScope.launch {
-            getAdapter()
+            createOrUpdateAdapter()
         }
     }
 
@@ -170,7 +170,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 mRealm.refresh()
             }
 
-            val newAdapter = getAdapter()
+            val newAdapter = createOrUpdateAdapter()
             if (recyclerView.adapter != newAdapter) {
                 recyclerView.adapter = newAdapter
             }

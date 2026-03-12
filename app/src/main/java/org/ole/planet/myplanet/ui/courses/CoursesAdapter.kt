@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class CoursesAdapter(
     private val context: Context,
-    private val map: HashMap<String?, JsonObject>,
+    private var map: HashMap<String?, JsonObject>,
     private val isGuest: Boolean,
     private val tagsProvider: suspend (String) -> List<Tag>,
     var isMyCourseLib: Boolean = false
@@ -155,6 +155,10 @@ class CoursesAdapter(
         submitList(sortedList) {
             onComplete?.invoke()
         }
+    }
+
+    fun setRatingMap(map: HashMap<String?, JsonObject>) {
+        this.map = map
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
@@ -315,6 +319,21 @@ class CoursesAdapter(
     fun cancelAllJobs() {
         activeJobs.values.forEach { it.cancel() }
         activeJobs.clear()
+    }
+
+    fun cleanupSelectedItems() {
+        val iterator = selectedItems.iterator()
+        var changed = false
+        while (iterator.hasNext()) {
+            val item = iterator.next()
+            if (!currentList.contains(item)) {
+                iterator.remove()
+                changed = true
+            }
+        }
+        if (changed) {
+            listener?.onSelectedListChange(selectedItems)
+        }
     }
 
     fun areAllSelected(): Boolean {

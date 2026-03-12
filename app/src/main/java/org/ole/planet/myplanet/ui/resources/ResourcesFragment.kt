@@ -193,7 +193,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
                 if (::adapterLibrary.isInitialized) {
                     adapterLibrary.setLibraryList(filteredLibraryList.map { it.toResourceItem() })
-                    adapterLibrary.setRatingMap(map!!)
+                    adapterLibrary.setRatingMap(map ?: HashMap())
                     adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
                 }
                 checkList(filteredLibraryList.size)
@@ -225,7 +225,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return TagItem(id = id, name = name)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun createOrUpdateAdapter(): RecyclerView.Adapter<*> {
         allLibraryItems = if (isMyCourseLib) {
             resourcesRepository.getMyLibrary(model?.id)
         } else {
@@ -240,13 +240,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         val user = profileDbHandler.getUserModel()
         if (!::adapterLibrary.isInitialized) {
-            adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
+            adapterLibrary = ResourcesAdapter(requireActivity(), map ?: HashMap(), user?.isGuest() == true, emptyMap(), emptySet())
             adapterLibrary.setRatingChangeListener(this)
             adapterLibrary.setListener(this)
         }
 
         val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
-        adapterLibrary.setRatingMap(map!!)
+        adapterLibrary.setRatingMap(map ?: HashMap())
         adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
         adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() })
 

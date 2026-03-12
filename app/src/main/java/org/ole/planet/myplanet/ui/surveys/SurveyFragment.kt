@@ -72,7 +72,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewModel.adoptSurvey(surveyId)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun createOrUpdateAdapter(): RecyclerView.Adapter<*> {
         adapterMutex.withLock {
             if (adapter == null) {
                 val userProfileModel = profileDbHandler.getUserModel()
@@ -105,7 +105,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         }
         binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
         viewLifecycleOwner.lifecycleScope.launch {
-            recyclerView.adapter = getAdapter()
+            recyclerView.adapter = createOrUpdateAdapter()
         }
         setupRecyclerView()
         setupListeners()
@@ -188,7 +188,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.surveys.collect { surveys ->
-                        (getAdapter() as SurveysAdapter).submitList(surveys) {
+                        (createOrUpdateAdapter() as SurveysAdapter).submitList(surveys) {
                             recyclerView.scrollToPosition(0)
                             updateUIState()
                         }
@@ -234,7 +234,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
 
     private fun updateUIState() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val itemCount = getAdapter().itemCount
+            val itemCount = createOrUpdateAdapter().itemCount
             _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
             showNoData(tvMessage, itemCount, "survey")
         }

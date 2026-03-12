@@ -45,7 +45,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return view
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun createOrUpdateAdapter(): RecyclerView.Adapter<*> {
         if (!::lifeAdapter.isInitialized) {
             lifeAdapter = LifeAdapter(requireContext(), this,
                 visibilityCallback = { myLife, isVisible ->
