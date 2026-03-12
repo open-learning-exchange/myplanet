@@ -314,18 +314,19 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
             .create()
 
+        val dialog = surveyListDialog ?: return
         val adapter = DashboardSurveysAdapter({ position ->
             val selectedSurvey = pendingSurveys[position]
             SubmissionsAdapter.openSurvey(homeItemClickListener, selectedSurvey.id, true, false, "")
-        }, surveyListDialog!!)
+        }, dialog)
         recyclerView.adapter = adapter
         adapter.submitList(surveyTitles)
-        surveyListDialog?.show()
-        surveyListDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
+        dialog.show()
+        dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
 
-        surveyListDialog?.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
-            showRemindLaterDialog(pendingSurveys, surveyListDialog!!)
-            if (dismissOnNeutral) surveyListDialog?.dismiss()
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
+            showRemindLaterDialog(pendingSurveys, dialog)
+            if (dismissOnNeutral) dialog.dismiss()
         }
     }
 

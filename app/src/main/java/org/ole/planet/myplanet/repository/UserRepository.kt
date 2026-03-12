@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.data.api.ApiInterface
 import io.realm.Sort
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
@@ -94,4 +95,9 @@ interface UserRepository {
         references: JsonArray
     )
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
+
+    suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean
+    suspend fun uploadNewUser(model: RealmUser)
+    suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject)
+    fun replacedUrl(model: RealmUser): String
 }
