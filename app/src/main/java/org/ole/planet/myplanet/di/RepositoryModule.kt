@@ -108,6 +108,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindRetryRepository(impl: org.ole.planet.myplanet.repository.retry.RetryRepositoryImpl): org.ole.planet.myplanet.repository.retry.RetryRepository
+
+    @Binds
+    @Singleton
     abstract fun bindSubmissionsRepository(impl: SubmissionsRepositoryImpl): SubmissionsRepository
 
     @Binds
@@ -129,10 +133,4 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
-
-
-    @Binds
-    @Singleton
-    abstract fun bindRetryRepository(impl: org.ole.planet.myplanet.repository.retry.RetryRepositoryImpl): org.ole.planet.myplanet.repository.retry.RetryRepository
-
 }
