@@ -145,18 +145,20 @@ class UserRepositoryImpl @Inject constructor(
         if (jsonDoc == null) return null
 
         var userId: String? = null
-        executeTransaction { transactionRealm ->
-            val managedUser = populateUsersTable(jsonDoc, transactionRealm, settings)
-            if (managedUser != null) {
-                userId = managedUser.id
-                if (key != null || iv != null) {
-                    key?.let { managedUser.key = it }
-                    iv?.let { managedUser.iv = it }
+        withRealm { realm ->
+            val managedUser = populateUsersTable(jsonDoc, realm, settings)
+            userId = managedUser?.id
+        }
+
+        if (userId != null && (key != null || iv != null)) {
+            executeTransaction { transactionRealm ->
+                val userToUpdate = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+                userToUpdate?.let { user ->
+                    key?.let { user.key = it }
+                    iv?.let { user.iv = it }
                 }
             }
         }
-
-        if (userId == null) return null
 
         return withRealm { realm ->
             realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()?.let { realm.copyFromRealm(it) }
