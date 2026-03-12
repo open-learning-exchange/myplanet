@@ -331,12 +331,17 @@ class CoursesRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
+            val userSubmissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "exam")
+                .findAll()
+
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
-                getExamObject(realm, exams, ob, userId, questionsByExamId)
+                getExamObject(realm, exams, ob, questionsByExamId, userSubmissions)
                 array.add(ob)
             }
             org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
@@ -347,17 +352,13 @@ class CoursesRepositoryImpl @Inject constructor(
         realm: io.realm.Realm,
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
-        userId: String?,
-        questionsByExamId: Map<String?, List<RealmExamQuestion>>
+        questionsByExamId: Map<String?, List<RealmExamQuestion>>,
+        userSubmissions: List<org.ole.planet.myplanet.model.RealmSubmission>
     ) {
         val submissionsList = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
         exams.forEach { exam ->
             exam.id?.let { examId ->
-                val submissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .contains("parentId", examId)
-                    .equalTo("type", "exam")
-                    .findAll()
+                val submissions = userSubmissions.filter { it.parentId?.contains(examId) == true }
                 submissionsList.addAll(submissions)
             }
         }
