@@ -440,6 +440,11 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String) {
+        courseIds.forEach { courseId -> leaveCourse(courseId, userId) }
+    }
+
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
     }

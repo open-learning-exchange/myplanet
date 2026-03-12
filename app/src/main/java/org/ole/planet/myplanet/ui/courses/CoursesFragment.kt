@@ -666,9 +666,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (deleteProgress) {
                     coursesRepository.removeCoursesAndProgress(courseIds, userId)
                 } else {
-                    courseIds.forEach { courseId ->
-                        coursesRepository.leaveCourse(courseId, userId)
-                    }
+                    coursesRepository.removeCoursesFromShelf(courseIds, userId)
                 }
             }
         }
