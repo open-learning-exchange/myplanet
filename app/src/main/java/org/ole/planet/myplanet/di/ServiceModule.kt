@@ -97,8 +97,9 @@ object ServiceModule {
         @ApplicationContext context: Context,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+        tagsRepository: org.ole.planet.myplanet.repository.TagsRepository
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository, feedbackRepository, sharedPrefManager)
+        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository, feedbackRepository, sharedPrefManager, tagsRepository)
     }
 }

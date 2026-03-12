@@ -52,7 +52,8 @@ class TransactionSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -306,7 +307,7 @@ class TransactionSyncManager @Inject constructor(
         when (table) {
             "exams" -> insertCourseStepsExams("", "", jsonDoc, mRealm)
             "tablet_users" -> populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
-            "tags" -> RealmTag.insert(mRealm, jsonDoc)
+            "tags" -> tagsRepository.insertFromJson(mRealm, jsonDoc)
             "login_activities" -> RealmOfflineActivity.insert(mRealm, jsonDoc)
             "ratings" -> RealmRating.insert(mRealm, jsonDoc)
             "submissions" -> RealmSubmission.insert(mRealm, jsonDoc)

@@ -8,4 +8,6 @@ interface TagsRepository {
     suspend fun getTagsForResource(resourceId: String): List<RealmTag>
     suspend fun getTagsForCourse(courseId: String): List<RealmTag>
     suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>>
+    fun insertFromJson(mRealm: io.realm.Realm, act: com.google.gson.JsonObject)
+    fun getTagsArray(tags: List<RealmTag>): com.google.gson.JsonArray
 }

@@ -247,7 +247,7 @@ class CoursesRepositoryImpl @Inject constructor(
             activity.type = "courses"
             val filter = com.google.gson.JsonObject()
 
-            filter.add("tags", RealmTag.getTagsArray(tags))
+            filter.add("tags", tagsRepository.getTagsArray(tags))
             filter.addProperty("doc.gradeLevel", grade)
             filter.addProperty("doc.subjectLevel", subject)
             activity.filter = JsonUtils.gson.toJson(filter)
