@@ -20,6 +20,7 @@
             android:layout_width="@dimen/_60dp"
             android:layout_height="@dimen/_60dp"
             android:layout_gravity="center"
+            android:contentDescription="@null"
             app:srcCompat="@drawable/ic_references"
             app:tint="@color/daynight_textColor" />
         <TextView
