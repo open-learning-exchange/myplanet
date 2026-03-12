@@ -20,8 +20,9 @@ class LeadersFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentMembersBinding.inflate(inflater, container, false)
-        return binding!!.root
+        val inflated = FragmentMembersBinding.inflate(inflater, container, false)
+        binding = inflated
+        return inflated.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
