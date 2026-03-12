@@ -19,6 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:contentDescription="@string/record_audio"
         app:elevation="0dp"
         app:srcCompat="@drawable/ic_mic" />
 </LinearLayout>
