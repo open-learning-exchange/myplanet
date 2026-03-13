@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -70,7 +71,8 @@ class UploadManager @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val dispatcherProvider: DispatcherProvider
 ) : FileUploader() {
 
     private suspend fun uploadNewsActivities() {
@@ -151,7 +153,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadExamResult(listener: OnSuccessListener) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 val result = uploadCoordinator.upload(uploadConfigs.ExamResults)
 
@@ -232,7 +234,7 @@ class UploadManager @Inject constructor(
             return
         }
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
 
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
@@ -318,7 +320,7 @@ class UploadManager @Inject constructor(
                 return
             }
 
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                     batch.forEach { resourceData ->
                         try {
@@ -383,7 +385,7 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
-            return withContext(Dispatchers.IO) {
+            return withContext(dispatcherProvider.io) {
                 try {
                     val response = apiInterface.postDoc(
                         UrlUtils.header, "application/json",
@@ -453,7 +455,7 @@ class UploadManager @Inject constructor(
 
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
@@ -713,7 +715,7 @@ class UploadManager @Inject constructor(
             val imagesArray: com.google.gson.JsonArray
         )
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUpdates = mutableListOf<NewsUpdateData>()
                 batch.forEach { news ->
