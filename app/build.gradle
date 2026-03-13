@@ -207,3 +207,9 @@ dependencies {
     implementation(libs.tink.android)
     implementation(libs.webkit)
 }
+
+dependencies {
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlinx.coroutines.test)
+}
