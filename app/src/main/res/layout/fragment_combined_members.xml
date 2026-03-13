@@ -25,13 +25,11 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_requests"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false" />
-
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
@@ -49,13 +47,11 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp"
             android:textStyle="bold" />
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_members"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false" />
-
         <TextView
             android:id="@+id/tv_nodata"
             android:layout_width="match_parent"
