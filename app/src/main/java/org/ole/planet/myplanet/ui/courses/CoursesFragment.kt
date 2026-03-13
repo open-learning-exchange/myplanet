@@ -620,33 +620,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        val realmCourses = list.mapNotNull { course ->
-            course?.let {
-                // Find managed RealmMyCourse or use a dummy one for addToMyList/deletion?
-                // For addToMyList, we need managed object if we want to add relation?
-                // Actually addToMyList just extracts IDs.
-                // But deleteSelected uses `mRealm.beginTransaction()`.
-                // And `deleteCourseProgress` uses `object.courseId`.
-                // `removeFromShelf`?
-                // `BaseRecyclerFragment.removeFromShelf` checks `object is RealmMyCourse`.
-                // And calls `coursesRepository.removeCourseFromShelf(courseId, userId)`.
-
-                // So I can create an unmanaged RealmMyCourse with just ID and Title.
-                // But safer to try finding it.
-                var rc = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", it.courseId).findFirst()
-                if (rc == null) {
-                    // Create unmanaged
-                    rc = RealmMyCourse()
-                    rc.courseId = it.courseId
-                    rc.courseTitle = it.courseTitle
-                    rc.isMyCourse = it.isMyCourse
+        viewLifecycleOwner.lifecycleScope.launch {
+            val realmCourses = list.mapNotNull { course ->
+                course?.let {
+                    var rc = coursesRepository.getCourseById(it.courseId)
+                    if (rc == null) {
+                        // Create unmanaged
+                        rc = RealmMyCourse()
+                        rc.courseId = it.courseId
+                        rc.courseTitle = it.courseTitle
+                        rc.isMyCourse = it.isMyCourse
+                    }
+                    rc
                 }
-                rc
-            }
-        }.toMutableList<RealmMyCourse?>()
-        selectedItems = realmCourses
-        changeButtonStatus()
-        hideButtons()
+            }.toMutableList<RealmMyCourse?>()
+            selectedItems = realmCourses
+            changeButtonStatus()
+            hideButtons()
+        }
     }
 
     override fun onTagClicked(tag: Tag) {
