@@ -8,6 +8,7 @@ plugins {
 android {
     compileSdk = 36
     defaultConfig {
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
@@ -158,6 +159,12 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
+    testImplementation(libs.test.junit)
+    androidTestImplementation(libs.test.junit)
+    androidTestImplementation(libs.test.androidx.test.ext.junit)
+    androidTestImplementation(libs.test.androidx.test.runner)
+    androidTestImplementation(libs.test.androidx.test.core)
+    androidTestImplementation(libs.test.kotlinx.coroutines.test)
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
