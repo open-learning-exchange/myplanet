@@ -207,3 +207,8 @@ dependencies {
     implementation(libs.tink.android)
     implementation(libs.webkit)
 }
+
+dependencies {
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+}
