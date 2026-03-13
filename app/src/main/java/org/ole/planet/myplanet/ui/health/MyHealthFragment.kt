@@ -264,30 +264,30 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
-            withContext(Dispatchers.Main) {
-                userModelList = users
-                adapter = HealthUsersAdapter { selected ->
-                    userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                    getHealthRecords(userId)
-                    dialog?.dismiss()
-                }
-                adapter.submitList(userModelList)
-                alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-                alertHealthListBinding?.btnAddMember?.setOnClickListener {
-                    startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-                }
+            val users = withContext(Dispatchers.IO) {
+                userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            }
+            userModelList = users
+            adapter = HealthUsersAdapter { selected ->
+                userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                getHealthRecords(userId)
+                dialog?.dismiss()
+            }
+            adapter.submitList(userModelList)
+            alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+            alertHealthListBinding?.btnAddMember?.setOnClickListener {
+                startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            }
 
-                alertHealthListBinding?.let { binding ->
-                    binding.list.layoutManager = LinearLayoutManager(requireContext())
-                    binding.list.adapter = adapter
-                    setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
-                    sortList(binding.spnSort, binding.list)
-                    dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                        .setTitle(getString(R.string.select_health_member)).setView(binding.root)
-                        .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-                    dialog?.show()
-                }
+            alertHealthListBinding?.let { binding ->
+                binding.list.layoutManager = LinearLayoutManager(requireContext())
+                binding.list.adapter = adapter
+                setTextWatcher(binding.etSearch, binding.btnAddMember, binding.list)
+                sortList(binding.spnSort, binding.list)
+                dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                    .setTitle(getString(R.string.select_health_member)).setView(binding.root)
+                    .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
+                dialog?.show()
             }
         }
     }
