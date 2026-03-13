@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
@@ -48,6 +49,7 @@ class TeamsRepositoryImpl @Inject constructor(
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider,
 ) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -987,7 +989,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private suspend fun uploadTeamActivities() {
         try {
             val apiInterface = client.create(ApiInterface::class.java)
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities(apiInterface)

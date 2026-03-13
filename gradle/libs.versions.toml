@@ -39,6 +39,9 @@ kotlinxCoroutinesAndroid = "1.10.2"
 androidGifDrawable = "1.2.31"
 webkit = "1.15.0"
 tink = "1.20.0"
+junit = "4.13.2"
+mockk = "1.13.10"
+coroutinesTest = "1.8.1"
 
 [plugins]
 application = { id = "com.android.application" }
@@ -102,3 +105,6 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
+junit = { module = "junit:junit", version.ref = "junit" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
