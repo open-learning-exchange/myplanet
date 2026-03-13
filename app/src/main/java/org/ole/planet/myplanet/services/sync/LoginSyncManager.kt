@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -26,6 +25,7 @@ class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val apiInterface: ApiInterface,
 ) {
 
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
@@ -37,8 +37,6 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 withContext(Dispatchers.Main) { listener.onSyncStarted() }
-
-                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
 
                 val authHeader = try {
                     "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
@@ -130,8 +128,6 @@ class LoginSyncManager @Inject constructor(
                 val selector = JsonObject()
                 selector.addProperty("isUserAdmin", true)
                 `object`.add("selector", selector)
-
-                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
 
                 val header = UrlUtils.header
                 if (header.isBlank()) {
