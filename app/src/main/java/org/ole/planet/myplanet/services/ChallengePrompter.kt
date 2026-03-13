@@ -8,10 +8,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.courses.CoursesProgressFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -21,11 +17,7 @@ class ChallengePrompter(
     private val activity: DashboardActivity,
     private val user: RealmUser?,
     private val sharedPrefManager: SharedPrefManager,
-    private val viewModel: DashboardViewModel,
-    private val progressRepository: ProgressRepository,
-    private val voicesRepository: VoicesRepository,
-    private val submissionsRepository: SubmissionsRepository,
-    private val coursesRepository: CoursesRepository
+    private val viewModel: DashboardViewModel
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -37,11 +29,11 @@ class ChallengePrompter(
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         activity.lifecycleScope.launch {
             try {
-                val courseData = progressRepository.fetchCourseData(user?.id)
+                val courseData = viewModel.fetchCourseData(user?.id)
 
-                val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, user?.id)
-                val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
-                val courseName = coursesRepository.getCourseTitleById(courseId)
+                val uniqueDates = viewModel.getCommunityVoiceDates(startTime, endTime, user?.id)
+                val allUniqueDates = viewModel.getCommunityVoiceDates(startTime, endTime, null)
+                val courseName = viewModel.getCourseTitleById(courseId)
                 val hasUnfinishedSurvey = hasPendingSurvey(courseId)
 
                 val progress = CoursesProgressFragment.getCourseProgress(courseData, courseId)
@@ -61,7 +53,7 @@ class ChallengePrompter(
                     val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                     var hasValidSync = false
                     if (prereqsMet) {
-                        hasValidSync = progressRepository.hasUserCompletedSync(user.id ?: "")
+                        hasValidSync = viewModel.hasUserCompletedSync(user.id ?: "")
                     }
                     challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey, hasValidSync)
                 }
@@ -72,9 +64,9 @@ class ChallengePrompter(
     }
 
     private suspend fun hasPendingSurvey(courseId: String): Boolean {
-        val surveys = submissionsRepository.getSurveysByCourseId(courseId)
+        val surveys = viewModel.getSurveysByCourseId(courseId)
         for (survey in surveys) {
-            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, user?.id, "survey")) {
+            if (!viewModel.hasSubmission(survey.id, survey.courseId, user?.id, "survey")) {
                 return true
             }
         }

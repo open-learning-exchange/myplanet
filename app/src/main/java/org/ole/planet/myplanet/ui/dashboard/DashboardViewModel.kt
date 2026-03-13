@@ -10,6 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -62,10 +65,21 @@ class DashboardViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
     private val activitiesRepository: ActivitiesRepository,
+    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _surveyNavigationEvent = MutableSharedFlow<String>()
+    val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
+
+    private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>()
+    val taskNavigationEvent: SharedFlow<Triple<String, String, String>> = _taskNavigationEvent.asSharedFlow()
+
+    private val _joinRequestNavigationEvent = MutableSharedFlow<String>()
+    val joinRequestNavigationEvent: SharedFlow<String> = _joinRequestNavigationEvent.asSharedFlow()
 
     private var userContentJob: Job? = null
 
@@ -190,6 +204,49 @@ class DashboardViewModel @Inject constructor(
             teamsRepository.getTasksFlow(userId).map {}
         )
     }
+
+    fun handleTaskNavigation(taskId: String) {
+        viewModelScope.launch {
+            val teamData = teamsRepository.getTaskTeamInfo(taskId)
+            if (teamData != null) {
+                _taskNavigationEvent.emit(teamData)
+            }
+        }
+    }
+
+    fun handleJoinRequestNavigation(requestId: String) {
+        viewModelScope.launch {
+            val teamId = teamsRepository.getJoinRequestTeamId(requestId)
+            if (teamId != null) {
+                _joinRequestNavigationEvent.emit(teamId)
+            }
+        }
+    }
+
+    suspend fun refreshNotifications() = notificationsRepository.refresh()
+
+    suspend fun markNotificationAsRead(notificationId: String, userId: String?) = notificationsRepository.markNotificationAsRead(notificationId, userId)
+
+    fun handleSurveyNavigation(surveyId: String) {
+        viewModelScope.launch {
+            val survey = surveysRepository.getSurvey(surveyId)
+            if (survey != null && survey.id != null) {
+                _surveyNavigationEvent.emit(survey.id!!)
+            }
+        }
+    }
+
+    suspend fun fetchCourseData(userId: String?) = progressRepository.fetchCourseData(userId)
+
+    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?) = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
+
+    suspend fun getCourseTitleById(courseId: String) = coursesRepository.getCourseTitleById(courseId)
+
+    suspend fun hasUserCompletedSync(userId: String) = progressRepository.hasUserCompletedSync(userId)
+
+    suspend fun getSurveysByCourseId(courseId: String) = submissionsRepository.getSurveysByCourseId(courseId)
+
+    suspend fun hasSubmission(id: String?, courseId: String?, userId: String?, type: String) = submissionsRepository.hasSubmission(id, courseId, userId, type)
 
     suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(dispatcherProvider.io) {
         var unreadCount = 0
