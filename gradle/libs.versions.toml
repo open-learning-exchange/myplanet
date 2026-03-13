@@ -1,4 +1,7 @@
 [versions]
+junit = "4.13.2"
+mockitoCore = "5.3.1"
+kotlinxCoroutinesTest = "1.10.2"
 gradle = "9.1.0"
 realm = "10.19.0"
 hilt = "2.59.2"
@@ -102,3 +105,7 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
+
+junit = { module = "junit:junit", version.ref = "junit" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
