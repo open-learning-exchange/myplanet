@@ -26,22 +26,21 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return emptyList()
         }
+        val meetupMembers = queryList(RealmMeetup::class.java) {
+            equalTo("meetupId", meetupId)
+            isNotEmpty("userId")
+        }
+        val memberIds = meetupMembers.mapNotNull { member ->
+            member.userId?.takeUnless { it.isBlank() }
+        }.distinct()
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
         return withRealmAsync { realm ->
-            val meetupMembers = realm.where(RealmMeetup::class.java)
-                .equalTo("meetupId", meetupId)
-                .isNotEmpty("userId")
+            val users = realm.where(RealmUser::class.java)
+                .`in`("id", memberIds.toTypedArray())
                 .findAll()
-            val memberIds = meetupMembers.mapNotNull { member ->
-                member.userId?.takeUnless { it.isBlank() }
-            }.distinct()
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                val users = realm.where(RealmUser::class.java)
-                    .`in`("id", memberIds.toTypedArray())
-                    .findAll()
-                realm.copyFromRealm(users)
-            }
+            realm.copyFromRealm(users)
         }
     }
 
@@ -49,20 +48,18 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return null
         }
+        val meetup = findByField(RealmMeetup::class.java, "meetupId", meetupId) ?: return null
+
+        val isJoined = !meetup.userId.isNullOrEmpty()
+        if (!isJoined && currentUserId.isNullOrEmpty()) {
+            return meetup
+        }
+
+        meetup.userId = if (isJoined) "" else currentUserId
         var updatedMeetup: RealmMeetup? = null
         executeTransaction { realm ->
-            val meetup = realm.where(RealmMeetup::class.java)
-                .equalTo("meetupId", meetupId)
-                .findFirst()
-                ?: return@executeTransaction
-
-            val isJoined = !meetup.userId.isNullOrEmpty()
-            if (!isJoined && currentUserId.isNullOrEmpty()) {
-                return@executeTransaction
-            }
-
-            meetup.userId = if (isJoined) "" else currentUserId
-            updatedMeetup = realm.copyFromRealm(meetup)
+            val managedMeetup = realm.copyToRealmOrUpdate(meetup)
+            updatedMeetup = realm.copyFromRealm(managedMeetup)
         }
         return updatedMeetup ?: getMeetupById(meetupId)
     }
