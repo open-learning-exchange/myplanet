@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -18,7 +19,10 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.utils.JsonUtils
 
-class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
+class ProgressRepositoryImpl @Inject constructor(
+    databaseService: DatabaseService,
+    private val dispatcherProvider: DispatcherProvider
+) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
@@ -38,7 +42,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         return map
     }
 
-    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(Dispatchers.IO) {
+    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }

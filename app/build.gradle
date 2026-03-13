@@ -206,4 +206,11 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
+
+    androidTestImplementation(libs.test.junit)
+    androidTestImplementation(libs.test.mockk)
+    androidTestImplementation(libs.test.mockk.android)
+    androidTestImplementation(libs.test.coroutines)
+    androidTestImplementation(libs.test.runner)
+    androidTestImplementation(libs.test.ext.junit)
 }
