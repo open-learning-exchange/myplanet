@@ -59,11 +59,15 @@ import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var databaseServiceProvider: Provider<DatabaseService>
@@ -148,6 +152,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
+            val app = context.applicationContext as MainApplication
             val entryPoint = EntryPointAccessors.fromApplication(context, ServerUrlMapperEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
@@ -164,7 +169,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 }
 
                 val url = URL(formattedUrl)
-                val responseCode = withContext(Dispatchers.IO) {
+                val responseCode = withContext(app.dispatcherProvider.io) {
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
@@ -222,7 +227,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
     private fun initApp() {
-        applicationScope.launch(Dispatchers.Default) {
+        applicationScope.launch(dispatcherProvider.default) {
             startListenNetworkState()
         }
     }
@@ -235,7 +240,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private suspend fun ensureApiClientInitialized() {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             EntryPointAccessors.fromApplication(
                 this@MainApplication,
                 ApiClientEntryPoint::class.java
@@ -265,7 +270,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private suspend fun setupAnrWatchdog() {
-        withContext(Dispatchers.Default) {
+        withContext(dispatcherProvider.default) {
             anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
                 override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                     applicationScope.launch {
@@ -278,7 +283,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private suspend fun scheduleWorkersOnStart() {
-        withContext(Dispatchers.Default) {
+        withContext(dispatcherProvider.default) {
             if (sharedPrefManager.getAutoSync() && sharedPrefManager.rawPreferences.contains("autoSyncInterval")) {
                 val syncInterval = sharedPrefManager.getAutoSyncInterval()
                 scheduleAutoSyncWork(syncInterval)
@@ -321,7 +326,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private suspend fun loadAndApplyTheme() {
         try {
-            val savedThemeMode = withContext(Dispatchers.IO) {
+            val savedThemeMode = withContext(dispatcherProvider.io) {
                 getCurrentThemeMode()
             }
             applyThemeMode(savedThemeMode)
@@ -331,7 +336,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private suspend fun observeNetworkForDownloads() {
-        withContext(Dispatchers.Default) {
+        withContext(dispatcherProvider.default) {
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
                     val serverUrl = sharedPrefManager.getServerUrl()
