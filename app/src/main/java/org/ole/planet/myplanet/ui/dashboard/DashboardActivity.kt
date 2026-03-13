@@ -56,14 +56,7 @@ import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.NotificationsRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -108,24 +101,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
-    lateinit var teamsRepository: TeamsRepository
-    @Inject
-    lateinit var progressRepository: ProgressRepository
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
-
-    @Inject
-    lateinit var voicesRepository: VoicesRepository
-    @Inject
     override lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var notificationsRepository: NotificationsRepository
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
     private val challengeManager: ChallengePrompter by lazy {
-        ChallengePrompter(this, user, prefData, dashboardViewModel, progressRepository, voicesRepository, submissionsRepository, coursesRepository)
+        ChallengePrompter(this, user, prefData, dashboardViewModel)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -194,13 +172,48 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun collectUiState() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dashboardViewModel.uiState.collect { state ->
-                    updateNotificationBadge(state.unreadNotifications) {
-                        openNotificationsList(user?.id ?: "")
+                launch {
+                    dashboardViewModel.uiState.collect { state ->
+                        updateNotificationBadge(state.unreadNotifications) {
+                            openNotificationsList(user?.id ?: "")
+                        }
+                        if (state.newNotifications.isNotEmpty()) {
+                            state.newNotifications.forEach { notificationManager.showNotification(it) }
+                            dashboardViewModel.clearNewNotifications()
+                        }
                     }
-                    if (state.newNotifications.isNotEmpty()) {
-                        state.newNotifications.forEach { notificationManager.showNotification(it) }
-                        dashboardViewModel.clearNewNotifications()
+                }
+
+                launch {
+                    dashboardViewModel.surveyNavigationEvent.collect { surveyId ->
+                        SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
+                    }
+                }
+
+                launch {
+                    dashboardViewModel.taskNavigationEvent.collect { teamData ->
+                        val f = TeamDetailFragment.newInstance(
+                            teamId = teamData.first,
+                            teamName = teamData.second,
+                            teamType = teamData.third,
+                            isMyTeam = true,
+                            navigateToPage = TasksPage
+                        )
+                        openCallFragment(f)
+                    }
+                }
+
+                launch {
+                    dashboardViewModel.joinRequestNavigationEvent.collect { teamId ->
+                        if (teamId.isNotEmpty()) {
+                            val f = TeamDetailFragment()
+                            val b = Bundle()
+                            b.putString("id", teamId)
+                            b.putBoolean("isMyTeam", true)
+                            b.putString("navigateToPage", JoinRequestsPage.id)
+                            f.arguments = b
+                            openCallFragment(f)
+                        }
                     }
                 }
             }
@@ -481,25 +494,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
     private suspend fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
-            val currentStepExam = surveysRepository.getSurvey(surveyId)
-            SubmissionsAdapter.openSurvey(this, currentStepExam?.id, false, false, "")
+            dashboardViewModel.handleSurveyNavigation(surveyId)
         }
     }
     
     private suspend fun handleTaskNavigation(taskId: String?) {
-        if (taskId == null) return
-
-        val teamData = teamsRepository.getTaskTeamInfo(taskId)
-
-        teamData?.let { (teamId, teamName, teamType) ->
-            val f = TeamDetailFragment.newInstance(
-                teamId = teamId,
-                teamName = teamName,
-                teamType = teamType,
-                isMyTeam = true,
-                navigateToPage = TasksPage
-            )
-            openCallFragment(f)
+        if (taskId != null) {
+            dashboardViewModel.handleTaskNavigation(taskId)
         }
     }
 
@@ -511,17 +512,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 requestId
             }
 
-            val teamId = teamsRepository.getJoinRequestTeamId(actualJoinRequestId)
-
-            if (teamId?.isNotEmpty() == true) {
-                val f = TeamDetailFragment()
-                val b = Bundle()
-                b.putString("id", teamId)
-                b.putBoolean("isMyTeam", true)
-                b.putString("navigateToPage", JoinRequestsPage.id)
-                f.arguments = b
-                openCallFragment(f)
-            }
+            dashboardViewModel.handleJoinRequestNavigation(actualJoinRequestId)
         }
     }
 
@@ -529,7 +520,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         var lastException: Exception? = null
         repeat(maxRetries) { attempt ->
             try {
-                notificationsRepository.refresh()
+                dashboardViewModel.refreshNotifications()
                 val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 withContext(Dispatchers.Main) {
                     onNotificationCountUpdated(unreadCount)
@@ -622,7 +613,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun markDatabaseNotificationAsRead(notificationId: String) {
         lifecycleScope.launch {
             try {
-                notificationsRepository.markNotificationAsRead(notificationId, user?.id)
+                dashboardViewModel.markNotificationAsRead(notificationId, user?.id)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -1029,7 +1020,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 lifecycleScope.launch {
                     delay(100)
                     try {
-                          notificationsRepository.refresh()
+                          dashboardViewModel.refreshNotifications()
                         val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                         onNotificationCountUpdated(unreadCount)
                     } catch (e: Exception) {
