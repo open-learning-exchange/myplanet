@@ -158,6 +158,11 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlinx.coroutines.test)
+    testImplementation(libs.test.core.testing)
+    testImplementation("io.reactivex.rxjava2:rxjava:2.2.21")
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
