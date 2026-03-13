@@ -13,6 +13,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.MyPlanet
@@ -70,8 +72,9 @@ class UploadManager @Inject constructor(
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
-    private val teamsRepository: Lazy<TeamsRepository>
-) : FileUploader() {
+    private val teamsRepository: Lazy<TeamsRepository>,
+    @ApplicationScope private val scope: CoroutineScope
+) : FileUploader(scope) {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
@@ -80,7 +83,7 @@ class UploadManager @Inject constructor(
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        MainApplication.applicationScope.launch {
+        scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Cannot upload activities: user model is null")
