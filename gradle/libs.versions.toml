@@ -1,4 +1,7 @@
 [versions]
+junit = "4.13.2"
+robolectric = "4.11.1"
+androidxTestExtJunit = "1.1.5"
 gradle = "9.1.0"
 realm = "10.19.0"
 hilt = "2.59.2"
@@ -48,6 +51,11 @@ dagger-hilt-android = { id = "com.google.dagger.hilt.android" }
 realm-android = { id = "realm-android" }
 
 [libraries]
+junit = { module = "junit:junit", version.ref = "junit" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesAndroid" }
+hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 realm-gradle-plugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
 hilt-android-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
