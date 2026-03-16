@@ -41,6 +41,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -736,7 +737,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val customTabBinding = CustomTabBinding.inflate(LayoutInflater.from(this))
             val title = customTabBinding.title
             val icon = customTabBinding.icon
-            title.text = tabLayout.getTabAt(i)?.text
+            title.text = tabLayout.getTabAt(i)?.text?.toString()?.uppercase(Locale.ENGLISH)
             icon.setImageResource(R.drawable.ic_home)
             icon.setImageDrawable(tabLayout.getTabAt(i)?.icon)
             tabLayout.getTabAt(i)?.customView = customTabBinding.root

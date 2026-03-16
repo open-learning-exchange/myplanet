@@ -11,6 +11,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
+import java.util.Locale
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -289,7 +290,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-            tab.text = title
+            tab.text = title.toString().uppercase(Locale.ENGLISH)
         }.attach()
 
         selectPage(restorePageId, false)
