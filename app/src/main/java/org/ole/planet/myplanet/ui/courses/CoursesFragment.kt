@@ -620,24 +620,25 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val realmCourses = list.mapNotNull { course ->
-                course?.let {
-                    var rc = coursesRepository.getCourseById(it.courseId)
-                    if (rc == null) {
-                        // Create unmanaged
-                        rc = RealmMyCourse()
-                        rc.courseId = it.courseId
-                        rc.courseTitle = it.courseTitle
-                        rc.isMyCourse = it.isMyCourse
-                    }
-                    rc
+        val realmCourses = list.mapNotNull { course ->
+            course?.let {
+                var rc: RealmMyCourse? = null
+                kotlinx.coroutines.runBlocking {
+                    rc = coursesRepository.getCourseById(it.courseId)
                 }
-            }.toMutableList<RealmMyCourse?>()
-            selectedItems = realmCourses
-            changeButtonStatus()
-            hideButtons()
-        }
+                if (rc == null) {
+                    // Create unmanaged
+                    rc = RealmMyCourse()
+                    rc.courseId = it.courseId
+                    rc.courseTitle = it.courseTitle
+                    rc.isMyCourse = it.isMyCourse
+                }
+                rc
+            }
+        }.toMutableList<RealmMyCourse?>()
+        selectedItems = realmCourses
+        changeButtonStatus()
+        hideButtons()
     }
 
     override fun onTagClicked(tag: Tag) {
