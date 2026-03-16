@@ -73,6 +73,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var searchJob: Job? = null
+    private var selectionJob: Job? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -620,25 +621,41 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        val realmCourses = list.mapNotNull { course ->
+        val dummyCourses = list.mapNotNull { course ->
             course?.let {
-                var rc: RealmMyCourse? = null
-                kotlinx.coroutines.runBlocking {
-                    rc = coursesRepository.getCourseById(it.courseId)
-                }
-                if (rc == null) {
-                    // Create unmanaged
-                    rc = RealmMyCourse()
-                    rc.courseId = it.courseId
-                    rc.courseTitle = it.courseTitle
-                    rc.isMyCourse = it.isMyCourse
-                }
+                val rc = RealmMyCourse()
+                rc.courseId = it.courseId
+                rc.courseTitle = it.courseTitle
+                rc.isMyCourse = it.isMyCourse
                 rc
             }
         }.toMutableList<RealmMyCourse?>()
-        selectedItems = realmCourses
+        selectedItems = dummyCourses
         changeButtonStatus()
         hideButtons()
+
+        selectionJob?.cancel()
+        selectionJob = viewLifecycleOwner.lifecycleScope.launch {
+            val realmCourses = list.mapNotNull { course ->
+                course?.let {
+                    var rc = coursesRepository.getCourseById(it.courseId)
+                    if (rc == null) {
+                        // Create unmanaged
+                        rc = RealmMyCourse()
+                        rc.courseId = it.courseId
+                        rc.courseTitle = it.courseTitle
+                        rc.isMyCourse = it.isMyCourse
+                    }
+                    rc
+                }
+            }.toMutableList<RealmMyCourse?>()
+
+            withContext(Dispatchers.Main) {
+                selectedItems = realmCourses
+                changeButtonStatus()
+                hideButtons()
+            }
+        }
     }
 
     override fun onTagClicked(tag: Tag) {
