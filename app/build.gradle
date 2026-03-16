@@ -213,8 +213,6 @@ dependencies {
     implementation(libs.webkit)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.testcore)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation 'io.reactivex.rxjava2:rxjava:2.2.21'
+    testImplementation(libs.rxjava2)
 }
