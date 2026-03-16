@@ -41,7 +41,7 @@ webkit = "1.15.0"
 tink = "1.20.0"
 junit = "4.13.2"
 mockk = "1.13.10"
-kotlinxCoroutinesTest = "1.8.1"
+kotlinxCoroutinesTest = "1.10.2"
 
 [plugins]
 application = { id = "com.android.application" }
