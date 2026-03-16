@@ -42,9 +42,28 @@ class NotificationsRepositoryImpl @Inject constructor(
                 }
                 createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
 
-                joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                    createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
+                if (joinRequestData.isNotEmpty()) {
+                    val requestIds = joinRequestData.map { it.requestId }.toTypedArray()
+                    val existingJoinRequests = r.where(RealmNotification::class.java)
+                        .equalTo("userId", actualUserId)
+                        .equalTo("type", "join_request")
+                        .`in`("relatedId", requestIds)
+                        .findAll()
+                        .mapNotNull { it.relatedId }
+                        .toSet()
+
+                    joinRequestData.forEach { (requesterName, teamName, requestId) ->
+                        if (!existingJoinRequests.contains(requestId)) {
+                            val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                            r.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                                this.userId = actualUserId
+                                this.type = "join_request"
+                                this.message = message
+                                this.relatedId = requestId
+                                this.createdAt = Date()
+                            }
+                        }
+                    }
                 }
             }
 
