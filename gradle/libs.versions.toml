@@ -42,6 +42,8 @@ tink = "1.20.0"
 junit = "4.13.2"
 mockk = "1.13.10"
 coroutinesTest = "1.8.1"
+robolectric = "4.10.3"
+testCore = "1.5.0"
 
 [plugins]
 application = { id = "com.android.application" }
@@ -51,6 +53,11 @@ dagger-hilt-android = { id = "com.google.dagger.hilt.android" }
 realm-android = { id = "realm-android" }
 
 [libraries]
+test-junit = { module = "junit:junit", version.ref = "junit" }
+test-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+test-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
+test-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+test-core = { module = "androidx.test:core", version.ref = "testCore" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 realm-gradle-plugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
 hilt-android-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
@@ -105,6 +112,3 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
-junit = { module = "junit:junit", version.ref = "junit" }
-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutinesTest" }
