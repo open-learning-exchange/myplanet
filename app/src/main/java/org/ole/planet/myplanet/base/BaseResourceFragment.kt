@@ -387,23 +387,25 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    suspend fun removeFromShelf(`object`: RealmObject) {
-        val userId = profileDbHandler.getUserModel()?.id
-        if (userId.isNullOrEmpty()) {
-            return
-        }
-
-        if (`object` is RealmMyLibrary) {
-            val resourceId = `object`.resourceId
-            if (resourceId != null) {
-                resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+    fun removeFromShelf(`object`: RealmObject) {
+        lifecycleScope.launch {
+            val userId = profileDbHandler.getUserModel()?.id
+            if (userId.isNullOrEmpty()) {
+                return@launch
             }
-        } else {
-            val courseId = (`object` as RealmMyCourse).courseId
-            if (courseId != null) {
-                coursesRepository.removeCourseFromShelf(courseId, userId)
-                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+
+            if (`object` is RealmMyLibrary) {
+                val resourceId = `object`.resourceId
+                if (resourceId != null) {
+                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                }
+            } else {
+                val courseId = (`object` as RealmMyCourse).courseId
+                if (courseId != null) {
+                    coursesRepository.removeCourseFromShelf(courseId, userId)
+                    Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                }
             }
         }
     }
@@ -479,15 +481,5 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
-        }
     }
 }
