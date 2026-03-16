@@ -72,6 +72,8 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper?.attachToRecyclerView(recyclerView)
+        lifeAdapter.submitList(viewModel.myLifeList.value)
+
         return lifeAdapter
     }
 
