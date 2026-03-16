@@ -48,10 +48,7 @@ class TeamPagerAdapter(
         val fragment = page.createFragment()
 
         when (page) {
-            TeamPage -> if (fragment is MembersFragment) {
-                fragment.setOnMemberChangeListener(onMemberChangeListener)
-            }
-            MembersPage -> if (fragment is MembersFragment) {
+            TeamPage, MembersPage -> if (fragment is MembersFragment) {
                 fragment.setOnMemberChangeListener(onMemberChangeListener)
             }
             ApplicantsPage, JoinRequestsPage -> if (fragment is RequestsFragment) {
