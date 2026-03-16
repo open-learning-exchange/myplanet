@@ -1,22 +1,22 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonObject
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.unmockkAll
+import io.mockk.spyk
 import io.realm.RealmQuery
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.every
-import org.junit.After
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -29,58 +29,21 @@ import org.ole.planet.myplanet.model.RealmSubmission
 @ExperimentalCoroutinesApi
 class ProgressRepositoryImplTest {
 
+    private lateinit var databaseService: DatabaseService
     private lateinit var repository: ProgressRepositoryImpl
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
-    private var mockProgresses: List<RealmCourseProgress> = emptyList()
-    private var mockMyCourses: List<RealmMyCourse> = emptyList()
-    private var mockExams: List<RealmStepExam> = emptyList()
-    private var mockSubmissions: List<RealmSubmission> = emptyList()
-    private var mockAnswers: List<RealmAnswer> = emptyList()
-    private var mockQuestions: Map<String, RealmExamQuestion> = emptyMap()
-
     @Before
     fun setUp() {
-        mockkStatic(android.os.SystemClock::class)
-        every { android.os.SystemClock.sleep(any()) } returns Unit
-        val mockContext = mockk<Context>(relaxed = true)
-        every { mockContext.filesDir } returns java.io.File(System.getProperty("java.io.tmpdir"))
-
-        val databaseService = mockk<DatabaseService>(relaxed = true)
+        databaseService = mockk(relaxed = true)
         every { databaseService.ioDispatcher } returns testDispatcher
-
-        repository = object : ProgressRepositoryImpl(databaseService) {
-            override suspend fun <T : io.realm.RealmObject> queryList(
-                clazz: Class<T>,
-                builder: RealmQuery<T>.() -> Unit
-            ): List<T> {
-                return when (clazz) {
-                    RealmCourseProgress::class.java -> mockProgresses as List<T>
-                    RealmMyCourse::class.java -> mockMyCourses as List<T>
-                    RealmStepExam::class.java -> mockExams as List<T>
-                    RealmSubmission::class.java -> mockSubmissions as List<T>
-                    RealmAnswer::class.java -> mockAnswers as List<T>
-                    else -> emptyList()
-                }
-            }
-
-            override suspend fun <T : io.realm.RealmObject, V : Any> findByField(
-                clazz: Class<T>,
-                fieldName: String,
-                value: V
-            ): T? {
-                if (clazz == RealmExamQuestion::class.java && fieldName == "id") {
-                    return mockQuestions[value as String] as T?
-                }
-                return null
-            }
-        }
+        repository = spyk(ProgressRepositoryImpl(databaseService), recordPrivateCalls = true)
     }
 
     @After
     fun tearDown() {
-        io.mockk.unmockkAll()
+        unmockkAll()
     }
 
     @Test
@@ -90,7 +53,9 @@ class ProgressRepositoryImplTest {
             RealmCourseStep().apply { id = "step2" }
         )
 
-        mockProgresses = emptyList()
+        coEvery {
+            repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
+        } returns emptyList<RealmCourseProgress>()
 
         val progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
@@ -102,17 +67,38 @@ class ProgressRepositoryImplTest {
         val steps = listOf(
             RealmCourseStep().apply { id = "step1" },
             RealmCourseStep().apply { id = "step2" },
-            RealmCourseStep().apply { id = "step3" }
+            RealmCourseStep().apply { id = "step3" },
+            RealmCourseStep().apply { id = "step4" }
         )
 
-        mockProgresses = listOf(
+        // Steps 1 and 3 are present, 2 is missing. The gap is at step 2, so progress should be 1.
+        val progresses = listOf(
             RealmCourseProgress().apply { stepNum = 1 },
             RealmCourseProgress().apply { stepNum = 3 }
         )
 
-        val progress = repository.getCurrentProgress(steps, "user1", "course1")
+        coEvery {
+            repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
+        } returns progresses
+
+        var progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
         assertEquals(1, progress)
+
+        // Now test where 1, 2, 3 are present, 4 is missing, to ensure it doesn't just always return 1
+        val progresses2 = listOf(
+            RealmCourseProgress().apply { stepNum = 1 },
+            RealmCourseProgress().apply { stepNum = 2 },
+            RealmCourseProgress().apply { stepNum = 3 }
+        )
+
+        coEvery {
+            repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
+        } returns progresses2
+
+        progress = repository.getCurrentProgress(steps, "user1", "course1")
+        advanceUntilIdle()
+        assertEquals(3, progress)
     }
 
     @Test
@@ -122,10 +108,14 @@ class ProgressRepositoryImplTest {
             RealmCourseStep().apply { id = "step2" }
         )
 
-        mockProgresses = listOf(
+        val progresses = listOf(
             RealmCourseProgress().apply { stepNum = 1 },
             RealmCourseProgress().apply { stepNum = 2 }
         )
+
+        coEvery {
+            repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
+        } returns progresses
 
         val progress = repository.getCurrentProgress(steps, "user1", "course1")
         advanceUntilIdle()
@@ -134,26 +124,26 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun testFetchCourseData_PopulatesFieldsCorrectly() = testScope.runTest {
-        val steps = listOf(
-            RealmCourseStep().apply { courseId = "course1" }
-        )
-
-        mockMyCourses = listOf(
+        val myCourses = listOf(
             RealmMyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Test Course"
-                courseSteps = io.realm.RealmList(*steps.toTypedArray())
             }
         )
 
-        mockExams = listOf(
+        val steps = listOf(
+            RealmCourseStep().apply { courseId = "course1" }
+        )
+        myCourses[0].courseSteps = io.realm.RealmList(*steps.toTypedArray())
+
+        val exams = listOf(
             RealmStepExam().apply {
                 id = "exam1"
                 courseId = "course1"
             }
         )
 
-        mockSubmissions = listOf(
+        val submissions = listOf(
             RealmSubmission().apply {
                 id = "sub1"
                 userId = "user1"
@@ -162,7 +152,7 @@ class ProgressRepositoryImplTest {
             }
         )
 
-        mockAnswers = listOf(
+        val answers = listOf(
             RealmAnswer().apply {
                 submissionId = "sub1"
                 questionId = "q1"
@@ -170,14 +160,34 @@ class ProgressRepositoryImplTest {
             }
         )
 
-        mockQuestions = mapOf(
-            "q1" to RealmExamQuestion().apply {
-                id = "q1"
-                examId = "exam1"
-            }
-        )
+        val question = RealmExamQuestion().apply {
+            id = "q1"
+            examId = "exam1"
+        }
 
-        mockProgresses = listOf(RealmCourseProgress().apply { stepNum = 1 })
+        coEvery {
+            repository["queryList"](RealmMyCourse::class.java, any<Function1<RealmQuery<RealmMyCourse>, Unit>>())
+        } returns myCourses
+
+        coEvery {
+            repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
+        } returns listOf(RealmCourseProgress().apply { stepNum = 1 })
+
+        coEvery {
+            repository["queryList"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
+        } returns submissions
+
+        coEvery {
+            repository["queryList"](RealmStepExam::class.java, any<Function1<RealmQuery<RealmStepExam>, Unit>>())
+        } returns exams
+
+        coEvery {
+            repository["queryList"](RealmAnswer::class.java, any<Function1<RealmQuery<RealmAnswer>, Unit>>())
+        } returns answers
+
+        coEvery {
+            repository["findByField"](RealmExamQuestion::class.java, "id", "q1", false)
+        } returns question
 
         val data = repository.fetchCourseData("user1")
         advanceUntilIdle()

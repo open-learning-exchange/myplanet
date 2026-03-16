@@ -19,12 +19,12 @@ import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
 
 open class RealmRepository(protected val databaseService: DatabaseService) {
-    protected open suspend fun <T : RealmObject> queryList(
+    protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): List<T> = queryList(clazz, false, builder)
 
-    protected open suspend fun <T : RealmObject> queryList(
+    protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         ensureLatest: Boolean,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -132,13 +132,13 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
         }
     }.flowOn(Dispatchers.Main)
 
-    protected open suspend fun <T : RealmObject, V : Any> findByField(
+    protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
         fieldName: String,
         value: V,
     ): T? = findByField(clazz, fieldName, value, false)
 
-    protected open suspend fun <T : RealmObject, V : Any> findByField(
+    protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
         fieldName: String,
         value: V,

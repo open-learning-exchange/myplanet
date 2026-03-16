@@ -12,8 +12,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 
-open class DatabaseService(context: Context) {
-    open val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+class DatabaseService(context: Context) {
+    val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
     private val realmDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
 
     init {
@@ -30,7 +30,7 @@ open class DatabaseService(context: Context) {
         Realm.setDefaultConfiguration(config)
     }
 
-    open fun createManagedRealmInstance(): Realm = Realm.getDefaultInstance()
+    fun createManagedRealmInstance(): Realm = Realm.getDefaultInstance()
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
         val realm = Realm.getDefaultInstance()
@@ -47,13 +47,13 @@ open class DatabaseService(context: Context) {
         return withRealmInstance(operation)
     }
 
-    open suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
+    suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return withContext(ioDispatcher) {
             withRealmInstance(operation)
         }
     }
 
-    open suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
+    suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(realmDispatcher) {
             val realm = Realm.getDefaultInstance()
             try {

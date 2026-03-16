@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
+class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
@@ -38,7 +38,7 @@ open class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseS
         return map
     }
 
-    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(Dispatchers.IO) {
+    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(databaseService.ioDispatcher) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }
