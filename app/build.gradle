@@ -158,6 +158,7 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
+    testImplementation(libs.junit)
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
