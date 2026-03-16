@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.courses
+package org.ole.planet.myplanet.utils
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

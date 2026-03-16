@@ -15,6 +15,8 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+import io.mockk.every
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModelTest {
@@ -44,6 +46,8 @@ class ProgressViewModelTest {
         viewModel.loadCourseData()
 
         advanceUntilIdle()
+
+        io.mockk.coVerify { progressRepository.fetchCourseData("user_123") }
 
         assertEquals(expectedJsonArray, viewModel.courseData.value)
     }
