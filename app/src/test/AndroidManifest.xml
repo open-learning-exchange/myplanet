@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <activity android:name="androidx.fragment.app.testing.EmptyFragmentActivity"
+            android:theme="@style/Theme.AppCompat"
+            tools:replace="android:theme"
+            android:exported="true">
+        </activity>
+    </application>
+</manifest>
