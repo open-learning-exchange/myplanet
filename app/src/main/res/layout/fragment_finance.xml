@@ -263,7 +263,6 @@
             android:id="@+id/rv_finance"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-
             android:padding="@dimen/padding_normal" />
     </LinearLayout>
 
