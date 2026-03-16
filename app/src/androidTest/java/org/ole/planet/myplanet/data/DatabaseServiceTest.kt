@@ -97,9 +97,7 @@ class DatabaseServiceTest {
     fun testExecuteTransactionAsync_exceptionPath_closesRealm() = runBlocking {
         var capturedRealm: Realm? = null
         val exception = runCatching {
-            var capturedRealm: Realm? = null
-        databaseService.executeTransactionAsync { realm ->
-            capturedRealm = realm
+            databaseService.executeTransactionAsync { realm ->
                 capturedRealm = realm
                 assertFalse(realm.isClosed)
                 throw RuntimeException("Test exception in transaction")
