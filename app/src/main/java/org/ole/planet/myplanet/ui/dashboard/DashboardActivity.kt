@@ -103,7 +103,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
-        ChallengePrompter(this, user, prefData, dashboardViewModel)
+        ChallengePrompter(this, prefData, dashboardViewModel)
     }
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -164,7 +164,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.root.post {
             setupSystemNotificationReceiver()
             checkIfShouldShowNotifications()
-            challengeManager.evaluateChallengeDialog()
+
+            val validUrls = listOf(
+                "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+                "http://${BuildConfig.PLANET_XELA_URL}",
+                "http://${BuildConfig.PLANET_URIUR_URL}",
+                "http://${BuildConfig.PLANET_SANPABLO_URL}",
+                "http://${BuildConfig.PLANET_EMBAKASI_URL}",
+                "https://${BuildConfig.PLANET_VI_URL}"
+            )
+            val isGuest = user?.id?.startsWith("guest") == true
+            dashboardViewModel.evaluateChallengeDialog(
+                user?.id,
+                isGuest,
+                validUrls,
+                prefData.getServerUrl()
+            )
+
             reportFullyDrawn()
         }
     }
@@ -214,6 +230,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             f.arguments = b
                             openCallFragment(f)
                         }
+                    }
+                }
+
+                launch {
+                    dashboardViewModel.challengeDialogEvent.collect { data ->
+                        challengeManager.showChallengeDialog(data)
                     }
                 }
             }
@@ -516,25 +538,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private suspend fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
-        var lastException: Exception? = null
-        repeat(maxRetries) { attempt ->
-            try {
-                dashboardViewModel.refreshNotifications()
-                val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                withContext(Dispatchers.Main) {
-                    onNotificationCountUpdated(unreadCount)
-                }
-                return
-            } catch (e: Exception) {
-                lastException = e
-                e.printStackTrace()
-                if (attempt < maxRetries - 1) {
-                    delay(300)
-                }
-            }
-        }
-        lastException?.printStackTrace()
+    private fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
+        dashboardViewModel.refreshNotificationsWithRetry(userId, maxRetries)
     }
 
     private fun setupDashboardDataObserver() {
@@ -611,13 +616,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun markDatabaseNotificationAsRead(notificationId: String) {
-        lifecycleScope.launch {
-            try {
-                dashboardViewModel.markNotificationAsRead(notificationId, user?.id)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        dashboardViewModel.markNotificationAsRead(notificationId, user?.id)
     }
 
     private fun openNotificationsList(userId: String) {
@@ -1017,16 +1016,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
             val userId = user?.id
             if (userId != null) {
-                lifecycleScope.launch {
-                    delay(100)
-                    try {
-                          dashboardViewModel.refreshNotifications()
-                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                        onNotificationCountUpdated(unreadCount)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
+                dashboardViewModel.refreshNotificationsBadge(userId)
             }
         }
     }

@@ -54,6 +54,14 @@ data class DashboardUiState(
     val fullName: String? = null,
 )
 
+data class ChallengeDialogData(
+    val voiceCount: Int,
+    val courseStatus: String,
+    val allVoiceCount: Int,
+    val hasUnfinishedSurvey: Boolean,
+    val hasValidSync: Boolean
+)
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val application: Application,
@@ -80,6 +88,9 @@ class DashboardViewModel @Inject constructor(
 
     private val _joinRequestNavigationEvent = MutableSharedFlow<String>()
     val joinRequestNavigationEvent: SharedFlow<String> = _joinRequestNavigationEvent.asSharedFlow()
+
+    private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>()
+    val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
     private var userContentJob: Job? = null
 
@@ -223,9 +234,49 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun refreshNotifications() = notificationsRepository.refresh()
+    fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
+        viewModelScope.launch {
+            var lastException: Exception? = null
+            repeat(maxRetries) { attempt ->
+                try {
+                    notificationsRepository.refresh()
+                    val unreadCount = getUnreadNotificationsSize(userId)
+                    setUnreadNotifications(unreadCount)
+                    return@launch
+                } catch (e: Exception) {
+                    lastException = e
+                    e.printStackTrace()
+                    if (attempt < maxRetries - 1) {
+                        kotlinx.coroutines.delay(300)
+                    }
+                }
+            }
+            lastException?.printStackTrace()
+        }
+    }
 
-    suspend fun markNotificationAsRead(notificationId: String, userId: String?) = notificationsRepository.markNotificationAsRead(notificationId, userId)
+    fun markNotificationAsRead(notificationId: String, userId: String?) {
+        viewModelScope.launch {
+            try {
+                notificationsRepository.markNotificationAsRead(notificationId, userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun refreshNotificationsBadge(userId: String) {
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(100)
+            try {
+                notificationsRepository.refresh()
+                val unreadCount = getUnreadNotificationsSize(userId)
+                setUnreadNotifications(unreadCount)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     fun handleSurveyNavigation(surveyId: String) {
         viewModelScope.launch {
@@ -236,17 +287,79 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun fetchCourseData(userId: String?) = progressRepository.fetchCourseData(userId)
+    fun evaluateChallengeDialog(
+        userId: String?,
+        isGuest: Boolean,
+        validUrls: List<String>,
+        serverUrl: String
+    ) {
+        val startTime = 1730419200000
+        val endTime = 1734307200000
+        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
 
-    suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?) = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
+        viewModelScope.launch {
+            try {
+                val courseData = progressRepository.fetchCourseData(userId)
+                val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
+                val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
+                val courseName = coursesRepository.getCourseTitleById(courseId)
+                val hasUnfinishedSurvey = hasPendingSurvey(courseId, userId)
 
-    suspend fun getCourseTitleById(courseId: String) = coursesRepository.getCourseTitleById(courseId)
+                val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
 
-    suspend fun hasUserCompletedSync(userId: String) = progressRepository.hasUserCompletedSync(userId)
+                val today = java.time.LocalDate.now()
+                val endDate = java.time.LocalDate.of(2025, 1, 16)
+                val shouldPrompt = today.isAfter(java.time.LocalDate.of(2024, 11, 30)) &&
+                        today.isBefore(endDate) &&
+                        serverUrl in validUrls
 
-    suspend fun getSurveysByCourseId(courseId: String) = submissionsRepository.getSurveysByCourseId(courseId)
+                if (!isGuest && shouldPrompt) {
+                    val courseStatus = getCourseStatusString(progress, courseName)
+                    val voiceCount = uniqueDates.size
+                    val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+                    var hasValidSync = false
+                    if (prereqsMet) {
+                        hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                    }
+                    _challengeDialogEvent.emit(
+                        ChallengeDialogData(
+                            voiceCount = uniqueDates.size,
+                            courseStatus = courseStatus,
+                            allVoiceCount = allUniqueDates.size,
+                            hasUnfinishedSurvey = hasUnfinishedSurvey,
+                            hasValidSync = hasValidSync
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
-    suspend fun hasSubmission(id: String?, courseId: String?, userId: String?, type: String) = submissionsRepository.hasSubmission(id, courseId, userId, type)
+    private suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
+        val surveys = submissionsRepository.getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {
+        return if (progress != null) {
+            val max = progress.get("max").asInt
+            val current = progress.get("current").asInt
+            if (current == max) {
+                application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
+            } else {
+                application.getString(org.ole.planet.myplanet.R.string.course_in_progress, courseName, current, max)
+            }
+        } else {
+            application.getString(org.ole.planet.myplanet.R.string.course_not_started, courseName)
+        }
+    }
 
     suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(dispatcherProvider.io) {
         var unreadCount = 0
