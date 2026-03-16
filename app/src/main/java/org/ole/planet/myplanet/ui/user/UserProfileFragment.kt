@@ -173,6 +173,7 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
+        binding.rvStat.adapter = StatsAdapter()
     }
 
     private fun observeUserProfile() {
@@ -472,9 +473,6 @@ class UserProfileFragment : Fragment() {
 
     private fun setupStatsRecycler() {
         val map = createStatsMap()
-        if (binding.rvStat.adapter == null) {
-            binding.rvStat.adapter = StatsAdapter()
-        }
         (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
     }
 
@@ -489,7 +487,7 @@ class UserProfileFragment : Fragment() {
             holder.rowStatBinding.tvTitle.text = item.first
             holder.rowStatBinding.tvTitle.visibility = View.VISIBLE
             holder.rowStatBinding.tvDescription.text = item.second
-            if (position % 2 == 0) {
+            if (holder.bindingAdapterPosition % 2 == 0) {
                 holder.rowStatBinding.root.setBackgroundColor(
                     ContextCompat.getColor(
                         requireContext(),

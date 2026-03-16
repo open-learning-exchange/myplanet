@@ -36,14 +36,12 @@ class ReferencesFragment : Fragment() {
             Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
         )
         binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
+        binding.rvReferences.adapter = ReferenceAdapter()
         setRecyclerAdapter(list)
         return binding.root
     }
 
     private fun setRecyclerAdapter(list: List<Reference>) {
-        if (binding.rvReferences.adapter == null) {
-            binding.rvReferences.adapter = ReferenceAdapter()
-        }
         (binding.rvReferences.adapter as ReferenceAdapter).submitList(list)
     }
 
@@ -58,7 +56,7 @@ class ReferencesFragment : Fragment() {
             holder.rowReferenceBinding.title.text = reference.title
             holder.rowReferenceBinding.icon.setImageResource(reference.icon)
             holder.rowReferenceBinding.root.setOnClickListener {
-                if (position == 0)
+                if (holder.bindingAdapterPosition == 0)
                     startActivity(Intent(activity, OfflineMapsActivity::class.java))
                 else {
                     startActivity(Intent(activity, DictionaryActivity::class.java))
