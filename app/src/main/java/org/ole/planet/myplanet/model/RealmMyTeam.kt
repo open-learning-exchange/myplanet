@@ -62,6 +62,8 @@ open class RealmMyTeam : RealmObject() {
     companion object {
         @JvmStatic
         fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
+            val hadLocalChanges = team.updated
+
             team.userId = JsonUtils.getString("userId", doc)
             team.teamId = JsonUtils.getString("teamId", doc)
             team._rev = JsonUtils.getString("_rev", doc)
@@ -85,7 +87,9 @@ open class RealmMyTeam : RealmObject() {
             team.isLeader = JsonUtils.getBoolean("isLeader", doc)
             team.amount = JsonUtils.getInt("amount", doc)
             team.date = JsonUtils.getLong("date", doc)
-            team.docType = JsonUtils.getString("docType", doc)
+            if (!hadLocalChanges) {
+                team.docType = JsonUtils.getString("docType", doc)
+            }
             team.isPublic = JsonUtils.getBoolean("public", doc)
             team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
             team.sales = JsonUtils.getInt("sales", doc)
@@ -96,7 +100,6 @@ open class RealmMyTeam : RealmObject() {
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
 
-            val hadLocalChanges = team.updated
             val localCourses = team.courses?.toList() ?: emptyList()
 
             if (!hadLocalChanges) {
@@ -160,6 +163,28 @@ open class RealmMyTeam : RealmObject() {
             }
 
             val teamId = JsonUtils.getString("_id", doc)
+            val docType = JsonUtils.getString("docType", doc)
+            val userId = JsonUtils.getString("userId", doc)
+            val teamIdField = JsonUtils.getString("teamId", doc)
+
+            if (docType == "membership" && userId.isNotBlank() && teamIdField.isNotBlank()) {
+                // Server accepted the request (possibly as a new doc); remove any stale request records
+                mRealm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamIdField)
+                    .equalTo("userId", userId)
+                    .equalTo("docType", "request")
+                    .findAll()
+                    .deleteAllFromRealm()
+            } else if (docType == "request" && userId.isNotBlank() && teamIdField.isNotBlank()) {
+                // Skip stale request record if the user is already a member
+                val alreadyMember = mRealm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamIdField)
+                    .equalTo("userId", userId)
+                    .equalTo("docType", "membership")
+                    .count() > 0
+                if (alreadyMember) return
+            }
+
             var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
             if (myTeams == null) {
                 myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
