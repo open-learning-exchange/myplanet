@@ -23,8 +23,22 @@ class LifeViewModel @Inject constructor(
 
     fun loadMyLife(userId: String?) {
         viewModelScope.launch {
+            val items = getMyLifeListBase(userId)
+            lifeRepository.seedMyLifeIfEmpty(userId, items)
             _myLifeList.value = lifeRepository.getMyLifeByUserId(userId)
         }
+    }
+
+    private fun getMyLifeListBase(userId: String?): List<RealmMyLife> {
+        val myLifeList: MutableList<RealmMyLife> = ArrayList()
+        myLifeList.add(RealmMyLife("ic_myhealth", userId, "MyHealth"))
+        myLifeList.add(RealmMyLife("my_achievement", userId, "Achievements"))
+        myLifeList.add(RealmMyLife("ic_submissions", userId, "Submissions"))
+        myLifeList.add(RealmMyLife("ic_my_survey", userId, "My Surveys"))
+        myLifeList.add(RealmMyLife("ic_references", userId, "References"))
+        myLifeList.add(RealmMyLife("ic_calendar", userId, "Calendar"))
+        myLifeList.add(RealmMyLife("ic_mypersonals", userId, "MyPersonals"))
+        return myLifeList
     }
 
     suspend fun updateVisibility(isVisible: Boolean, id: String) {
