@@ -64,8 +64,6 @@ class NotificationsViewModelTest {
     @Test
     fun testFormatJoinRequestNotification() {
         val result = NotificationsViewModel.formatJoinRequestNotification(
-            requesterName = "John Doe",
-            teamName = "Awesome Team",
             prefixStr = "Join Request",
             userRequestedToJoinTeamStr = "John Doe requested to join Awesome Team"
         )

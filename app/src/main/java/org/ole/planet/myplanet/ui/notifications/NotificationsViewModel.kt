@@ -66,8 +66,6 @@ class NotificationsViewModel @Inject constructor(
         }
 
         internal fun formatJoinRequestNotification(
-            requesterName: String,
-            teamName: String,
             prefixStr: String,
             userRequestedToJoinTeamStr: String
         ): String {
@@ -102,8 +100,6 @@ class NotificationsViewModel @Inject constructor(
                 val (requesterName, teamName) = notificationsRepository.getJoinRequestDetails(notification.relatedId)
                 val userRequestedStr = context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
                 formatJoinRequestNotification(
-                    requesterName,
-                    teamName,
                     context.getString(R.string.join_request_prefix),
                     userRequestedStr
                 )
