@@ -53,7 +53,7 @@ realm-android = { id = "realm-android" }
 [libraries]
 test-junit = { module = "junit:junit", version.ref = "junit" }
 test-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-test-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.8.1" }
+test-kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesAndroid" }
 
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 realm-gradle-plugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }

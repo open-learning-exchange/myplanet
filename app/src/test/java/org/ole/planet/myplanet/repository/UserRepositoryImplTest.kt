@@ -8,7 +8,10 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.spyk
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -29,6 +32,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
+import android.util.Log
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
@@ -52,6 +56,10 @@ class UserRepositoryImplTest {
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "Basic auth"
         every { UrlUtils.getUrl() } returns "http://test.url"
+
+        mockkStatic(Log::class)
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
 
         databaseService = mockk(relaxed = true)
         settings = mockk(relaxed = true)
@@ -84,6 +92,7 @@ class UserRepositoryImplTest {
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
+        unmockkStatic(Log::class)
     }
 
     @Test
@@ -101,13 +110,51 @@ class UserRepositoryImplTest {
         val response = Response.success(existsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
 
-        var result: Pair<Boolean, String>? = null
-        appScope.launch {
-            result = repository.becomeMember(userObj)
-        }
+        val result = repository.becomeMember(userObj)
         advanceUntilIdle()
 
-        assertFalse(result?.first ?: true)
-        assertEquals(errorMessage, result?.second)
+        assertFalse(result.first)
+        assertEquals(errorMessage, result.second)
+    }
+
+    @Test
+    fun `becomeMember succeeds on happy path`() = runTest(testDispatcher) {
+        val userName = "newUser"
+        val userObj = JsonObject().apply { addProperty("name", userName) }
+        val userUrl = "http://test.url/_users/org.couchdb.user:$userName"
+        val successMessage = "User created successfully"
+        val id = "new_user_id"
+
+        coEvery { configurationsRepository.checkServerAvailability() } returns true
+        every { context.getString(R.string.user_created_successfully) } returns successMessage
+
+        // 1. User doesn't exist check
+        val notExistsResponseBody = JsonObject()
+        val notFoundResponse = Response.success(notExistsResponseBody)
+        coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
+
+        // 2. User creation mock
+        val createdResponseBody = JsonObject().apply { addProperty("id", id) }
+        val createdResponse = Response.success(createdResponseBody)
+        coEvery { apiInterface.putDoc(null, "application/json", userUrl, userObj) } returns createdResponse
+
+        // 3. User save to db fetch
+        val userFetchUrl = "http://test.url/_users/$id"
+        val userFetchResponse = Response.success(JsonObject().apply {
+            addProperty("_id", id)
+            addProperty("name", userName)
+        })
+        coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
+
+        // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
+        val spyRepository = spyk(repository)
+        val mockRealmUser = mockk<org.ole.planet.myplanet.model.RealmUser>(relaxed = true)
+        coEvery { spyRepository.saveUser(any(), any(), any(), any()) } returns mockRealmUser
+
+        val result = spyRepository.becomeMember(userObj)
+        advanceUntilIdle()
+
+        assertEquals(true, result.first)
+        assertEquals(successMessage, result.second)
     }
 }
