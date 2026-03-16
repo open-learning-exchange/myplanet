@@ -29,12 +29,36 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         return databaseService.withRealm { realm ->
             realm.executeTransaction { r ->
-                surveyTitles.forEach { title ->
-                    createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
+                if (surveyTitles.isNotEmpty()) {
+                    val surveyIds = surveyTitles.toTypedArray()
+                    val existingSurveyNotifications = r.where(RealmNotification::class.java)
+                        .equalTo("userId", actualUserId)
+                        .equalTo("type", "survey")
+                        .`in`("relatedId", surveyIds)
+                        .findAll()
+                    val existingSurveyIds = existingSurveyNotifications.mapNotNull { it.relatedId }.toSet()
+
+                    surveyTitles.forEach { title ->
+                        if (!existingSurveyIds.contains(title)) {
+                            createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
+                        }
+                    }
                 }
 
-                taskData.forEach { (title, deadline, id) ->
-                    createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
+                if (taskData.isNotEmpty()) {
+                    val taskIds = taskData.map { (_, _, id) -> id }.toTypedArray()
+                    val existingTaskNotifications = r.where(RealmNotification::class.java)
+                        .equalTo("userId", actualUserId)
+                        .equalTo("type", "task")
+                        .`in`("relatedId", taskIds)
+                        .findAll()
+                    val existingTaskIds = existingTaskNotifications.mapNotNull { it.relatedId }.toSet()
+
+                    taskData.forEach { (title, deadline, id) ->
+                        if (!existingTaskIds.contains(id)) {
+                            createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
+                        }
+                    }
                 }
 
                 if (storageRatio > 85) {
@@ -42,9 +66,21 @@ class NotificationsRepositoryImpl @Inject constructor(
                 }
                 createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
 
-                joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                    createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
+                if (joinRequestData.isNotEmpty()) {
+                    val requestIds = joinRequestData.map { (_, _, requestId) -> requestId }.toTypedArray()
+                    val existingJoinNotifications = r.where(RealmNotification::class.java)
+                        .equalTo("userId", actualUserId)
+                        .equalTo("type", "join_request")
+                        .`in`("relatedId", requestIds)
+                        .findAll()
+                    val existingJoinIds = existingJoinNotifications.mapNotNull { it.relatedId }.toSet()
+
+                    joinRequestData.forEach { (requesterName, teamName, requestId) ->
+                        if (!existingJoinIds.contains(requestId)) {
+                            val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                            createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
+                        }
+                    }
                 }
             }
 
