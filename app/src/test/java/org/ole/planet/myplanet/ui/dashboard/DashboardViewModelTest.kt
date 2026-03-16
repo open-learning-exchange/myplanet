@@ -99,6 +99,11 @@ class DashboardViewModelTest {
         assertEquals("Team1", (state.teams[0] as RealmMyTeam).name)
         assertEquals(1, state.library.size)
         assertEquals("Lib2", (state.library[0] as RealmMyLibrary).title)
+
+        // Ensure that repository methods associated with the initial call were canceled/replaced
+        // Since both calls use the same user ID, they get requested twice.
+        // We verify that the second library title ("Lib2") is the only one present.
+        io.mockk.coVerify(exactly = 1) { resourcesRepository.getMyLibrary(userId) }
     }
 
     @Test
@@ -143,6 +148,38 @@ class DashboardViewModelTest {
         assertEquals(2, state.users.size)
         assertEquals("User 1", (state.users[0] as RealmUser).name)
         assertEquals("User 2", (state.users[1] as RealmUser).name)
+    }
+
+    @Test
+    fun `calculateIndividualProgress handles boundary cases properly`() {
+        assertEquals(1, viewModel.calculateIndividualProgress(0, false))
+        assertEquals(0, viewModel.calculateIndividualProgress(0, true))
+
+        assertEquals(3, viewModel.calculateIndividualProgress(1, false))
+        assertEquals(2, viewModel.calculateIndividualProgress(1, true))
+
+        assertEquals(11, viewModel.calculateIndividualProgress(5, false))
+        assertEquals(10, viewModel.calculateIndividualProgress(5, true))
+
+        // Coerced value cases
+        assertEquals(11, viewModel.calculateIndividualProgress(10, false))
+        assertEquals(10, viewModel.calculateIndividualProgress(10, true))
+    }
+
+    @Test
+    fun `calculateCommunityProgress handles boundary cases properly`() {
+        assertEquals(1, viewModel.calculateCommunityProgress(0, false))
+        assertEquals(0, viewModel.calculateCommunityProgress(0, true))
+
+        assertEquals(3, viewModel.calculateCommunityProgress(1, false))
+        assertEquals(2, viewModel.calculateCommunityProgress(1, true))
+
+        assertEquals(11, viewModel.calculateCommunityProgress(5, false))
+        assertEquals(10, viewModel.calculateCommunityProgress(5, true))
+
+        // Ensure cap at 11
+        assertEquals(11, viewModel.calculateCommunityProgress(10, false))
+        assertEquals(10, viewModel.calculateCommunityProgress(10, true))
     }
 
     @Test

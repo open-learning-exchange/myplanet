@@ -1,7 +1,7 @@
 [versions]
 junit = "4.13.2"
 mockk = "1.13.10"
-coroutinesTest = "1.8.1"
+coroutinesTest = "1.10.2"
 gradle = "9.1.0"
 realm = "10.19.0"
 hilt = "2.59.2"
