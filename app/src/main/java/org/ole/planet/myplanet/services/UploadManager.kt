@@ -84,14 +84,14 @@ class UploadManager @Inject constructor(
 
         MainApplication.applicationScope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Cannot upload activities: user model is null")
                 }
                 return@launch
             }
 
             if (model.isManager()) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Skipping activities upload for manager")
                 }
                 return@launch
@@ -135,17 +135,17 @@ class UploadManager @Inject constructor(
                         "${UrlUtils.getUrl()}/myplanet_activities",
                         `object`
                     )
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         listener?.onSuccess("My planet activities uploaded successfully")
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         listener?.onSuccess("Failed to upload activities: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Failed to upload activities: ${e.message}")
                 }
             }
@@ -165,12 +165,12 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess(message)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during result sync: ${e.message}")
                 }
             }
@@ -482,14 +482,14 @@ class UploadManager @Inject constructor(
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("Cannot upload user activities: user model is null")
             }
             return
         }
 
         if (model.isManager()) {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("Skipping user activities upload for manager")
             }
             return
@@ -553,12 +553,12 @@ class UploadManager @Inject constructor(
             }
 
             uploadTeamActivitiesRefactored()
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("User activities sync completed successfully")
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("Failed to upload user activities: ${e.message}")
             }
         }
