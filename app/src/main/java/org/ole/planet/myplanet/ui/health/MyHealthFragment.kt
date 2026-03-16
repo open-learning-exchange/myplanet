@@ -264,9 +264,7 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = withContext(Dispatchers.IO) {
-                userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
-            }
+            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             userModelList = users
             adapter = HealthUsersAdapter { selected ->
                 userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
