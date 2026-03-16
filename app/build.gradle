@@ -161,7 +161,7 @@ dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)
     testImplementation(libs.test.kotlinx.coroutines.test)
-    testImplementation(libs.test.core.testing)
+    // Required to prevent ClassNotFoundException: io.reactivex.Flowable caused by Realm in JVM tests
     testImplementation("io.reactivex.rxjava2:rxjava:2.2.21")
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)

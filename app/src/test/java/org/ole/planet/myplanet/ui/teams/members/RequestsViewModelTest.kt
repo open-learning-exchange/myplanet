@@ -95,7 +95,8 @@ class RequestsViewModelTest {
 
         viewModel.respondToRequest(teamId, user1, true)
 
-        // Assert optimistic update before coroutines finish
+        // Assert optimistic update before coroutines finish.
+        // This relies on the ViewModel applying it synchronously before the coroutine suspension.
         val uiStateBeforeCompletion = viewModel.uiState.value
         assertEquals(1, uiStateBeforeCompletion.members.size)
         assertEquals(user2.id, uiStateBeforeCompletion.members[0].id)
@@ -128,7 +129,8 @@ class RequestsViewModelTest {
 
         viewModel.respondToRequest(teamId, user1, true)
 
-        // Assert optimistic update before coroutines finish
+        // Assert optimistic update before coroutines finish.
+        // This relies on the ViewModel applying it synchronously before the coroutine suspension.
         val uiStateBeforeCompletion = viewModel.uiState.value
         assertEquals(1, uiStateBeforeCompletion.members.size)
         assertEquals(user2.id, uiStateBeforeCompletion.members[0].id)
