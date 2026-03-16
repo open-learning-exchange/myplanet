@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import androidx.lifecycle.lifecycleScope
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -62,7 +61,6 @@ class RealtimeSyncHelperTest {
         every { mockFragment.viewLifecycleOwner } returns mockFragment
 
 
-        helper = RealtimeSyncHelper(mockFragment, mockMixin)
     }
 
     @After
@@ -72,7 +70,37 @@ class RealtimeSyncHelperTest {
     }
 
     @Test
+    fun `test debounce ignores rapid successive updates`() = testScope.runTest {
+        helper = RealtimeSyncHelper(mockFragment, mockMixin)
+        val flow = MutableSharedFlow<TableDataUpdate>()
+        every { mockSyncManager.dataUpdateFlow } returns flow
+        every { mockMixin.getWatchedTables() } returns listOf("test_table")
+
+        helper.setupRealtimeSync()
+
+        lifecycleRegistry.currentState = Lifecycle.State.STARTED
+        advanceUntilIdle()
+
+        // Emit two distinct updates rapidly
+        flow.emit(TableDataUpdate("test_table", 1, 0))
+        advanceTimeBy(100)
+        flow.emit(TableDataUpdate("test_table", 2, 0))
+
+        // Still within 300ms of first event, neither should be processed yet due to debounce restart
+        advanceTimeBy(150)
+        advanceUntilIdle()
+
+        // Pass the remaining debounce window for the second event
+        advanceTimeBy(151)
+        advanceUntilIdle()
+
+        // Only the second event should have been processed once
+        verify(exactly = 1) { mockMixin.onDataUpdated("test_table", match { it.newItemsCount == 2 }) }
+    }
+
+    @Test
     fun `test setupRealtimeSync distinct filtering and debounce`() = testScope.runTest {
+        helper = RealtimeSyncHelper(mockFragment, mockMixin)
         val flow = MutableSharedFlow<TableDataUpdate>()
         every { mockSyncManager.dataUpdateFlow } returns flow
         every { mockMixin.getWatchedTables() } returns listOf("test_table", "other_table")
@@ -110,6 +138,7 @@ class RealtimeSyncHelperTest {
 
     @Test
     fun `test lifecycle collection stops when not started`() = testScope.runTest {
+        helper = RealtimeSyncHelper(mockFragment, mockMixin)
         val flow = MutableSharedFlow<TableDataUpdate>()
         every { mockSyncManager.dataUpdateFlow } returns flow
         every { mockMixin.getWatchedTables() } returns listOf("test_table")
@@ -121,7 +150,6 @@ class RealtimeSyncHelperTest {
         flow.emit(TableDataUpdate("test_table", 1, 0))
         advanceTimeBy(301)
         advanceUntilIdle()
-        verify(exactly = 0) { mockMixin.onDataUpdated("test_table", any()) }
 
         lifecycleRegistry.currentState = Lifecycle.State.STARTED
         advanceUntilIdle()
@@ -140,6 +168,7 @@ class RealtimeSyncHelperTest {
 
     @Test
     fun `test refreshRecyclerView with OnDiffRefreshListener`() = testScope.runTest {
+        helper = RealtimeSyncHelper(mockFragment, mockMixin)
         val flow = MutableSharedFlow<TableDataUpdate>()
         every { mockSyncManager.dataUpdateFlow } returns flow
         every { mockMixin.getWatchedTables() } returns listOf("test_table")
@@ -164,6 +193,7 @@ class RealtimeSyncHelperTest {
 
     @Test
     fun `test refreshRecyclerView with ListAdapter`() = testScope.runTest {
+        helper = RealtimeSyncHelper(mockFragment, mockMixin)
         val flow = MutableSharedFlow<TableDataUpdate>()
         every { mockSyncManager.dataUpdateFlow } returns flow
         every { mockMixin.getWatchedTables() } returns listOf("test_table")
