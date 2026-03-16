@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utils
 
+import io.mockk.every
+import io.mockk.mockk
 import io.realm.RealmList
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,17 +10,15 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 
 class ExamAnswerUtilsTest {
 
-    private fun createQuestion(type: String, choices: List<String>): RealmExamQuestion {
-        val question = RealmExamQuestion()
-        question.type = type
+    private fun createQuestion(questionType: String?, choices: List<String>): RealmExamQuestion {
+        val mockQuestion = mockk<RealmExamQuestion>()
+        every { mockQuestion getProperty "type" } returns questionType
 
-        val correctChoiceField = RealmExamQuestion::class.java.getDeclaredField("correctChoice")
-        correctChoiceField.isAccessible = true
         val list = RealmList<String>()
         list.addAll(choices)
-        correctChoiceField.set(question, list)
+        every { mockQuestion.getCorrectChoice() } returns list
 
-        return question
+        return mockQuestion
     }
 
     @Test
