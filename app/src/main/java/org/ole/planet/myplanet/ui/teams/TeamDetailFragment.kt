@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
@@ -357,7 +358,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.btnLeave.visibility = View.VISIBLE
 
         binding.btnLeave.setOnClickListener {
-            AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
+            MaterialAlertDialogBuilder(requireContext(), R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.let { currentTeam ->
                         user?.let { currentUser ->
