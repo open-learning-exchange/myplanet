@@ -479,15 +479,5 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
-        }
     }
 }
