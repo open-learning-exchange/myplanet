@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -23,7 +22,7 @@ class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService), ProgressRepository {
-    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
+    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }
@@ -39,7 +38,7 @@ class ProgressRepositoryImpl @Inject constructor(
                 map[courseId] = progressObject
             }
         }
-        return map
+        map
     }
 
     override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(dispatcherProvider.io) {
@@ -74,7 +73,7 @@ class ProgressRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentProgress(
         steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
-    ): Int {
+    ): Int = withContext(dispatcherProvider.io) {
         val progresses = queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
             equalTo("courseId", courseId)
@@ -87,7 +86,7 @@ class ProgressRepositoryImpl @Inject constructor(
             }
             i++
         }
-        return i
+        i
     }
 
     private suspend fun getCourseProgressMap(
@@ -130,8 +129,8 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
-        return queryList(RealmCourseProgress::class.java) {
+    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> = withContext(dispatcherProvider.io) {
+        queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
         }
     }
@@ -167,8 +166,8 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun hasUserCompletedSync(userId: String): Boolean {
-        return count(RealmUserChallengeActions::class.java) {
+    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(dispatcherProvider.io) {
+        count(RealmUserChallengeActions::class.java) {
             equalTo("userId", userId)
             equalTo("actionType", "sync")
         } > 0

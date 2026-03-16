@@ -213,4 +213,8 @@ dependencies {
     androidTestImplementation(libs.test.coroutines)
     androidTestImplementation(libs.test.runner)
     androidTestImplementation(libs.test.ext.junit)
+
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.coroutines)
 }

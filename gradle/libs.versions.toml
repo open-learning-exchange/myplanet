@@ -41,7 +41,7 @@ webkit = "1.15.0"
 tink = "1.20.0"
 testJunit = "4.13.2"
 testMockk = "1.13.10"
-testCoroutines = "1.8.1"
+testCoroutines = "1.10.2"
 testRunner = "1.5.2"
 testExtJunit = "1.1.5"
 
