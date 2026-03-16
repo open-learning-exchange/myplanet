@@ -151,8 +151,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             }
         }
 
-        suspend fun isServerReachable(urlString: String): Boolean {
-            val app = context.applicationContext as MainApplication
+        suspend fun isServerReachable(
+            urlString: String,
+            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
+        ): Boolean {
             val entryPoint = EntryPointAccessors.fromApplication(context, ServerUrlMapperEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
@@ -169,7 +171,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 }
 
                 val url = URL(formattedUrl)
-                val responseCode = withContext(app.dispatcherProvider.io) {
+                val responseCode = withContext(ioDispatcher) {
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
@@ -342,7 +344,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                     val serverUrl = sharedPrefManager.getServerUrl()
                     if (serverUrl.isNotEmpty()) {
                         applicationScope.launch {
-                            val canReachServer = isServerReachable(serverUrl)
+                            val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
                             if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
                                 resourceDownloadCoordinator.startBackgroundDownload(
                                     downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
