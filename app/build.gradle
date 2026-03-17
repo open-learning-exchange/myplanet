@@ -173,7 +173,8 @@ dependencies {
     testImplementation(libs.test.ext)
     testImplementation(libs.test.hilt)
     kspTest(libs.hilt.android.compiler)
-
+}
+dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
