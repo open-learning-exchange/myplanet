@@ -78,10 +78,9 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         return withRealm { realm ->
-            val course = realm.where(RealmMyCourse::class.java)
+            realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
-                .findFirst()
-            course?.let { realm.copyFromRealm(it) }
+                .findFirst()?.let { realm.copyFromRealm(it) }
         }
     }
 
