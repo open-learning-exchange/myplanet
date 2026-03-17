@@ -5,6 +5,7 @@ on:
     branches:
       - '**'
       - '!master'
+    workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [default, lite]
+        build: [default]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v6
