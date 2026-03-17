@@ -339,70 +339,89 @@ class UploadManager @Inject constructor(
 
                     if (successfulUpdates.isNotEmpty()) {
                         val libraryIds = successfulUpdates.mapNotNull { it.first.libraryId }.toTypedArray()
+                        var isTransactionSuccessful = false
 
-                        databaseService.executeTransactionAsync { transactionRealm ->
-                            val managedLibrariesMap = mutableMapOf<String, RealmMyLibrary>()
-                            if (libraryIds.isNotEmpty()) {
-                                val results = transactionRealm.where(RealmMyLibrary::class.java)
-                                    .`in`("id", libraryIds)
-                                    .findAll()
-                                results.forEach { lib ->
-                                    lib.id?.let { id -> managedLibrariesMap[id] = lib }
-                                }
-                            }
+                        try {
+                            databaseService.withRealm { transactionRealm ->
+                                transactionRealm.executeTransaction { realm ->
+                                    val managedLibrariesMap = mutableMapOf<String, RealmMyLibrary>()
+                                    if (libraryIds.isNotEmpty()) {
+                                        val results = realm.where(RealmMyLibrary::class.java)
+                                            .`in`("id", libraryIds)
+                                            .findAll()
+                                        results.forEach { lib ->
+                                            lib.id?.let { id -> managedLibrariesMap[id] = lib }
+                                        }
+                                    }
 
-                            successfulUpdates.forEach { (resourceData, `object`) ->
-                                val rev = getString("rev", `object`)
-                                val id = getString("id", `object`)
+                                    successfulUpdates.forEach { (resourceData, `object`) ->
+                                        val rev = getString("rev", `object`)
+                                        val id = getString("id", `object`)
 
-                                resourceData.libraryId?.let { libId ->
-                                    managedLibrariesMap[libId]?.let { sub ->
-                                        sub._rev = rev
-                                        sub._id = id
+                                        resourceData.libraryId?.let { libId ->
+                                            managedLibrariesMap[libId]?.let { sub ->
+                                                sub._rev = rev
+                                                sub._id = id
+                                            }
+                                        }
+
+                                        if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
+                                            val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                                                ?: sharedPrefManager.getPlanetCode()
+                                            val teamResource = realm.createObject(
+                                                RealmMyTeam::class.java,
+                                                UUID.randomUUID().toString()
+                                            )
+                                            teamResource.teamId = resourceData.privateFor
+                                            teamResource.title = resourceData.title
+                                            teamResource.resourceId = id
+                                            teamResource.docType = "resourceLink"
+                                            teamResource.updated = true
+                                            teamResource.teamType = "local"
+                                            teamResource.teamPlanetCode = planetCode
+                                            teamResource.sourcePlanet = planetCode
+                                        }
                                     }
                                 }
-
-                                if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
-                                    val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                                        ?: sharedPrefManager.getPlanetCode()
-                                    val teamResource = transactionRealm.createObject(
-                                        RealmMyTeam::class.java,
-                                        UUID.randomUUID().toString()
-                                    )
-                                    teamResource.teamId = resourceData.privateFor
-                                    teamResource.title = resourceData.title
-                                    teamResource.resourceId = id
-                                    teamResource.docType = "resourceLink"
-                                    teamResource.updated = true
-                                    teamResource.teamType = "local"
-                                    teamResource.teamPlanetCode = planetCode
-                                    teamResource.sourcePlanet = planetCode
-                                }
                             }
+                            isTransactionSuccessful = true
+                        } catch (e: Exception) {
+                            // If the executeTransaction block throws (e.g. disk full, schema conflict),
+                            // Realm automatically rolls back the entire transaction.
+                            // We catch it here to prevent crashing the batch loop and prevent
+                            // `isTransactionSuccessful` from being set to true, so we don't upload
+                            // attachments for failed DB writes.
+                            e.printStackTrace()
                         }
 
-                        listener?.let {
-                            val libraries = databaseService.withRealm { realm ->
-                                if (libraryIds.isNotEmpty()) {
-                                    val results = realm.where(RealmMyLibrary::class.java)
-                                        .`in`("id", libraryIds)
-                                        .findAll()
-                                    realm.copyFromRealm(results)
-                                } else {
-                                    emptyList()
-                                }
-                            }
-
-                            val libMap = libraries?.associateBy { it.id } ?: emptyMap()
-
-                            successfulUpdates.forEach { (resourceData, `object`) ->
-                                val rev = getString("rev", `object`)
-                                val id = getString("id", `object`)
-
-                                resourceData.libraryId?.let { libId ->
-                                    libMap[libId]?.let { library ->
-                                        uploadAttachment(id, rev, library, listener)
+                        if (isTransactionSuccessful) {
+                            listener?.let {
+                                try {
+                                    val libraries = databaseService.withRealm { realm ->
+                                        if (libraryIds.isNotEmpty()) {
+                                            val results = realm.where(RealmMyLibrary::class.java)
+                                                .`in`("id", libraryIds)
+                                                .findAll()
+                                            realm.copyFromRealm(results)
+                                        } else {
+                                            emptyList()
+                                        }
                                     }
+
+                                    val libMap = libraries?.associateBy { it.id } ?: emptyMap()
+
+                                    successfulUpdates.forEach { (resourceData, `object`) ->
+                                        val rev = getString("rev", `object`)
+                                        val id = getString("id", `object`)
+
+                                        resourceData.libraryId?.let { libId ->
+                                            libMap[libId]?.let { library ->
+                                                uploadAttachment(id, rev, library, listener)
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
                             }
                         }
