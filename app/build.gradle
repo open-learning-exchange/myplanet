@@ -158,9 +158,13 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
-    testImplementation(libs.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlin)
+    testImplementation(libs.test.coroutines)
+    testImplementation(libs.test.robolectric)
+    testImplementation(libs.test.core)
+
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
