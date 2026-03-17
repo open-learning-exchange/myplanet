@@ -1,12 +1,11 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import android.content.res.Configuration
+import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.ImageButton
-import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
@@ -56,25 +55,13 @@ class AudioPlayerActivity : AppCompatActivity() {
         playButton = binding.playerView.findViewById(R.id.exo_play)
         pauseButton = binding.playerView.findViewById(R.id.exo_pause)
 
-        val overlay = binding.playerView.findViewById<FrameLayout>(R.id.exo_overlay)
-
-
-        val blurredImageView = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-
         Glide.with(this)
-            .load(getThemeBackground()) // or from URL or filePath
+            .load(getThemeBackground())
             .diskCacheStrategy(DiskCacheStrategy.ALL)
             .fitCenter()
-            .into(blurredImageView)
+            .into(binding.backgroundImage)
 
-        overlay.addView(blurredImageView, 0)
-        val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
+        val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
         controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
 
@@ -90,11 +77,17 @@ class AudioPlayerActivity : AppCompatActivity() {
         try {
             exoPlayer = ExoPlayer.Builder(this).build().also { player ->
                 binding.playerView.player = player
+                binding.playerView.setShutterBackgroundColor(Color.TRANSPARENT)
+                binding.playerView.setBackgroundColor(Color.TRANSPARENT)
+                binding.playerView.controllerAutoShow = true
+                binding.playerView.controllerHideOnTouch = false
+                binding.playerView.showController()
+
                 player.setMediaItem(MediaItem.fromUri(fullPath))
                 player.prepare()
                 player.playWhenReady = true
 
-                val controller = binding.playerView.findViewById<View>(R.id.exo_controller)
+                val controller = binding.playerView.findViewById<View>(androidx.media3.ui.R.id.exo_controller)
                 controller?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
                 val timeBar = binding.playerView.findViewById<DefaultTimeBar>(
