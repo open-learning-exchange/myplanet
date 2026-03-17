@@ -1,0 +1,141 @@
+Reusing configuration cache.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:generateDefaultDebugAssets UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:mergeDefaultDebugNativeDebugMetadata NO-SOURCE
+> Task :app:generateDefaultDebugResValues UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:desugarDefaultDebugFileDependencies UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:mergeDefaultDebugAssets UP-TO-DATE
+> Task :app:compressDefaultDebugAssets UP-TO-DATE
+> Task :app:mapDefaultDebugSourceSetPaths UP-TO-DATE
+> Task :app:compileDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:createDefaultDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+> Task :app:extractDeepLinksDefaultDebug UP-TO-DATE
+> Task :app:checkDefaultDebugAarMetadata UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:mergeDefaultDebugJniLibFolders UP-TO-DATE
+> Task :app:checkDefaultDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeDefaultDebugNativeLibs UP-TO-DATE
+> Task :app:processDefaultDebugMainManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifest UP-TO-DATE
+> Task :app:mergeLibDexDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugManifestForPackage UP-TO-DATE
+> Task :app:stripDefaultDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDefaultDebug UP-TO-DATE
+> Task :app:writeDefaultDebugAppMetadata UP-TO-DATE
+> Task :app:writeDefaultDebugSigningConfigVersions UP-TO-DATE
+> Task :app:mergeExtDexDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugResources UP-TO-DATE
+> Task :app:kspDefaultDebugKotlin
+Could not load entry 4e9e5f552fa304c5100d003fa82312a3 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:kaptGenerateStubsDefaultDebugKotlin
+
+> Task :app:kaptDefaultDebugKotlin
+Note: Processing class RealmAnswer
+Note: Processing class RealmCommunity
+Note: Processing class RealmSearchActivity
+Note: Processing class RealmMyCourse
+Note: Processing class RealmNews
+Note: Processing class RealmCourseProgress
+Note: Processing class RealmExamQuestion
+Note: Processing class RealmSubmitPhotos
+Note: Processing class RealmTeamLog
+Note: Processing class RealmSubmission
+Note: Processing class RealmNewsLog
+Note: Processing class RealmFeedback
+Note: Processing class RealmHealthExamination
+Note: Processing class RealmMembershipDoc
+Note: Processing class RealmRemovedLog
+Note: Processing class RealmTeamReference
+Note: Processing class RealmMyLibrary
+Note: Processing class RealmApkLog
+Note: Processing class RealmOfflineActivity
+Note: Processing class RealmMyLife
+Note: Processing class RealmTeamTask
+Note: Processing class RealmResourceActivity
+Note: Processing class RealmMeetup
+Note: Processing class RealmCourseActivity
+Note: Processing class RealmChatHistory
+Note: Processing class RealmDictionary
+Note: Processing class RealmRating
+Note: Processing class RealmCertification
+Note: Processing class RealmRetryOperation
+Note: Processing class RealmTag
+Note: Processing class RealmMyTeam
+Note: Processing class RealmAchievement
+Note: Processing class RealmUserChallengeActions
+Note: Processing class RealmAttachment
+Note: Processing class RealmNotification
+Note: Processing class RealmCourseStep
+Note: Processing class RealmStepExam
+Note: Processing class RealmMyPersonal
+Note: Processing class RealmConversation
+Note: Processing class RealmTeamNotification
+Note: Processing class RealmUser
+Note: Creating DefaultRealmModule
+warning: The following options were not recognized by any processor: '[dagger.hilt.internal.useAggregatingRootProcessor, kapt.kotlin.generated, dagger.fastInit, dagger.hilt.android.internal.disableAndroidSuperclassValidation, dagger.hilt.android.internal.projectType]'
+
+> Task :app:compileDefaultDebugKotlin
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerFragment.kt:283:97 Unchecked cast of 'List<Any?>' to 'List<RealmMyCourse>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/base/BaseRecyclerParentFragment.kt:29:37 No cast needed.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmSubmission.kt:69:62 Unnecessary safe call on a non-null receiver of type 'RealmSubmission'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmSubmission.kt:72:25 Unnecessary safe call on a non-null receiver of type 'RealmSubmission'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/model/RealmSubmission.kt:72:54 Unnecessary safe call on a non-null receiver of type 'RealmSubmission'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:66:62 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:154:50 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/SurveysRepositoryImpl.kt:155:55 Elvis operator (?:) always returns the left operand of non-nullable type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt:1241:11 Elvis operator (?:) always returns the left operand of non-nullable type 'Long'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/UserSessionManager.kt:39:54 'fun getUserModel(): RealmUser?' is deprecated. Use getUserModelSuspending() instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/services/UserSessionManager.kt:43:31 'fun getUserModel(): RealmUser?' is deprecated. Use getUserModelSuspending() instead.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:185:18 'var isWifiEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:193:18 'var isWifiEnabled: Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:212:33 'val configuredNetworks: (Mutable)List<WifiConfiguration!>!' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:213:21 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:213:43 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:214:29 'field networkId: Int' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardElementActivity.kt:215:29 'fun enableNetwork(p0: Int, p1: Boolean): Boolean' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/RealtimeSyncMixin.kt:37:22 This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/RealtimeSyncMixin.kt:54:30 Unchecked cast of '(ListAdapter<*, *> & RecyclerView.Adapter<RecyclerView.ViewHolder!>..ListAdapter<*, *>)' to 'ListAdapter<Any, *>'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/sync/ServerDialogExtensions.kt:118:61 Unnecessary safe call on a non-null receiver of type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/ui/teams/TeamFragment.kt:263:32 Unnecessary safe call on a non-null receiver of type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:7:8 'class EncryptedSharedPreferences : Any, SharedPreferences' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SecurePrefs.kt:8:8 'class MasterKey : Any' is deprecated. Deprecated in Java.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/SyncTimeLogger.kt:89:39 Unnecessary safe call on a non-null receiver of type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/UrlUtils.kt:41:38 Unnecessary safe call on a non-null receiver of type 'String'.
+w: file:///app/app/src/main/java/org/ole/planet/myplanet/utils/UrlUtils.kt:41:74 Unnecessary safe call on a non-null receiver of type 'String'.
+
+> Task :app:compileDefaultDebugJavaWithJavac
+Note: /app/app/build/generated/source/kapt/default/debug/io/realm/DefaultRealmModuleMediator.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:hiltSyncDefaultDebug
+> Task :app:processDefaultDebugJavaRes
+> Task :app:hiltAggregateDepsDefaultDebug
+> Task :app:mergeDefaultDebugJavaResource
+> Task :app:hiltJavaCompileDefaultDebug
+> Task :app:defaultDebugRealmAccessorsTransformer
+> Task :app:transformDefaultDebugClassesWithAsm
+> Task :app:dexBuilderDefaultDebug
+> Task :app:mergeDefaultDebugGlobalSynthetics
+> Task :app:mergeProjectDexDefaultDebug
+> Task :app:packageDefaultDebug
+> Task :app:assembleDefaultDebug
+> Task :app:createDefaultDebugApkListingFileRedirect
+
+[Incubating] Problems report is available at: file:///app/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 3m 16s
+49 actionable tasks: 16 executed, 33 up-to-date
+Configuration cache entry reused.
+The remote build cache was disabled during the build due to errors.

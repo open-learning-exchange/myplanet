@@ -1,0 +1,112 @@
+Calculating task graph as no cached configuration is available for tasks: testDefaultDebugUnitTest
+Gradle cache: GRADLE_BUILD_CACHE_URL=http://34.134.219.48:5071/cache/
+
+> Configure project :app
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+
+> Task :app:generateDefaultDebugAssets UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:preDefaultDebugUnitTestBuild UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugResValues UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDefaultDebug UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:mapDefaultDebugSourceSetPaths UP-TO-DATE
+> Task :app:createDefaultDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDefaultDebug UP-TO-DATE
+> Task :app:checkDefaultDebugAarMetadata UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:compileDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:processDefaultDebugMainManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifestForPackage UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+> Task :app:mergeDefaultDebugAssets UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:kspDefaultDebugKotlin UP-TO-DATE
+> Task :app:processDefaultDebugResources UP-TO-DATE
+> Task :app:kaptGenerateStubsDefaultDebugKotlin UP-TO-DATE
+> Task :app:packageDefaultDebugUnitTestForUnitTest
+> Task :app:kaptDefaultDebugKotlin UP-TO-DATE
+> Task :app:compileDefaultDebugKotlin UP-TO-DATE
+> Task :app:compileDefaultDebugJavaWithJavac UP-TO-DATE
+> Task :app:hiltSyncDefaultDebug UP-TO-DATE
+> Task :app:hiltAggregateDepsDefaultDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDefaultDebug UP-TO-DATE
+> Task :app:defaultDebugRealmAccessorsTransformer UP-TO-DATE
+> Task :app:transformDefaultDebugClassesWithAsm UP-TO-DATE
+> Task :app:processDefaultDebugJavaRes UP-TO-DATE
+
+> Task :app:processDefaultDebugUnitTestManifest
+Could not load entry 6d328d586b75efadfbf67358bb2cd46e from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+Could not load entry 08b43510e5cfdbeb62e95b3e95781cc6 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:javaPreCompileDefaultDebugUnitTest
+Could not load entry 7291d518bf994d8ccae62791849dee9e from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+
+> Task :app:bundleDefaultDebugClassesToRuntimeJar
+> Task :app:bundleDefaultDebugClassesToCompileJar
+
+> Task :app:processDefaultDebugUnitTestManifest
+Could not load entry f6dc69451f1c4486922c3ec7a0a8c1a7 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+/app/app/src/main/AndroidManifest.xml:143:13-146:39 Warning:
+	meta-data#androidx.work.WorkManagerInitializer was tagged at AndroidManifest.xml:143 to remove other declarations but no other declaration present
+
+> Task :app:generateDefaultDebugUnitTestConfig
+> Task :app:kspDefaultDebugUnitTestKotlin
+> Task :app:kaptGenerateStubsDefaultDebugUnitTestKotlin
+> Task :app:kaptDefaultDebugUnitTestKotlin SKIPPED
+
+> Task :app:compileDefaultDebugUnitTestKotlin
+w: file:///app/app/src/test/java/org/ole/planet/myplanet/repository/DownloadRepositoryImplTest.kt:41:28 No cast needed.
+
+> Task :app:processDefaultDebugUnitTestJavaRes
+> Task :app:compileDefaultDebugUnitTestJavaWithJavac
+> Task :app:hiltSyncDefaultDebugUnitTest
+> Task :app:hiltAggregateDepsDefaultDebugUnitTest
+> Task :app:hiltJavaCompileDefaultDebugUnitTest
+> Task :app:transformDefaultDebugUnitTestClassesWithAsm
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+> Task :app:testDefaultDebugUnitTest
+
+AuthSessionUpdaterTest > sendPost calls onError when getSessionUrl throws Exception FAILED
+    java.lang.AssertionError at AuthSessionUpdaterTest.kt:82
+
+StayOnlineWorkerTest > doWork should send broadcast when wifi feature is enabled and wifi is connected FAILED
+    com.getkeepsafe.relinker.MissingLibraryException at ApkLibraryInstaller.java:175
+
+StayOnlineWorkerTest > doWork should not send broadcast when wifi feature is disabled FAILED
+    com.getkeepsafe.relinker.MissingLibraryException at ApkLibraryInstaller.java:175
+
+StayOnlineWorkerTest > doWork should not send broadcast when wifi is disconnected FAILED
+    com.getkeepsafe.relinker.MissingLibraryException at ApkLibraryInstaller.java:175
+
+47 tests completed, 4 failed
+
+> Task :app:testDefaultDebugUnitTest FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:testDefaultDebugUnitTest'.
+> There were failing tests. See the report at: file:///app/app/build/reports/tests/testDefaultDebugUnitTest/index.html
+
+* Try:
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+
+BUILD FAILED in 2m 5s
+47 actionable tasks: 15 executed, 32 up-to-date
+Configuration cache entry stored.
+The remote build cache was disabled during the build due to errors.
