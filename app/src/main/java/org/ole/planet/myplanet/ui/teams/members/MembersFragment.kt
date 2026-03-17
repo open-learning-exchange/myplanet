@@ -2,107 +2,135 @@ package org.ole.planet.myplanet.ui.teams.members
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseMemberFragment
+import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
+import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.JoinedMemberData
+import org.ole.planet.myplanet.services.UserSessionManager
 
-class MembersFragment : BaseMemberFragment() {
-    private var onMemberChangeListener: OnMemberChangeListener = object : OnMemberChangeListener {
-        override fun onMemberChanged() {
-            viewLifecycleOwner.lifecycleScope.launch {
-                loadAndDisplayJoinedMembers()
-            }
-        }
-    }
-    private var adapterJoined: MembersAdapter? = null
-    private var cachedJoinedMembers: List<JoinedMemberData>? = null
+@AndroidEntryPoint
+class MembersFragment : BaseTeamFragment() {
+
+    @Inject
+    lateinit var userSessionManager: UserSessionManager
+
+    private val requestsViewModel: RequestsViewModel by viewModels()
+    private var _binding: FragmentCombinedMembersBinding? = null
+    private val binding get() = _binding!!
+
+    private var onMemberChangeListener: OnMemberChangeListener? = null
+    private var membersAdapter: MembersAdapter? = null
+    private var requestsAdapter: RequestsAdapter? = null
 
     fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
-        this.onMemberChangeListener = listener
+        onMemberChangeListener = listener
     }
 
-    private suspend fun loadAndDisplayJoinedMembers() {
-        val joinedMembersData = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-        cachedJoinedMembers = joinedMembersData
-        val currentUser = profileDbHandler.getUserModel()
-        val currentUserId = currentUser?.id
-        val isLoggedInUserLeader = joinedMembersData.any { it.user.id == currentUserId && it.isLeader }
-
-        if (adapterJoined != null) {
-            (adapterJoined as MembersAdapter).setUserId(currentUserId)
-            adapterJoined?.updateData(joinedMembersData, isLoggedInUserLeader)
-        }
-        showNoData(binding.tvNodata, joinedMembersData.size, "members")
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentCombinedMembersBinding.inflate(inflater, container, false)
+        return binding.root
     }
-
-    private val joinedMembers: List<JoinedMemberData>
-        get() = cachedJoinedMembers ?: emptyList()
-
-    override val list: List<RealmUser>
-        get() = joinedMembers.map { it.user }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.tvMembersHeader.text = getString(R.string.members)
+
+        val columns = when (resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) {
+            Configuration.SCREENLAYOUT_SIZE_LARGE -> 3
+            Configuration.SCREENLAYOUT_SIZE_NORMAL -> 2
+            else -> 1
+        }
+
+        membersAdapter = MembersAdapter(requireActivity(), user?.id, object : OnMemberActionListener {
+            override fun onRemoveMember(member: JoinedMemberData, position: Int) = handleRemoveMember(member)
+            override fun onMakeLeader(member: JoinedMemberData) { member.user.id?.let { handleMakeLeader(it) } }
+            override fun onLeaveTeam() = handleLeaveTeam()
+        })
+        binding.rvMembers.layoutManager = GridLayoutManager(activity, columns)
+        binding.rvMembers.adapter = membersAdapter
+
+        val initialUser = RealmUser()
+        requestsAdapter = RequestsAdapter(requireActivity(), initialUser) { reqUser, isAccepted ->
+            requestsViewModel.respondToRequest(teamId, reqUser, isAccepted)
+        }.apply { setTeamId(teamId) }
+        binding.rvRequests.layoutManager = GridLayoutManager(activity, columns)
+        binding.rvRequests.adapter = requestsAdapter
+
         viewLifecycleOwner.lifecycleScope.launch {
-            loadAndDisplayJoinedMembers()
+            val resolvedUser = userSessionManager.getUserModel() ?: RealmUser()
+            requestsAdapter?.setUser(resolvedUser)
+            membersAdapter?.setUserId(resolvedUser.id)
+        }
+
+        loadMembers()
+
+        requestsViewModel.fetchMembers(teamId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                launch {
+                    requestsViewModel.uiState.collect { state ->
+                        requestsAdapter?.setData(state.members, state.isLeader, state.memberCount)
+                        val hasRequests = state.members.isNotEmpty()
+                        binding.llRequestsSection.visibility = if (hasRequests) View.VISIBLE else View.GONE
+                        if (hasRequests) {
+                            binding.tvRequestsHeader.text = getString(R.string.join_requests) + " (${state.members.size})"
+                        }
+                    }
+                }
+                launch {
+                    requestsViewModel.successAction.collect {
+                        onMemberChangeListener?.onMemberChanged()
+                        loadMembers()
+                    }
+                }
+            }
         }
     }
 
-    override val adapter: RecyclerView.Adapter<*>
-        get() {
-            if (adapterJoined == null) {
-                adapterJoined = MembersAdapter(
-                    requireActivity(), user?.id,
-                    object : OnMemberActionListener {
-                        override fun onRemoveMember(member: JoinedMemberData, position: Int) {
-                            handleRemoveMember(member)
-                        }
-
-                        override fun onMakeLeader(member: JoinedMemberData) {
-                            member.user.id?.let { handleMakeLeader(it) }
-                        }
-
-                        override fun onLeaveTeam() {
-                            handleLeaveTeam()
-                        }
-                    }
-                )
+    private fun loadMembers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+            val currentUserId = userSessionManager.getUserModel()?.id
+            val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
+            membersAdapter?.setUserId(currentUserId)
+            membersAdapter?.updateData(members, isLeader)
+            if (members.isEmpty()) {
+                binding.tvNodata.visibility = View.VISIBLE
+                binding.tvNodata.text = getString(R.string.no_data_available_please_check_and_try_again)
+            } else {
+                binding.tvNodata.visibility = View.GONE
             }
-            return adapterJoined as MembersAdapter
         }
+    }
 
     private fun handleLeaveTeam() {
         AlertDialog.Builder(requireContext())
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
-                val currentUser = user
                 viewLifecycleOwner.lifecycleScope.launch {
                     try {
-                        val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, currentUser?.id)
-                        if (nextLeader != null) {
-                            nextLeader.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
-                        }
-
-                        currentUser?.id?.let { userId ->
-                            teamsRepository.removeMember(teamId, userId)
-                        }
-
-                        loadAndDisplayJoinedMembers()
-                        onMemberChangeListener.onMemberChanged()
-
+                        val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, user?.id)
+                        nextLeader?.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
+                        user?.id?.let { teamsRepository.removeMember(teamId, it) }
+                        loadMembers()
+                        onMemberChangeListener?.onMemberChanged()
                         Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
-
                         requireActivity().supportFragmentManager.popBackStack()
                     } catch (e: Exception) {
                         Toast.makeText(requireContext(), "Error leaving team: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -113,25 +141,12 @@ class MembersFragment : BaseMemberFragment() {
             .show()
     }
 
-    override val layoutManager: RecyclerView.LayoutManager
-        get() {
-            val columns = when (resources.configuration.screenLayout and Configuration.SCREENLAYOUT_SIZE_MASK) {
-                Configuration.SCREENLAYOUT_SIZE_LARGE -> 3
-                Configuration.SCREENLAYOUT_SIZE_NORMAL -> 2
-                Configuration.SCREENLAYOUT_SIZE_SMALL -> 1
-                else -> 1
-            }
-            return GridLayoutManager(activity, columns)
-        }
-
     private fun handleRemoveMember(member: JoinedMemberData) {
         val memberId = member.user.id ?: return
-        val currentUserId = user?.id
-
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                if (currentUserId == memberId) {
-                    val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, currentUserId)
+                if (user?.id == memberId) {
+                    val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, memberId)
                     if (nextLeader != null) {
                         nextLeader.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
                     } else {
@@ -139,10 +154,9 @@ class MembersFragment : BaseMemberFragment() {
                         return@launch
                     }
                 }
-
                 teamsRepository.removeMember(teamId, memberId)
-                loadAndDisplayJoinedMembers()
-                onMemberChangeListener.onMemberChanged()
+                loadMembers()
+                onMemberChangeListener?.onMemberChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -153,9 +167,9 @@ class MembersFragment : BaseMemberFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 teamsRepository.updateTeamLeader(teamId, userId)
-                loadAndDisplayJoinedMembers()
+                loadMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-                onMemberChangeListener.onMemberChanged()
+                onMemberChangeListener?.onMemberChanged()
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
             }
@@ -167,5 +181,10 @@ class MembersFragment : BaseMemberFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

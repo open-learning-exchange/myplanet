@@ -271,25 +271,6 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     }
 
 
-    private fun getList(searchText: String): Pair<List<TeamSummary>, Boolean> {
-        val nameFilteredList = teamList.filter {
-            it.name.contains(searchText, ignoreCase = true)
-        }
-
-        val typeFilteredList: List<TeamSummary>
-        val newConditionApplied: Boolean
-
-        if (TextUtils.isEmpty(type) || type == "team") {
-            typeFilteredList = nameFilteredList.filter { it.type != "enterprise" }
-            newConditionApplied = false
-        } else {
-            typeFilteredList = nameFilteredList.filter { it.type == "enterprise" }
-            newConditionApplied = true
-        }
-
-        return Pair(typeFilteredList, newConditionApplied)
-    }
-
     private fun setTeamList() {
         viewModel.prepareTeamData(teamList, user?.id)
         listContentDescription(conditionApplied)
