@@ -6,9 +6,9 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertNull
@@ -17,8 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.UrlUtils
 import java.lang.reflect.Method
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthSessionUpdaterTest {
@@ -84,22 +83,19 @@ class AuthSessionUpdaterTest {
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } throws RuntimeException("Mocked getUrl exception")
 
-        // Create scope inside runTest
-        val innerScope = TestScope(testDispatcher)
-
         authSessionUpdater = AuthSessionUpdater(
             callback = mockCallback,
             sharedPrefManager = mockSharedPrefManager,
-            scope = innerScope
+            scope = this
         )
 
-        // give coroutine time to run
-        delay(500)
-
-        verify(timeout = 1000, atLeast = 1) { mockCallback.onError(any()) }
+        // Starting automatically triggers sendPost() via the init block.
+        // Wait for coroutines to complete its initial run
+        advanceUntilIdle()
 
         // Ensure to cancel job so test doesn't fail with UncompletedCoroutinesError
         authSessionUpdater.stop()
-        innerScope.cancel()
+
+        verify(atLeast = 1) { mockCallback.onError(any()) }
     }
 }

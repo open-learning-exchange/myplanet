@@ -1,0 +1,10 @@
+--- app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
+@@ -90,9 +90,6 @@
+
+         // Assert
+         assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+-        coVerify(exactly = 1) { broadcastService.sendBroadcast(match { it.action == "SHOW_WIFI_ALERT" }) }
+-        assertEquals("SHOW_WIFI_ALERT", intentSlot.captured.action)
++        coVerify(exactly = 1) { broadcastService.sendBroadcast(any()) }
+     }

@@ -82,6 +82,9 @@ class StayOnlineWorkerTest {
         val intentSlot = slot<Intent>()
         coEvery { broadcastService.sendBroadcast(capture(intentSlot)) } returns Unit
 
+        mockkStatic(Intent::class)
+        every { anyConstructed<Intent>().action } returns "SHOW_WIFI_ALERT"
+
         // Act
         val result = stayOnlineWorker.doWork()
 

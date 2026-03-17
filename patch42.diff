@@ -1,0 +1,12 @@
+--- app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
+@@ -74,9 +74,6 @@
+     @Test
+     fun `doWork should send broadcast when wifi feature is enabled and wifi is connected`() = runTest(testDispatcher) {
+         // Arrange
+-        mockkConstructor(Intent::class)
+-        every { anyConstructed<Intent>().action } returns "SHOW_WIFI_ALERT"
+-
+         every { sharedPreferences.getBoolean("beta_function", false) } returns true
+         every { sharedPreferences.getBoolean(Constants.KEY_SYNC, false) } returns true
+         every { NetworkUtils.isWifiConnected() } returns true

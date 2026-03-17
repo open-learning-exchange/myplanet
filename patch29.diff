@@ -1,0 +1,17 @@
+--- app/src/test/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdaterTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdaterTest.kt
+@@ -92,8 +92,11 @@
+         // Wait for coroutines to complete its initial run
+         advanceUntilIdle()
+
+-        // Ensure to cancel job so test doesn't fail with UncompletedCoroutinesError
+-        authSessionUpdater.stop()
+-
+         verify(atLeast = 1) { mockCallback.onError(any()) }
++
++        // Ensure to cancel job so test doesn't fail with UncompletedCoroutinesError
++        // by cancelling the test scope instead to avoid standalone coroutine exception
++        authSessionUpdater.stop()
++        testScope.cancel()
+     }
+ }

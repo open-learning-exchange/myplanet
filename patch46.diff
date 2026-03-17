@@ -1,0 +1,10 @@
+--- app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
+@@ -10,6 +10,7 @@
+ import io.mockk.mockkObject
+ import io.mockk.mockkStatic
+ import io.mockk.unmockkAll
++import io.mockk.slot
+ import io.mockk.coVerify
+ import io.mockk.verify
+ import kotlinx.coroutines.CoroutineDispatcher

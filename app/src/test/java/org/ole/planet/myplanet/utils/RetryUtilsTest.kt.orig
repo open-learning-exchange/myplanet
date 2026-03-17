@@ -92,7 +92,7 @@ class RetryUtilsTest {
             shouldRetry = { it == null }
         ) {
             attempts++
-            throw Exception("Test Exception")
+            throw java.lang.Exception("Test Exception")
         }
 
         assertNull(result)
