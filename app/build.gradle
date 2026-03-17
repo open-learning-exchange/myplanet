@@ -170,7 +170,7 @@ dependencies {
     testImplementation(libs.test.coroutines)
     testImplementation(libs.test.robolectric)
     testImplementation(libs.test.core)
-    testImplementation(libs.test.ext.junit)
+    testImplementation(libs.test.ext)
     testImplementation(libs.test.hilt)
     kspTest(libs.hilt.android.compiler)
 
