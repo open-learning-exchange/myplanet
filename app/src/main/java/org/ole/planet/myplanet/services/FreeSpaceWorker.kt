@@ -12,12 +12,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltWorker
 class FreeSpaceWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : CoroutineWorker(context, workerParams) {
 
     private var deletedFiles = 0
@@ -32,7 +34,7 @@ class FreeSpaceWorker @AssistedInject constructor(
 
             val rootFile = File(FileUtils.getOlePath(applicationContext))
 
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 deleteRecursive(rootFile)
             }
 
