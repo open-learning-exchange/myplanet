@@ -164,11 +164,14 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
-    testImplementation(libs.junit)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.test.ext.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.hilt.android.testing)
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlin)
+    testImplementation(libs.test.coroutines)
+    testImplementation(libs.test.robolectric)
+    testImplementation(libs.test.core)
+    testImplementation(libs.test.ext.junit)
+    testImplementation(libs.test.hilt)
     kspTest(libs.hilt.android.compiler)
 
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
