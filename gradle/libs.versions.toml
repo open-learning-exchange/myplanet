@@ -110,12 +110,6 @@ markwon-image = { module = "io.noties.markwon:image", version.ref = "markwon" }
 markwon-html = { module = "io.noties.markwon:html", version.ref = "markwon" }
 markwon-ext-tables = { module = "io.noties.markwon:ext-tables", version.ref = "markwon" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }
-test-junit = { module = "junit:junit", version.ref = "testJunit" }
-test-mockk = { module = "io.mockk:mockk", version.ref = "testMockk" }
-test-mockk-android = { module = "io.mockk:mockk-android", version.ref = "testMockk" }
-test-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "testCoroutines" }
-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "testExtJunit" }
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
