@@ -84,7 +84,7 @@ class UploadManager @Inject constructor(
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        MainApplication.applicationScope.launch {
+        scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Cannot upload activities: user model is null")
