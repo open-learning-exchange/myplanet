@@ -3,7 +3,6 @@ name: myPlanet test
 on:
   push:
     branches:
-      - '**'
       - '*'
     workflow_dispatch:
 
@@ -20,7 +19,7 @@ jobs:
         build: [default]
     steps:
       - name: checkout repository code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
