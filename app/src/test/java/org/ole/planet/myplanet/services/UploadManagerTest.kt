@@ -45,6 +45,7 @@ class UploadManagerTest {
     private val mockChatRepository = mockk<ChatRepository>(relaxed = true)
     private val mockUploadConfigs = mockk<UploadConfigs>(relaxed = true)
     private val mockTeamsRepository = mockk<Lazy<TeamsRepository>>(relaxed = true)
+    private val mockApiInterface = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
     private val mockListener = mockk<OnSuccessListener>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -71,6 +72,7 @@ class UploadManagerTest {
             mockChatRepository,
             mockUploadConfigs,
             mockTeamsRepository,
+            mockApiInterface,
             testDispatcherProvider
         )
     }

@@ -72,6 +72,7 @@ class UploadManager @Inject constructor(
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
     private val teamsRepository: Lazy<TeamsRepository>,
+    private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider
 ) : FileUploader() {
 
