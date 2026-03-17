@@ -1,0 +1,91 @@
+package org.ole.planet.myplanet.services
+
+import android.content.Context
+import androidx.work.ListenableWorker.Result
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.spyk
+import java.io.File
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class FreeSpaceWorkerTest {
+
+    private lateinit var worker: FreeSpaceWorker
+    private lateinit var context: Context
+    private lateinit var workerParams: WorkerParameters
+    private lateinit var resourcesRepository: ResourcesRepository
+    private lateinit var dispatcherProvider: DispatcherProvider
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    @Before
+    fun setup() {
+        context = mockk(relaxed = true)
+        workerParams = mockk(relaxed = true)
+        resourcesRepository = mockk(relaxed = true)
+
+        dispatcherProvider = mockk(relaxed = true)
+        every { dispatcherProvider.io } returns testDispatcher
+        every { dispatcherProvider.main } returns testDispatcher
+        every { dispatcherProvider.default } returns testDispatcher
+        every { dispatcherProvider.unconfined } returns testDispatcher
+
+        worker = spyk(FreeSpaceWorker(context, workerParams, resourcesRepository, dispatcherProvider))
+
+        // Mock setProgress
+        coEvery { worker.setProgress(any()) } returns Unit
+
+        mockkStatic(FileUtils::class)
+        every { FileUtils.getOlePath(any()) } returns "mock/ole/path"
+
+        // Mock application context for getOlePath
+        every { context.applicationContext } returns context
+
+        // Ensure File.delete() returns true to allow code path
+        val mockFile = mockk<File>(relaxed = true)
+        every { mockFile.exists() } returns false
+        every { mockFile.isDirectory } returns false
+        every { mockFile.delete() } returns true
+        every { mockFile.length() } returns 0L
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
+
+    @Test
+    fun `doWork should mark all resources offline and return success`() = runTest(testDispatcher) {
+        coEvery { resourcesRepository.markAllResourcesOffline(false) } returns Unit
+
+        val result = worker.doWork()
+
+        advanceUntilIdle()
+
+        coVerify { resourcesRepository.markAllResourcesOffline(false) }
+        assertTrue(result is Result.Success)
+
+        val outputData = (result as Result.Success).outputData
+        assertEquals(0, outputData.getInt("deletedFiles", -1))
+        assertEquals(0L, outputData.getLong("freedBytes", -1L))
+    }
+}

@@ -6,6 +6,12 @@ plugins {
     alias(libs.plugins.realm.android)
 }
 android {
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
     compileSdk = 36
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
@@ -158,6 +164,17 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlin)
+    testImplementation(libs.test.coroutines)
+    testImplementation(libs.test.robolectric)
+    testImplementation(libs.test.core)
+    testImplementation(libs.test.ext)
+    testImplementation(libs.test.hilt)
+    kspTest(libs.hilt.android.compiler)
+}
+dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
@@ -206,15 +223,4 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
-
-    androidTestImplementation(libs.test.junit)
-    androidTestImplementation(libs.test.mockk)
-    androidTestImplementation(libs.test.mockk.android)
-    androidTestImplementation(libs.test.coroutines)
-    androidTestImplementation(libs.test.runner)
-    androidTestImplementation(libs.test.ext.junit)
-
-    testImplementation(libs.test.junit)
-    testImplementation(libs.test.mockk)
-    testImplementation(libs.test.coroutines)
 }

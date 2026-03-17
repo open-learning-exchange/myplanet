@@ -76,7 +76,10 @@
             android:background="@android:color/transparent"
             android:elevation="6dp"
             app:controller_layout_id="@layout/exo_player_controls"
+            app:hide_on_touch="false"
+            app:shutter_background_color="@android:color/transparent"
             app:show_timeout="0"
+            app:surface_type="none"
             app:use_artwork="false" />
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
