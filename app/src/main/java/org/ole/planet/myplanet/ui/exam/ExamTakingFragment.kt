@@ -98,23 +98,25 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             )
                         } catch (e: Exception) {
                             e.printStackTrace()
-                        } finally {
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            answerCache.clear()
+                            clearAnswer()
+                            ans = ""
+                            listAns?.clear()
+                            sub = null
+                        }
+
+                        val currentExam = exam
+                        if (currentExam != null) {
+                            val newSub = submissionsRepository.createExamSubmission(
+                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                            )
                             withContext(Dispatchers.Main) {
-                                answerCache.clear()
-                                clearAnswer()
-                                ans = ""
-                                listAns?.clear()
-                                sub = null
-                                viewLifecycleOwner.lifecycleScope.launch {
-                                    val currentExam = exam
-                                    if (currentExam != null) {
-                                        sub = submissionsRepository.createExamSubmission(
-                                            user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
-                                        )
-                                        startExam(questions?.get(currentIndex))
-                                        updateNavButtons()
-                                    }
-                                }
+                                sub = newSub
+                                startExam(questions?.get(currentIndex))
+                                updateNavButtons()
                             }
                         }
                     }
