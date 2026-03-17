@@ -145,18 +145,26 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             var libraryAdded = false
             var courseAdded = false
+            var errorOccurred: Throwable? = null
 
-            val result = runCatching {
-                if (resourceIds.isNotEmpty()) {
-                    resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+            if (resourceIds.isNotEmpty()) {
+                val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                libraryResult.onSuccess {
                     libraryAdded = true
+                }.onFailure {
+                    errorOccurred = it
                 }
+            }
 
-                if (courseIds.isNotEmpty()) {
-                    courseIds.forEach { courseId ->
-                        if (coursesRepository.markCourseAdded(courseId, userId)) {
+            if (courseIds.isNotEmpty()) {
+                courseIds.forEach { courseId ->
+                    val courseResult = coursesRepository.markCourseAdded(courseId, userId)
+                    courseResult.onSuccess { added ->
+                        if (added) {
                             courseAdded = true
                         }
+                    }.onFailure {
+                        errorOccurred = it
                     }
                 }
             }
@@ -174,7 +182,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
 
-            result.exceptionOrNull()?.let {
+            errorOccurred?.let {
                 it.printStackTrace()
                 toast(activity, "An error occurred: ${it.message}")
                 return@launch
