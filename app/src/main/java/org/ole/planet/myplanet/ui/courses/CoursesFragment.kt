@@ -584,10 +584,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        val items = selectedItems.orEmpty()
-        if (items.size <= 5) {
-            for (i in items.indices) {
-                msg += " - ${items[i]?.courseTitle} \n"
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices!!) {
+                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
@@ -752,33 +751,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         customProgressDialog?.dismiss()
         customProgressDialog = null
         super.onDestroy()
-    }
-
-    private fun recreateFragment(fragment: Fragment) {
-        if (isAdded && activity != null && !requireActivity().isFinishing) {
-            if (isMyCourseLib) {
-                val args = Bundle()
-                args.putBoolean("isMyCourseLib", true)
-                args.putString("courseLib", courseLib)
-                args.putSerializable("resources", resources?.let { ArrayList(it) })
-                fragment.arguments = args
-                FragmentNavigator.replaceFragment(
-                    parentFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    allowStateLoss = true
-                )
-            } else {
-                FragmentNavigator.replaceFragment(
-                    parentFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    allowStateLoss = true
-                )
-            }
-        }
     }
 
     override fun getWatchedTables(): List<String> {

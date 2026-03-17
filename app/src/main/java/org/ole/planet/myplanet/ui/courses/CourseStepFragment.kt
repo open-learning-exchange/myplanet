@@ -89,8 +89,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        val id = stepId ?: error("CourseStepFragment requires a stepId argument")
-        return coursesRepository.getCourseStepData(id, user?.id)
+        return coursesRepository.getCourseStepData(stepId!!, user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

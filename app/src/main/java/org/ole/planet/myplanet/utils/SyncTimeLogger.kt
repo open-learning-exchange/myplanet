@@ -219,7 +219,7 @@ object SyncTimeLogger {
             .filter { !it.key.endsWith(":start") }
             .sortedByDescending { it.value }
             .forEach { (process, duration) ->
-                val percentage = if (duration > 0 && totalDuration > 0) (duration * 100.0 / totalDuration).roundToInt() else 0
+                val percentage = (duration.toDouble() / totalDuration.toDouble() * 100).roundToInt()
                 val itemCount = processItemCounts[process] ?: 0
 
                 if (itemCount > 0) {
@@ -243,7 +243,7 @@ object SyncTimeLogger {
             summaryBuilder.append(String.format(Locale.US, "  Total API calls: %d (Success: %d, Failed: %d)\n",
                 totalApiCalls, successfulCalls, totalApiCalls - successfulCalls))
             summaryBuilder.append(String.format(Locale.US, "  Total API time: %s (%.1f%% of total sync)\n",
-                formatTime(totalApiTime), if (totalDuration > 0) (totalApiTime * 100.0 / totalDuration) else 0.0))
+                formatTime(totalApiTime), (totalApiTime.toDouble() / totalDuration * 100)))
 
             apiCallTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (endpoint, logs) ->
                 val totalTime = logs.sumOf { it.duration }
@@ -263,7 +263,7 @@ object SyncTimeLogger {
 
             summaryBuilder.append(String.format(Locale.US, "  Total Realm operations: %d\n", totalRealmOps))
             summaryBuilder.append(String.format(Locale.US, "  Total Realm time: %s (%.1f%% of total sync)\n",
-                formatTime(totalRealmTime), if (totalDuration > 0) (totalRealmTime * 100.0 / totalDuration) else 0.0))
+                formatTime(totalRealmTime), (totalRealmTime.toDouble() / totalDuration * 100)))
             summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalRealmItems))
 
             realmOperationTimes.entries.sortedByDescending { it.value.sumOf { log -> log.duration } }.forEach { (model, logs) ->
@@ -277,11 +277,11 @@ object SyncTimeLogger {
 
         // Performance insights
         summaryBuilder.append("\nPERFORMANCE INSIGHTS:\n")
-        val apiPercentage = if (apiCallTimes.isNotEmpty() && totalDuration > 0) {
-            (apiCallTimes.values.flatten().sumOf { it.duration } * 100.0 / totalDuration)
+        val apiPercentage = if (apiCallTimes.isNotEmpty()) {
+            (apiCallTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
-        val realmPercentage = if (realmOperationTimes.isNotEmpty() && totalDuration > 0) {
-            (realmOperationTimes.values.flatten().sumOf { it.duration } * 100.0 / totalDuration)
+        val realmPercentage = if (realmOperationTimes.isNotEmpty()) {
+            (realmOperationTimes.values.flatten().sumOf { it.duration }.toDouble() / totalDuration * 100)
         } else 0.0
 
         summaryBuilder.append(String.format(Locale.US, "  Network time: %.1f%%\n", apiPercentage))
@@ -292,15 +292,15 @@ object SyncTimeLogger {
         return summaryBuilder.toString()
     }
 
-    private fun formatTime(time: Long): String {
+    private fun formatTime(timeMs: Long): String {
         return when {
-            time < 1000 -> "${time}ms"
-            time < 60000 -> String.format(Locale.US, "%.2fs", time / 1000.0)
+            timeMs < 1000 -> "${timeMs}ms"
+            timeMs < 60000 -> String.format(Locale.US, "%.2fs", timeMs / 1000.0)
             else -> {
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(time)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(time) % 60
-                val millis = time % 1000
-                String.format(Locale.US, "%02dm %02d.%03ds", minutes, seconds, millis)
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(timeMs)
+                val seconds = TimeUnit.MILLISECONDS.toSeconds(timeMs) % 60
+                val millis = timeMs % 1000
+                "${minutes}m ${seconds}.${millis}s"
             }
         }
     }

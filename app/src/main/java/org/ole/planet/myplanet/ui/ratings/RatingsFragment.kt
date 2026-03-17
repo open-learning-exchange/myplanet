@@ -72,7 +72,7 @@ class RatingsFragment : DialogFragment() {
         binding.userStatusContainer.isVisible = true
         updateSubmitButtonState()
         binding.btnSubmit.setOnClickListener {
-            if (binding.ratingBar.rating == 0f) {
+            if (binding.ratingBar.rating.toDouble() == 0.0) {
                 binding.ratingError.visibility = View.VISIBLE
                 binding.ratingError.text = getString(R.string.kindly_give_a_rating)
             } else {
@@ -134,11 +134,9 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun loadRatingData() {
-        val ratingType = type ?: return
-        val ratingId = id ?: return
         val userId = sharedPrefManager.getUserId()
-        if (userId.isNotEmpty()) {
-            viewModel.loadRatingData(ratingType, ratingId, userId)
+        if (type != null && id != null && userId.isNotEmpty()) {
+            viewModel.loadRatingData(type!!, id!!, userId)
         }
     }
 
@@ -152,14 +150,11 @@ class RatingsFragment : DialogFragment() {
         val rating = binding.ratingBar.rating
         val userId = sharedPrefManager.getUserId()
 
-        val ratingType = type ?: return
-        val ratingId = id ?: return
-        val ratingTitle = title ?: return
-        if (userId.isNotEmpty()) {
+        if (type != null && id != null && title != null && userId.isNotEmpty()) {
             viewModel.submitRating(
-                type = ratingType,
-                itemId = ratingId,
-                title = ratingTitle,
+                type = type!!,
+                itemId = id!!,
+                title = title!!,
                 userId = userId,
                 rating = rating,
                 comment = comment
