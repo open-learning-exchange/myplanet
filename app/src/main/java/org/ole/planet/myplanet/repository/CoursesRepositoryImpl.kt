@@ -341,12 +341,52 @@ class CoursesRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
+            val possibleParentIds = mutableSetOf<String>()
+            allExams.forEach { exam ->
+                exam.id?.let {
+                    possibleParentIds.add(it)
+                    possibleParentIds.add("$it@$courseId")
+                }
+            }
+
+            val submissionsByExamId = if (possibleParentIds.isNotEmpty()) {
+                val subs = mutableListOf<RealmSubmission>()
+                possibleParentIds.toList().chunked(1000).forEach { chunk ->
+                    val chunkSubs = realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", "exam")
+                        .`in`("parentId", chunk.toTypedArray())
+                        .findAll()
+                    subs.addAll(chunkSubs)
+                }
+                subs.groupBy { sub ->
+                    val pId = sub.parentId
+                    if (pId?.contains("@") == true) pId.split("@")[0] else pId
+                }
+            } else {
+                emptyMap()
+            }
+
+            val allSubmissionIds = submissionsByExamId.values.flatten().mapNotNull { it.id }
+            val answersBySubmissionId = if (allSubmissionIds.isNotEmpty()) {
+                val allAnswers = mutableListOf<RealmAnswer>()
+                allSubmissionIds.chunked(1000).forEach { chunk ->
+                    val chunkAnswers = realm.where(RealmAnswer::class.java)
+                        .`in`("submissionId", chunk.toTypedArray())
+                        .findAll()
+                    allAnswers.addAll(chunkAnswers)
+                }
+                allAnswers.groupBy { it.submissionId }
+            } else {
+                emptyMap()
+            }
+
             val array = com.google.gson.JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
-                getExamObject(realm, exams, ob, userId, questionsByExamId)
+                getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
                 array.add(ob)
             }
             org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
@@ -354,18 +394,16 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun getExamObject(
-        realm: io.realm.Realm,
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
-        userId: String?,
-        questionsByExamId: Map<String?, List<RealmExamQuestion>>
+        questionsByExamId: Map<String?, List<RealmExamQuestion>>,
+        submissionsByExamId: Map<String?, List<RealmSubmission>>,
+        answersBySubmissionId: Map<String?, List<RealmAnswer>>
     ) {
-        exams.forEach { it ->
-            it.id?.let { it1 ->
-                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
-                    .contains("parentId", it1).equalTo("type", "exam").findAll()
-            }?.map { submission ->
-                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", submission.id).findAll()
+        exams.forEach { exam ->
+            val submissions = submissionsByExamId[exam.id] ?: emptyList()
+            submissions.forEach { submission ->
+                val answers = answersBySubmissionId[submission.id] ?: emptyList()
                 var examId = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
                     examId = submission.parentId!!.split("@")[0]
