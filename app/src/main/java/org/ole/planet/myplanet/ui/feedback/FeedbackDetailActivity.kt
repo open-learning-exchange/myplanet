@@ -71,7 +71,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
                         replyAdapter = FeedbackReplyAdapter(applicationContext)
                         activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
-                        replyAdapter?.submitList(it.messageList)
+                        replyAdapter!!.submitList(it.messageList)
                         updateForClosed()
                     }
                 }

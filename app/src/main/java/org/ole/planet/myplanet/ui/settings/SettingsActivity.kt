@@ -345,19 +345,19 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun setAutoSyncToggleOn() {
-            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server") ?: return
-            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync") ?: return
-            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync") ?: return
+            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server")
+            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync")
+            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync")
             val lastSyncDate = findPreference<Preference>("lastSyncDate")
-            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+            autoSync!!.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoSync.isChecked) {
-                    if (autoForceWeeklySync.isChecked) {
-                        autoForceMonthlySync.isChecked = false
-                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync.isChecked
+                    if (autoForceWeeklySync!!.isChecked) {
+                        autoForceMonthlySync!!.isChecked = false
+                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync!!.isChecked
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
+            autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
             val lastSynced = sharedPrefManager.getLastSync()
             if (lastSynced == 0L) {

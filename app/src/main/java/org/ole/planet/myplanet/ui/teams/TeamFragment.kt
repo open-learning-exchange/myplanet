@@ -271,25 +271,6 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     }
 
 
-    private fun getList(searchText: String): Pair<List<TeamSummary>, Boolean> {
-        val nameFilteredList = teamList.filter {
-            it.name.contains(searchText, ignoreCase = true)
-        }
-
-        val typeFilteredList: List<TeamSummary>
-        val newConditionApplied: Boolean
-
-        if (TextUtils.isEmpty(type) || type == "team") {
-            typeFilteredList = nameFilteredList.filter { it.type != "enterprise" }
-            newConditionApplied = false
-        } else {
-            typeFilteredList = nameFilteredList.filter { it.type == "enterprise" }
-            newConditionApplied = true
-        }
-
-        return Pair(typeFilteredList, newConditionApplied)
-    }
-
     private fun setTeamList() {
         viewModel.prepareTeamData(teamList, user?.id)
         listContentDescription(conditionApplied)
@@ -343,15 +324,14 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
             .setMessage(R.string.confirm_exit)
             .setPositiveButton(R.string.yes) { _, _ ->
-                team._id?.let { viewModel.leaveTeam(it, user?.id) }
+                viewModel.leaveTeam(team._id!!, user?.id)
             }
             .setNegativeButton(R.string.no, null)
             .show()
     }
 
     override fun onRequestToJoin(team: TeamDetails, user: RealmUser?) {
-        val teamId = team._id ?: return
-        viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
+        viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
     }
 
     override fun onUpdateComplete(itemCount: Int) {

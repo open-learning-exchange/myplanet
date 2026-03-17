@@ -348,47 +348,28 @@ class CoursesRepositoryImpl @Inject constructor(
         userId: String?,
         questionsByExamId: Map<String?, List<RealmExamQuestion>>
     ) {
-        val submissionsList = mutableListOf<org.ole.planet.myplanet.model.RealmSubmission>()
-        exams.forEach { exam ->
-            exam.id?.let { examId ->
-                val submissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .contains("parentId", examId)
-                    .equalTo("type", "exam")
-                    .findAll()
-                submissionsList.addAll(submissions)
+        exams.forEach { it ->
+            it.id?.let { it1 ->
+                realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java).equalTo("userId", userId)
+                    .contains("parentId", it1).equalTo("type", "exam").findAll()
+            }?.map { submission ->
+                val answers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java).equalTo("submissionId", submission.id).findAll()
+                var examId = submission.parentId
+                if (submission.parentId?.contains("@") == true) {
+                    examId = submission.parentId!!.split("@")[0]
+                }
+                val questions = questionsByExamId[examId] ?: emptyList()
+                val questionCount = questions.size
+                if (questionCount == 0) {
+                    ob.addProperty("completed", false)
+                    ob.addProperty("percentage", 0)
+                } else {
+                    ob.addProperty("completed", answers.size == questionCount)
+                    val percentage = (answers.size.toDouble() / questionCount) * 100
+                    ob.addProperty("percentage", percentage)
+                }
+                ob.addProperty("status", submission.status)
             }
-        }
-
-        val submissionIds = submissionsList.mapNotNull { it.id }
-        val allAnswers = mutableListOf<org.ole.planet.myplanet.model.RealmAnswer>()
-        if (submissionIds.isNotEmpty()) {
-            submissionIds.chunked(1000).forEach { chunk ->
-                val chunkAnswers = realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
-                    .`in`("submissionId", chunk.toTypedArray())
-                    .findAll()
-                allAnswers.addAll(chunkAnswers)
-            }
-        }
-        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
-
-        submissionsList.forEach { submission ->
-            val answers = answersBySubmissionId[submission.id] ?: emptyList()
-            var examId = submission.parentId
-            if (submission.parentId?.contains("@") == true) {
-                examId = submission.parentId!!.split("@")[0]
-            }
-            val questions = questionsByExamId[examId] ?: emptyList()
-            val questionCount = questions.size
-            if (questionCount == 0) {
-                ob.addProperty("completed", false)
-                ob.addProperty("percentage", 0)
-            } else {
-                ob.addProperty("completed", answers.size == questionCount)
-                val percentage = (answers.size.toDouble() / questionCount) * 100
-                ob.addProperty("percentage", percentage)
-            }
-            ob.addProperty("status", submission.status)
         }
     }
 
@@ -489,30 +470,5 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
-    }
-
-    override suspend fun removeCourseAndProgress(courseId: String, userId: String) {
-        executeTransaction { realm ->
-            // 1. Delete progress
-            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
-            val examIds = examList.mapNotNull { it.id }.toTypedArray()
-            if (examIds.isNotEmpty()) {
-                realm.where(RealmSubmission::class.java)
-                    .`in`("parentId", examIds)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
-            }
-
-            // 2. Remove from shelf (leave course)
-            val course = realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()
-            course?.removeUserId(userId)
-            RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
-        }
-        RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
     }
 }

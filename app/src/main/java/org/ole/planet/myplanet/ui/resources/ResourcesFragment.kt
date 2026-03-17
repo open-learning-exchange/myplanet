@@ -193,7 +193,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
                 if (::adapterLibrary.isInitialized) {
                     adapterLibrary.setLibraryList(filteredLibraryList.map { it.toResourceItem() })
-                    map?.let { adapterLibrary.setRatingMap(it) }
+                    adapterLibrary.setRatingMap(map!!)
                     adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
                 }
                 checkList(filteredLibraryList.size)
@@ -239,7 +239,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         loadRatingsAndTags(allResourceIds, model?.id)
 
         val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(requireActivity(), map ?: HashMap(), user?.isGuest() == true, emptyMap(), emptySet())
+        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
 
         val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
         adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() })
@@ -269,10 +269,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             userModel = profileDbHandler.getUserModel()
             setupGuestUserRestrictions()
 
-            val uid = userModel?.id
-            if (uid != null) {
+            if (userModel?.id != null) {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(uid).collect { openedResourceIds ->
+                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
@@ -403,10 +402,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun hideButton(){
-        val count = selectedItems?.size ?: 0
-        tvDelete?.isEnabled = count != 0
-        tvAddToLib.isEnabled = count != 0
-        if (count != 0) {
+        tvDelete?.isEnabled = selectedItems?.size!! != 0
+        tvAddToLib.isEnabled = selectedItems?.size!! != 0
+        if(selectedItems?.size!! != 0){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -467,10 +465,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun buildAlertMessage(): String {
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        val items = selectedItems.orEmpty()
-        if (items.size <= 5) {
-            for (i in items.indices) {
-                msg += " - " + items[i]?.title + "\n"
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices ?: emptyList()) {
+                msg += " - " + selectedItems!![i]?.title + "\n"
             }
         } else {
             for (i in 0..4) {
@@ -770,17 +767,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.IO) {
                 itemsToDelete.forEach { resourceId ->
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                    refreshResourcesData()
+                    selectedItems?.clear()
+                    changeButtonStatus()
+                    hideButton()
+                }
             }
-            if (_binding == null) return
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-            refreshResourcesData()
-            selectedItems?.clear()
-            changeButtonStatus()
-            hideButton()
         }
     }
 

@@ -128,10 +128,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showAchievementAndInfo() {
-        val achievements = achievementArray ?: return
         val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         fragmentEditAchievementBinding.llAttachment.removeAllViews()
-        for (e in achievements) {
+        for (e in achievementArray!!) {
             editAttachmentBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
             editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
             val flexboxLayout = editAttachmentBinding.flexbox
@@ -151,9 +150,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showReference() {
-        val references = referenceArray ?: return
         fragmentEditAchievementBinding.llOtherInfo.removeAllViews()
-        for (e in references) {
+        for (e in referenceArray!!) {
             editOtherInfoBinding = EditOtherInfoBinding.inflate(LayoutInflater.from(activity))
             editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
             editOtherInfoBinding.ivDelete.setOnClickListener {

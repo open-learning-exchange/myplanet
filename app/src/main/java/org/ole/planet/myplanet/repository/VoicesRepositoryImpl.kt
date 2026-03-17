@@ -213,43 +213,47 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        executeTransaction {
-            var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
-                .equalTo("type", "chat")
-                .equalTo("parentId", teamId)
-                .findFirst()
+        withRealm { realm ->
+            realm.executeTransaction {
+                var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
+                    .equalTo("type", "chat")
+                    .equalTo("parentId", teamId)
+                    .findFirst()
 
-            if (notification == null) {
-                notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                notification.parentId = teamId
-                notification.type = "chat"
+                if (notification == null) {
+                    notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                    notification.parentId = teamId
+                    notification.type = "chat"
+                }
+                notification.lastCount = count
             }
-            notification.lastCount = count
         }
     }
 
     override suspend fun deletePost(newsId: String, teamName: String) {
-        executeTransaction { transactionRealm ->
-            val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            if (news != null) {
-                val ar = try {
-                    gson.fromJson(news.viewIn, JsonArray::class.java)
-                } catch (e: Exception) {
-                    null
-                }
+        withRealm { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                if (news != null) {
+                    val ar = try {
+                        gson.fromJson(news.viewIn, JsonArray::class.java)
+                    } catch (e: Exception) {
+                        null
+                    }
 
-                if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
-                    deleteRepliesOf(news.id!!, transactionRealm)
-                    news.deleteFromRealm()
-                } else {
-                    val filtered = JsonArray().apply {
-                        ar.forEach { elem ->
-                            if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
-                                add(elem)
+                    if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
+                        deleteRepliesOf(news.id!!, transactionRealm)
+                        news.deleteFromRealm()
+                    } else {
+                        val filtered = JsonArray().apply {
+                            ar.forEach { elem ->
+                                if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
+                                    add(elem)
+                                }
                             }
                         }
+                        news.viewIn = gson.toJson(filtered)
                     }
-                    news.viewIn = gson.toJson(filtered)
                 }
             }
         }
@@ -291,9 +295,11 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteNews(newsId: String) {
-        executeTransaction {
-            deleteRepliesOf(newsId, it)
-            it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
+        withRealm { realm ->
+            realm.executeTransaction {
+                deleteRepliesOf(newsId, it)
+                it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
+            }
         }
     }
 
@@ -306,16 +312,20 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addLabel(newsId: String, label: String) {
-        executeTransaction {
-            val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            news?.labels?.add(label)
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.labels?.add(label)
+            }
         }
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
-        executeTransaction {
-            val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            news?.labels?.remove(label)
+        withRealm { realm ->
+            realm.executeTransaction {
+                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+                news?.labels?.remove(label)
+            }
         }
     }
 
