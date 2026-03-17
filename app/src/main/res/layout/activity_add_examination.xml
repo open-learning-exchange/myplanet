@@ -230,7 +230,6 @@
                     android:id="@+id/btn_add_diag"
                     android:layout_width="@dimen/_50dp"
                     android:layout_height="@dimen/_50dp"
-                    android:contentDescription="@string/send_diagnosis"
                     android:src="@drawable/ic_send" />
             </LinearLayout>
 

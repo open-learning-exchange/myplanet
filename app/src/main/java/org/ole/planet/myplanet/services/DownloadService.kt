@@ -29,10 +29,9 @@ import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -41,11 +40,15 @@ import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils.header
+import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.repository.DownloadRepository
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class DownloadService : Service() {
     @Inject
-    lateinit var broadcastService: BroadcastService
+    lateinit var downloadRepository: DownloadRepository
 
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
@@ -174,79 +177,29 @@ class DownloadService : Service() {
                 return
             }
 
-            val retrofitInterface = ApiClient.client.create(ApiInterface::class.java)
-            if (retrofitInterface == null) {
-                downloadFailed("Network client not available", fromSync)
-                return
-            }
-            
             val authHeader = header
             if (authHeader.isBlank()) {
                 downloadFailed("Authentication header not available", fromSync)
                 return
             }
-            val response = try {
-                retrofitInterface.downloadFile(authHeader, url)
-            } catch (e: java.net.UnknownHostException) {
-                downloadFailed("Server not reachable. Check internet connection.", fromSync)
-                return
-            } catch (e: java.net.SocketTimeoutException) {
-                downloadFailed("Connection timeout. Please try again.", fromSync)
-                return
-            } catch (e: java.net.ConnectException) {
-                downloadFailed("Unable to connect to server", fromSync)
-                return
-            } catch (e: IOException) {
-                downloadFailed("Network error: ${e.localizedMessage ?: "Unknown IO error"}", fromSync)
-                return
-            } catch (e: Exception) {
-                downloadFailed("Network error: ${e.localizedMessage ?: "Unknown error"}", fromSync)
-                return
-            }
 
-            if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody == null) {
-                        downloadFailed("Empty response body", fromSync)
-                        return
-                    }
-                    
+            when (val result = downloadRepository.downloadFileResponse(url, authHeader)) {
+                is DownloadResult.Success -> {
                     try {
-                        val contentLength = responseBody.contentLength()
+                        val contentLength = result.body.contentLength()
                         if (contentLength > 0 && !checkStorage(contentLength)) {
-                            downloadFile(responseBody, url)
+                            downloadFile(result.body, url)
                         } else if (contentLength == -1L) {
-                            downloadFile(responseBody, url)
+                            downloadFile(result.body, url)
                         } else if (contentLength == 0L) {
                             downloadFailed("Empty file: Content-Length=$contentLength", fromSync)
                         }
                     } catch (e: Exception) {
                         downloadFailed("Storage check failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
                     }
-            } else {
-                val errorMessage = when (response.code()) {
-                        401 -> "Unauthorized access"
-                        403 -> "Forbidden - Access denied"
-                        404 -> "File not found"
-                        408 -> "Request timeout"
-                        500 -> "Server error"
-                        502 -> "Bad gateway"
-                        503 -> "Service unavailable"
-                        504 -> "Gateway timeout"
-                        else -> "Connection failed (${response.code()})"
                 }
-                downloadFailed(errorMessage, fromSync)
-
-                if (response.code() == 404) {
-                    try {
-                        val responseString = response.toString()
-                        val regex = Regex("url=([^}]*)")
-                        val matchResult = regex.find(responseString)
-                        val extractedUrl = matchResult?.groupValues?.get(1)
-                        createLog("File Not Found", "$extractedUrl")
-                    } catch (e: Exception) {
-                        createLog("File Not Found", url)
-                    }
+                is DownloadResult.Error -> {
+                    downloadFailed(result.message, fromSync)
                 }
             }
         } catch (e: Exception) {
@@ -273,6 +226,7 @@ class DownloadService : Service() {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
                 downloadScope.launch {
+                    val broadcastService = getBroadcastService(this@DownloadService)
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -376,6 +330,7 @@ class DownloadService : Service() {
             putExtra("fromSync", fromSync)
         }
         downloadScope.launch {
+            val broadcastService = getBroadcastService(this@DownloadService)
             broadcastService.sendBroadcast(intent)
         }
     }

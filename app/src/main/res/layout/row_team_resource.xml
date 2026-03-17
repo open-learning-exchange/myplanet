@@ -31,7 +31,6 @@
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_gravity="right"
-                android:contentDescription="@string/remove"
                 android:padding="4dp"
                 android:src="@drawable/close_x"
                 app:tint="@color/daynight_textColor" />

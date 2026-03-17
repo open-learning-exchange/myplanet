@@ -67,7 +67,7 @@
                         android:layout_height="@dimen/_50dp"
                         android:layout_gravity="center_vertical"
                         android:background="@drawable/buttonyellow"
-                        android:contentDescription="@string/next_question"
+                        android:contentDescription="@string/btn_back"
                         android:padding="8dp"
                         android:visibility="gone"
                         android:src="@drawable/ic_right_arrow"

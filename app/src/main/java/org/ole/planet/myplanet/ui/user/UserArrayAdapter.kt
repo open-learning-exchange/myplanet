@@ -4,6 +4,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -11,12 +12,11 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
     private val onItemClick: (RealmUser) -> Unit
-) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(UserDiffCallback()) {
 
     var selectedPosition = 0
 
@@ -63,10 +63,13 @@ class UserArrayAdapter(
         }
     }
 
-    companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
-            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem.id == newItem.id && oldItem.name == newItem.name }
-        )
+    class UserDiffCallback : DiffUtil.ItemCallback<RealmUser>() {
+        override fun areItemsTheSame(oldItem: RealmUser, newItem: RealmUser): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: RealmUser, newItem: RealmUser): Boolean {
+            return oldItem.id == newItem.id && oldItem.name == newItem.name
+        }
     }
 }

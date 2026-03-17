@@ -9,13 +9,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.repository.retry.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @Singleton
 class RetryQueue @Inject constructor(
-    private val retryRepository: RetryRepository,
+    private val databaseService: DatabaseService,
     @ApplicationContext private val context: Context
 ) {
     companion object {
@@ -46,16 +46,41 @@ class RetryQueue @Inject constructor(
             return
         }
 
-        val existingOperation = retryRepository.getExistingOperation(uploadType, error.itemId)
+        val existingOperation = databaseService.withRealmAsync { realm ->
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("itemId", error.itemId)
+                .equalTo("uploadType", uploadType)
+                .notEqualTo("status", RealmRetryOperation.STATUS_COMPLETED)
+                .notEqualTo("status", RealmRetryOperation.STATUS_ABANDONED)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
 
         if (existingOperation != null) {
-            retryRepository.updateExistingOperation(existingOperation.id, error)
+            databaseService.executeTransactionAsync { realm ->
+                realm.where(RealmRetryOperation::class.java)
+                    .equalTo("id", existingOperation.id)
+                    .findFirst()?.let { op ->
+                        op.attemptCount += 1
+                        op.lastAttemptTime = System.currentTimeMillis()
+                        op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
+                        op.errorMessage = error.message
+                        op.httpCode = error.httpCode
+
+                        if (op.attemptCount >= op.maxAttempts) {
+                            op.status = RealmRetryOperation.STATUS_ABANDONED
+                            Log.w(TAG, "Operation ${op.id} abandoned after ${op.maxAttempts} attempts")
+                        }
+                    }
+            }
             Log.d(TAG, "Updated existing retry operation for item ${error.itemId}")
         } else {
-            retryRepository.createNewOperation(
-                uploadType, error, payload.toString(), endpoint,
-                httpMethod, dbId, modelClassName, userId
-            )
+            databaseService.executeTransactionAsync { realm ->
+                RealmRetryOperation.createFromUploadError(
+                    realm, uploadType, error, payload.toString(), endpoint,
+                    httpMethod, dbId, modelClassName, userId
+                )
+            }
             Log.i(TAG, "RETRY_QUEUE: Queued new operation - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
         }
     }
@@ -84,32 +109,75 @@ class RetryQueue @Inject constructor(
     }
 
     suspend fun getPendingOperations(): List<RealmRetryOperation> {
-        return retryRepository.getPendingOperations()
+        return databaseService.withRealmAsync { realm ->
+            RealmRetryOperation.getPendingOperations(realm)
+        }
     }
 
     suspend fun getPendingCount(): Long {
-        return retryRepository.getFailedOperationsCount()
+        return databaseService.withRealmAsync { realm ->
+            RealmRetryOperation.getFailedOperationsCount(realm)
+        }
     }
 
     suspend fun markInProgress(operationId: String) {
-        retryRepository.markInProgress(operationId)
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("id", operationId)
+                .findFirst()?.let { op ->
+                    op.status = RealmRetryOperation.STATUS_IN_PROGRESS
+                }
+        }
     }
 
     suspend fun markCompleted(operationId: String) {
-        retryRepository.markCompleted(operationId)
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("id", operationId)
+                .findFirst()?.let { op ->
+                    op.status = RealmRetryOperation.STATUS_COMPLETED
+                    op.lastAttemptTime = System.currentTimeMillis()
+                }
+        }
         Log.d(TAG, "Marked operation $operationId as completed")
     }
 
     suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        retryRepository.markFailed(operationId, errorMessage, httpCode)
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("id", operationId)
+                .findFirst()?.let { op ->
+                    op.attemptCount += 1
+                    op.lastAttemptTime = System.currentTimeMillis()
+                    op.errorMessage = errorMessage
+                    op.httpCode = httpCode
+
+                    if (op.attemptCount >= op.maxAttempts) {
+                        op.status = RealmRetryOperation.STATUS_ABANDONED
+                        Log.w(TAG, "Operation $operationId abandoned after ${op.maxAttempts} attempts")
+                    } else {
+                        op.status = RealmRetryOperation.STATUS_PENDING
+                        op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
+                    }
+                }
+        }
     }
 
     suspend fun cleanup() {
-        retryRepository.cleanupCompletedOperations()
+        databaseService.executeTransactionAsync { realm ->
+            RealmRetryOperation.cleanupCompletedOperations(realm)
+        }
     }
 
     suspend fun resetAllPending() {
-        retryRepository.resetAllPending()
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
+                .findAll()
+                .forEach { op ->
+                    op.nextRetryTime = System.currentTimeMillis()
+                }
+        }
     }
 
     /**
@@ -128,7 +196,15 @@ class RetryQueue @Inject constructor(
                 return@withLock false
             }
 
-            retryRepository.clearPendingAndAbandonedOperations()
+            databaseService.executeTransactionAsync { realm ->
+                // Only delete pending and abandoned, not in_progress or completed
+                realm.where(RealmRetryOperation::class.java)
+                    .equalTo("status", RealmRetryOperation.STATUS_PENDING)
+                    .or()
+                    .equalTo("status", RealmRetryOperation.STATUS_ABANDONED)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
             Log.i(TAG, "Queue cleared successfully")
             true
         }
@@ -139,6 +215,14 @@ class RetryQueue @Inject constructor(
      * Called on app startup to recover from crashes.
      */
     suspend fun recoverStuckOperations() {
-        retryRepository.recoverStuckOperations()
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS)
+                .findAll()
+                .forEach { op ->
+                    op.status = RealmRetryOperation.STATUS_PENDING
+                    op.nextRetryTime = System.currentTimeMillis() + 60_000 // Retry in 1 minute
+                }
+        }
     }
 }

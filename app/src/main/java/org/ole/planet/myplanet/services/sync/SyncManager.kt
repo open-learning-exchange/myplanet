@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
+import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
@@ -69,8 +70,7 @@ class SyncManager @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
-    @param:ApplicationScope private val syncScope: CoroutineScope,
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -294,9 +294,11 @@ class SyncManager @Inject constructor(
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
-            logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
-            logger.endProcess("on_synced")
+            databaseService.withRealm { realm ->
+                logger.startProcess("on_synced")
+                onSynced(realm, sharedPrefManager.rawPreferences)
+                logger.endProcess("on_synced")
+            }
 
             logger.stopLogging()
 
@@ -506,9 +508,11 @@ class SyncManager @Inject constructor(
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
 
-            logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
-            logger.endProcess("on_synced")
+            databaseService.withRealm { realm ->
+                logger.startProcess("on_synced")
+                onSynced(realm, sharedPrefManager.rawPreferences)
+                logger.endProcess("on_synced")
+            }
 
             logger.stopLogging()
         } catch (err: Exception) {

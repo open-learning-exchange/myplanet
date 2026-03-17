@@ -9,7 +9,6 @@
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:layout_gravity="center"
-        android:contentDescription="@null"
         app:srcCompat="@drawable/ic_home"
         app:tint="@color/md_white_1000" />
 

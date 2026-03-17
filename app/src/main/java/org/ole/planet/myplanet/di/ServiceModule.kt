@@ -50,10 +50,9 @@ object ServiceModule {
         transactionSyncManager: TransactionSyncManager,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
-        @ApplicationScope scope: CoroutineScope,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+        @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
     }
 
     @Provides
@@ -69,9 +68,10 @@ object ServiceModule {
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
-        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>
+        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
+        apiInterface: ApiInterface
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository, apiInterface)
     }
 
     @Provides

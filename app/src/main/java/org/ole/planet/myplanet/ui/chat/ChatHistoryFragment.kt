@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
@@ -51,7 +52,7 @@ private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C
 class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
-    private lateinit var sharedViewModel: ChatViewModel
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     var user: RealmUser? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
@@ -84,7 +85,6 @@ class ChatHistoryFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         startChatHistorySync()
     }
 

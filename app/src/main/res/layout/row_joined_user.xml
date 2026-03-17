@@ -37,7 +37,6 @@
             android:id="@+id/ic_more"
             android:layout_width="@dimen/_40dp"
             android:layout_height="@dimen/_40dp"
-            android:contentDescription="@string/more_options"
             android:padding="4dp"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"

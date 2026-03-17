@@ -62,7 +62,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:contentDescription="@null"
                         app:srcCompat="@drawable/health" />
                     <TextView
                         android:id="@+id/lblHealthName"
@@ -80,7 +79,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:contentDescription="@null"
                         app:srcCompat="@drawable/health" />
                 </LinearLayout>
 
@@ -94,7 +92,6 @@
                         android:id="@+id/user_image"
                         android:layout_width="@dimen/user_image_size"
                         android:layout_height="@dimen/user_image_size"
-                        android:contentDescription="@string/user_avatar"
                         android:padding="@dimen/padding_normal"
                         android:src="@drawable/profile" />
                     <LinearLayout
@@ -356,7 +353,6 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/padding_large"
-            android:contentDescription="@string/update_health_record"
             android:src="@drawable/ic_myhealth"
             android:text="@string/update_health_record"
             android:tint="@color/md_white_1000"

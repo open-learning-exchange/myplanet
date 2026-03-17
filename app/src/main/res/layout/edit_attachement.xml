@@ -54,7 +54,6 @@
                 android:layout_width="50dp"
                 android:layout_height="50dp"
                 android:layout_gravity="center"
-                android:contentDescription="@string/delete_item"
                 android:padding="8dp"
                 android:src="@drawable/ic_delete"
                 app:tint="@color/ic_download" />
