@@ -677,23 +677,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         super.onDestroy()
     }
 
-    private fun recreateFragment(fragment: Fragment) {
-        if (isAdded && activity != null && !requireActivity().isFinishing) {
-            if (isMyCourseLib) {
-                val args = Bundle().apply {
-                    putBoolean("isMyCourseLib", true)
-                }
-                fragment.arguments = args
-            }
-            FragmentNavigator.replaceFragment(
-                parentFragmentManager,
-                R.id.fragment_container,
-                fragment,
-                addToBackStack = true
-            )
-        }
-    }
-
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
         filter.setOnClickListener {
