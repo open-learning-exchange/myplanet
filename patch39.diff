@@ -1,9 +1,0 @@
---- app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
-+++ app/src/test/java/org/ole/planet/myplanet/services/StayOnlineWorkerTest.kt
-@@ -82,6 +82,7 @@
-         every { NetworkUtils.isWifiConnected() } returns true
-
-         mockkStatic(Intent::class)
-+        every { anyConstructed<Intent>().action } returns "SHOW_WIFI_ALERT"
-
-         coEvery { broadcastService.sendBroadcast(any()) } returns Unit
