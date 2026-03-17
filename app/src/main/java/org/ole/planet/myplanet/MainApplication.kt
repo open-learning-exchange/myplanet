@@ -16,7 +16,6 @@ import androidx.work.Configuration as WorkManagerConfiguration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import com.afollestad.materialdialogs.BuildConfig
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import java.net.HttpURLConnection
