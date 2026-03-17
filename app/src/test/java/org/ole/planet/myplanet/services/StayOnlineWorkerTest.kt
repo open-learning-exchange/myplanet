@@ -2,11 +2,14 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
 import androidx.work.WorkerParameters
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.coVerify
@@ -27,11 +30,10 @@ import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
-import androidx.test.core.app.ApplicationProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
+@Config(sdk = [33], application = android.app.Application::class)
 class StayOnlineWorkerTest {
 
     private lateinit var context: Context
@@ -40,12 +42,17 @@ class StayOnlineWorkerTest {
     private lateinit var testDispatcher: TestDispatcher
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var stayOnlineWorker: StayOnlineWorker
+    private lateinit var sharedPreferences: SharedPreferences
 
     @Before
     fun setup() {
-        context = ApplicationProvider.getApplicationContext()
+        context = mockk<Context>(relaxed = true)
         workerParams = mockk(relaxed = true)
         broadcastService = mockk(relaxed = true)
+        sharedPreferences = mockk<SharedPreferences>(relaxed = true)
+
+        mockkStatic(PreferenceManager::class)
+        every { PreferenceManager.getDefaultSharedPreferences(context) } returns sharedPreferences
 
         testDispatcher = StandardTestDispatcher()
         dispatcherProvider = object : DispatcherProvider {
@@ -74,7 +81,8 @@ class StayOnlineWorkerTest {
     @Test
     fun `doWork should send broadcast when wifi feature is enabled and wifi is connected`() = runTest(testDispatcher) {
         // Arrange
-        every { Constants.isBetaWifiFeatureEnabled(any()) } returns true
+        every { sharedPreferences.getBoolean("beta_function", false) } returns true
+        every { sharedPreferences.getBoolean(Constants.KEY_SYNC, false) } returns true
         every { NetworkUtils.isWifiConnected() } returns true
 
         val intentSlot = slot<Intent>()
@@ -92,7 +100,8 @@ class StayOnlineWorkerTest {
     @Test
     fun `doWork should not send broadcast when wifi feature is disabled`() = runTest(testDispatcher) {
         // Arrange
-        every { Constants.isBetaWifiFeatureEnabled(any()) } returns false
+        every { sharedPreferences.getBoolean("beta_function", false) } returns false
+        every { sharedPreferences.getBoolean(Constants.KEY_SYNC, false) } returns false
         every { NetworkUtils.isWifiConnected() } returns true
 
         // Act
@@ -106,7 +115,8 @@ class StayOnlineWorkerTest {
     @Test
     fun `doWork should not send broadcast when wifi is disconnected`() = runTest(testDispatcher) {
         // Arrange
-        every { Constants.isBetaWifiFeatureEnabled(any()) } returns true
+        every { sharedPreferences.getBoolean("beta_function", false) } returns true
+        every { sharedPreferences.getBoolean(Constants.KEY_SYNC, false) } returns true
         every { NetworkUtils.isWifiConnected() } returns false
 
         // Act
