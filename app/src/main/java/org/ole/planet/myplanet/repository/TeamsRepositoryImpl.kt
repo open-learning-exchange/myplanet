@@ -244,23 +244,27 @@ class TeamsRepositoryImpl @Inject constructor(
         return courses
     }
 
-    override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>) {
-        if (courseIds.isEmpty()) {
-            return
-        }
-        executeTransaction { realm ->
-            val team = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", teamId)
-                .findFirst()
-            if (team == null) {
-                return@executeTransaction
-            }
-            courseIds.forEach { courseId ->
-                if (team.courses?.contains(courseId) != true) {
-                    team.courses?.add(courseId)
+    override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit> {
+        return withContext(databaseService.ioDispatcher) {
+            runCatching {
+                if (courseIds.isEmpty()) {
+                    return@runCatching
+                }
+                executeTransaction { realm ->
+                    val team = realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                    if (team == null) {
+                        return@executeTransaction
+                    }
+                    courseIds.forEach { courseId ->
+                        if (team.courses?.contains(courseId) != true) {
+                            team.courses?.add(courseId)
+                        }
+                    }
+                    team.updated = true
                 }
             }
-            team.updated = true
         }
     }
 
