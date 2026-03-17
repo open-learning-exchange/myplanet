@@ -762,33 +762,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         super.onDestroy()
     }
 
-    private fun recreateFragment(fragment: Fragment) {
-        if (isAdded && activity != null && !requireActivity().isFinishing) {
-            if (isMyCourseLib) {
-                val args = Bundle()
-                args.putBoolean("isMyCourseLib", true)
-                args.putString("courseLib", courseLib)
-                args.putSerializable("resources", resources?.let { ArrayList(it) })
-                fragment.arguments = args
-                FragmentNavigator.replaceFragment(
-                    parentFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    allowStateLoss = true
-                )
-            } else {
-                FragmentNavigator.replaceFragment(
-                    parentFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    allowStateLoss = true
-                )
-            }
-        }
-    }
-
     override fun getWatchedTables(): List<String> {
         return listOf("courses")
     }

@@ -14,6 +14,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -289,36 +290,40 @@ class ResourcesRepositoryImpl @Inject constructor(
         }.filter { it.needToUpdate() }
     }
 
-    override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String) {
-        if (resourceIds.isEmpty() || userId.isBlank()) return
+    override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
+        return withContext(databaseService.ioDispatcher) {
+            runCatching {
+                if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
 
-        executeTransaction { realm ->
-            val chunkSize = 1000
-            resourceIds.chunked(chunkSize).forEach { chunk ->
-                val libraryItems = realm.where(RealmMyLibrary::class.java)
-                    .`in`("resourceId", chunk.toTypedArray())
-                    .findAll()
+                executeTransaction { realm ->
+                    val chunkSize = 1000
+                    resourceIds.chunked(chunkSize).forEach { chunk ->
+                        val libraryItems = realm.where(RealmMyLibrary::class.java)
+                            .`in`("resourceId", chunk.toTypedArray())
+                            .findAll()
 
-                libraryItems.forEach { libraryItem ->
-                    if (libraryItem.userId?.contains(userId) == false) {
-                        libraryItem.setUserId(userId)
+                        libraryItems.forEach { libraryItem ->
+                            if (libraryItem.userId?.contains(userId) == false) {
+                                libraryItem.setUserId(userId)
+                            }
+                        }
+
+                        val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                            .equalTo("type", "resources")
+                            .equalTo("userId", userId)
+                            .`in`("docId", chunk.toTypedArray())
+                            .findAll()
+
+                        removedLogs.deleteAllFromRealm()
                     }
                 }
-
-                val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
-                    .equalTo("type", "resources")
-                    .equalTo("userId", userId)
-                    .`in`("docId", chunk.toTypedArray())
-                    .findAll()
-
-                removedLogs.deleteAllFromRealm()
             }
         }
     }
 
-    override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String) {
+    override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit> {
         val resourceIds = resources.mapNotNull { it.resourceId }
-        addResourcesToUserLibrary(resourceIds, userId)
+        return addResourcesToUserLibrary(resourceIds, userId)
     }
 
     override suspend fun getOpenedResourceIds(userId: String): Set<String> {
