@@ -73,8 +73,9 @@ class UploadManager @Inject constructor(
     private val chatRepository: ChatRepository,
     private val uploadConfigs: UploadConfigs,
     private val teamsRepository: Lazy<TeamsRepository>,
+    private val apiInterface: ApiInterface,
     @ApplicationScope private val scope: CoroutineScope
-) : FileUploader(scope) {
+) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
