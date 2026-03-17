@@ -29,57 +29,37 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         return databaseService.withRealm { realm ->
             realm.executeTransaction { r ->
-                if (surveyTitles.isNotEmpty()) {
-                    val surveyIds = surveyTitles.toTypedArray()
-                    val existingSurveyNotifications = r.where(RealmNotification::class.java)
-                        .equalTo("userId", actualUserId)
-                        .equalTo("type", "survey")
-                        .`in`("relatedId", surveyIds)
-                        .findAll()
-                    val existingSurveyIds = existingSurveyNotifications.mapNotNull { it.relatedId }.toSet()
+                val existingNotifications = r.where(RealmNotification::class.java)
+                    .equalTo("userId", actualUserId).findAll()
+                val notificationLookup = existingNotifications.mapTo(mutableSetOf()) {
+                    Triple(it.type, it.relatedId, it.userId)
+                }
 
-                    surveyTitles.forEach { title ->
-                        if (!existingSurveyIds.contains(title)) {
-                            createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
-                        }
+                surveyTitles.forEach { title ->
+                    if (notificationLookup.add(Triple("survey", title, actualUserId))) {
+                        createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
                     }
                 }
 
-                if (taskData.isNotEmpty()) {
-                    val taskIds = taskData.map { (_, _, id) -> id }.toTypedArray()
-                    val existingTaskNotifications = r.where(RealmNotification::class.java)
-                        .equalTo("userId", actualUserId)
-                        .equalTo("type", "task")
-                        .`in`("relatedId", taskIds)
-                        .findAll()
-                    val existingTaskIds = existingTaskNotifications.mapNotNull { it.relatedId }.toSet()
-
-                    taskData.forEach { (title, deadline, id) ->
-                        if (!existingTaskIds.contains(id)) {
-                            createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
-                        }
+                taskData.forEach { (title, deadline, id) ->
+                    if (notificationLookup.add(Triple("task", id, actualUserId))) {
+                        createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
                     }
                 }
 
                 if (storageRatio > 85) {
-                    createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
+                    if (notificationLookup.add(Triple("storage", "storage", actualUserId))) {
+                        createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
+                    }
                 }
-                createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+                if (notificationLookup.add(Triple("storage", "storage_test", actualUserId))) {
+                    createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
+                }
 
-                if (joinRequestData.isNotEmpty()) {
-                    val requestIds = joinRequestData.map { (_, _, requestId) -> requestId }.toTypedArray()
-                    val existingJoinNotifications = r.where(RealmNotification::class.java)
-                        .equalTo("userId", actualUserId)
-                        .equalTo("type", "join_request")
-                        .`in`("relatedId", requestIds)
-                        .findAll()
-                    val existingJoinIds = existingJoinNotifications.mapNotNull { it.relatedId }.toSet()
-
-                    joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                        if (!existingJoinIds.contains(requestId)) {
-                            val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                            createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
-                        }
+                joinRequestData.forEach { (requesterName, teamName, requestId) ->
+                    if (notificationLookup.add(Triple("join_request", requestId, actualUserId))) {
+                        val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                        createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
                     }
                 }
             }
