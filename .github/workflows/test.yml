@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [default]
+        build: [default, lite]
     steps:
       - name: checkout repository code
         uses: actions/checkout@v6
