@@ -6,13 +6,19 @@ plugins {
     alias(libs.plugins.realm.android)
 }
 android {
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
     compileSdk = 36
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4888
-        versionName = "0.48.88"
+        versionCode = 4918
+        versionName = "0.49.18"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -158,6 +164,16 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 dependencies {
+    testImplementation(libs.test.junit)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlin)
+    testImplementation(libs.test.coroutines)
+    testImplementation(libs.test.robolectric)
+    testImplementation(libs.test.core)
+    testImplementation(libs.test.ext)
+    testImplementation(libs.test.hilt)
+    kspTest(libs.hilt.android.compiler)
+
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
@@ -206,11 +222,9 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
-    testImplementation(libs.junit)
+    testImplementation(libs.test.junit)
 
-    testImplementation(libs.mockk)
+    testImplementation(libs.test.mockk)
 
     testImplementation(libs.kotlinx.coroutines.test)
-
-
 }
