@@ -37,6 +37,7 @@ class TeamsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
+    private val apiInterfaceMock = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -56,11 +57,6 @@ class TeamsRepositoryImplTest {
         coEvery { serverUrlMapper.processUrl(any()) } returns serverUrlMapping
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
-        // Since syncTeamActivities() checks isServerReachable which is static method in MainApplication,
-        // and isServerReachable is a static blocking method, it will cause an issue if we try to call syncTeamActivities()
-        // Wait, isServerReachable makes an actual network request. We need to mock MainApplication.isServerReachable,
-        // or we can test it another way.
-
         teamsRepository = TeamsRepositoryImpl(
             databaseService,
             userSessionManager,
@@ -69,7 +65,8 @@ class TeamsRepositoryImplTest {
             preferences,
             sharedPrefManager,
             serverUrlMapper,
-            dispatcherProvider
+            dispatcherProvider,
+            apiInterfaceMock
         )
     }
 
@@ -84,14 +81,6 @@ class TeamsRepositoryImplTest {
         // We will mock MainApplication object to avoid real network call
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
         coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
-
-        // Mock ApiClient to avoid Real Retrofit creation
-        io.mockk.mockkObject(org.ole.planet.myplanet.data.api.ApiClient)
-        val retrofitMock = mockk<retrofit2.Retrofit>(relaxed = true)
-        org.ole.planet.myplanet.data.api.ApiClient.client = retrofitMock
-
-        val apiInterfaceMock = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
-        every { retrofitMock.create(org.ole.planet.myplanet.data.api.ApiInterface::class.java) } returns apiInterfaceMock
 
         coEvery { uploadManager.uploadResource(any()) } returns Unit
         coEvery { uploadManager.uploadTeams() } returns Unit
@@ -108,6 +97,5 @@ class TeamsRepositoryImplTest {
 
         // Unmock static objects
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
-        io.mockk.unmockkObject(org.ole.planet.myplanet.data.api.ApiClient)
     }
 }
