@@ -41,9 +41,6 @@ webkit = "1.15.0"
 tink = "1.20.0"
 junit = "4.13.2"
 mockk = "1.13.8"
-robolectric = "4.11.1"
-androidxTestCore = "1.5.0"
-androidxTestExtJunit = "1.1.5"
 kotlinxCoroutinesTest = "1.10.2"
 
 [plugins]
@@ -111,10 +108,7 @@ webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
-androidx-test-core-ktx = { module = "androidx.test:core-ktx", version.ref = "androidxTestCore" }
 
-androidx-test-ext-junit-ktx = { module = "androidx.test.ext:junit-ktx", version.ref = "androidxTestExtJunit" }
 
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }

@@ -1,3 +1,4 @@
+cat << 'INNER_EOF' > app/src/test/java/org/ole/planet/myplanet/ui/sync/RealtimeSyncHelperTest.kt
 package org.ole.planet.myplanet.ui.sync
 
 import androidx.fragment.app.Fragment
@@ -233,3 +234,4 @@ class RealtimeSyncHelperTest {
 
     abstract class TestDiffAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(), OnDiffRefreshListener
 }
+INNER_EOF
