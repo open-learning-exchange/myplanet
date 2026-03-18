@@ -274,6 +274,11 @@ class SyncManager @Inject constructor(
                         logger.startProcess("courses_sync")
                         transactionSyncManager.syncDb("courses")
                         logger.endProcess("courses_sync")
+                    },
+                    async {
+                        logger.startProcess("notifications_sync")
+                        transactionSyncManager.syncDb("notifications")
+                        logger.endProcess("notifications_sync")
                     }
                 )
                 syncJobs.awaitAll()
@@ -293,6 +298,10 @@ class SyncManager @Inject constructor(
             logger.startProcess("admin_sync")
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
+
+            logger.startProcess("notification_reads_upload")
+            transactionSyncManager.syncNotificationReads()
+            logger.endProcess("notification_reads_upload")
 
             databaseService.withRealm { realm ->
                 logger.startProcess("on_synced")
@@ -366,6 +375,13 @@ class SyncManager @Inject constructor(
                             logger.startProcess("news_sync")
                             transactionSyncManager.syncDb("news")
                             logger.endProcess("news_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("notifications_sync")
+                            transactionSyncManager.syncDb("notifications")
+                            logger.endProcess("notifications_sync")
                         })
                 }
 
@@ -507,6 +523,10 @@ class SyncManager @Inject constructor(
             logger.startProcess("admin_sync")
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
+
+            logger.startProcess("notification_reads_upload")
+            transactionSyncManager.syncNotificationReads()
+            logger.endProcess("notification_reads_upload")
 
             databaseService.withRealm { realm ->
                 logger.startProcess("on_synced")

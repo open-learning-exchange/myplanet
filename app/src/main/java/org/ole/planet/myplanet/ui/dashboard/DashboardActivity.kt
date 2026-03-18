@@ -557,7 +557,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
                 lastNotificationCheckTime = currentTime
-                lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id) }
+                lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true) }
             }
         }
     }
@@ -610,7 +610,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             notificationsShownThisSession = true
             lifecycleScope.launch {
                 delay(1000)
-                dashboardViewModel.checkAndCreateNewNotifications(user?.id)
+                dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true)
             }
         }
     }
@@ -623,6 +623,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
                 putString("userId", userId)
+                putBoolean("isAdmin", user?.isManager() == true)
             }
             setNotificationUpdateListener(this@DashboardActivity)
         }
@@ -1024,7 +1025,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onNotificationPermissionGranted() {
         super.onNotificationPermissionGranted()
         if (notificationsShownThisSession) {
-            lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id) }
+            lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true) }
         }
     }
 
