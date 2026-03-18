@@ -26,9 +26,11 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,6 +46,8 @@ class DashboardViewModelTest {
     private val notificationsRepository = mockk<NotificationsRepository>()
     private val surveysRepository = mockk<SurveysRepository>()
     private val activitiesRepository = mockk<ActivitiesRepository>()
+    private val progressRepository = mockk<ProgressRepository>()
+    private val voicesRepository = mockk<VoicesRepository>()
     private val dispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -62,6 +66,8 @@ class DashboardViewModelTest {
             notificationsRepository,
             surveysRepository,
             activitiesRepository,
+            progressRepository,
+            voicesRepository,
             dispatcherProvider
         )
     }
