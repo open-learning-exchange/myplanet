@@ -7,7 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
+import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -45,7 +45,12 @@ class ReferencesFragment : Fragment() {
         (binding.rvReferences.adapter as ReferenceAdapter).submitList(list)
     }
 
-    inner class ReferenceAdapter : ListAdapter<Reference, ViewHolderReference>(ReferenceDiffCallback()) {
+    inner class ReferenceAdapter : ListAdapter<Reference, ViewHolderReference>(
+        DiffUtils.itemCallback<Reference>(
+            { oldItem, newItem -> oldItem.title == newItem.title },
+            { oldItem, newItem -> oldItem == newItem }
+        )
+    ) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
             val rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return ViewHolderReference(rowReferenceBinding)
@@ -62,16 +67,6 @@ class ReferencesFragment : Fragment() {
                     startActivity(Intent(activity, DictionaryActivity::class.java))
                 }
             }
-        }
-    }
-
-    class ReferenceDiffCallback : DiffUtil.ItemCallback<Reference>() {
-        override fun areItemsTheSame(oldItem: Reference, newItem: Reference): Boolean {
-            return oldItem.title == newItem.title
-        }
-
-        override fun areContentsTheSame(oldItem: Reference, newItem: Reference): Boolean {
-            return oldItem == newItem
         }
     }
 
