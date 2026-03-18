@@ -42,17 +42,44 @@ class NotificationsViewModel @Inject constructor(
 
     companion object {
         private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+
+        internal fun parseTaskDate(message: String): Pair<String, String>? {
+            val matcher = TASK_DATE_PATTERN.matcher(message)
+            return if (matcher.find()) {
+                val taskTitle = message.substring(0, matcher.start()).trim()
+                val dateValue = message.substring(matcher.start()).trim()
+                Pair(taskTitle, dateValue)
+            } else {
+                null
+            }
+        }
+
+        internal fun formatStorageNotification(message: String, storageRunningLowStr: String, storageAvailableStr: String): String {
+            val storageValue = message.replace("%", "").toIntOrNull()
+            return storageValue?.let {
+                when {
+                    it <= 10 -> "$storageRunningLowStr ${it}%"
+                    it <= 40 -> "$storageRunningLowStr ${it}%"
+                    else -> "$storageAvailableStr ${it}%"
+                }
+            } ?: message
+        }
+
+        internal fun formatJoinRequestNotification(
+            prefixStr: String,
+            userRequestedToJoinTeamStr: String
+        ): String {
+            return "<b>$prefixStr</b> $userRequestedToJoinTeamStr"
+        }
     }
 
     private suspend fun formatNotification(notification: RealmNotification): Notification {
         val formattedText = when (notification.type.lowercase()) {
             "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
             "task" -> {
-                val matcher = TASK_DATE_PATTERN.matcher(notification.message)
-                if (matcher.find()) {
-                    val taskTitle = notification.message.substring(0, matcher.start()).trim()
-                    val dateValue = notification.message.substring(matcher.start()).trim()
-                    formatTaskNotification(taskTitle, dateValue)
+                val parsedDate = parseTaskDate(notification.message)
+                if (parsedDate != null) {
+                    formatTaskNotification(parsedDate.first, parsedDate.second)
                 } else {
                     notification.message
                 }
@@ -63,19 +90,19 @@ class NotificationsViewModel @Inject constructor(
                 } ?: notification.message
             }
             "storage" -> {
-                val storageValue = notification.message.replace("%", "").toIntOrNull()
-                storageValue?.let {
-                    when {
-                        it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
-                        it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
-                        else -> context.getString(R.string.storage_available) + " ${it}%"
-                    }
-                } ?: notification.message
+                formatStorageNotification(
+                    notification.message,
+                    context.getString(R.string.storage_running_low),
+                    context.getString(R.string.storage_available)
+                )
             }
             "join_request" -> {
                 val (requesterName, teamName) = notificationsRepository.getJoinRequestDetails(notification.relatedId)
-                "<b>${context.getString(R.string.join_request_prefix)}</b> " +
-                        context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                val userRequestedStr = context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                formatJoinRequestNotification(
+                    context.getString(R.string.join_request_prefix),
+                    userRequestedStr
+                )
             }
             else -> notification.message
         }
@@ -97,7 +124,7 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun markAsRead(notificationId: String, userId: String) {
+    fun markAsRead(notificationId: String) {
         viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             if (markedIds.contains(notificationId)) {

@@ -12,7 +12,6 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlin.OptIn
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -37,6 +35,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
@@ -48,6 +47,8 @@ class TeamsRepositoryImpl @Inject constructor(
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider,
+    private val apiInterface: ApiInterface,
 ) : RealmRepository(databaseService), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -243,23 +244,27 @@ class TeamsRepositoryImpl @Inject constructor(
         return courses
     }
 
-    override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>) {
-        if (courseIds.isEmpty()) {
-            return
-        }
-        executeTransaction { realm ->
-            val team = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", teamId)
-                .findFirst()
-            if (team == null) {
-                return@executeTransaction
-            }
-            courseIds.forEach { courseId ->
-                if (team.courses?.contains(courseId) != true) {
-                    team.courses?.add(courseId)
+    override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit> {
+        return withContext(databaseService.ioDispatcher) {
+            runCatching {
+                if (courseIds.isEmpty()) {
+                    return@runCatching
+                }
+                executeTransaction { realm ->
+                    val team = realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                    if (team == null) {
+                        return@executeTransaction
+                    }
+                    courseIds.forEach { courseId ->
+                        if (team.courses?.contains(courseId) != true) {
+                            team.courses?.add(courseId)
+                        }
+                    }
+                    team.updated = true
                 }
             }
-            team.updated = true
         }
     }
 
@@ -986,8 +991,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     private suspend fun uploadTeamActivities() {
         try {
-            val apiInterface = client.create(ApiInterface::class.java)
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities(apiInterface)
