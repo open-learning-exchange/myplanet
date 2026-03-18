@@ -161,15 +161,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             app:layout_constraintTop_toBottomOf="@+id/ltIntervalLabel">
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_device_name"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
 
                 <EditText
                     android:id="@+id/deviceName"
@@ -183,9 +182,9 @@
 
             <TextView
                 android:id="@+id/lastDateSynced"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
+                android:layout_marginTop="4dp"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="12sp"
                 android:textStyle="italic" />
