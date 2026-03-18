@@ -4,7 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.mockk.verify
+import io.mockk.coVerify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -89,13 +89,11 @@ class AuthSessionUpdaterTest {
             scope = this
         )
 
-        // Starting automatically triggers sendPost() via the init block.
-        // Wait for coroutines to complete its initial run
+        // Wait for coroutine inside AuthSessionUpdater constructor to finish
         advanceUntilIdle()
 
-        // Ensure to cancel job so test doesn't fail with UncompletedCoroutinesError
         authSessionUpdater.stop()
 
-        verify(atLeast = 1) { mockCallback.onError(any()) }
+        coVerify(atLeast = 1) { mockCallback.onError(any()) }
     }
 }
