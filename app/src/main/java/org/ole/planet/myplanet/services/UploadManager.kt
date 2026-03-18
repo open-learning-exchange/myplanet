@@ -74,6 +74,7 @@ class UploadManager @Inject constructor(
     private val uploadConfigs: UploadConfigs,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val apiInterface: ApiInterface,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     @ApplicationScope private val scope: CoroutineScope
 ) : FileUploader(apiInterface, scope) {
 
@@ -627,36 +628,9 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        data class TeamLogData(
-            val id: String?,
-            val time: Long?,
-            val user: String?,
-            val type: String?,
-            val serialized: JsonObject
-        )
+        val logsData = activitiesRepository.getUnuploadedTeamLogs()
 
-        val logsData = databaseService.withRealm { realm ->
-            val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-            results.map { log ->
-                TeamLogData(
-                    id = log.id,
-                    time = log.time,
-                    user = log.user,
-                    type = log.type,
-                    serialized = RealmTeamLog.serializeTeamActivities(log, context)
-                )
-            }
-        }
-
-        data class UploadResult(
-            val id: String?,
-            val time: Long?,
-            val user: String?,
-            val type: String?,
-            val _id: String,
-            val _rev: String
-        )
-        val successfulUploads = mutableListOf<UploadResult>()
+        val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
 
         logsData.forEach { logData ->
             try {
@@ -668,7 +642,7 @@ class UploadManager @Inject constructor(
                 if (`object` != null) {
                     val id = getString("id", `object`)
                     val rev = getString("rev", `object`)
-                    successfulUploads.add(UploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
+                    successfulUploads.add(org.ole.planet.myplanet.repository.TeamLogUploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -676,57 +650,7 @@ class UploadManager @Inject constructor(
         }
 
         if (successfulUploads.isNotEmpty()) {
-            databaseService.executeTransactionAsync { realm ->
-                val ids = successfulUploads.mapNotNull { it.id }
-                val managedLogs = mutableMapOf<String, RealmTeamLog>()
-
-                if (ids.isNotEmpty()) {
-                    ids.chunked(999).forEach { chunk ->
-                        val results = realm.where(RealmTeamLog::class.java)
-                            .`in`("id", chunk.toTypedArray())
-                            .findAll()
-                        results.forEach { log ->
-                            log.id?.let { id -> managedLogs[id] = log }
-                        }
-                    }
-                }
-
-                val uploadsWithoutId = successfulUploads.filter { it.id == null }
-                val fallbackLogs = mutableMapOf<Triple<Long?, String?, String?>, RealmTeamLog>()
-
-                if (uploadsWithoutId.isNotEmpty()) {
-                    uploadsWithoutId.chunked(250).forEach { chunk ->
-                        val query = realm.where(RealmTeamLog::class.java)
-                        query.beginGroup()
-                        chunk.forEachIndexed { index, upload ->
-                            if (index > 0) query.or()
-                            query.beginGroup()
-                                .equalTo("time", upload.time)
-                                .equalTo("user", upload.user)
-                                .equalTo("type", upload.type)
-                            .endGroup()
-                        }
-                        query.endGroup()
-
-                        val results = query.findAll()
-                        results.forEach { log ->
-                            val key = Triple(log.time, log.user, log.type)
-                            fallbackLogs[key] = log
-                        }
-                    }
-                }
-
-                successfulUploads.forEach { upload ->
-                    val managedLog = if (upload.id != null) {
-                        managedLogs[upload.id]
-                    } else {
-                        val key = Triple(upload.time, upload.user, upload.type)
-                        fallbackLogs[key]
-                    }
-                    managedLog?._id = upload._id
-                    managedLog?._rev = upload._rev
-                }
-            }
+            activitiesRepository.markTeamLogsUploaded(successfulUploads)
         }
     }
 
