@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import java.util.Calendar
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
@@ -20,9 +23,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
-import java.util.Calendar
-import java.util.UUID
-import javax.inject.Inject
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
