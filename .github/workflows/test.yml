@@ -1,0 +1,35 @@
+name: myPlanet test
+
+on:
+  push:
+    branches:
+      - '*'
+    workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: myPlanet test
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [default]
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: wrapper
+
+      - name: run unit tests
+        shell: bash
+        run: |
+          FLAVOR=${{ matrix.build }}
+          ./gradlew test${FLAVOR^}DebugUnitTest --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
