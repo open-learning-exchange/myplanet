@@ -50,7 +50,7 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService), UserRepository {
+) : RealmRepository(databaseService), UserRepository, AchievementsRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
@@ -418,7 +418,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getActiveUserIdSuspending(): String {
         return getUserModelSuspending()?.id ?: ""
     }
-    override suspend fun getHealthRecordsAndAssociatedUsers(
+    suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
         currentUser: RealmUser
     ): HealthRecord? = withRealm { realm ->
@@ -464,7 +464,7 @@ class UserRepositoryImpl @Inject constructor(
         HealthRecord(mhCopy, mm, list, userMap)
     }
 
-    override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
+    suspend fun getHealthProfile(userId: String): RealmMyHealth? {
         return withRealm { realm ->
             val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
@@ -482,7 +482,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
+    suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         executeTransaction { transactionRealm ->
             val userModel = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()

@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.AchievementsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -42,6 +43,8 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
+    @Inject
+    lateinit var achievementsRepository: AchievementsRepository
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
@@ -161,7 +164,7 @@ class AchievementFragment : BaseContainerFragment() {
     private suspend fun loadAchievementDataAsync(): AchievementData {
         val uId = user?.id ?: return AchievementData()
         val pCode = user?.planetCode ?: return AchievementData()
-        return userRepository.getAchievementData(uId, pCode)
+        return achievementsRepository.getAchievementData(uId, pCode)
     }
 
 

@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -27,6 +28,8 @@ class AddHealthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHealthBinding
     @Inject
     lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var healthRepository: HealthRepository
     var userId: String? = null
     private var myHealth: RealmMyHealth? = null
 
@@ -91,7 +94,7 @@ class AddHealthActivity : AppCompatActivity() {
         )
 
         lifecycleScope.launch {
-            userId?.let { userRepository.updateUserHealthProfile(it, userData) }
+            userId?.let { healthRepository.updateUserHealthProfile(it, userData) }
             finish()
         }
     }
@@ -106,7 +109,7 @@ class AddHealthActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val userModel = userId?.let { userRepository.getUserById(it) }
-            val decodedHealth = userId?.let { userRepository.getHealthProfile(it) }
+            val decodedHealth = userId?.let { healthRepository.getHealthProfile(it) }
 
             val healthData = HealthData(
                 decodedHealth,

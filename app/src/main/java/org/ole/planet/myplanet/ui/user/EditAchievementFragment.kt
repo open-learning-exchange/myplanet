@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.AchievementsRepository
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
@@ -52,6 +53,9 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
+    @Inject
+    lateinit var achievementsRepository: AchievementsRepository
+
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
     private lateinit var editAttachmentBinding: EditAttachementBinding
     private lateinit var editOtherInfoBinding: EditOtherInfoBinding
@@ -95,7 +99,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
-                userRepository.updateAchievement(
+                achievementsRepository.updateAchievement(
                     achievementId = achievementId,
                     header = header,
                     goals = goals,
@@ -299,7 +303,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
         lifecycleScope.launch {
-            achievement = userRepository.initializeAchievement(achievementId)
+            achievement = achievementsRepository.initializeAchievement(achievementId)
             if (isAdded) {
                 populateAchievementData()
             }

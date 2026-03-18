@@ -4,15 +4,9 @@ import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Sort
-import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.model.HealthRecord
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 
 interface UserRepository {
-    suspend fun getHealthProfile(userId: String): RealmMyHealth?
-    suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
     suspend fun getUserById(userId: String): RealmUser?
     suspend fun getUserByAnyId(id: String): RealmUser?
@@ -67,10 +61,6 @@ interface UserRepository {
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
     suspend fun searchUsers(query: String, sortField: String, sortOrder: Sort): List<RealmUser>
-    suspend fun getHealthRecordsAndAssociatedUsers(
-        userId: String,
-        currentUser: RealmUser
-    ): HealthRecord?
 
     @Deprecated("Use getUserModelSuspending() instead")
     fun getUserModel(): RealmUser?
@@ -83,15 +73,4 @@ interface UserRepository {
     fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
-    suspend fun initializeAchievement(achievementId: String): RealmAchievement?
-    suspend fun updateAchievement(
-        achievementId: String,
-        header: String,
-        goals: String,
-        purpose: String,
-        sendToNation: String,
-        achievements: JsonArray,
-        references: JsonArray
-    )
-    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
 }

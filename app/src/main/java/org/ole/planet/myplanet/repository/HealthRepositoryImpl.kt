@@ -5,13 +5,15 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 
 class HealthRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    private val userRepositoryImpl: UserRepositoryImpl
 ) : RealmRepository(databaseService), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
         val userCopy = findByField(RealmUser::class.java, "id", userId)
@@ -42,5 +44,20 @@ class HealthRepositoryImpl @Inject constructor(
             pojo?.let { realm.copyToRealmOrUpdate(it) }
             examination?.let { realm.copyToRealmOrUpdate(it) }
         }
+    }
+
+    override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
+        return userRepositoryImpl.getHealthProfile(userId)
+    }
+
+    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
+        userRepositoryImpl.updateUserHealthProfile(userId, userData)
+    }
+
+    override suspend fun getHealthRecordsAndAssociatedUsers(
+        userId: String,
+        currentUser: RealmUser
+    ): HealthRecord? {
+        return userRepositoryImpl.getHealthRecordsAndAssociatedUsers(userId, currentUser)
     }
 }
