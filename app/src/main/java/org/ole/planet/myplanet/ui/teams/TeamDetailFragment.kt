@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
@@ -32,13 +33,11 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.FinancesPage
-import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MembersPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MissionPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.PlanPage
@@ -96,17 +95,16 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         if (isMyTeam || team?.isPublic == true) {
             pages += ChatPage
             pages += if (isEnterprise) MissionPage else PlanPage
-            pages += if (isEnterprise) TeamPage else MembersPage
+            pages += MembersPage
             pages += TasksPage
             pages += CalendarPage
             pages += SurveyPage
             pages += if (isEnterprise) FinancesPage else CoursesPage
             if (isEnterprise) pages += ReportsPage
             pages += if (isEnterprise) DocumentsPage else ResourcesPage
-            pages += if (isEnterprise) ApplicantsPage else JoinRequestsPage
         } else {
             pages += if (isEnterprise) MissionPage else PlanPage
-            pages += if (isEnterprise) TeamPage else MembersPage
+            pages += MembersPage
         }
         return pages
     }
@@ -360,7 +358,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.btnLeave.visibility = View.VISIBLE
 
         binding.btnLeave.setOnClickListener {
-            AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
+            MaterialAlertDialogBuilder(requireContext(), R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.let { currentTeam ->
                         user?.let { currentUser ->
