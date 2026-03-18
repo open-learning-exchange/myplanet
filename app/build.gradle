@@ -14,6 +14,7 @@ android {
 
     compileSdk = 36
     defaultConfig {
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
@@ -171,6 +172,7 @@ dependencies {
     testImplementation(libs.test.robolectric)
     testImplementation(libs.test.core)
     testImplementation(libs.test.ext)
+    testImplementation(libs.test.runner)
     testImplementation(libs.test.hilt)
     kspTest(libs.hilt.android.compiler)
 }
