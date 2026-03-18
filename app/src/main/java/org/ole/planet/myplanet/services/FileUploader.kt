@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.services
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -17,7 +17,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 open class FileUploader(
-    private val apiInterface: ApiInterface
+    private val apiInterface: ApiInterface,
+    private val scope: CoroutineScope
 ) {
     fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: OnSuccessListener) {
         val f = personal.path?.let { File(it) }
@@ -44,7 +45,7 @@ open class FileUploader(
     }
 
     private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
-        MainApplication.applicationScope.launch {
+        scope.launch {
             try {
                 val connection = f.toURI().toURL().openConnection()
                 val mimeType = connection.contentType
