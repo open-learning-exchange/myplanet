@@ -48,4 +48,5 @@ interface SubmissionsRepository {
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission
+    fun buildUserProfileJson(profile: org.ole.planet.myplanet.model.UserSurveyProfile): com.google.gson.JsonObject
 }

@@ -164,15 +164,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         var lname = ""
         var mName = ""
         var yob = ""
-        var calculatedAge = 0
 
         if (fragmentUserInformationBinding.llNames.isVisible) {
             fname = "${fragmentUserInformationBinding.etFname.text}".trim()
             lname = "${fragmentUserInformationBinding.etLname.text}".trim()
             mName = "${fragmentUserInformationBinding.etMname.text}".trim()
         }
-
-        val user = JsonObject()
 
         if (fragmentUserInformationBinding.ltYob.isVisible) {
             yob = "${fragmentUserInformationBinding.etYob.text}".trim()
@@ -196,47 +193,51 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
                 return
             }
-
-            calculatedAge = currentYear - yobInt
         }
 
-        if (fname.isNotEmpty()) user.addProperty("firstName", fname)
-        if (mName.isNotEmpty()) user.addProperty("middleName", mName)
-        if (lname.isNotEmpty()) user.addProperty("lastName", lname)
-
+        var email = ""
+        var lang = ""
         if (fragmentUserInformationBinding.llEmailLang.isVisible) {
-            val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
-            val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
-            if (email.isNotEmpty()) user.addProperty("email", email)
-            if (lang.isNotEmpty()) user.addProperty("language", lang)
+            email = fragmentUserInformationBinding.etEmail.text.toString().trim()
+            lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
         }
 
+        var phone = ""
+        var birthDob = ""
         if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
-            val phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
-            if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
-
+            phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
             if (!dob.isNullOrEmpty()) {
-                val birthDateISO = TimeUtils.convertToISO8601(dob!!)
-                user.addProperty("birthDate", birthDateISO)
+                birthDob = dob!!
             }
         }
 
-        if (yob.isNotEmpty()) user.addProperty("age", calculatedAge.toString())
-
+        var level = ""
         if (fragmentUserInformationBinding.llLevel.isVisible) {
-            val level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
-            if (level.isNotEmpty()) user.addProperty("level", level)
+            level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
         }
 
+        var gender = ""
         if (fragmentUserInformationBinding.rbGender.isVisible) {
             val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
             if (rbSelected != null) {
-                val gender = rbSelected.tag.toString()
-                if (gender.isNotEmpty()) user.addProperty("gender", gender)
+                gender = rbSelected.tag.toString()
             }
         }
 
-        user.addProperty("betaEnabled", false)
+        val profile = org.ole.planet.myplanet.model.UserSurveyProfile(
+            fname = fname,
+            lname = lname,
+            mName = mName,
+            email = email,
+            phone = phone,
+            dob = birthDob,
+            yob = yob,
+            level = level,
+            gender = gender,
+            language = lang
+        )
+
+        val user = submissionsRepository.buildUserProfileJson(profile)
 
         val teamId = arguments?.getString("teamId")
 
