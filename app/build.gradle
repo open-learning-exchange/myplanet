@@ -169,6 +169,7 @@ dependencies {
     testImplementation(libs.test.kotlin)
     testImplementation(libs.test.coroutines)
     testImplementation(libs.test.robolectric)
+    testImplementation(libs.test.rxjava)
     testImplementation(libs.test.core)
     testImplementation(libs.test.ext)
     testImplementation(libs.test.runner)
