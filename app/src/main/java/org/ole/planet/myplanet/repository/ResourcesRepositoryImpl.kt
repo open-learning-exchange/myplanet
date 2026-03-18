@@ -37,6 +37,27 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val tagsRepository: TagsRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
+    override suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData> {
+        return queryList(RealmMyLibrary::class.java, true) {
+            isNull("_rev")
+        }.map { library ->
+            ResourceUploadData(
+                libraryId = library.id,
+                title = library.title,
+                isPrivate = library.isPrivate,
+                privateFor = library.privateFor,
+                serialized = RealmMyLibrary.serialize(library, user)
+            )
+        }
+    }
+
+    override suspend fun markResourceUploaded(libraryId: String, id: String, rev: String) {
+        update(RealmMyLibrary::class.java, "id", libraryId) { library ->
+            library._id = id
+            library._rev = rev
+        }
+    }
+
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
         return withRealm { realm ->
             realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
