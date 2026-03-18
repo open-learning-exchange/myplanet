@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
@@ -47,7 +48,8 @@ class UserRepositoryImpl @Inject constructor(
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
-    @ApplicationScope private val appScope: CoroutineScope
+    @ApplicationScope private val appScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -328,14 +330,14 @@ class UserRepositoryImpl @Inject constructor(
                 val header = UrlUtils.header
                 val userUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
 
-                val existsResponse = withContext(Dispatchers.IO) {
+                val existsResponse = withContext(dispatcherProvider.io) {
                     apiInterface.getJsonObject(header, userUrl)
                 }
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
-                    val createResponse = withContext(Dispatchers.IO) {
+                    val createResponse = withContext(dispatcherProvider.io) {
                         apiInterface.putDoc(null, "application/json", userUrl, obj)
                     }
 
