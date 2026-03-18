@@ -62,7 +62,6 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
     private fun timePicker() {
-        val dl = deadline ?: return
         val timePickerDialog = TimePickerDialog(activity, { _: TimePicker?, hourOfDay: Int, minute: Int ->
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
@@ -71,7 +70,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     TimeUtils.getFormattedDateWithTime(it)
                 }
             }
-        }, dl[Calendar.HOUR_OF_DAY], dl[Calendar.MINUTE], true)
+        }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
         timePickerDialog.show()
     }
 
@@ -98,10 +97,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             deadline = Calendar.getInstance()
             deadline?.time = Date(t.deadline)
 
-            val assignee = t.assignee?.takeIf { it.isNotBlank() }
-            if (assignee != null) {
+            if (!t.assignee.isNullOrBlank()) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val assigneeUser = teamsRepository.getAssignee(assignee)
+                    val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
                         val displayName = assigneeUser.getFullName().ifBlank {
@@ -205,7 +203,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             if (teamTask == null) {
                 teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
             } else {
-                teamsRepository.updateTask(teamTask.id ?: return@launch, task, desc, deadlineMillis, assigneeId)
+                teamsRepository.updateTask(teamTask.id!!, task, desc, deadlineMillis, assigneeId)
             }
 
             Utilities.toast(

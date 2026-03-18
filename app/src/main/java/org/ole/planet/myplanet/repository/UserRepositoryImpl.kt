@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
@@ -47,7 +48,8 @@ class UserRepositoryImpl @Inject constructor(
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
-    @ApplicationScope private val appScope: CoroutineScope
+    @ApplicationScope private val appScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -144,28 +146,47 @@ class UserRepositoryImpl @Inject constructor(
     ): RealmUser? {
         if (jsonDoc == null) return null
 
-        return withRealm { realm ->
+        var userId: String? = null
+        withRealm { realm ->
             val managedUser = populateUsersTable(jsonDoc, realm, settings)
-            if (managedUser != null && (key != null || iv != null)) {
-                realm.executeTransaction {
-                    key?.let { managedUser.key = it }
-                    iv?.let { managedUser.iv = it }
-                }
-            }
+            userId = managedUser?.id
+        }
 
-            managedUser?.let { realm.copyFromRealm(it) }
+        if (userId != null && (key != null || iv != null)) {
+            try {
+                executeTransaction { transactionRealm ->
+                    val userToUpdate = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+                    userToUpdate?.let { user ->
+                        key?.let { user.key = it }
+                        iv?.let { user.iv = it }
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserRepositoryImpl", "Failed to save security keys for user $userId", e)
+            }
+        }
+
+        if (userId == null) {
+            android.util.Log.e("UserRepositoryImpl", "Failed to save user: userId is null after populateUsersTable")
+            return null
+        }
+
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun ensureUserSecurityKeys(userId: String): RealmUser? {
+        executeTransaction { transactionRealm ->
+            val user = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            if (user != null && (user.key == null || user.iv == null)) {
+                if (user.key == null) user.key = AndroidDecrypter.generateKey()
+                if (user.iv == null) user.iv = AndroidDecrypter.generateIv()
+            }
+        }
+
         return withRealm { realm ->
             val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            if (user != null && (user.key == null || user.iv == null)) {
-                realm.executeTransaction {
-                    if (user.key == null) user.key = AndroidDecrypter.generateKey()
-                    if (user.iv == null) user.iv = AndroidDecrypter.generateIv()
-                }
-            }
             if (user != null) realm.copyFromRealm(user) else null
         }
     }
@@ -309,14 +330,14 @@ class UserRepositoryImpl @Inject constructor(
                 val header = UrlUtils.header
                 val userUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
 
-                val existsResponse = withContext(Dispatchers.IO) {
+                val existsResponse = withContext(dispatcherProvider.io) {
                     apiInterface.getJsonObject(header, userUrl)
                 }
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
-                    val createResponse = withContext(Dispatchers.IO) {
+                    val createResponse = withContext(dispatcherProvider.io) {
                         apiInterface.putDoc(null, "application/json", userUrl, obj)
                     }
 
@@ -462,74 +483,72 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
-        withRealm { realm ->
-            realm.executeTransaction {
-                val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-                val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-                    ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
-                    ?: realm.createObject(RealmHealthExamination::class.java, userId)
+        executeTransaction { transactionRealm ->
+            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val healthPojo = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
+                ?: transactionRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
+                ?: transactionRealm.createObject(RealmHealthExamination::class.java, userId)
 
-                userModel?.apply {
-                    firstName = (userData["firstName"] as? String)?.trim()
-                    middleName = (userData["middleName"] as? String)?.trim()
-                    lastName = (userData["lastName"] as? String)?.trim()
-                    email = (userData["email"] as? String)?.trim()
-                    phoneNumber = (userData["phoneNumber"] as? String)?.trim()
-                    birthPlace = (userData["birthPlace"] as? String)?.trim()
-                    userData["dob"]?.let { dobVal ->
-                        val dobInput = (dobVal as String).trim()
-                        dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
-                    }
-                    isUpdated = true
+            userModel?.apply {
+                firstName = (userData["firstName"] as? String)?.trim()
+                middleName = (userData["middleName"] as? String)?.trim()
+                lastName = (userData["lastName"] as? String)?.trim()
+                email = (userData["email"] as? String)?.trim()
+                phoneNumber = (userData["phoneNumber"] as? String)?.trim()
+                birthPlace = (userData["birthPlace"] as? String)?.trim()
+                userData["dob"]?.let { dobVal ->
+                    val dobInput = (dobVal as String).trim()
+                    dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
                 }
+                isUpdated = true
+            }
 
-                var myHealth: RealmMyHealth? = null
-                if (!TextUtils.isEmpty(healthPojo.data)) {
-                    try {
-                        val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                        myHealth = JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                if (myHealth == null) {
-                    myHealth = RealmMyHealth()
-                }
-                if (TextUtils.isEmpty(myHealth.userKey)) {
-                    myHealth.userKey = AndroidDecrypter.generateKey()
-                }
-
-                val profile = myHealth.profile ?: RealmMyHealthProfile().also { myHealth.profile = it }
-
-                profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
-                val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
-                profile.emergencyContact = if (TextUtils.isEmpty(newEmergencyContact)) {
-                     profile.emergencyContact
-                } else {
-                     newEmergencyContact
-                }
-
-                val newEmergencyContactType = (userData["emergencyContactType"] as? String)?.trim() ?: ""
-                profile.emergencyContactType = if (TextUtils.isEmpty(newEmergencyContactType)) {
-                     profile.emergencyContactType
-                } else {
-                     newEmergencyContactType
-                }
-
-                profile.specialNeeds = (userData["specialNeeds"] as? String)?.trim() ?: ""
-                profile.notes = (userData["notes"] as? String)?.trim() ?: ""
-
-                healthPojo.userId = userModel?._id
-                healthPojo.isUpdated = true
-
+            var myHealth: RealmMyHealth? = null
+            if (!TextUtils.isEmpty(healthPojo.data)) {
                 try {
-                    val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
-                    val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
-                    healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
+                    val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
+                    myHealth = JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            }
+
+            if (myHealth == null) {
+                myHealth = RealmMyHealth()
+            }
+            if (TextUtils.isEmpty(myHealth.userKey)) {
+                myHealth.userKey = AndroidDecrypter.generateKey()
+            }
+
+            val profile = myHealth.profile ?: RealmMyHealthProfile().also { myHealth.profile = it }
+
+            profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
+            val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
+            profile.emergencyContact = if (TextUtils.isEmpty(newEmergencyContact)) {
+                 profile.emergencyContact
+            } else {
+                 newEmergencyContact
+            }
+
+            val newEmergencyContactType = (userData["emergencyContactType"] as? String)?.trim() ?: ""
+            profile.emergencyContactType = if (TextUtils.isEmpty(newEmergencyContactType)) {
+                 profile.emergencyContactType
+            } else {
+                 newEmergencyContactType
+            }
+
+            profile.specialNeeds = (userData["specialNeeds"] as? String)?.trim() ?: ""
+            profile.notes = (userData["notes"] as? String)?.trim() ?: ""
+
+            healthPojo.userId = userModel?._id
+            healthPojo.isUpdated = true
+
+            try {
+                val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
+                val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
+                healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -621,17 +640,20 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
-        return withRealm { realm ->
-            var achievement = realm.where(RealmAchievement::class.java)
+        executeTransaction { transactionRealm ->
+            val achievement = transactionRealm.where(RealmAchievement::class.java)
                 .equalTo("_id", achievementId)
                 .findFirst()
 
             if (achievement == null) {
-                realm.executeTransaction { transactionRealm ->
-                    achievement = transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-                }
+                transactionRealm.createObject(RealmAchievement::class.java, achievementId)
             }
+        }
 
+        return withRealm { realm ->
+            val achievement = realm.where(RealmAchievement::class.java)
+                .equalTo("_id", achievementId)
+                .findFirst()
             achievement?.let { realm.copyFromRealm(it) }
         }
     }
@@ -645,19 +667,17 @@ class UserRepositoryImpl @Inject constructor(
         achievements: JsonArray,
         references: JsonArray
     ) {
-        withRealm { realm ->
-            realm.executeTransaction { transactionRealm ->
-                val achievement = transactionRealm.where(RealmAchievement::class.java)
-                    .equalTo("_id", achievementId)
-                    .findFirst()
-                if (achievement != null) {
-                    achievement.achievementsHeader = header
-                    achievement.goals = goals
-                    achievement.purpose = purpose
-                    achievement.sendToNation = sendToNation
-                    achievement.setAchievements(achievements)
-                    achievement.setReferences(references)
-                }
+        executeTransaction { transactionRealm ->
+            val achievement = transactionRealm.where(RealmAchievement::class.java)
+                .equalTo("_id", achievementId)
+                .findFirst()
+            if (achievement != null) {
+                achievement.achievementsHeader = header
+                achievement.goals = goals
+                achievement.purpose = purpose
+                achievement.sendToNation = sendToNation
+                achievement.setAchievements(achievements)
+                achievement.setReferences(references)
             }
         }
     }

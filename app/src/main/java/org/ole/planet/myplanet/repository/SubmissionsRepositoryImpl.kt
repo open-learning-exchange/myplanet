@@ -436,70 +436,72 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             null
         }
 
-        var detachedSub: RealmSubmission? = null
-        executeTransaction { r ->
-            val managedSub = createSubmissionInternal(null, r)
+        return databaseService.withRealmAsync { realm ->
+            var detachedSub: RealmSubmission? = null
+            realm.executeTransaction { r ->
+                val managedSub = createSubmissionInternal(null, r)
 
-            val parentId = when {
-                !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
-                    "${exam.id}@${exam.courseId}"
-                } else {
-                    exam.id
+                val parentId = when {
+                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                        "${exam.id}@${exam.courseId}"
+                    } else {
+                        exam.id
+                    }
+                    else -> managedSub.parentId
                 }
-                else -> managedSub.parentId
-            }
-            managedSub.parentId = parentId
-
-            try {
-                val parentJsonString = com.google.gson.JsonObject().apply {
-                    addProperty("_id", exam.id ?: "")
-                    addProperty("name", exam.name ?: "")
-                    addProperty("courseId", exam.courseId ?: "")
-                    addProperty("sourcePlanet", exam.sourcePlanet ?: "")
-                    addProperty("teamShareAllowed", exam.isTeamShareAllowed)
-                    addProperty("noOfQuestions", exam.noOfQuestions)
-                    addProperty("isFromNation", exam.isFromNation)
-                }.toString()
-                managedSub.parent = parentJsonString
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            managedSub.userId = userId
-            managedSub.status = "pending"
-            managedSub.type = type
-            managedSub.startTime = Date().time
-            managedSub.lastUpdateTime = Date().time
-            if (managedSub.answers == null) {
-                managedSub.answers = RealmList()
-            }
-
-            if (team != null) {
-                val teamRef = r.createObject(RealmTeamReference::class.java)
-                teamRef._id = team._id
-                teamRef.name = team.name
-                teamRef.type = team.type ?: "team"
-                managedSub.teamObject = teamRef
-
-                val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
-                membershipDoc.teamId = teamId
-                managedSub.membershipDoc = membershipDoc
+                managedSub.parentId = parentId
 
                 try {
-                    val userJson = com.google.gson.JsonObject()
-                    userJson.addProperty("age", userDob ?: "")
-                    userJson.addProperty("gender", userGender ?: "")
-                    val membershipJson = com.google.gson.JsonObject()
-                    membershipJson.addProperty("teamId", teamId)
-                    userJson.add("membershipDoc", membershipJson)
-                    managedSub.user = userJson.toString()
+                    val parentJsonString = com.google.gson.JsonObject().apply {
+                        addProperty("_id", exam.id ?: "")
+                        addProperty("name", exam.name ?: "")
+                        addProperty("courseId", exam.courseId ?: "")
+                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                        addProperty("noOfQuestions", exam.noOfQuestions)
+                        addProperty("isFromNation", exam.isFromNation)
+                    }.toString()
+                    managedSub.parent = parentJsonString
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+
+                managedSub.userId = userId
+                managedSub.status = "pending"
+                managedSub.type = type
+                managedSub.startTime = Date().time
+                managedSub.lastUpdateTime = Date().time
+                if (managedSub.answers == null) {
+                    managedSub.answers = RealmList()
+                }
+
+                if (team != null) {
+                    val teamRef = r.createObject(RealmTeamReference::class.java)
+                    teamRef._id = team._id
+                    teamRef.name = team.name
+                    teamRef.type = team.type ?: "team"
+                    managedSub.teamObject = teamRef
+
+                    val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
+                    membershipDoc.teamId = teamId
+                    managedSub.membershipDoc = membershipDoc
+
+                    try {
+                        val userJson = com.google.gson.JsonObject()
+                        userJson.addProperty("age", userDob ?: "")
+                        userJson.addProperty("gender", userGender ?: "")
+                        val membershipJson = com.google.gson.JsonObject()
+                        membershipJson.addProperty("teamId", teamId)
+                        userJson.add("membershipDoc", membershipJson)
+                        managedSub.user = userJson.toString()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                detachedSub = r.copyFromRealm(managedSub)
             }
-            detachedSub = r.copyFromRealm(managedSub)
+            detachedSub
         }
-        return detachedSub
     }
 
     override suspend fun saveExamAnswer(
@@ -665,25 +667,27 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
-        var detachedSub: RealmSubmission? = null
-        executeTransaction { r ->
-            val sub = r.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("parentId", parentId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst()
+        return databaseService.withRealmAsync { realm ->
+            var detachedSub: RealmSubmission? = null
+            realm.executeTransaction { r ->
+                val sub = r.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", parentId)
+                    .sort("lastUpdateTime", Sort.DESCENDING)
+                    .equalTo("status", "pending")
+                    .findFirst()
 
-            val managedSub = createSubmissionInternal(sub, r)
-            if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
-            if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
-            if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
-            if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
-            if (managedSub.startTime == 0L) managedSub.startTime = Date().time
+                val managedSub = createSubmissionInternal(sub, r)
+                if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
+                if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
+                if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
+                if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
+                if (managedSub.startTime == 0L) managedSub.startTime = Date().time
 
-            detachedSub = r.copyFromRealm(managedSub)
+                detachedSub = r.copyFromRealm(managedSub)
+            }
+            detachedSub!!
         }
-        return detachedSub!!
     }
 
     private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {

@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
@@ -51,7 +52,7 @@ private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C
 class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
-    private lateinit var sharedViewModel: ChatViewModel
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     var user: RealmUser? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
@@ -84,7 +85,6 @@ class ChatHistoryFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         startChatHistorySync()
     }
 
@@ -273,9 +273,23 @@ class ChatHistoryFragment : Fragment() {
                     chatHistory,
                     currentUser,
                     sharedNewsMessages,
-                    shareTargets,
-                    ::shareChat,
-                )
+                    shareTargets
+                ) { map, chat ->
+                    if (!isAdded || _binding == null) {
+                        return@ChatHistoryAdapter
+                    }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val currentUser = user
+                        val createdNews = voicesRepository.createNews(map, currentUser, null)
+                        if (currentUser?.planetCode != null) {
+                            sharedNewsMessages = sharedNewsMessages + createdNews
+                        }
+                        (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
+                            adapter.updateCachedData(currentUser, sharedNewsMessages)
+                            adapter.notifyChatShared(chat._id)
+                        }
+                    }
+                }
                 newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -319,23 +333,6 @@ class ChatHistoryFragment : Fragment() {
         }
         val community = communityId?.let { teamsRepository.getTeamSummaryById(it) }
         return ChatShareTargets(community, teams, enterprises)
-    }
-
-    private fun shareChat(map: HashMap<String?, String>, chatHistory: RealmChatHistory) {
-        if (!isAdded || _binding == null) {
-            return
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser, null)
-            if (currentUser?.planetCode != null) {
-                sharedNewsMessages = sharedNewsMessages + createdNews
-            }
-            (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
-                adapter.notifyChatShared(chatHistory._id)
-            }
-        }
     }
 
     private fun checkAiProvidersIfNeeded() {

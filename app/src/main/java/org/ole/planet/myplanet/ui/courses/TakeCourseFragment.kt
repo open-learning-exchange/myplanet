@@ -83,7 +83,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            steps = coursesRepository.getCourseSteps(courseId ?: return@launch)
+            steps = coursesRepository.getCourseSteps(courseId!!)
 
             if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                 try {
@@ -321,21 +321,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun addRemoveCourse() {
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val course = courseId?.let { coursesRepository.getCourseById(it) }
-                val isJoined = course?.userId?.contains(userModel?.id) == true
+            val course = courseId?.let { coursesRepository.getCourseById(it) }
+            val isJoined = course?.userId?.contains(userModel?.id) == true
 
-                userModel?.id?.let { userId ->
-                    courseId?.let { cId ->
-                        if (isJoined) {
-                            coursesRepository.leaveCourse(cId, userId)
-                        } else {
-                            coursesRepository.joinCourse(cId, userId)
-                        }
-                    }
-                }
+            val userId = userModel?.id ?: return@launch
+            val cId = courseId ?: return@launch
 
-                val updatedCourse = courseId?.let { coursesRepository.getCourseById(it) }
+            val result = if (isJoined) {
+                coursesRepository.leaveCourse(cId, userId)
+            } else {
+                coursesRepository.joinCourse(cId, userId)
+            }
+
+            result.onSuccess {
+                val updatedCourse = coursesRepository.getCourseById(cId)
                 if (updatedCourse != null) {
                     currentCourse = updatedCourse
                 }
@@ -348,7 +347,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
                 Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
                 setCourseData()
-            } catch (e: Exception) {
+            }.onFailure { e ->
                 e.printStackTrace()
                 Utilities.toast(activity, "Failed to update course: ${e.message}")
             }
@@ -399,7 +398,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         super.onDestroyView()
     }
 
-    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter?.let { binding.viewPager2.currentItem < it.itemCount } == true
+    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem < binding.viewPager2.adapter?.itemCount!!
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {

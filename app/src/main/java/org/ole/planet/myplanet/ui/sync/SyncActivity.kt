@@ -665,8 +665,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun settingDialog() {
-        val binding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-        serverDialogBinding = binding
+        serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        val binding = serverDialogBinding!!
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)

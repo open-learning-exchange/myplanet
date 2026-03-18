@@ -107,7 +107,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
                 val frozenInitial = initialResults.freeze()
                 channel.trySend(frozenInitial)
             }
-            
+
             results = realm.where(clazz).apply(builder).findAllAsync()
             listener = RealmChangeListener<RealmResults<T>> { changedResults ->
                 if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {

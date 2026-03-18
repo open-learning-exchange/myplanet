@@ -73,6 +73,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var searchJob: Job? = null
+    private var selectionJob: Job? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -584,10 +585,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        val items = selectedItems.orEmpty()
-        if (items.size <= 5) {
-            for (i in items.indices) {
-                msg += " - ${items[i]?.courseTitle} \n"
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices!!) {
+                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
@@ -621,33 +621,41 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        val realmCourses = list.mapNotNull { course ->
+        val dummyCourses = list.mapNotNull { course ->
             course?.let {
-                // Find managed RealmMyCourse or use a dummy one for addToMyList/deletion?
-                // For addToMyList, we need managed object if we want to add relation?
-                // Actually addToMyList just extracts IDs.
-                // But deleteSelected uses `mRealm.beginTransaction()`.
-                // And `deleteCourseProgress` uses `object.courseId`.
-                // `removeFromShelf`?
-                // `BaseRecyclerFragment.removeFromShelf` checks `object is RealmMyCourse`.
-                // And calls `coursesRepository.removeCourseFromShelf(courseId, userId)`.
-
-                // So I can create an unmanaged RealmMyCourse with just ID and Title.
-                // But safer to try finding it.
-                var rc = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", it.courseId).findFirst()
-                if (rc == null) {
-                    // Create unmanaged
-                    rc = RealmMyCourse()
-                    rc.courseId = it.courseId
-                    rc.courseTitle = it.courseTitle
-                    rc.isMyCourse = it.isMyCourse
-                }
+                val rc = RealmMyCourse()
+                rc.courseId = it.courseId
+                rc.courseTitle = it.courseTitle
+                rc.isMyCourse = it.isMyCourse
                 rc
             }
         }.toMutableList<RealmMyCourse?>()
-        selectedItems = realmCourses
+        selectedItems = dummyCourses
         changeButtonStatus()
         hideButtons()
+
+        selectionJob?.cancel()
+        selectionJob = viewLifecycleOwner.lifecycleScope.launch {
+            val realmCourses = list.mapNotNull { course ->
+                course?.let {
+                    var rc = coursesRepository.getCourseById(it.courseId)
+                    if (rc == null) {
+                        // Create unmanaged
+                        rc = RealmMyCourse()
+                        rc.courseId = it.courseId
+                        rc.courseTitle = it.courseTitle
+                        rc.isMyCourse = it.isMyCourse
+                    }
+                    rc
+                }
+            }.toMutableList<RealmMyCourse?>()
+
+            withContext(Dispatchers.Main) {
+                selectedItems = realmCourses
+                changeButtonStatus()
+                hideButtons()
+            }
+        }
     }
 
     override fun onTagClicked(tag: Tag) {
@@ -752,33 +760,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         customProgressDialog?.dismiss()
         customProgressDialog = null
         super.onDestroy()
-    }
-
-    private fun recreateFragment(fragment: Fragment) {
-        if (isAdded && activity != null && !requireActivity().isFinishing) {
-            if (isMyCourseLib) {
-                val args = Bundle()
-                args.putBoolean("isMyCourseLib", true)
-                args.putString("courseLib", courseLib)
-                args.putSerializable("resources", resources?.let { ArrayList(it) })
-                fragment.arguments = args
-                FragmentNavigator.replaceFragment(
-                    parentFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    allowStateLoss = true
-                )
-            } else {
-                FragmentNavigator.replaceFragment(
-                    parentFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    allowStateLoss = true
-                )
-            }
-        }
     }
 
     override fun getWatchedTables(): List<String> {

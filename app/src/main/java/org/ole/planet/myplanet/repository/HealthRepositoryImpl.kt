@@ -14,25 +14,15 @@ class HealthRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
-        return withRealm { realm ->
-            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            val userCopy = if (user != null) realm.copyFromRealm(user) else null
+        val userCopy = findByField(RealmUser::class.java, "id", userId)
+        val pojoCopy = findByField(RealmHealthExamination::class.java, "_id", userId)
+            ?: findByField(RealmHealthExamination::class.java, "userId", userId)
 
-            var pojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
-            if (pojo == null) {
-                pojo = realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
-            }
-            val pojoCopy = if (pojo != null) realm.copyFromRealm(pojo) else null
-
-            Pair(userCopy, pojoCopy)
-        }
+        return Pair(userCopy, pojoCopy)
     }
 
     override suspend fun getExaminationById(id: String): RealmHealthExamination? {
-        return withRealm { realm ->
-            val exam = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()
-            if (exam != null) realm.copyFromRealm(exam) else null
-        }
+        return findByField(RealmHealthExamination::class.java, "_id", id)
     }
 
     override suspend fun initHealth(): RealmMyHealth {
@@ -47,7 +37,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
-        executeTransaction { realm ->
+        databaseService.executeTransactionAsync { realm ->
             user?.let { realm.copyToRealmOrUpdate(it) }
             pojo?.let { realm.copyToRealmOrUpdate(it) }
             examination?.let { realm.copyToRealmOrUpdate(it) }
