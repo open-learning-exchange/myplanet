@@ -15,11 +15,14 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
         MainApplication.applicationScope.launch {
@@ -70,20 +73,20 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
     }
 
-    private suspend fun markNotificationAsRead(context: Context, notificationId: String?) {
+    internal suspend fun markNotificationAsRead(context: Context, notificationId: String?) {
         if (notificationId == null) {
             return
         }
 
         try {
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
-        withContext(Dispatchers.Main) {
+        withContext(dispatcherProvider.main) {
             delay(200)
             val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
             broadcastIntent.setPackage(context.packageName)
