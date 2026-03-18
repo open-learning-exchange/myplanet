@@ -22,12 +22,15 @@ class DatabaseService(context: Context) {
         if (RealmLog.getLevel() != targetLogLevel) {
             RealmLog.setLevel(targetLogLevel)
         }
-        val config = RealmConfiguration.Builder()
-            .name(Realm.DEFAULT_REALM_NAME)
-            .schemaVersion(5)
-            .migration(RealmMigrations())
-            .build()
-        Realm.setDefaultConfiguration(config)
+        val currentConfig = Realm.getDefaultConfiguration()
+        if (currentConfig == null || currentConfig.realmDirectory.name == Realm.DEFAULT_REALM_NAME) {
+            val config = RealmConfiguration.Builder()
+                .name(Realm.DEFAULT_REALM_NAME)
+                .schemaVersion(5)
+                .migration(RealmMigrations())
+                .build()
+            Realm.setDefaultConfiguration(config)
+        }
     }
 
     fun createManagedRealmInstance(): Realm = Realm.getDefaultInstance()

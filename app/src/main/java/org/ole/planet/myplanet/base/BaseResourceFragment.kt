@@ -426,7 +426,12 @@ abstract class BaseResourceFragment : Fragment() {
                 libraryItems.getOrNull(index)?.resourceId
             }
             resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
+                .onSuccess {
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                }
+                .onFailure {
+                    Utilities.toast(activity, getString(R.string.error, it.message))
+                }
         }
     }
 
@@ -436,7 +441,12 @@ abstract class BaseResourceFragment : Fragment() {
             val userId = user?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
+                .onSuccess {
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                }
+                .onFailure {
+                    Utilities.toast(activity, getString(R.string.error, it.message))
+                }
         }
     }
 
@@ -481,15 +491,5 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
-        }
     }
 }
