@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -49,6 +50,7 @@ class UploadToShelfService @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository,
+    private val healthRepository: HealthRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
 ) {
@@ -287,13 +289,7 @@ class UploadToShelfService @Inject constructor(
     fun uploadHealth() {
         val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
-            val myHealths = dbService.withRealm { realm ->
-                realm.where(RealmHealthExamination::class.java)
-                    .equalTo("isUpdated", true)
-                    .notEqualTo("userId", "")
-                    .findAll()
-                    .map { realm.copyFromRealm(it) }
-            }
+            val myHealths = healthRepository.getUpdatedHealthExaminations()
 
             val uploadedHealths = mutableMapOf<String, String?>()
             myHealths.forEach { pojo ->
@@ -311,17 +307,7 @@ class UploadToShelfService @Inject constructor(
                 }
             }
 
-            if (uploadedHealths.isNotEmpty()) {
-                dbService.executeTransactionAsync { realm ->
-                    uploadedHealths.keys.chunked(999).forEach { chunk ->
-                        val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
-                        managedPojos.forEach { managedPojo ->
-                            managedPojo._rev = uploadedHealths[managedPojo._id]
-                            managedPojo.isUpdated = false
-                        }
-                    }
-                }
-            }
+            healthRepository.markHealthExaminationsUploaded(uploadedHealths)
         }
     }
 
@@ -331,13 +317,7 @@ class UploadToShelfService @Inject constructor(
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
-                val myHealths = dbService.withRealm { realm ->
-                    realm.where(RealmHealthExamination::class.java)
-                        .equalTo("isUpdated", true)
-                        .equalTo("userId", userId)
-                        .findAll()
-                        .map { realm.copyFromRealm(it) }
-                }
+                val myHealths = healthRepository.getUpdatedHealthForUser(userId)
 
                 val uploadedHealths = mutableMapOf<String, String?>()
                 myHealths.forEach { pojo ->
@@ -360,17 +340,7 @@ class UploadToShelfService @Inject constructor(
                     }
                 }
 
-                if (uploadedHealths.isNotEmpty()) {
-                    dbService.executeTransactionAsync { realm ->
-                        uploadedHealths.keys.chunked(999).forEach { chunk ->
-                            val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
-                            managedPojos.forEach { managedPojo ->
-                                managedPojo._rev = uploadedHealths[managedPojo._id]
-                                managedPojo.isUpdated = false
-                            }
-                        }
-                    }
-                }
+                healthRepository.markHealthExaminationsUploaded(uploadedHealths)
 
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")
