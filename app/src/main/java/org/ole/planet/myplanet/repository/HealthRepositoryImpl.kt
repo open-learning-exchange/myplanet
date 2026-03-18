@@ -43,4 +43,28 @@ class HealthRepositoryImpl @Inject constructor(
             examination?.let { realm.copyToRealmOrUpdate(it) }
         }
     }
+
+    override suspend fun getUnuploadedExaminations(userId: String?): List<RealmHealthExamination> {
+        return queryList(RealmHealthExamination::class.java, true) {
+            equalTo("isUpdated", true)
+            if (userId.isNullOrEmpty()) {
+                notEqualTo("userId", "")
+            } else {
+                equalTo("userId", userId)
+            }
+        }
+    }
+
+    override suspend fun markExaminationsUploaded(revMap: Map<String, String?>) {
+        if (revMap.isEmpty()) return
+        executeTransaction { realm ->
+            revMap.keys.chunked(999).forEach { chunk ->
+                val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
+                managedPojos.forEach { managedPojo ->
+                    managedPojo._rev = revMap[managedPojo._id]
+                    managedPojo.isUpdated = false
+                }
+            }
+        }
+    }
 }

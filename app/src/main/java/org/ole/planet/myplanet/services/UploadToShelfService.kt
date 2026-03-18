@@ -50,7 +50,8 @@ class UploadToShelfService @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository
 ) {
     lateinit var mRealm: Realm
 
@@ -287,13 +288,7 @@ class UploadToShelfService @Inject constructor(
     fun uploadHealth() {
         val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
-            val myHealths = dbService.withRealm { realm ->
-                realm.where(RealmHealthExamination::class.java)
-                    .equalTo("isUpdated", true)
-                    .notEqualTo("userId", "")
-                    .findAll()
-                    .map { realm.copyFromRealm(it) }
-            }
+            val myHealths = healthRepository.getUnuploadedExaminations()
 
             val uploadedHealths = mutableMapOf<String, String?>()
             myHealths.forEach { pojo ->
@@ -312,15 +307,7 @@ class UploadToShelfService @Inject constructor(
             }
 
             if (uploadedHealths.isNotEmpty()) {
-                dbService.executeTransactionAsync { realm ->
-                    uploadedHealths.keys.chunked(999).forEach { chunk ->
-                        val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
-                        managedPojos.forEach { managedPojo ->
-                            managedPojo._rev = uploadedHealths[managedPojo._id]
-                            managedPojo.isUpdated = false
-                        }
-                    }
-                }
+                healthRepository.markExaminationsUploaded(uploadedHealths)
             }
         }
     }
@@ -331,13 +318,7 @@ class UploadToShelfService @Inject constructor(
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
-                val myHealths = dbService.withRealm { realm ->
-                    realm.where(RealmHealthExamination::class.java)
-                        .equalTo("isUpdated", true)
-                        .equalTo("userId", userId)
-                        .findAll()
-                        .map { realm.copyFromRealm(it) }
-                }
+                val myHealths = healthRepository.getUnuploadedExaminations(userId)
 
                 val uploadedHealths = mutableMapOf<String, String?>()
                 myHealths.forEach { pojo ->
@@ -361,15 +342,7 @@ class UploadToShelfService @Inject constructor(
                 }
 
                 if (uploadedHealths.isNotEmpty()) {
-                    dbService.executeTransactionAsync { realm ->
-                        uploadedHealths.keys.chunked(999).forEach { chunk ->
-                            val managedPojos = realm.where(RealmHealthExamination::class.java).`in`("_id", chunk.toTypedArray()).findAll()
-                            managedPojos.forEach { managedPojo ->
-                                managedPojo._rev = uploadedHealths[managedPojo._id]
-                                managedPojo.isUpdated = false
-                            }
-                        }
-                    }
+                    healthRepository.markExaminationsUploaded(uploadedHealths)
                 }
 
                 withContext(dispatcherProvider.main) {
