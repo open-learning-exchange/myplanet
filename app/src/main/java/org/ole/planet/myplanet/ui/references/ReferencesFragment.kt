@@ -7,7 +7,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -20,7 +22,6 @@ import org.ole.planet.myplanet.ui.maps.OfflineMapsActivity
 class ReferencesFragment : Fragment() {
     private var _binding: FragmentReferenceBinding? = null
     private val binding get() = _binding!!
-    private lateinit var rowReferenceBinding: RowReferenceBinding
     private var homeItemClickListener: OnHomeItemClickListener? = null
 
     override fun onAttach(context: Context) {
@@ -35,34 +36,46 @@ class ReferencesFragment : Fragment() {
             Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
         )
         binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
+        binding.rvReferences.adapter = ReferenceAdapter()
         setRecyclerAdapter(list)
         return binding.root
     }
 
     private fun setRecyclerAdapter(list: List<Reference>) {
-        binding.rvReferences.adapter = object : RecyclerView.Adapter<ViewHolderReference>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
-                rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                return ViewHolderReference(rowReferenceBinding.root)
-            }
+        (binding.rvReferences.adapter as ReferenceAdapter).submitList(list)
+    }
 
-            override fun onBindViewHolder(holder: ViewHolderReference, position: Int) {
-                rowReferenceBinding.title.text = list[position].title
-                rowReferenceBinding.icon.setImageResource(list[position].icon)
-                rowReferenceBinding.root.setOnClickListener {
-                    if (position == 0)
-                        startActivity(Intent(activity, OfflineMapsActivity::class.java))
-                    else {
-                        startActivity(Intent(activity, DictionaryActivity::class.java))
-                    }
+    inner class ReferenceAdapter : ListAdapter<Reference, ViewHolderReference>(ReferenceDiffCallback()) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
+            val rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return ViewHolderReference(rowReferenceBinding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolderReference, position: Int) {
+            val reference = getItem(position)
+            holder.rowReferenceBinding.title.text = reference.title
+            holder.rowReferenceBinding.icon.setImageResource(reference.icon)
+            holder.rowReferenceBinding.root.setOnClickListener {
+                if (holder.bindingAdapterPosition == 0)
+                    startActivity(Intent(activity, OfflineMapsActivity::class.java))
+                else {
+                    startActivity(Intent(activity, DictionaryActivity::class.java))
                 }
             }
-
-            override fun getItemCount(): Int = list.size
         }
     }
 
-    class ViewHolderReference(itemView: View) : RecyclerView.ViewHolder(itemView)
+    class ReferenceDiffCallback : DiffUtil.ItemCallback<Reference>() {
+        override fun areItemsTheSame(oldItem: Reference, newItem: Reference): Boolean {
+            return oldItem.title == newItem.title
+        }
+
+        override fun areContentsTheSame(oldItem: Reference, newItem: Reference): Boolean {
+            return oldItem == newItem
+        }
+    }
+
+    class ViewHolderReference(val rowReferenceBinding: RowReferenceBinding) : RecyclerView.ViewHolder(rowReferenceBinding.root)
 
     override fun onDestroyView() {
         _binding = null

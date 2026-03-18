@@ -6,6 +6,12 @@ plugins {
     alias(libs.plugins.realm.android)
 }
 android {
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
     compileSdk = 36
     defaultConfig {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -160,11 +166,17 @@ repositories {
 }
 dependencies {
     testImplementation(libs.test.junit)
-    androidTestImplementation(libs.test.junit)
-    androidTestImplementation(libs.test.androidx.test.ext.junit)
-    androidTestImplementation(libs.test.androidx.test.runner)
-    androidTestImplementation(libs.test.androidx.test.core)
-    androidTestImplementation(libs.test.kotlinx.coroutines.test)
+    testImplementation(libs.test.mockk)
+    testImplementation(libs.test.kotlin)
+    testImplementation(libs.test.coroutines)
+    testImplementation(libs.test.robolectric)
+    testImplementation(libs.test.core)
+    testImplementation(libs.test.ext)
+    testImplementation(libs.test.runner)
+    testImplementation(libs.test.hilt)
+    kspTest(libs.hilt.android.compiler)
+}
+dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
