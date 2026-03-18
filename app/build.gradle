@@ -15,6 +15,7 @@ android {
         versionName = "0.48.84"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     configurations.configureEach {
         resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
@@ -211,8 +212,7 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
-    testImplementation(libs.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.rxjava2)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation "androidx.test.ext:junit:1.1.5"
+    androidTestImplementation "androidx.test:runner:1.5.2"
 }
