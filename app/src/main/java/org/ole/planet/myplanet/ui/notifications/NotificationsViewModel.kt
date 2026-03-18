@@ -31,12 +31,12 @@ class NotificationsViewModel @Inject constructor(
 
     private var currentFilter: String = "all"
 
-    fun loadNotifications(userId: String, filter: String) {
+    fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
         viewModelScope.launch {
-            val realmNotifications = notificationsRepository.getNotifications(userId, filter)
+            val realmNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
             _notifications.value = realmNotifications.map { formatNotification(it) }
-            _unreadCount.value = notificationsRepository.getUnreadCount(userId)
+            _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
         }
     }
 

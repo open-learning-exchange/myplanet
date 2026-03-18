@@ -25,9 +25,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -39,9 +37,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
-import org.ole.planet.myplanet.utils.NotificationUtils
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -117,29 +113,12 @@ class DashboardViewModel @Inject constructor(
         notificationsRepository.updateResourceNotification(userId, resourceCount)
     }
 
-    suspend fun createNotificationIfMissing(
-        type: String,
-        message: String,
-        relatedId: String?,
-        userId: String?,
-    ) {
-        notificationsRepository.createNotificationIfMissing(type, message, relatedId, userId)
-    }
-
-    suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
-        return submissionsRepository.getPendingSurveys(userId)
-    }
-
-    suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
-        return submissionsRepository.getSurveyTitlesFromSubmissions(submissions)
-    }
-
     suspend fun getSurveySubmissionCount(userId: String?): Int {
         return surveysRepository.getSurveySubmissionCount(userId)
     }
 
-    suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return notificationsRepository.getUnreadCount(userId)
+    suspend fun getUnreadNotificationsSize(userId: String?, isAdmin: Boolean = false): Int {
+        return notificationsRepository.getUnreadCount(userId, isAdmin)
     }
 
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
@@ -361,99 +340,17 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(dispatcherProvider.io) {
-        var unreadCount = 0
-        val newNotifications = mutableListOf<NotificationConfig>()
-
+    suspend fun checkAndCreateNewNotifications(userId: String?, isAdmin: Boolean = false) = withContext(dispatcherProvider.io) {
         try {
             updateResourceNotification(userId)
-
-            val taskData = teamsRepository.getTaskNotifications(userId)
-            val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
-
-            val pendingSurveys = submissionsRepository.getPendingSurveys(userId)
-            val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-            val storageRatio = FileUtils.totalAvailableMemoryRatio(application).toInt()
-            val joinRequestTemplate = application.getString(R.string.user_requested_to_join_team)
-
-            val realmNotifications = notificationsRepository.checkAndCreateNotifications(
-                userId,
-                taskData,
-                joinRequestData,
-                joinRequestTemplate,
-                storageRatio,
-                surveyTitles
-            )
-
-            val createdNotifications = realmNotifications.mapNotNull {
-                createNotificationConfigFromDatabase(it)
-            }
-            newNotifications.addAll(createdNotifications)
-
-            unreadCount = getUnreadNotificationsSize(userId)
+            val unreadCount = getUnreadNotificationsSize(userId, isAdmin)
+            _uiState.update { it.copy(unreadNotifications = unreadCount) }
         } catch (e: Exception) {
             e.printStackTrace()
-        }
-
-        val groupedNotifications = newNotifications.groupBy { it.type }
-        val finalNotifications = mutableListOf<NotificationConfig>()
-
-        groupedNotifications.forEach { (type, notifications) ->
-            when {
-                notifications.size == 1 -> {
-                    finalNotifications.add(notifications.first())
-                }
-                notifications.size > 1 -> {
-                    val summaryConfig = NotificationUtils.createSummaryNotification(type, notifications.size)
-                    finalNotifications.add(summaryConfig)
-                }
-            }
-        }
-
-        _uiState.update {
-            it.copy(
-                unreadNotifications = unreadCount,
-                newNotifications = finalNotifications
-            )
         }
     }
 
     fun clearNewNotifications() {
         _uiState.update { it.copy(newNotifications = emptyList()) }
-    }
-
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationConfig? {
-        return when (dbNotification.type.lowercase()) {
-            "survey" -> NotificationUtils.createSurveyNotification(
-                dbNotification.id,
-                dbNotification.message
-            ).copy(
-                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
-            )
-            "task" -> {
-                val parts = dbNotification.message.split(" ")
-                val taskTitle = parts.dropLast(3).joinToString(" ")
-                val deadline = parts.takeLast(3).joinToString(" ")
-                NotificationUtils.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
-                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
-                )
-            }
-            "resource" -> NotificationUtils.createResourceNotification(
-                dbNotification.id,
-                dbNotification.message.toIntOrNull() ?: 0
-            )
-            "storage" -> {
-                val storageValue = dbNotification.message.replace("%", "").toIntOrNull() ?: 0
-                NotificationUtils.createStorageWarningNotification(storageValue, dbNotification.id)
-            }
-            "join_request" -> NotificationUtils.createJoinRequestNotification(
-                dbNotification.id,
-                "New Request",
-                dbNotification.message
-            ).copy(
-                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
-            )
-            else -> null
-        }
     }
 }

@@ -1,16 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Realm
-import kotlinx.coroutines.withContext
-import io.realm.RealmResults
-import java.util.Calendar
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -27,6 +20,9 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
+import java.util.Calendar
+import java.util.UUID
+import javax.inject.Inject
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -193,12 +189,12 @@ class CoursesRepositoryImpl @Inject constructor(
     ): List<RealmMyCourse> {
         return withRealm { realm ->
             val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-                val tagIds = realm.where(org.ole.planet.myplanet.model.RealmTag::class.java)
+                val tagIds = realm.where(RealmTag::class.java)
                     .`in`("name", tagNames.toTypedArray())
                     .findAll()
                     .map { it.id }
 
-                realm.where(org.ole.planet.myplanet.model.RealmTag::class.java)
+                realm.where(RealmTag::class.java)
                     .equalTo("db", "courses")
                     .`in`("tagId", tagIds.toTypedArray())
                     .findAll()
@@ -311,7 +307,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }.isNotEmpty()
     }
 
-    override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData? {
+    override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData {
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         return withRealm { realm ->
@@ -341,7 +337,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
-            val userSubmissions = realm.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+            val userSubmissions = realm.where(RealmSubmission::class.java)
                 .equalTo("userId", userId)
                 .equalTo("type", "exam")
                 .findAll()
@@ -353,7 +349,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val submissionIds = relevantSubmissions.mapNotNull { it.id }.toTypedArray()
 
             val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                realm.where(org.ole.planet.myplanet.model.RealmAnswer::class.java)
+                realm.where(RealmAnswer::class.java)
                     .`in`("submissionId", submissionIds)
                     .findAll()
                     .groupBy { it.submissionId }
@@ -369,7 +365,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
             }
 
-            val array = com.google.gson.JsonArray()
+            val array = JsonArray()
             stepsList.forEach { step ->
                 val ob = com.google.gson.JsonObject()
                 ob.addProperty("stepId", step.id)
@@ -385,8 +381,8 @@ class CoursesRepositoryImpl @Inject constructor(
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
         questionsByExamId: Map<String?, List<RealmExamQuestion>>,
-        submissionsByExamId: Map<String, List<org.ole.planet.myplanet.model.RealmSubmission>>,
-        answersBySubmissionId: Map<String?, List<org.ole.planet.myplanet.model.RealmAnswer>>
+        submissionsByExamId: Map<String, List<RealmSubmission>>,
+        answersBySubmissionId: Map<String?, List<RealmAnswer>>
     ) {
         exams.forEach { exam ->
             exam.id?.let { examId ->
