@@ -177,7 +177,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAsReadById(notificationId: String) {
-        viewModel.markAsRead(notificationId, userId)
+        viewModel.markAsRead(notificationId)
     }
 
     private fun markAllAsRead() {
