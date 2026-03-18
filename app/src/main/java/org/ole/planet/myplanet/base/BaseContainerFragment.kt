@@ -54,7 +54,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var currentLibrary: RealmMyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
     @Inject
-    lateinit var prefData: SharedPrefManager
+    open lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
