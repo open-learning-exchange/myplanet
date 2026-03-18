@@ -35,32 +35,35 @@ class NotificationsRepositoryImpl @Inject constructor(
                     Triple(it.type, it.relatedId, it.userId)
                 }
 
-                surveyTitles.forEach { title ->
-                    if (notificationLookup.add(Triple("survey", title, actualUserId))) {
-                        createNotificationIfMissingInternal(r, "survey", title, title, actualUserId)
+                fun createIfMissing(type: String, message: String, relatedId: String?) {
+                    if (!notificationLookup.contains(Triple(type, relatedId, actualUserId))) {
+                        r.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                            this.userId = actualUserId
+                            this.type = type
+                            this.message = message
+                            this.relatedId = relatedId
+                            this.createdAt = Date()
+                        }
+                        notificationLookup.add(Triple(type, relatedId, actualUserId))
                     }
+                }
+
+                surveyTitles.forEach { title ->
+                    createIfMissing("survey", title, title)
                 }
 
                 taskData.forEach { (title, deadline, id) ->
-                    if (notificationLookup.add(Triple("task", id, actualUserId))) {
-                        createNotificationIfMissingInternal(r, "task", "$title $deadline", id, actualUserId)
-                    }
+                    createIfMissing("task", "$title $deadline", id)
                 }
 
                 if (storageRatio > 85) {
-                    if (notificationLookup.add(Triple("storage", "storage", actualUserId))) {
-                        createNotificationIfMissingInternal(r, "storage", "$storageRatio%", "storage", actualUserId)
-                    }
+                    createIfMissing("storage", "$storageRatio%", "storage")
                 }
-                if (notificationLookup.add(Triple("storage", "storage_test", actualUserId))) {
-                    createNotificationIfMissingInternal(r, "storage", "90%", "storage_test", actualUserId)
-                }
+                createIfMissing("storage", "90%", "storage_test")
 
                 joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                    if (notificationLookup.add(Triple("join_request", requestId, actualUserId))) {
-                        val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                        createNotificationIfMissingInternal(r, "join_request", message, requestId, actualUserId)
-                    }
+                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
+                    createIfMissing("join_request", message, requestId)
                 }
             }
 
@@ -69,35 +72,6 @@ class NotificationsRepositoryImpl @Inject constructor(
                 .equalTo("isRead", false)
                 .findAll()
                 .let { realm.copyFromRealm(it) }
-        }
-    }
-
-    private fun createNotificationIfMissingInternal(
-        realm: io.realm.Realm,
-        type: String,
-        message: String,
-        relatedId: String?,
-        userId: String
-    ) {
-        val query = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-
-        val existingNotification =
-            if (relatedId != null) {
-                query.equalTo("relatedId", relatedId).findFirst()
-            } else {
-                query.isNull("relatedId").findFirst()
-            }
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
-                this.userId = userId
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
         }
     }
 
