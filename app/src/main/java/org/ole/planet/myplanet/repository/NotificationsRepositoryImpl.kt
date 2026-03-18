@@ -30,9 +30,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return databaseService.withRealm { realm ->
             realm.executeTransaction { r ->
                 val existingNotifications = r.where(RealmNotification::class.java)
-                    .equalTo("userId", actualUserId)
-                    .findAll()
-
+                    .equalTo("userId", actualUserId).findAll()
                 val notificationLookup = existingNotifications.mapTo(mutableSetOf()) {
                     Triple(it.type, it.relatedId, it.userId)
                 }
