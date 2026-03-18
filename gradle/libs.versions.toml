@@ -57,6 +57,7 @@ realm-android = { id = "realm-android" }
 [libraries]
 test-junit = { module = "junit:junit", version.ref = "junit" }
 test-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+test-mockkdroid = { module = "io.mockk:mockk-android", version.ref = "mockk" }
 test-kotlin = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 test-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "testCoroutines" }
 test-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
