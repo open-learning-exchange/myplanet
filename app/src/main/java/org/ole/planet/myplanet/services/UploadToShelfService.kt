@@ -386,11 +386,7 @@ class UploadToShelfService @Inject constructor(
     private fun uploadToShelf(listener: OnSuccessListener) {
         val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
-            val unmanagedUsers = dbService.withRealm { realm ->
-                realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().let {
-                    realm.copyFromRealm(it)
-                }
-            }
+            val unmanagedUsers = userRepository.getSyncedUsers()
 
             if (unmanagedUsers.isEmpty()) {
                 withContext(dispatcherProvider.main) {
@@ -401,7 +397,6 @@ class UploadToShelfService @Inject constructor(
 
             try {
                 unmanagedUsers.forEach { model ->
-                    if (model.id?.startsWith("guest") == true) return@forEach
                     try {
                         val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
@@ -436,28 +431,20 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             try {
-                val model = dbService.withRealm { realm ->
-                    realm.where(RealmUser::class.java)
-                        .equalTo("name", userName)
-                        .isNotEmpty("_id")
-                        .findFirst()
-                        ?.let { realm.copyFromRealm(it) }
-                }
+                val model = userName?.let { userRepository.getSyncedUserByName(it) }
 
                 if (model != null) {
-                    if (model.id?.startsWith("guest") != true) {
-                        val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
-                        val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
-                        val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                        val shelfObject = dbService.withRealm { realm ->
-                            getShelfData(realm, model.id, jsonDoc, myLibs, myCourseIds)
-                        }
-                        shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
-
-                        val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}"
-                        apiInterface.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
+                    val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
+                    val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
+                    val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                    val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
+                    val shelfObject = dbService.withRealm { realm ->
+                        getShelfData(realm, model.id, jsonDoc, myLibs, myCourseIds)
                     }
+                    shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
+
+                    val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}"
+                    apiInterface.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
                 }
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Single user shelf sync completed successfully")
