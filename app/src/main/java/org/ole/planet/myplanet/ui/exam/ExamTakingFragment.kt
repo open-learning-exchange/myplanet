@@ -87,13 +87,34 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
             if ((questions?.size ?: 0) > 0) {
                 if (type == "exam") {
-                    clearAllExistingAnswers {
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val currentExam = exam
-                            if (currentExam != null) {
-                                sub = submissionsRepository.createExamSubmission(
-                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
-                                )
+                    val examIdValue = exam?.id
+                    val examCourseIdValue = exam?.courseId
+                    val userIdValue = user?.id
+
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            submissionsRepository.deleteExamSubmissions(
+                                examIdValue ?: id ?: "", examCourseIdValue, userIdValue
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            answerCache.clear()
+                            clearAnswer()
+                            ans = ""
+                            listAns?.clear()
+                            sub = null
+                        }
+
+                        val currentExam = exam
+                        if (currentExam != null) {
+                            val newSub = submissionsRepository.createExamSubmission(
+                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                            )
+                            withContext(Dispatchers.Main) {
+                                sub = newSub
                                 startExam(questions?.get(currentIndex))
                                 updateNavButtons()
                             }
@@ -618,39 +639,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             }
         }
         return false
-    }
-
-    private fun clearAllExistingAnswers(onComplete: () -> Unit = {}) {
-        val examIdValue = exam?.id
-        val examCourseIdValue = exam?.courseId
-        val userIdValue = user?.id
-
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                submissionsRepository.deleteExamSubmissions(
-                    examIdValue ?: id ?: "", examCourseIdValue, userIdValue
-                )
-
-                withContext(Dispatchers.Main) {
-                    answerCache.clear()
-                    clearAnswer()
-                    ans = ""
-                    listAns?.clear()
-                    sub = null
-                    onComplete()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    answerCache.clear()
-                    clearAnswer()
-                    ans = ""
-                    listAns?.clear()
-                    sub = null
-                    onComplete()
-                }
-            }
-        }
     }
 
     override fun onDestroyView() {
