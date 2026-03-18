@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -145,18 +145,26 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             var libraryAdded = false
             var courseAdded = false
+            var errorOccurred: Throwable? = null
 
-            val result = runCatching {
-                if (resourceIds.isNotEmpty()) {
-                    resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+            if (resourceIds.isNotEmpty()) {
+                val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                libraryResult.onSuccess {
                     libraryAdded = true
+                }.onFailure {
+                    errorOccurred = it
                 }
+            }
 
-                if (courseIds.isNotEmpty()) {
-                    courseIds.forEach { courseId ->
-                        if (coursesRepository.markCourseAdded(courseId, userId)) {
+            if (courseIds.isNotEmpty()) {
+                courseIds.forEach { courseId ->
+                    val courseResult = coursesRepository.markCourseAdded(courseId, userId)
+                    courseResult.onSuccess { added ->
+                        if (added) {
                             courseAdded = true
                         }
+                    }.onFailure {
+                        errorOccurred = it
                     }
                 }
             }
@@ -174,14 +182,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
 
-            result.exceptionOrNull()?.let {
+            errorOccurred?.let {
                 it.printStackTrace()
-                Utilities.toast(activity, "An error occurred: ${it.message}")
+                toast(activity, "An error occurred: ${it.message}")
                 return@launch
             }
 
-            if (libraryAdded) Utilities.toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) Utilities.toast(activity, getString(R.string.added_to_my_courses))
+            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
+            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 
@@ -199,62 +207,45 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open suspend fun deleteSelected(deleteProgress: Boolean) {
-        val courseIds = mutableListOf<String>()
-        val objectsToRemove = mutableListOf<RealmObject>()
-
-        selectedItems?.forEach { item ->
-            val `object` = item as RealmObject
-            objectsToRemove.add(`object`)
-            if (`object` is RealmMyCourse) {
-                `object`.courseId?.let { courseIds.add(it) }
-            }
-        }
-
-        try {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            if (deleteProgress && courseIds.isNotEmpty()) {
-                val courseIdsArray = courseIds.toTypedArray()
-                mRealm.where(RealmCourseProgress::class.java)
-                    .`in`("courseId", courseIdsArray)
-                    .findAll()
-                    .deleteAllFromRealm()
-
-                val examList = mRealm.where(RealmStepExam::class.java)
-                    .`in`("courseId", courseIdsArray)
-                    .findAll()
-                val examIds = examList.mapNotNull { it.id }.toTypedArray()
-
-                if (examIds.isNotEmpty()) {
-                    mRealm.where(RealmSubmission::class.java)
-                        .`in`("parentId", examIds)
-                        .notEqualTo("type", "survey")
-                        .equalTo("uploaded", false)
-                        .findAll()
-                        .deleteAllFromRealm()
+        selectedItems?.forEachIndexed { _, item ->
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
                 }
-            }
-
-            objectsToRemove.forEach { `object` ->
+                val `object` = item as RealmObject
+                deleteCourseProgress(deleteProgress, `object`)
                 removeFromShelf(`object`)
+                if (mRealm.isInTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
             }
-
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-        } catch (e: Exception) {
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            throw e
         }
         selectedItems?.clear()
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
+    }
+
+    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+        if (deleteProgress && `object` is RealmMyCourse) {
+            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
+            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
+            val examIds = examList.mapNotNull { it.id }.toTypedArray()
+            if (examIds.isNotEmpty()) {
+                mRealm.where(RealmSubmission::class.java)
+                    .`in`("parentId", examIds)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
