@@ -15,6 +15,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -38,7 +39,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
-    private lateinit var prefManager: SharedPrefManager
+    @Inject lateinit var prefManager: SharedPrefManager
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
     private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private var textWatcher: TextWatcher? = null
@@ -63,7 +64,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        prefManager = SharedPrefManager(requireContext())
         
         viewModel.startExamSync()
     }
