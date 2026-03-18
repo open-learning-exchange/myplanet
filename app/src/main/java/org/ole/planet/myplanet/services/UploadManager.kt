@@ -198,16 +198,12 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        databaseService.executeTransactionAsync { transactionRealm ->
-            val list: List<RealmAchievement> = transactionRealm.where(RealmAchievement::class.java).findAll()
-            list.processInBatches { sub ->
-                try {
-                    if (sub._id?.startsWith("guest") == true) {
-                        return@processInBatches
-                    }
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
+        val list = submissionsRepository.getAchievementsForUpload()
+        list.processInBatches { sub ->
+            try {
+                // Future upload logic can be added here
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
         }
     }

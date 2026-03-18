@@ -698,4 +698,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         submission!!.lastUpdateTime = Date().time
         return submission
     }
+
+    override suspend fun getAchievementsForUpload(): List<JsonObject> {
+        return queryList(org.ole.planet.myplanet.model.RealmAchievement::class.java) {
+        }.filter { it._id?.startsWith("guest") != true }
+         .map { org.ole.planet.myplanet.model.RealmAchievement.serialize(it) }
+    }
 }
