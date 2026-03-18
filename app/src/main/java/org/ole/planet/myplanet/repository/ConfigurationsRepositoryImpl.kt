@@ -144,7 +144,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     return@launch
                 }
 
-                val apkVersion = parseApkVersionString(versionStr)
+                val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
                         withContext(dispatcherProvider.main) {
                             callback.onError(
@@ -304,7 +304,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val minApkVersion = jsonObject?.get("minapk")?.asString
                 val currentVersion = context.getString(R.string.app_version)
 
-                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
+                if (minApkVersion != null && VersionUtils.isVersionAllowed(currentVersion, minApkVersion)) {
                     val couchdbURL = buildCouchdbUrl(currentUrl, pin)
 
                     fetchConfiguration(couchdbURL)?.let { (id, code) ->
@@ -396,22 +396,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
-        return compareVersions(currentVersion, minApkVersion) >= 0
-    }
-
-    private fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
-        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
-
-        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
-            if (parts1[i] != parts2[i]) {
-                return parts1[i].compareTo(parts2[i])
-            }
-        }
-        return parts1.size.compareTo(parts2.size)
-    }
-
     private fun getLanguageCodeFromName(languageName: String): String? {
         return when (languageName.lowercase()) {
             "english" -> "en"
@@ -455,14 +439,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-    private fun parseApkVersionString(raw: String?): Int? {
-        if (raw.isNullOrEmpty()) return null
-        var vsn = raw.replace("v".toRegex(), "")
-        vsn = vsn.replace("\\.".toRegex(), "")
-        val cleaned = if (vsn.startsWith("0")) vsn.replaceFirst("0", "") else vsn
-        return cleaned.toIntOrNull()
-    }
-
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
@@ -495,4 +471,5 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
     }
+
 }
