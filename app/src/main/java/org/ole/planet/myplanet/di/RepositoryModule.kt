@@ -48,9 +48,16 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
 
+import org.ole.planet.myplanet.repository.retry.RetryOperationRepository
+import org.ole.planet.myplanet.repository.retry.RetryOperationRepositoryImpl
+
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindRetryOperationRepository(impl: RetryOperationRepositoryImpl): RetryOperationRepository
 
     @Binds
     @Singleton
