@@ -290,31 +290,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
         }
-        var list = getData(s, RealmMyCourse::class.java)
-        list = if (isMyCourseLib) {
-            coursesRepository.getMyCourses(model?.id, list)
-        } else {
-            getAllCourses(model?.id, list)
-        }
-        if (tags.isEmpty()) {
-            return list
-        }
-
-        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-        val linkedCourseIds = mRealm.where(RealmTag::class.java)
-            .equalTo("db", "courses")
-            .`in`("tagId", tagIds)
-            .findAll()
-            .mapNotNull { it.linkId }
-            .toSet()
-
-        val courses = RealmList<RealmMyCourse>()
-        list.forEach { course ->
-            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
-                courses.add(course)
-            }
-        }
-        return applyCourseFilter(courses)
+        val list = coursesRepository.filterCoursesByTag(s, tags, isMyCourseLib, model?.id)
+        return applyCourseFilter(list)
     }
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
