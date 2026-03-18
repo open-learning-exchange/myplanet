@@ -677,23 +677,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         super.onDestroy()
     }
 
-    private fun recreateFragment(fragment: Fragment) {
-        if (isAdded && activity != null && !requireActivity().isFinishing) {
-            if (isMyCourseLib) {
-                val args = Bundle().apply {
-                    putBoolean("isMyCourseLib", true)
-                }
-                fragment.arguments = args
-            }
-            FragmentNavigator.replaceFragment(
-                parentFragmentManager,
-                R.id.fragment_container,
-                fragment,
-                addToBackStack = true
-            )
-        }
-    }
-
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
         filter.setOnClickListener {
@@ -767,17 +750,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.IO) {
                 itemsToDelete.forEach { resourceId ->
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                    refreshResourcesData()
+                    selectedItems?.clear()
+                    changeButtonStatus()
+                    hideButton()
+                }
             }
-            if (_binding == null) return
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-            refreshResourcesData()
-            selectedItems?.clear()
-            changeButtonStatus()
-            hideButton()
         }
     }
 
@@ -786,16 +771,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+                    .onSuccess {
+                        if (_binding == null) return@onSuccess
+                        Utilities.toast(activity, getString(R.string.added_to_my_library))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        if (_binding == null) return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }

@@ -141,17 +141,18 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         if (courseIds.isEmpty()) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                teamsRepository.addCoursesToTeam(teamId, courseIds)
-                if (isAdded) {
-                    Utilities.toast(requireActivity(), getString(R.string.added_to_my_courses))
-                    updateCoursesList()
+            teamsRepository.addCoursesToTeam(teamId, courseIds)
+                .onSuccess {
+                    if (isAdded) {
+                        Utilities.toast(requireActivity(), getString(R.string.added_to_my_courses))
+                        updateCoursesList()
+                    }
                 }
-            } catch (e: Exception) {
-                if (isAdded) {
-                    Utilities.toast(requireActivity(), getString(R.string.error, e.message))
+                .onFailure { e ->
+                    if (isAdded) {
+                        Utilities.toast(requireActivity(), getString(R.string.error, e.message))
+                    }
                 }
-            }
         }
     }
 
