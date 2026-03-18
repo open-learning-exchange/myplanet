@@ -771,16 +771,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+                    .onSuccess {
+                        if (_binding == null) return@onSuccess
+                        Utilities.toast(activity, getString(R.string.added_to_my_library))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        if (_binding == null) return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }

@@ -44,8 +44,8 @@ interface ResourcesRepository {
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
-    suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String)
-    suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String)
+    suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
+    suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit>
     suspend fun getOpenedResourceIds(userId: String): Set<String>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
     suspend fun getDownloadSuggestionList(userId: String? = null): List<RealmMyLibrary>
