@@ -1,0 +1,12 @@
+--- app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesStepsAdapter.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesStepsAdapter.kt
+@@ -12,7 +12,7 @@
+ import org.ole.planet.myplanet.model.StepItem
+ import org.ole.planet.myplanet.utils.DiffUtils
+
+-class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
++class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, RecyclerView.ViewHolder>(STEP_ITEM_COMPARATOR) {
+     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
+     private var currentlyVisibleStepId: String? = null
+-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
++    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {

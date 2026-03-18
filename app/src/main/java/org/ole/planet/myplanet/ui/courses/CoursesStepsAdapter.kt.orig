@@ -14,16 +14,16 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
     private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
     private var currentlyVisibleStepId: String? = null
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesStepsAdapter.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val rowStepsBinding = RowStepsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(rowStepsBinding)
     }
 
-    override fun onBindViewHolder(holder: CoursesStepsAdapter.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(getItem(position))
     }
 
-    override fun onBindViewHolder(holder: CoursesStepsAdapter.ViewHolder, position: Int, payloads: MutableList<Any>) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
         } else {
