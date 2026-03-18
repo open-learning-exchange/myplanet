@@ -5,10 +5,10 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -18,8 +18,11 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.utils.JsonUtils
 
-class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), ProgressRepository {
-    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> {
+class ProgressRepositoryImpl @Inject constructor(
+    databaseService: DatabaseService,
+    private val dispatcherProvider: DispatcherProvider
+) : RealmRepository(databaseService), ProgressRepository {
+    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }
@@ -35,10 +38,10 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
                 map[courseId] = progressObject
             }
         }
-        return map
+        map
     }
 
-    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(databaseService.ioDispatcher) {
+    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }
@@ -70,7 +73,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
 
     override suspend fun getCurrentProgress(
         steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
-    ): Int {
+    ): Int = withContext(dispatcherProvider.io) {
         val progresses = queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
             equalTo("courseId", courseId)
@@ -83,7 +86,7 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
             }
             i++
         }
-        return i
+        i
     }
 
     private suspend fun getCourseProgressMap(
@@ -126,8 +129,8 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         }
     }
 
-    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
-        return queryList(RealmCourseProgress::class.java) {
+    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> = withContext(dispatcherProvider.io) {
+        queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
         }
     }
@@ -163,8 +166,8 @@ class ProgressRepositoryImpl @Inject constructor(databaseService: DatabaseServic
         }
     }
 
-    override suspend fun hasUserCompletedSync(userId: String): Boolean {
-        return count(RealmUserChallengeActions::class.java) {
+    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(dispatcherProvider.io) {
+        count(RealmUserChallengeActions::class.java) {
             equalTo("userId", userId)
             equalTo("actionType", "sync")
         } > 0

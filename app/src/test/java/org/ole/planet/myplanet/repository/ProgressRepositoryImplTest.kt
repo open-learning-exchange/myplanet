@@ -1,13 +1,14 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.unmockkAll
 import io.mockk.spyk
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.RealmQuery
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -25,25 +26,34 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @ExperimentalCoroutinesApi
 class ProgressRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var repository: ProgressRepositoryImpl
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
+    private val databaseService: DatabaseService = mockk(relaxed = true)
 
     @Before
     fun setUp() {
-        databaseService = mockk(relaxed = true)
-        every { databaseService.ioDispatcher } returns testDispatcher
-        repository = spyk(ProgressRepositoryImpl(databaseService), recordPrivateCalls = true)
+        every { dispatcherProvider.io } returns testDispatcher
+        repository = spyk(ProgressRepositoryImpl(databaseService, dispatcherProvider), recordPrivateCalls = true)
+        coEvery { repository["queryList"](RealmMyCourse::class.java, any<Function1<*, *>>()) } returns emptyList<RealmMyCourse>()
     }
 
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun fetchCourseData_uses_dispatcherProvider_io() = runTest(testDispatcher) {
+        val result = repository.fetchCourseData("user123")
+        assertEquals(JsonArray(), result)
+        verify { dispatcherProvider.io }
     }
 
     @Test

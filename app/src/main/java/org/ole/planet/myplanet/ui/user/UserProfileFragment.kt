@@ -31,7 +31,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -70,7 +72,6 @@ class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
     private val viewModel: UserProfileViewModel by viewModels()
-    private lateinit var rowStatBinding: RowStatBinding
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -172,6 +173,7 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
+        binding.rvStat.adapter = StatsAdapter()
     }
 
     private fun observeUserProfile() {
@@ -471,30 +473,45 @@ class UserProfileFragment : Fragment() {
 
     private fun setupStatsRecycler() {
         val map = createStatsMap()
-        val keys = LinkedList(map.keys)
-        binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-                rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-                return ViewHolderRowStat(rowStatBinding)
-            }
+        (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
+    }
 
-            override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-                rowStatBinding.tvTitle.text = keys[position]
-                rowStatBinding.tvTitle.visibility = View.VISIBLE
-                rowStatBinding.tvDescription.text = map[keys[position]]
-                if (position % 2 == 0) {
-                    rowStatBinding.root.setBackgroundColor(
-                        ContextCompat.getColor(
-                            requireContext(),
-                            R.color.user_profile_background
-                        )
+    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(StatsDiffCallback()) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
+            val rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
+            return ViewHolderRowStat(rowStatBinding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
+            val item = getItem(position)
+            holder.rowStatBinding.tvTitle.text = item.first
+            holder.rowStatBinding.tvTitle.visibility = View.VISIBLE
+            holder.rowStatBinding.tvDescription.text = item.second
+            if (holder.bindingAdapterPosition % 2 == 0) {
+                holder.rowStatBinding.root.setBackgroundColor(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        R.color.user_profile_background
                     )
-                }
+                )
+            } else {
+                holder.rowStatBinding.root.setBackgroundColor(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.transparent
+                    )
+                )
             }
+        }
+    }
 
-            override fun getItemCount(): Int {
-                return keys.size
-            }
+    class StatsDiffCallback : DiffUtil.ItemCallback<Pair<String, String?>>() {
+        override fun areItemsTheSame(oldItem: Pair<String, String?>, newItem: Pair<String, String?>): Boolean {
+            return oldItem.first == newItem.first
+        }
+
+        override fun areContentsTheSame(oldItem: Pair<String, String?>, newItem: Pair<String, String?>): Boolean {
+            return oldItem == newItem
         }
     }
 
@@ -547,7 +564,7 @@ class UserProfileFragment : Fragment() {
         viewModel.updateProfileImage(sharedPrefManager.getUserId(), path)
     }
 
-    inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
+    inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 
     override fun onDestroyView() {
         editProfileDialog?.dismiss()
