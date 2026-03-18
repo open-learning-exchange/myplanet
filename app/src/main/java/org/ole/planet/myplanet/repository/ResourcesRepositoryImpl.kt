@@ -8,7 +8,9 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
 import java.io.File
+import java.text.Normalizer
 import java.util.Calendar
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +48,39 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
+        }
+    }
+
+    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
+    private fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(DIACRITICS_REGEX, "")
+    }
+
+    override suspend fun search(query: String): List<RealmMyLibrary> {
+        return withRealm { realm ->
+            val queryObj = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false)
+            if (query.isEmpty()) {
+                return@withRealm realm.copyFromRealm(queryObj.findAll())
+            }
+
+            val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val data = queryObj.findAll()
+            val normalizedQuery = normalizeText(query)
+            val startsWithQuery = mutableListOf<RealmMyLibrary>()
+            val containsQuery = mutableListOf<RealmMyLibrary>()
+
+            for (item in data) {
+                val title = item.title?.let { normalizeText(it) } ?: continue
+                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    containsQuery.add(item)
+                }
+            }
+            realm.copyFromRealm(startsWithQuery + containsQuery)
         }
     }
 

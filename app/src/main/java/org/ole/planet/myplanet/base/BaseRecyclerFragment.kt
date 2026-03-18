@@ -248,39 +248,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
-        if (s.isEmpty()) return query.findAll()
-
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = query.findAll()
-        val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<LI>()
-        val containsQuery = mutableListOf<LI>()
-
-        for (item in data) {
-            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
-
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(item)
-            }
-        }
-        return startsWithQuery + containsQuery
-    }
-
-    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
-        return when {
-            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-            else -> (item as RealmMyCourse).courseTitle
-        }
-    }
-
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
@@ -290,7 +257,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
         }
-        var list = getData(s, RealmMyCourse::class.java)
+        var list = coursesRepository.search(s)
         list = if (isMyCourseLib) {
             coursesRepository.getMyCourses(model?.id, list)
         } else {
