@@ -16,6 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:layout_marginTop="@dimen/_10dp"
             android:paddingLeft="@dimen/padding_normal"
             android:paddingRight="@dimen/padding_normal">
 
@@ -280,7 +281,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"
-        android:layout_margin="@dimen/padding_large"
+        android:layout_margin="@dimen/_10dp"
         android:src="@drawable/ic_add_white"
         app:fab_label="Add Transaction" />
 </FrameLayout>

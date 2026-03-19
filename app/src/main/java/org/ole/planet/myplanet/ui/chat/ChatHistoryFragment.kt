@@ -254,7 +254,7 @@ class ChatHistoryFragment : Fragment() {
             val cachedTargets = memoizedShareTargets
 
             val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
-            val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
             val targets = cachedTargets ?: loadShareTargets(
                 sharedPrefManager.getParentCode(),
@@ -273,9 +273,23 @@ class ChatHistoryFragment : Fragment() {
                     chatHistory,
                     currentUser,
                     sharedNewsMessages,
-                    shareTargets,
-                    ::shareChat,
-                )
+                    shareTargets
+                ) { map, chat ->
+                    if (!isAdded || _binding == null) {
+                        return@ChatHistoryAdapter
+                    }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val currentUser = user
+                        val createdNews = voicesRepository.createNews(map, currentUser, null)
+                        if (currentUser?.planetCode != null) {
+                            sharedNewsMessages = sharedNewsMessages + createdNews
+                        }
+                        (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
+                            adapter.updateCachedData(currentUser, sharedNewsMessages)
+                            adapter.notifyChatShared(chat._id)
+                        }
+                    }
+                }
                 newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -319,23 +333,6 @@ class ChatHistoryFragment : Fragment() {
         }
         val community = communityId?.let { teamsRepository.getTeamSummaryById(it) }
         return ChatShareTargets(community, teams, enterprises)
-    }
-
-    private fun shareChat(map: HashMap<String?, String>, chatHistory: RealmChatHistory) {
-        if (!isAdded || _binding == null) {
-            return
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser, null)
-            if (currentUser?.planetCode != null) {
-                sharedNewsMessages = sharedNewsMessages + createdNews
-            }
-            (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
-                adapter.notifyChatShared(chatHistory._id)
-            }
-        }
     }
 
     private fun checkAiProvidersIfNeeded() {

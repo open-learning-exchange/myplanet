@@ -19,5 +19,22 @@ class RealmMigrations : RealmMigration {
                 ?.addIndex("examId")
             version++
         }
+
+        if (version == 5L) {
+            schema.get("RealmNotification")
+                ?.addField("link", String::class.java)
+                ?.setNullable("link", true)
+                ?.addField("priority", Int::class.java)
+                ?.addField("isFromServer", Boolean::class.java)
+            version++
+        }
+
+        if (version == 6L) {
+            schema.get("RealmNotification")
+                ?.addField("rev", String::class.java)
+                ?.setNullable("rev", true)
+                ?.addField("needsSync", Boolean::class.java)
+            version++
+        }
     }
 }

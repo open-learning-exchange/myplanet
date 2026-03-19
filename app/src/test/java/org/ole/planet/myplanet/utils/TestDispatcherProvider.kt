@@ -1,12 +1,9 @@
 package org.ole.planet.myplanet.utils
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 
-class TestDispatcherProvider(
-    private val testDispatcher: CoroutineDispatcher = UnconfinedTestDispatcher()
-) : DispatcherProvider {
+class TestDispatcherProvider(private val testDispatcher: TestDispatcher) : DispatcherProvider {
     override val main: CoroutineDispatcher = testDispatcher
     override val io: CoroutineDispatcher = testDispatcher
     override val default: CoroutineDispatcher = testDispatcher

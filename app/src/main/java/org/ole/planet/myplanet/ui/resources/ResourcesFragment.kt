@@ -677,23 +677,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         super.onDestroy()
     }
 
-    private fun recreateFragment(fragment: Fragment) {
-        if (isAdded && activity != null && !requireActivity().isFinishing) {
-            if (isMyCourseLib) {
-                val args = Bundle().apply {
-                    putBoolean("isMyCourseLib", true)
-                }
-                fragment.arguments = args
-            }
-            FragmentNavigator.replaceFragment(
-                parentFragmentManager,
-                R.id.fragment_container,
-                fragment,
-                addToBackStack = true
-            )
-        }
-    }
-
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
         filter.setOnClickListener {
@@ -732,18 +715,18 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun filterLocalLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
+        val normalizedSearchTerm = org.ole.planet.myplanet.utils.Utilities.normalizeText(s)
 
         var filteredList = if (s.isEmpty()) {
             allLibraryItems
         } else {
             val queryParts = s.split(" ").filterNot { it.isEmpty() }
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val normalizedQueryParts = queryParts.map { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) }
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
             val containsQuery = mutableListOf<RealmMyLibrary>()
 
             for (item in allLibraryItems) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
+                val title = item.title?.let { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) } ?: continue
                 if (title.startsWith(normalizedSearchTerm, ignoreCase = true)) {
                     startsWithQuery.add(item)
                 } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
@@ -767,17 +750,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            withContext(Dispatchers.IO) {
+            lifecycleScope.launch(Dispatchers.IO) {
                 itemsToDelete.forEach { resourceId ->
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
+                withContext(Dispatchers.Main) {
+                    if (_binding == null) return@withContext
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                    refreshResourcesData()
+                    selectedItems?.clear()
+                    changeButtonStatus()
+                    hideButton()
+                }
             }
-            if (_binding == null) return
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-            refreshResourcesData()
-            selectedItems?.clear()
-            changeButtonStatus()
-            hideButton()
         }
     }
 
@@ -786,16 +771,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
-                }
+                    .onSuccess {
+                        if (_binding == null) return@onSuccess
+                        Utilities.toast(activity, getString(R.string.added_to_my_library))
+                        refreshResourcesData()
+                        selectedItems?.clear()
+                        changeButtonStatus()
+                        hideButton()
+                    }
+                    .onFailure {
+                        if (_binding == null) return@onFailure
+                        Utilities.toast(activity, getString(R.string.error, it.message))
+                    }
             }
         }
     }

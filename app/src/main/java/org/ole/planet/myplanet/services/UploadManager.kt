@@ -13,6 +13,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,6 +21,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiClient.client
@@ -69,9 +71,14 @@ class UploadManager @Inject constructor(
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val uploadConfigs: UploadConfigs,
-    private val teamsRepository: Lazy<TeamsRepository>
-) : FileUploader() {
+    private val resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val apiInterface: ApiInterface,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    @ApplicationScope private val scope: CoroutineScope
+) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
@@ -80,7 +87,7 @@ class UploadManager @Inject constructor(
     fun uploadActivities(listener: OnSuccessListener?) {
         val apiInterface = client.create(ApiInterface::class.java)
 
-        MainApplication.applicationScope.launch {
+        scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Cannot upload activities: user model is null")
@@ -284,34 +291,9 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
-            data class ResourceData(
-                val libraryId: String?,
-                val title: String?,
-                val isPrivate: Boolean,
-                val privateFor: String?,
-                val serialized: JsonObject
-            )
-
             val user = userRepository.getUserModelSuspending()
 
-            val resourcesToUpload = databaseService.withRealm { realm ->
-                realm.refresh()
-                val data = realm.where(RealmMyLibrary::class.java).isNull("_rev").findAll()
-
-                if (data.isEmpty()) {
-                    emptyList()
-                } else {
-                    data.map { library ->
-                        ResourceData(
-                            libraryId = library.id,
-                            title = library.title,
-                            isPrivate = library.isPrivate,
-                            privateFor = library.privateFor,
-                            serialized = RealmMyLibrary.serialize(library, user)
-                        )
-                    }
-                }
-            }
+            val resourcesToUpload = resourcesRepository.getUnuploadedResources(user)
 
             if (resourcesToUpload.isEmpty()) {
                 listener?.onSuccess("No resources to upload")
@@ -320,6 +302,8 @@ class UploadManager @Inject constructor(
 
             withContext(Dispatchers.IO) {
                 resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
+                    val successfulUpdates = mutableListOf<Pair<org.ole.planet.myplanet.repository.ResourceUploadData, com.google.gson.JsonObject>>()
+
                     batch.forEach { resourceData ->
                         try {
                             val `object` = apiInterface.postDoc(
@@ -328,46 +312,77 @@ class UploadManager @Inject constructor(
                             ).body()
 
                             if (`object` != null) {
-                                val rev = getString("rev", `object`)
-                                val id = getString("id", `object`)
-
-                                databaseService.executeTransactionAsync { transactionRealm ->
-                                    transactionRealm.where(RealmMyLibrary::class.java)
-                                        .equalTo("id", resourceData.libraryId)
-                                        .findFirst()?.let { sub ->
-                                            sub._rev = rev
-                                            sub._id = id
-                                        }
-
-                                    if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
-                                        val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                                            ?: sharedPrefManager.getPlanetCode()
-                                        val teamResource = transactionRealm.createObject(
-                                            RealmMyTeam::class.java,
-                                            UUID.randomUUID().toString()
-                                        )
-                                        teamResource.teamId = resourceData.privateFor
-                                        teamResource.title = resourceData.title
-                                        teamResource.resourceId = id
-                                        teamResource.docType = "resourceLink"
-                                        teamResource.updated = true
-                                        teamResource.teamType = "local"
-                                        teamResource.teamPlanetCode = planetCode
-                                        teamResource.sourcePlanet = planetCode
-                                    }
-                                }
-
-                                listener?.let {
-                                    val library = databaseService.withRealm { realm ->
-                                        realm.where(RealmMyLibrary::class.java)
-                                            .equalTo("id", resourceData.libraryId).findFirst()
-                                            ?.let { realm.copyFromRealm(it) }
-                                    }
-                                    library?.let { uploadAttachment(id, rev, it, listener) }
-                                }
+                                successfulUpdates.add(Pair(resourceData, `object`))
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
+                        }
+                    }
+
+                    if (successfulUpdates.isNotEmpty()) {
+                        val libraryIds = successfulUpdates.mapNotNull { it.first.libraryId }.toTypedArray()
+                        var isTransactionSuccessful = false
+
+                        try {
+                            val uploadedInfos = successfulUpdates.mapNotNull { (resourceData, `object`) ->
+                                val rev = getString("rev", `object`)
+                                val id = getString("id", `object`)
+                                resourceData.libraryId?.let { libId ->
+                                    org.ole.planet.myplanet.repository.UploadedResourceInfo(
+                                        libraryId = libId,
+                                        id = id,
+                                        rev = rev,
+                                        isPrivate = resourceData.isPrivate,
+                                        privateFor = resourceData.privateFor,
+                                        title = resourceData.title
+                                    )
+                                }
+                            }
+
+                            val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                                ?: sharedPrefManager.getPlanetCode()
+
+                            resourcesRepository.markResourcesUploaded(uploadedInfos, planetCode)
+                            isTransactionSuccessful = true
+                        } catch (e: Exception) {
+                            // If the executeTransaction block throws (e.g. disk full, schema conflict),
+                            // Realm automatically rolls back the entire transaction.
+                            // We catch it here to prevent crashing the batch loop and prevent
+                            // `isTransactionSuccessful` from being set to true, so we don't upload
+                            // attachments for failed DB writes.
+                            e.printStackTrace()
+                        }
+
+                        if (isTransactionSuccessful) {
+                            listener?.let {
+                                try {
+                                    val libraries = databaseService.withRealm { realm ->
+                                        if (libraryIds.isNotEmpty()) {
+                                            val results = realm.where(RealmMyLibrary::class.java)
+                                                .`in`("id", libraryIds)
+                                                .findAll()
+                                            realm.copyFromRealm(results)
+                                        } else {
+                                            emptyList()
+                                        }
+                                    }
+
+                                    val libMap = libraries?.associateBy { it.id } ?: emptyMap()
+
+                                    successfulUpdates.forEach { (resourceData, `object`) ->
+                                        val rev = getString("rev", `object`)
+                                        val id = getString("id", `object`)
+
+                                        resourceData.libraryId?.let { libId ->
+                                            libMap[libId]?.let { library ->
+                                                uploadAttachment(id, rev, library, listener)
+                                            }
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
                         }
                     }
                 }
@@ -567,36 +582,9 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        data class TeamLogData(
-            val id: String?,
-            val time: Long?,
-            val user: String?,
-            val type: String?,
-            val serialized: JsonObject
-        )
+        val logsData = activitiesRepository.getUnuploadedTeamLogs()
 
-        val logsData = databaseService.withRealm { realm ->
-            val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-            results.map { log ->
-                TeamLogData(
-                    id = log.id,
-                    time = log.time,
-                    user = log.user,
-                    type = log.type,
-                    serialized = RealmTeamLog.serializeTeamActivities(log, context)
-                )
-            }
-        }
-
-        data class UploadResult(
-            val id: String?,
-            val time: Long?,
-            val user: String?,
-            val type: String?,
-            val _id: String,
-            val _rev: String
-        )
-        val successfulUploads = mutableListOf<UploadResult>()
+        val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
 
         logsData.forEach { logData ->
             try {
@@ -608,7 +596,7 @@ class UploadManager @Inject constructor(
                 if (`object` != null) {
                     val id = getString("id", `object`)
                     val rev = getString("rev", `object`)
-                    successfulUploads.add(UploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
+                    successfulUploads.add(org.ole.planet.myplanet.repository.TeamLogUploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -616,57 +604,7 @@ class UploadManager @Inject constructor(
         }
 
         if (successfulUploads.isNotEmpty()) {
-            databaseService.executeTransactionAsync { realm ->
-                val ids = successfulUploads.mapNotNull { it.id }
-                val managedLogs = mutableMapOf<String, RealmTeamLog>()
-
-                if (ids.isNotEmpty()) {
-                    ids.chunked(999).forEach { chunk ->
-                        val results = realm.where(RealmTeamLog::class.java)
-                            .`in`("id", chunk.toTypedArray())
-                            .findAll()
-                        results.forEach { log ->
-                            log.id?.let { id -> managedLogs[id] = log }
-                        }
-                    }
-                }
-
-                val uploadsWithoutId = successfulUploads.filter { it.id == null }
-                val fallbackLogs = mutableMapOf<Triple<Long?, String?, String?>, RealmTeamLog>()
-
-                if (uploadsWithoutId.isNotEmpty()) {
-                    uploadsWithoutId.chunked(250).forEach { chunk ->
-                        val query = realm.where(RealmTeamLog::class.java)
-                        query.beginGroup()
-                        chunk.forEachIndexed { index, upload ->
-                            if (index > 0) query.or()
-                            query.beginGroup()
-                                .equalTo("time", upload.time)
-                                .equalTo("user", upload.user)
-                                .equalTo("type", upload.type)
-                            .endGroup()
-                        }
-                        query.endGroup()
-
-                        val results = query.findAll()
-                        results.forEach { log ->
-                            val key = Triple(log.time, log.user, log.type)
-                            fallbackLogs[key] = log
-                        }
-                    }
-                }
-
-                successfulUploads.forEach { upload ->
-                    val managedLog = if (upload.id != null) {
-                        managedLogs[upload.id]
-                    } else {
-                        val key = Triple(upload.time, upload.user, upload.type)
-                        fallbackLogs[key]
-                    }
-                    managedLog?._id = upload._id
-                    managedLog?._rev = upload._rev
-                }
-            }
+            activitiesRepository.markTeamLogsUploaded(successfulUploads)
         }
     }
 
@@ -702,7 +640,7 @@ class UploadManager @Inject constructor(
                         _id = news._id,
                         message = news.message,
                         imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = chatRepository.serializeNews(news)
+                        newsJson = voicesRepository.serializeNews(news)
                     )
                 }
         }

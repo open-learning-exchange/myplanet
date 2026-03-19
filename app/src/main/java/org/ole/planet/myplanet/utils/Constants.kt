@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -66,6 +67,7 @@ object Constants {
         classList["certifications"] = RealmCertification::class.java
         classList["team_activities"] = RealmTeamLog::class.java
         classList["courses_progress"] = RealmCourseProgress::class.java
+        classList["notifications"] = RealmNotification::class.java
     }
 
     @JvmStatic
