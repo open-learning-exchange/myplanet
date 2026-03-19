@@ -85,10 +85,11 @@ object ServiceModule {
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, appScope, dispatcherProvider)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, appScope, dispatcherProvider)
     }
 
     @Provides

@@ -37,16 +37,16 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUpdatedHealthExaminations(): List<RealmHealthExamination> {
-        return queryList(RealmHealthExamination::class.java) { query ->
-            query.equalTo("isUpdated", true)
-                 .notEqualTo("userId", "")
+        return queryList(RealmHealthExamination::class.java) {
+            equalTo("isUpdated", true)
+            notEqualTo("userId", "")
         }
     }
 
     override suspend fun getUpdatedHealthForUser(userId: String): List<RealmHealthExamination> {
-        return queryList(RealmHealthExamination::class.java) { query ->
-            query.equalTo("isUpdated", true)
-                 .equalTo("userId", userId)
+        return queryList(RealmHealthExamination::class.java) {
+            equalTo("isUpdated", true)
+            equalTo("userId", userId)
         }
     }
 
