@@ -39,7 +39,6 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
             showStepMistakes(position, holder.binding)
         }
     }
-    private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
         val item = getItem(position)
         if (item.asJsonObject.has("stepMistake")) {
             val stepMistake = item.asJsonObject["stepMistake"].asJsonObject
