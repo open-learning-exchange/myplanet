@@ -73,6 +73,21 @@ class UserRepositoryImpl @Inject constructor(
         return findByField(RealmUser::class.java, "name", name, true)
     }
 
+    override suspend fun getSyncedUsers(): List<RealmUser> {
+        return queryList(RealmUser::class.java) {
+            isNotEmpty("_id")
+            not().beginsWith("id", "guest")
+        }
+    }
+
+    override suspend fun getSyncedUserByName(name: String): RealmUser? {
+        return queryList(RealmUser::class.java) {
+            equalTo("name", name)
+            isNotEmpty("_id")
+            not().beginsWith("id", "guest")
+        }.firstOrNull()
+    }
+
     override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
         return withRealm { realm ->
             RealmUser.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
