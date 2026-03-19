@@ -663,7 +663,8 @@ class VoicesAdapter(
                     }
                 }
                 return
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
 
