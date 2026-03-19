@@ -84,7 +84,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.createManagedRealmInstance()
+            requireRealmInstance()
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -174,8 +174,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
+            if (!requireRealmInstance().isClosed) {
+                requireRealmInstance().refresh()
             }
 
             val newAdapter = getAdapter()
@@ -208,22 +208,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     open suspend fun deleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEachIndexed { _, item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
+            val `object` = item as RealmObject
+            deleteCourseProgress(deleteProgress, `object`)
+            removeFromShelf(`object`)
         }
         selectedItems?.clear()
     }
@@ -232,24 +219,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            val examIds = examList.mapNotNull { it.id }.toTypedArray()
-            if (examIds.isNotEmpty()) {
-                mRealm.where(RealmSubmission::class.java)
-                    .`in`("parentId", examIds)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
-            }
+            coursesRepository.deleteCourseProgress(`object`.courseId)
         }
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val query = mRealm.where(c)
+        val query = requireRealmInstance().where(c)
         if (c == RealmMyLibrary::class.java) {
             query.equalTo("isPrivate", false)
         }
@@ -301,7 +278,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
 
         val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-        val linkedCourseIds = mRealm.where(RealmTag::class.java)
+        val linkedCourseIds = requireRealmInstance().where(RealmTag::class.java)
             .equalTo("db", "courses")
             .`in`("tagId", tagIds)
             .findAll()
@@ -359,20 +336,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun cleanupRealm() {
         if (isRealmInitialized()) {
             try {
-                mRealm.removeAllChangeListeners()
+                requireRealmInstance().removeAllChangeListeners()
 
-                if (mRealm.isInTransaction) {
+                if (requireRealmInstance().isInTransaction) {
                     try {
-                        mRealm.commitTransaction()
+                        requireRealmInstance().commitTransaction()
                     } catch (_: Exception) {
-                        mRealm.cancelTransaction()
+                        requireRealmInstance().cancelTransaction()
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
+                if (!requireRealmInstance().isClosed) {
+                    requireRealmInstance().close()
                 }
             }
         }
