@@ -555,7 +555,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            val activitiesToUpload = activitiesRepository.getUnuploadedLoginActivities(context)
+            val activitiesToUpload = activitiesRepository.getUnuploadedLoginActivities()
 
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUpdates = mutableMapOf<String, com.google.gson.JsonObject?>()
@@ -564,10 +564,10 @@ class UploadManager @Inject constructor(
                     try {
                         val `object` = apiInterface.postDoc(
                             UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/login_activities", activityData.third
+                            "${UrlUtils.getUrl()}/login_activities", activityData.serialized
                         ).body()
 
-                        successfulUpdates[activityData.first] = `object`
+                        successfulUpdates[activityData.id] = `object`
                     } catch (e: java.io.IOException) {
                         e.printStackTrace()
                     }

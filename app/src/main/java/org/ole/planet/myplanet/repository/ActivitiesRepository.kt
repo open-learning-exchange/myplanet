@@ -17,6 +17,6 @@ interface ActivitiesRepository {
     suspend fun logResourceOpen(userName: String?, parentCode: String?, planetCode: String?, title: String?, resourceId: String?, type: String?)
     suspend fun getResourceOpenCount(userName: String, type: String): Long
     suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>?
-    suspend fun getUnuploadedLoginActivities(context: android.content.Context): List<Triple<String, String, com.google.gson.JsonObject>>
+    suspend fun getUnuploadedLoginActivities(): List<org.ole.planet.myplanet.model.LoginActivityData>
     suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>)
 }

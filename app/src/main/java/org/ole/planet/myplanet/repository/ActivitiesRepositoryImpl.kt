@@ -13,7 +13,8 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : RealmRepository(databaseService), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -171,7 +172,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUnuploadedLoginActivities(context: android.content.Context): List<Triple<String, String, com.google.gson.JsonObject>> {
+    override suspend fun getUnuploadedLoginActivities(): List<org.ole.planet.myplanet.model.LoginActivityData> {
         return queryList(RealmOfflineActivity::class.java) {
             isNull("_rev")
             equalTo("type", "login")
@@ -179,7 +180,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             if (activity.userId?.startsWith("guest") == true || activity.id == null || activity.userId == null) {
                 null
             } else {
-                Triple(
+                org.ole.planet.myplanet.model.LoginActivityData(
                     activity.id!!,
                     activity.userId!!,
                     RealmOfflineActivity.serializeLoginActivities(activity, context)
@@ -195,8 +196,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 .findAll()
 
             activities.forEach { activity ->
-                val updateData = revMap[activity.id]
-                activity.changeRev(updateData)
+                revMap[activity.id]?.let { activity.changeRev(it) }
             }
         }
     }
