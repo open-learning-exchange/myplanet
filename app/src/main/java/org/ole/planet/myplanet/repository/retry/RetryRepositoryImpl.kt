@@ -6,9 +6,9 @@ import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.repository.RealmRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
-class RetryOperationRepositoryImpl @Inject constructor(
+class RetryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), RetryOperationRepository {
+) : RealmRepository(databaseService), RetryRepository {
 
     override suspend fun enqueue(
         uploadType: String,

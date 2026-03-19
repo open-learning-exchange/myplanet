@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository.retry
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.services.upload.UploadError
 
-interface RetryOperationRepository {
+interface RetryRepository {
     suspend fun enqueue(
         uploadType: String,
         error: UploadError,

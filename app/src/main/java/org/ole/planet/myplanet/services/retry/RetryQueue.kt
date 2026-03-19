@@ -9,13 +9,13 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.ole.planet.myplanet.repository.retry.RetryOperationRepository
+import org.ole.planet.myplanet.repository.retry.RetryRepository
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @Singleton
 class RetryQueue @Inject constructor(
-    private val retryOperationRepository: RetryOperationRepository,
+    private val retryRepository: RetryRepository,
     @ApplicationContext private val context: Context
 ) {
     companion object {
@@ -46,13 +46,13 @@ class RetryQueue @Inject constructor(
             return
         }
 
-        val existingOperation = retryOperationRepository.getExistingOperation(error.itemId, uploadType)
+        val existingOperation = retryRepository.getExistingOperation(error.itemId, uploadType)
 
         if (existingOperation != null) {
-            retryOperationRepository.updateAttempt(existingOperation.id, error)
+            retryRepository.updateAttempt(existingOperation.id, error)
             Log.d(TAG, "Updated existing retry operation for item ${error.itemId}")
         } else {
-            retryOperationRepository.enqueue(
+            retryRepository.enqueue(
                 uploadType, error, payload.toString(), endpoint,
                 httpMethod, dbId, modelClassName, userId
             )
@@ -84,32 +84,32 @@ class RetryQueue @Inject constructor(
     }
 
     suspend fun getPendingOperations(): List<RealmRetryOperation> {
-        return retryOperationRepository.getPending()
+        return retryRepository.getPending()
     }
 
     suspend fun getPendingCount(): Long {
-        return retryOperationRepository.getPendingCount()
+        return retryRepository.getPendingCount()
     }
 
     suspend fun markInProgress(operationId: String) {
-        retryOperationRepository.markInProgress(operationId)
+        retryRepository.markInProgress(operationId)
     }
 
     suspend fun markCompleted(operationId: String) {
-        retryOperationRepository.markCompleted(operationId)
+        retryRepository.markCompleted(operationId)
         Log.d(TAG, "Marked operation $operationId as completed")
     }
 
     suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        retryOperationRepository.markFailed(operationId, errorMessage, httpCode)
+        retryRepository.markFailed(operationId, errorMessage, httpCode)
     }
 
     suspend fun cleanup() {
-        retryOperationRepository.cleanup()
+        retryRepository.cleanup()
     }
 
     suspend fun resetAllPending() {
-        retryOperationRepository.resetAllPending()
+        retryRepository.resetAllPending()
     }
 
     /**
@@ -128,7 +128,7 @@ class RetryQueue @Inject constructor(
                 return@withLock false
             }
 
-            retryOperationRepository.deletePendingAndAbandonedOperations()
+            retryRepository.deletePendingAndAbandonedOperations()
             Log.i(TAG, "Queue cleared successfully")
             true
         }
@@ -139,6 +139,6 @@ class RetryQueue @Inject constructor(
      * Called on app startup to recover from crashes.
      */
     suspend fun recoverStuckOperations() {
-        retryOperationRepository.recoverStuckOperations()
+        retryRepository.recoverStuckOperations()
     }
 }
