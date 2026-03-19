@@ -15,10 +15,13 @@ import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
 import android.media.ImageReader
 import android.os.Build
+import android.os.Handler
+import android.os.HandlerThread
 import android.view.Surface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.content.ContextCompat
@@ -35,12 +38,42 @@ object CameraUtils {
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
+    private var backgroundHandler: Handler? = null
+    private var backgroundThread: HandlerThread? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
-    private val cameraScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var cameraJob = SupervisorJob()
+    private var cameraScope = CoroutineScope(Dispatchers.Default + cameraJob)
+
+    private fun startBackgroundThread() {
+        if (backgroundThread == null || backgroundThread?.isAlive == false) {
+            backgroundThread = HandlerThread("CameraBackground").apply {
+                start()
+                backgroundHandler = Handler(looper)
+            }
+        }
+        if (cameraJob.isCancelled) {
+            cameraJob = SupervisorJob()
+            cameraScope = CoroutineScope(Dispatchers.Default + cameraJob)
+        }
+    }
+
+    @JvmStatic
+    fun stopBackgroundThread() {
+        try {
+            backgroundThread?.quitSafely()
+            backgroundThread?.join()
+            backgroundThread = null
+            backgroundHandler = null
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        }
+    }
 
     @JvmStatic
     fun release() {
         closeCamera()
+        stopBackgroundThread()
+        cameraScope.cancel()
     }
 
     @JvmStatic
@@ -48,6 +81,7 @@ object CameraUtils {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+        startBackgroundThread()
         openCamera(context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
@@ -61,7 +95,7 @@ object CameraUtils {
                     savePicture(bytes, callback)
                 }
             }
-        }, null)
+        }, backgroundHandler)
 
         try {
             val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
@@ -157,7 +191,7 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, null)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
                         }
@@ -177,14 +211,14 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, null)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
                         }
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {} },
-                    null
+                    backgroundHandler
                 )
             }
         } catch (e: CameraAccessException) {
