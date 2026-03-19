@@ -75,7 +75,7 @@ class VoicesAdapter(
     private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+) : ListAdapter<RealmNews?, VoicesAdapter.VoicesViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
@@ -167,15 +167,15 @@ class VoicesAdapter(
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VoicesViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return VoicesViewHolder(binding)
     }
 
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is VoicesViewHolder) {
+    override fun onBindViewHolder(holder: VoicesViewHolder, position: Int) {
+        if (true) {
             holder.bind(position)
             val news = getNews(holder, position)
 
@@ -530,7 +530,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
+    private fun getNews(holder: VoicesViewHolder, position: Int): RealmNews? {
         val news: RealmNews? = if (parentNews != null) {
             if (position == 0) {
                 (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_blue_50))
@@ -546,8 +546,8 @@ class VoicesAdapter(
         return news
     }
 
-    private fun showHideButtons(news: RealmNews?, holder: RecyclerView.ViewHolder) {
-        val viewHolder = holder as VoicesViewHolder
+    private fun showHideButtons(news: RealmNews?, holder: VoicesViewHolder) {
+        val viewHolder = holder
         with(viewHolder.binding) {
             imgEdit.setVisibility(canEdit(news))
             imgDelete.setVisibility(canDelete(news))
@@ -558,8 +558,8 @@ class VoicesAdapter(
 
     private fun shouldShowReplyButton(): Boolean = canReply()
 
-    private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
-        val viewHolder = holder as VoicesViewHolder
+    private fun showReplyButton(holder: VoicesViewHolder, finalNews: RealmNews?, position: Int) {
+        val viewHolder = holder
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
@@ -594,8 +594,8 @@ class VoicesAdapter(
     }
 
 
-    private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
-        val viewHolder = holder as VoicesViewHolder
+    private fun showShareButton(holder: VoicesViewHolder, news: RealmNews?) {
+        val viewHolder = holder
 
         viewHolder.binding.btnShare.setVisibility(canShare(news))
 
@@ -635,9 +635,9 @@ class VoicesAdapter(
         this.recyclerView = null
     }
 
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+    override fun onViewRecycled(holder: VoicesViewHolder) {
         super.onViewRecycled(holder)
-        if (holder is VoicesViewHolder) {
+        if (true) {
             holder.cancelJob?.invoke()
         }
     }
@@ -812,7 +812,7 @@ class VoicesAdapter(
         dialog.show()
     }
 
-    internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
         var cancelJob: (() -> Unit)? = null
         private var adapterPosition = 0
         fun bind(position: Int) {

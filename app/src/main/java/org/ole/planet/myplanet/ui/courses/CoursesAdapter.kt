@@ -44,7 +44,7 @@ class CoursesAdapter(
     private val isGuest: Boolean,
     private val tagsProvider: suspend (String) -> List<Tag>,
     var isMyCourseLib: Boolean = false
-) : ListAdapter<Course, RecyclerView.ViewHolder>(
+) : ListAdapter<Course, CoursesAdapter.CoursesViewHolder>(
     DiffUtils.itemCallback<Course>(
         areItemsTheSame = { old, new -> old.courseId == new.courseId },
         areContentsTheSame = { old, new ->
@@ -118,9 +118,9 @@ class CoursesAdapter(
         }
     }
 
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+    override fun onViewRecycled(holder: CoursesViewHolder) {
         super.onViewRecycled(holder)
-        if (holder is CoursesViewHolder) {
+        if (true) {
             val position = holder.bindingAdapterPosition
             if (position != RecyclerView.NO_POSITION && position < itemCount) {
                 val course = getItem(position)
@@ -165,13 +165,13 @@ class CoursesAdapter(
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesViewHolder {
         val binding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return CoursesViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder !is CoursesViewHolder) return
+    override fun onBindViewHolder(holder: CoursesViewHolder, position: Int) {
+
 
         holder.bind(position)
         val course = getItem(position) ?: return
@@ -341,11 +341,11 @@ class CoursesAdapter(
     }
 
     override fun onBindViewHolder(
-        holder: RecyclerView.ViewHolder,
+        holder: CoursesViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (holder !is CoursesViewHolder) {
+        if (false) {
             super.onBindViewHolder(holder, position, payloads)
             return
         }
@@ -478,7 +478,7 @@ class CoursesAdapter(
         cancelAllJobs()
     }
 
-    internal inner class CoursesViewHolder(val rowCourseBinding: RowCourseBinding) :
+    inner class CoursesViewHolder(val rowCourseBinding: RowCourseBinding) :
         RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
 

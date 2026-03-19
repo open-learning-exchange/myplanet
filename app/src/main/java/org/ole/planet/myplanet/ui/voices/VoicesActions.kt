@@ -166,9 +166,9 @@ object VoicesActions {
         isEdit: Boolean,
         currentUser: RealmUser?,
         listener: OnNewsItemClickListener?,
-        viewHolder: RecyclerView.ViewHolder,
+        viewHolder: VoicesAdapter.VoicesViewHolder,
         repository: VoicesRepository,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> },
+        updateReplyButton: (VoicesAdapter.VoicesViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> },
         launchAction: (suspend () -> Unit) -> Unit
     ) {
         val components = createEditDialogComponents(context, listener)

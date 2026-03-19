@@ -33,7 +33,7 @@ class ResourcesAdapter(
     private val isGuest: Boolean,
     private var tagsMap: Map<String, List<TagItem>>,
     private var openedResourceIds: Set<String>
-) : ListAdapter<ResourceItem, RecyclerView.ViewHolder>(
+) : ListAdapter<ResourceItem, ResourcesAdapter.ResourcesViewHolder>(
     DiffUtils.itemCallback(
         { oldItem, newItem -> oldItem.id == newItem.id },
         { oldItem, newItem -> oldItem._rev == newItem._rev && oldItem.uploadDate == newItem.uploadDate }
@@ -82,14 +82,14 @@ class ResourcesAdapter(
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ResourcesViewHolder {
         val rowLibraryBinding =
             RowLibraryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ResourcesViewHolder(rowLibraryBinding)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ResourcesViewHolder) {
+    override fun onBindViewHolder(holder: ResourcesViewHolder, position: Int) {
+        if (true) {
             val library = getItem(position) ?: return
             holder.bind()
             holder.rowLibraryBinding.title.text = library.title ?: ""
@@ -170,7 +170,7 @@ class ResourcesAdapter(
     }
 
     override fun onBindViewHolder(
-        holder: RecyclerView.ViewHolder,
+        holder: ResourcesViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
@@ -324,7 +324,7 @@ class ResourcesAdapter(
         }
     }
 
-    internal inner class ResourcesViewHolder(val rowLibraryBinding: RowLibraryBinding) :
+    inner class ResourcesViewHolder(val rowLibraryBinding: RowLibraryBinding) :
         RecyclerView.ViewHolder(rowLibraryBinding.root) {
             init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->

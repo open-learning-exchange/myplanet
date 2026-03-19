@@ -36,18 +36,18 @@ class LifeAdapter(
     private val mDragStartListener: OnStartDragListener,
     private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
     private val reorderCallback: (List<RealmMyLife>) -> Unit
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
+) : ListAdapter<RealmMyLife, LifeAdapter.LifeViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
     private val hide = 0.5f
     private val show = 1f
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LifeViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
         return LifeViewHolder(v)
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: LifeViewHolder, position: Int) {
         val myLife = getItem(position)
-        if (holder is LifeViewHolder) {
+        if (true) {
             holder.title.text = myLife.title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLife.imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
@@ -81,8 +81,8 @@ class LifeAdapter(
         visibilityCallback(myLife, !isVisible)
     }
 
-    private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
-        (holder as LifeViewHolder).visibility.setImageResource(imageId)
+    private fun changeVisibility(holder: LifeViewHolder, imageId: Int, alpha: Float) {
+        holder.visibility.setImageResource(imageId)
         holder.rvItemContainer.alpha = alpha
     }
 
@@ -95,7 +95,7 @@ class LifeAdapter(
         return true
     }
 
-    internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
+    inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
         OnItemDragStateListener {
         var title: TextView = itemView.findViewById(R.id.titleTextView)
         var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
