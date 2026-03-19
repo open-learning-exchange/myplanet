@@ -153,6 +153,11 @@ class CoursesAdapter(
         this.progressMap = progressMap
     }
 
+    fun setRatingMap(ratingMap: HashMap<String?, JsonObject>) {
+        this.map.clear()
+        this.map.putAll(ratingMap)
+    }
+
     fun setListener(listener: OnCourseItemSelectedListener?) {
         this.listener = listener
     }
