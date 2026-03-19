@@ -254,7 +254,7 @@ class ChatHistoryFragment : Fragment() {
             val cachedTargets = memoizedShareTargets
 
             val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
-            val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
             val targets = cachedTargets ?: loadShareTargets(
                 sharedPrefManager.getParentCode(),

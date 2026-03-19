@@ -470,9 +470,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         selectAll.setOnCheckedChangeListener { _, isChecked ->
-            if (isUpdatingSelectAllState) {
-                return@setOnCheckedChangeListener
-            }
+            if (isUpdatingSelectAllState) return@setOnCheckedChangeListener
+            if (!::adapterCourses.isInitialized) return@setOnCheckedChangeListener
             hideButtons()
             adapterCourses.selectAllItems(isChecked)
             selectAll.text = if (isChecked) getString(R.string.unselect_all) else getString(R.string.select_all)
@@ -528,6 +527,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
             filterCoursesAndUpdateUi()
+            if (!::adapterCourses.isInitialized) return
             showNoFilter(tvMessage, adapterCourses.itemCount)
             scrollToTop()
         }
