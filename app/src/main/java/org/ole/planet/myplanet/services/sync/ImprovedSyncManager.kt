@@ -60,7 +60,8 @@ class ImprovedSyncManager @Inject constructor(
         "certifications",
         "team_activities",
         "chat_history",
-        "feedback"
+        "feedback",
+        "notifications"
     )
 
     suspend fun initialize() {

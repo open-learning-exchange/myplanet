@@ -5,14 +5,16 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import java.io.IOException
 import javax.inject.Inject
 
 class DownloadRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface
+    private val apiInterface: ApiInterface,
+    private val dispatcherProvider: DispatcherProvider
 ) : DownloadRepository {
 
-    override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult = withContext(Dispatchers.IO) {
+    override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult = withContext(dispatcherProvider.io) {
         try {
             val response = apiInterface.downloadFile(authHeader, url)
             if (response.isSuccessful) {

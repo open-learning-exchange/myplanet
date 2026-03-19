@@ -42,6 +42,7 @@ class NotificationsFragment : Fragment() {
     private var notificationUpdateListener: OnNotificationsListener? = null
     private lateinit var dashboardActivity: DashboardActivity
     private var currentFilter: String = "all"
+    private var isAdmin: Boolean = false
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -57,6 +58,7 @@ class NotificationsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
+        isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
         adapter = NotificationsAdapter(
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
@@ -75,12 +77,12 @@ class NotificationsFragment : Fragment() {
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 currentFilter = parent.getItemAtPosition(position).toString().lowercase()
-                viewModel.loadNotifications(userId, currentFilter)
+                viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
-        viewModel.loadNotifications(userId, "all")
+        viewModel.loadNotifications(userId, "all", isAdmin)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -177,7 +179,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAsReadById(notificationId: String) {
-        viewModel.markAsRead(notificationId, userId)
+        viewModel.markAsRead(notificationId)
     }
 
     private fun markAllAsRead() {
@@ -187,7 +189,7 @@ class NotificationsFragment : Fragment() {
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
             currentFilter = binding.status.selectedItem.toString().lowercase()
-            viewModel.loadNotifications(userId, currentFilter)
+            viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
     }
 

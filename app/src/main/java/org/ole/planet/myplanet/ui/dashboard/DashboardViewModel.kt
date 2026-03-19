@@ -10,6 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,9 +25,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -36,9 +37,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
-import org.ole.planet.myplanet.utils.NotificationUtils
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -49,6 +48,14 @@ data class DashboardUiState(
     val users: List<RealmUser> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
+)
+
+data class ChallengeDialogData(
+    val voiceCount: Int,
+    val courseStatus: String,
+    val allVoiceCount: Int,
+    val hasUnfinishedSurvey: Boolean,
+    val hasValidSync: Boolean
 )
 
 @HiltViewModel
@@ -62,10 +69,24 @@ class DashboardViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
     private val activitiesRepository: ActivitiesRepository,
+    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _surveyNavigationEvent = MutableSharedFlow<String>()
+    val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
+
+    private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>()
+    val taskNavigationEvent: SharedFlow<Triple<String, String, String>> = _taskNavigationEvent.asSharedFlow()
+
+    private val _joinRequestNavigationEvent = MutableSharedFlow<String>()
+    val joinRequestNavigationEvent: SharedFlow<String> = _joinRequestNavigationEvent.asSharedFlow()
+
+    private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>()
+    val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
     private var userContentJob: Job? = null
 
@@ -92,29 +113,12 @@ class DashboardViewModel @Inject constructor(
         notificationsRepository.updateResourceNotification(userId, resourceCount)
     }
 
-    suspend fun createNotificationIfMissing(
-        type: String,
-        message: String,
-        relatedId: String?,
-        userId: String?,
-    ) {
-        notificationsRepository.createNotificationIfMissing(type, message, relatedId, userId)
-    }
-
-    suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
-        return submissionsRepository.getPendingSurveys(userId)
-    }
-
-    suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
-        return submissionsRepository.getSurveyTitlesFromSubmissions(submissions)
-    }
-
     suspend fun getSurveySubmissionCount(userId: String?): Int {
         return surveysRepository.getSurveySubmissionCount(userId)
     }
 
-    suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return notificationsRepository.getUnreadCount(userId)
+    suspend fun getUnreadNotificationsSize(userId: String?, isAdmin: Boolean = false): Int {
+        return notificationsRepository.getUnreadCount(userId, isAdmin)
     }
 
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
@@ -191,99 +195,162 @@ class DashboardViewModel @Inject constructor(
         )
     }
 
-    suspend fun checkAndCreateNewNotifications(userId: String?) = withContext(dispatcherProvider.io) {
-        var unreadCount = 0
-        val newNotifications = mutableListOf<NotificationConfig>()
+    fun handleTaskNavigation(taskId: String) {
+        viewModelScope.launch {
+            val teamData = teamsRepository.getTaskTeamInfo(taskId)
+            if (teamData != null) {
+                _taskNavigationEvent.emit(teamData)
+            }
+        }
+    }
 
+    fun handleJoinRequestNavigation(requestId: String) {
+        viewModelScope.launch {
+            val teamId = teamsRepository.getJoinRequestTeamId(requestId)
+            if (teamId != null) {
+                _joinRequestNavigationEvent.emit(teamId)
+            }
+        }
+    }
+
+    fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
+        viewModelScope.launch {
+            var lastException: Exception? = null
+            repeat(maxRetries) { attempt ->
+                try {
+                    notificationsRepository.refresh()
+                    val unreadCount = getUnreadNotificationsSize(userId)
+                    setUnreadNotifications(unreadCount)
+                    return@launch
+                } catch (e: Exception) {
+                    lastException = e
+                    e.printStackTrace()
+                    if (attempt < maxRetries - 1) {
+                        kotlinx.coroutines.delay(300)
+                    }
+                }
+            }
+            lastException?.printStackTrace()
+        }
+    }
+
+    fun markNotificationAsRead(notificationId: String, userId: String?) {
+        viewModelScope.launch {
+            try {
+                notificationsRepository.markNotificationAsRead(notificationId, userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun refreshNotificationsBadge(userId: String) {
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(100)
+            try {
+                notificationsRepository.refresh()
+                val unreadCount = getUnreadNotificationsSize(userId)
+                setUnreadNotifications(unreadCount)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun handleSurveyNavigation(surveyId: String) {
+        viewModelScope.launch {
+            val survey = surveysRepository.getSurvey(surveyId)
+            if (survey != null && survey.id != null) {
+                _surveyNavigationEvent.emit(survey.id!!)
+            }
+        }
+    }
+
+    fun evaluateChallengeDialog(
+        userId: String?,
+        isGuest: Boolean,
+        validUrls: List<String>,
+        serverUrl: String
+    ) {
+        val startTime = 1730419200000
+        val endTime = 1734307200000
+        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
+
+        viewModelScope.launch {
+            try {
+                val courseData = progressRepository.fetchCourseData(userId)
+                val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
+                val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
+                val courseName = coursesRepository.getCourseTitleById(courseId)
+                val hasUnfinishedSurvey = hasPendingSurvey(courseId, userId)
+
+                val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
+
+                val today = java.time.LocalDate.now()
+                val endDate = java.time.LocalDate.of(2025, 1, 16)
+                val shouldPrompt = today.isAfter(java.time.LocalDate.of(2024, 11, 30)) &&
+                        today.isBefore(endDate) &&
+                        serverUrl in validUrls
+
+                if (!isGuest && shouldPrompt) {
+                    val courseStatus = getCourseStatusString(progress, courseName)
+                    val voiceCount = uniqueDates.size
+                    val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+                    var hasValidSync = false
+                    if (prereqsMet) {
+                        hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                    }
+                    _challengeDialogEvent.emit(
+                        ChallengeDialogData(
+                            voiceCount = uniqueDates.size,
+                            courseStatus = courseStatus,
+                            allVoiceCount = allUniqueDates.size,
+                            hasUnfinishedSurvey = hasUnfinishedSurvey,
+                            hasValidSync = hasValidSync
+                        )
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
+        val surveys = submissionsRepository.getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {
+        return if (progress != null) {
+            val max = progress.get("max").asInt
+            val current = progress.get("current").asInt
+            if (current == max) {
+                application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
+            } else {
+                application.getString(org.ole.planet.myplanet.R.string.course_in_progress, courseName, current, max)
+            }
+        } else {
+            application.getString(org.ole.planet.myplanet.R.string.course_not_started, courseName)
+        }
+    }
+
+    suspend fun checkAndCreateNewNotifications(userId: String?, isAdmin: Boolean = false) = withContext(dispatcherProvider.io) {
         try {
             updateResourceNotification(userId)
-
-            val taskData = teamsRepository.getTaskNotifications(userId)
-            val joinRequestData = teamsRepository.getJoinRequestNotifications(userId)
-
-            val pendingSurveys = submissionsRepository.getPendingSurveys(userId)
-            val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-            val storageRatio = FileUtils.totalAvailableMemoryRatio(application).toInt()
-            val joinRequestTemplate = application.getString(R.string.user_requested_to_join_team)
-
-            val realmNotifications = notificationsRepository.checkAndCreateNotifications(
-                userId,
-                taskData,
-                joinRequestData,
-                joinRequestTemplate,
-                storageRatio,
-                surveyTitles
-            )
-
-            val createdNotifications = realmNotifications.mapNotNull {
-                createNotificationConfigFromDatabase(it)
-            }
-            newNotifications.addAll(createdNotifications)
-
-            unreadCount = getUnreadNotificationsSize(userId)
+            val unreadCount = getUnreadNotificationsSize(userId, isAdmin)
+            _uiState.update { it.copy(unreadNotifications = unreadCount) }
         } catch (e: Exception) {
             e.printStackTrace()
-        }
-
-        val groupedNotifications = newNotifications.groupBy { it.type }
-        val finalNotifications = mutableListOf<NotificationConfig>()
-
-        groupedNotifications.forEach { (type, notifications) ->
-            when {
-                notifications.size == 1 -> {
-                    finalNotifications.add(notifications.first())
-                }
-                notifications.size > 1 -> {
-                    val summaryConfig = NotificationUtils.createSummaryNotification(type, notifications.size)
-                    finalNotifications.add(summaryConfig)
-                }
-            }
-        }
-
-        _uiState.update {
-            it.copy(
-                unreadNotifications = unreadCount,
-                newNotifications = finalNotifications
-            )
         }
     }
 
     fun clearNewNotifications() {
         _uiState.update { it.copy(newNotifications = emptyList()) }
-    }
-
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationConfig? {
-        return when (dbNotification.type.lowercase()) {
-            "survey" -> NotificationUtils.createSurveyNotification(
-                dbNotification.id,
-                dbNotification.message
-            ).copy(
-                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
-            )
-            "task" -> {
-                val parts = dbNotification.message.split(" ")
-                val taskTitle = parts.dropLast(3).joinToString(" ")
-                val deadline = parts.takeLast(3).joinToString(" ")
-                NotificationUtils.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
-                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
-                )
-            }
-            "resource" -> NotificationUtils.createResourceNotification(
-                dbNotification.id,
-                dbNotification.message.toIntOrNull() ?: 0
-            )
-            "storage" -> {
-                val storageValue = dbNotification.message.replace("%", "").toIntOrNull() ?: 0
-                NotificationUtils.createStorageWarningNotification(storageValue, dbNotification.id)
-            }
-            "join_request" -> NotificationUtils.createJoinRequestNotification(
-                dbNotification.id,
-                "New Request",
-                dbNotification.message
-            ).copy(
-                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
-            )
-            else -> null
-        }
     }
 }
