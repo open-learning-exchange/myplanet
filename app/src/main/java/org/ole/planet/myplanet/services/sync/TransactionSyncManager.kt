@@ -39,6 +39,7 @@ class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
     @param:ApplicationContext private val context: Context,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager
@@ -194,7 +195,7 @@ class TransactionSyncManager @Inject constructor(
                             docs.add(jsonDoc)
                         }
                     }
-                    chatRepository.insertNewsList(docs)
+                    voicesRepository.insertNewsList(docs)
                     val insertDuration = System.currentTimeMillis() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
