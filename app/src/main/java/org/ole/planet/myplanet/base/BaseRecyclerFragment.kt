@@ -224,37 +224,40 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val query = requireRealmInstance().where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
-        if (s.isEmpty()) return query.findAll()
-
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) }
-        val data: RealmResults<LI> = query.findAll()
-        val normalizedQuery = org.ole.planet.myplanet.utils.Utilities.normalizeText(s)
-        val startsWithQuery = mutableListOf<LI>()
-        val containsQuery = mutableListOf<LI>()
-
-        for (item in data) {
-            val title = getTitle(item, c)?.let { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) } ?: continue
-
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(item)
-            }
-        }
-        return startsWithQuery + containsQuery
+    fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(DIACRITICS_REGEX, "")
     }
 
-    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
-        return when {
-            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-            else -> (item as RealmMyCourse).courseTitle
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+        if (tags.isEmpty() && s.isEmpty()) {
+            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
         }
+        var list = coursesRepository.search(s)
+        list = if (isMyCourseLib) {
+            coursesRepository.getMyCourses(model?.id, list)
+        } else {
+            RealmMyCourse.getAllCourses(model?.id, list)
+        }
+        if (tags.isEmpty()) {
+            return list
+        }
+
+        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
+        val linkedCourseIds = requireRealmInstance().where(RealmTag::class.java)
+            .equalTo("db", "courses")
+            .`in`("tagId", tagIds)
+            .findAll()
+            .mapNotNull { it.linkId }
+            .toSet()
+
+        val courses = RealmList<RealmMyCourse>()
+        list.forEach { course ->
+            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
+                courses.add(course)
+            }
+        }
+        return applyCourseFilter(courses)
     }
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
@@ -332,6 +335,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,

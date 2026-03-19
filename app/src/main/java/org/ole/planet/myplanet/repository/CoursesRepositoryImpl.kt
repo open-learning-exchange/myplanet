@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import java.util.Calendar
 import java.util.UUID
+import java.text.Normalizer
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -178,6 +180,40 @@ class CoursesRepositoryImpl @Inject constructor(
             equalTo("courseId", courseId)
             equalTo("resourceOffline", isOffline)
             isNotNull("resourceLocalAddress")
+        }
+    }
+
+    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
+    private fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(DIACRITICS_REGEX, "")
+    }
+
+    override suspend fun search(query: String): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val queryObj = realm.where(RealmMyCourse::class.java)
+            if (query.isEmpty()) {
+                return@withRealm realm.copyFromRealm(queryObj.findAll())
+            }
+
+            val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val data = queryObj.findAll()
+            val normalizedQuery = normalizeText(query)
+            val startsWithQuery = mutableListOf<RealmMyCourse>()
+            val containsQuery = mutableListOf<RealmMyCourse>()
+
+            for (item in data) {
+                val title = item.courseTitle?.let { normalizeText(it) } ?: continue
+
+                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    containsQuery.add(item)
+                }
+            }
+            realm.copyFromRealm(startsWithQuery + containsQuery)
         }
     }
 

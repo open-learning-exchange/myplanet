@@ -31,6 +31,7 @@ interface ResourcesRepository {
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
+    suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary>
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary>
