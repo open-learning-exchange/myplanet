@@ -299,6 +299,7 @@ class DownloadService : Service() {
         if (url.isBlank()) return
 
         download.fileName = "Downloading: ${getFileNameFromUrl(url)}"
+        download.fileUrl = url
         sendIntent(download, fromSync)
 
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
