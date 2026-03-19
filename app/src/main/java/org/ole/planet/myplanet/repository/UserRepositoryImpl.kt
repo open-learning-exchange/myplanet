@@ -682,6 +682,27 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun markUserUploaded(userId: String, id: String, rev: String) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user._id = id
+            user._rev = rev
+        }
+    }
+
+    override suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user.key = key
+            user.iv = iv
+        }
+    }
+
+    override suspend fun markUserRevUpdated(userId: String, rev: String?) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user._rev = rev
+            user.isUpdated = false
+        }
+    }
+
     companion object {
         private val SPECIAL_CHAR_PATTERN = Pattern.compile(
             ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
