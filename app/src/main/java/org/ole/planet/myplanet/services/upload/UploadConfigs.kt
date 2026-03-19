@@ -17,11 +17,11 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val voicesRepository: VoicesRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -216,7 +216,7 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmNews::class,
         endpoint = "news",
         queryBuilder = { query -> query },  // Upload all news items
-        serializer = UploadSerializer.Simple(chatRepository::serializeNews),
+        serializer = UploadSerializer.Simple(voicesRepository::serializeNews),
         idExtractor = { it.id },
         dbIdExtractor = { it._id }  // Enables POST/PUT logic
     )
