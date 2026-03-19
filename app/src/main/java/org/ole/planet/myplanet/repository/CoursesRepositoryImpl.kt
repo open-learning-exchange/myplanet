@@ -517,13 +517,13 @@ class CoursesRepositoryImpl @Inject constructor(
                 realm.copyFromRealm(data)
             } else {
                 val queryParts = query.split(" ").filterNot { it.isEmpty() }
-                val normalizedQueryParts = queryParts.map { normalizeText(it) }
-                val normalizedQuery = normalizeText(query)
+                val normalizedQueryParts = queryParts.map { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) }
+                val normalizedQuery = org.ole.planet.myplanet.utils.Utilities.normalizeText(query)
                 val startsWithQuery = mutableListOf<RealmMyCourse>()
                 val containsQuery = mutableListOf<RealmMyCourse>()
 
                 for (item in data) {
-                    val title = item.courseTitle?.let { normalizeText(it) } ?: continue
+                    val title = item.courseTitle?.let { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) } ?: continue
 
                     if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                         startsWithQuery.add(item)
@@ -563,8 +563,4 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun normalizeText(str: String): String {
-        return java.text.Normalizer.normalize(str.lowercase(java.util.Locale.getDefault()), java.text.Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-    }
 }
