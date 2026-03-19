@@ -38,12 +38,9 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class EnterprisesReportsFragment : BaseTeamFragment() {
-    @Inject
-    override lateinit var prefData: SharedPrefManager
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
     private var reports: List<RealmMyTeam> = emptyList()
