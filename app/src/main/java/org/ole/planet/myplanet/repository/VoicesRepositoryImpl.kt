@@ -43,7 +43,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {
-        executeTransaction { realm ->
+        databaseService.executeTransactionAsync { realm ->
             val ids = updates.mapNotNull { it.id }
             val managedNewsMap = mutableMapOf<String, RealmNews>()
 
