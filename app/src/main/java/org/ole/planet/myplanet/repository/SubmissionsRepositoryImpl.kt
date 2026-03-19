@@ -698,40 +698,4 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         submission!!.lastUpdateTime = Date().time
         return submission
     }
-
-    override fun buildUserProfileJson(profile: org.ole.planet.myplanet.model.UserSurveyProfile): JsonObject {
-        val user = JsonObject()
-
-        if (profile.fname.isNotEmpty()) user.addProperty("firstName", profile.fname)
-        if (profile.mName.isNotEmpty()) user.addProperty("middleName", profile.mName)
-        if (profile.lname.isNotEmpty()) user.addProperty("lastName", profile.lname)
-
-        if (profile.email.isNotEmpty()) user.addProperty("email", profile.email)
-        if (profile.language.isNotEmpty()) user.addProperty("language", profile.language)
-
-        if (profile.phone.isNotEmpty()) user.addProperty("phoneNumber", profile.phone)
-
-        if (profile.dob.isNotEmpty()) {
-            val birthDateISO = org.ole.planet.myplanet.utils.TimeUtils.convertToISO8601(profile.dob)
-            user.addProperty("birthDate", birthDateISO)
-        }
-
-        if (profile.yob.isNotEmpty()) {
-            val yobInt = profile.yob.toIntOrNull()
-            if (yobInt != null) {
-                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-                if (yobInt in 1900..currentYear) {
-                    val calculatedAge = currentYear - yobInt
-                    user.addProperty("age", calculatedAge.toString())
-                }
-            }
-        }
-
-        if (profile.level.isNotEmpty()) user.addProperty("level", profile.level)
-        if (profile.gender.isNotEmpty()) user.addProperty("gender", profile.gender)
-
-        user.addProperty("betaEnabled", false)
-
-        return user
-    }
 }

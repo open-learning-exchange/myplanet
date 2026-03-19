@@ -237,7 +237,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             language = lang
         )
 
-        val user = submissionsRepository.buildUserProfileJson(profile)
+        val user = profile.toJson()
 
         val teamId = arguments?.getString("teamId")
 
