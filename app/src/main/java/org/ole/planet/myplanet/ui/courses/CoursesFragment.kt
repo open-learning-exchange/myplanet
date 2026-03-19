@@ -180,8 +180,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
                 val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
 
-                if (!mRealm.isInTransaction) {
-                    mRealm.refresh()
+                if (!requireRealmInstance().isInTransaction) {
+                    requireRealmInstance().refresh()
                 }
 
                 val allCourses = coursesRepository.getAllCourses()

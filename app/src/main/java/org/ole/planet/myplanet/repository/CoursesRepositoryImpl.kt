@@ -540,6 +540,22 @@ class CoursesRepositoryImpl @Inject constructor(
         return ratingsRepository.getCourseRatings(userId)
     }
 
+    override suspend fun deleteCourseProgress(courseId: String?) {
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
+            val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
+            val examIds = examList.mapNotNull { it.id }.toTypedArray()
+            if (examIds.isNotEmpty()) {
+                realm.where(RealmSubmission::class.java)
+                    .`in`("parentId", examIds)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
+    }
+
     override suspend fun filterCoursesByTag(
         query: String,
         tags: List<RealmTag>,
@@ -598,5 +614,4 @@ class CoursesRepositoryImpl @Inject constructor(
             courses
         }
     }
-
 }
