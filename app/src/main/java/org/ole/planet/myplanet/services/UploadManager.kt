@@ -71,6 +71,7 @@ class UploadManager @Inject constructor(
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
+    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val uploadConfigs: UploadConfigs,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val apiInterface: ApiInterface,
@@ -762,7 +763,7 @@ class UploadManager @Inject constructor(
                         _id = news._id,
                         message = news.message,
                         imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = chatRepository.serializeNews(news)
+                        newsJson = voicesRepository.serializeNews(news)
                     )
                 }
         }
