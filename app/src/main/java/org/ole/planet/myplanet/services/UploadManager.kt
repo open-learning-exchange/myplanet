@@ -322,39 +322,29 @@ class UploadManager @Inject constructor(
                         var isTransactionSuccessful = false
 
                         try {
-                            successfulUpdates.forEach { (resourceData, `object`) ->
+                            val uploadedInfos = successfulUpdates.mapNotNull { (resourceData, `object`) ->
                                 val rev = getString("rev", `object`)
                                 val id = getString("id", `object`)
-
                                 resourceData.libraryId?.let { libId ->
-                                    resourcesRepository.markResourceUploaded(libId, id, rev)
-                                }
-
-                            }
-
-                            databaseService.executeTransactionAsync { realm ->
-                                successfulUpdates.forEach { (resourceData, `object`) ->
-                                    val id = getString("id", `object`)
-                                    if (resourceData.isPrivate && !resourceData.privateFor.isNullOrBlank()) {
-                                        val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                                            ?: sharedPrefManager.getPlanetCode()
-                                        val teamResource = realm.createObject(
-                                            RealmMyTeam::class.java,
-                                            UUID.randomUUID().toString()
-                                        )
-                                        teamResource.teamId = resourceData.privateFor
-                                        teamResource.title = resourceData.title
-                                        teamResource.resourceId = id
-                                        teamResource.docType = "resourceLink"
-                                        teamResource.updated = true
-                                        teamResource.teamType = "local"
-                                        teamResource.teamPlanetCode = planetCode
-                                        teamResource.sourcePlanet = planetCode
-                                    }
+                                    org.ole.planet.myplanet.repository.UploadedResourceInfo(
+                                        libraryId = libId,
+                                        id = id,
+                                        rev = rev,
+                                        isPrivate = resourceData.isPrivate,
+                                        privateFor = resourceData.privateFor,
+                                        title = resourceData.title
+                                    )
                                 }
                             }
+
+                            val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                                ?: sharedPrefManager.getPlanetCode()
+
+                            resourcesRepository.markResourcesUploaded(uploadedInfos, planetCode)
                             isTransactionSuccessful = true
                         } catch (e: Exception) {
+                            // If the executeTransaction block throws (e.g. disk full, schema conflict),
+                            // Realm automatically rolls back the entire transaction.
                             // We catch it here to prevent crashing the batch loop and prevent
                             // `isTransactionSuccessful` from being set to true, so we don't upload
                             // attachments for failed DB writes.

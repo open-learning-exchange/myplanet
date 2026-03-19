@@ -15,9 +15,19 @@ data class ResourceUploadData(
     val serialized: JsonObject
 )
 
+data class UploadedResourceInfo(
+    val libraryId: String,
+    val id: String,
+    val rev: String,
+    val isPrivate: Boolean,
+    val privateFor: String?,
+    val title: String?
+)
+
 interface ResourcesRepository {
     suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData>
     suspend fun markResourceUploaded(libraryId: String, id: String, rev: String)
+    suspend fun markResourcesUploaded(uploadedInfos: List<UploadedResourceInfo>, planetCode: String?)
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
