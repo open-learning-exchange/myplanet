@@ -198,14 +198,8 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        val list = submissionsRepository.getAchievementsForUpload()
-        list.processInBatches { sub ->
-            try {
-                // Future upload logic can be added here
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
+        val list = userRepository.getAchievementsForUpload()
+        // TODO: Implement actual upload logic or track issue for missing implementation
     }
 
     private suspend fun uploadCourseProgress() {
