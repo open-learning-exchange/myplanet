@@ -1,3 +1,5 @@
+#!/bin/bash
+cat << 'INNER_EOF' > ./app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesProgressAdapter.kt
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
@@ -101,3 +103,4 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
         }
     }
 }
+INNER_EOF
