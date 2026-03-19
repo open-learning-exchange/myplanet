@@ -307,7 +307,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserProfile(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return queryList(RealmUser::class.java) {
+        return queryList(RealmUser::class.java, true) {
             equalTo("id", userId).or().equalTo("_id", userId)
         }.firstOrNull()
     }

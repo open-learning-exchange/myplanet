@@ -715,18 +715,18 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun filterLocalLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
+        val normalizedSearchTerm = org.ole.planet.myplanet.utils.Utilities.normalizeText(s)
 
         var filteredList = if (s.isEmpty()) {
             allLibraryItems
         } else {
             val queryParts = s.split(" ").filterNot { it.isEmpty() }
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val normalizedQueryParts = queryParts.map { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) }
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
             val containsQuery = mutableListOf<RealmMyLibrary>()
 
             for (item in allLibraryItems) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
+                val title = item.title?.let { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) } ?: continue
                 if (title.startsWith(normalizedSearchTerm, ignoreCase = true)) {
                     startsWithQuery.add(item)
                 } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
