@@ -69,12 +69,13 @@ object ServiceModule {
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
         uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         apiInterface: ApiInterface,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         @ApplicationScope scope: CoroutineScope
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, teamsRepository, apiInterface, activitiesRepository, scope)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, scope)
     }
 
     @Provides
