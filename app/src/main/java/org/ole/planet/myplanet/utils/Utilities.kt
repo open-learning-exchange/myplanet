@@ -77,6 +77,11 @@ object Utilities {
         return arg?.toByteArray()?.let { String.format("%x", BigInteger(1, it)) } ?: ""
     }
 
+    fun normalizeText(str: String): String {
+        return java.text.Normalizer.normalize(str.lowercase(java.util.Locale.getDefault()), java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+    }
+
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)

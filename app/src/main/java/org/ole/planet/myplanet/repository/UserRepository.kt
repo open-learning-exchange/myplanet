@@ -95,5 +95,8 @@ interface UserRepository {
         achievements: JsonArray,
         references: JsonArray
     )
+    suspend fun markUserUploaded(userId: String, id: String, rev: String)
+    suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)
+    suspend fun markUserRevUpdated(userId: String, rev: String?)
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
 }

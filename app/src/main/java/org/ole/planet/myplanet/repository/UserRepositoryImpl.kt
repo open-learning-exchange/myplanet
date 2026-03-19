@@ -322,7 +322,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserProfile(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return queryList(RealmUser::class.java) {
+        return queryList(RealmUser::class.java, true) {
             equalTo("id", userId).or().equalTo("_id", userId)
         }.firstOrNull()
     }
@@ -694,6 +694,27 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
             }
+        }
+    }
+
+    override suspend fun markUserUploaded(userId: String, id: String, rev: String) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user._id = id
+            user._rev = rev
+        }
+    }
+
+    override suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user.key = key
+            user.iv = iv
+        }
+    }
+
+    override suspend fun markUserRevUpdated(userId: String, rev: String?) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user._rev = rev
+            user.isUpdated = false
         }
     }
 

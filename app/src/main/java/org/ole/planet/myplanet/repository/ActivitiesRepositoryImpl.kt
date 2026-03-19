@@ -4,6 +4,10 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import org.ole.planet.myplanet.model.RealmTeamLog
+
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -13,7 +17,8 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
+    databaseService: DatabaseService,
+    @ApplicationContext private val context: Context
 ) : RealmRepository(databaseService), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -167,6 +172,77 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 null
             } else {
                 Pair(maxEntry.value.second!!, maxEntry.value.first)
+            }
+        }
+    }
+
+    override suspend fun getUnuploadedTeamLogs(): List<TeamLogData> {
+        return withRealm { realm ->
+            val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
+            results.map { log ->
+                TeamLogData(
+                    id = log.id,
+                    time = log.time,
+                    user = log.user,
+                    type = log.type,
+                    serialized = RealmTeamLog.serializeTeamActivities(log, context)
+                )
+            }
+        }
+    }
+
+    override suspend fun markTeamLogsUploaded(results: List<TeamLogUploadResult>) {
+        if (results.isEmpty()) return
+
+        executeTransaction { realm ->
+            val ids = results.mapNotNull { it.id }
+            val managedLogs = mutableMapOf<String, RealmTeamLog>()
+
+            if (ids.isNotEmpty()) {
+                ids.chunked(999).forEach { chunk ->
+                    val queryResults = realm.where(RealmTeamLog::class.java)
+                        .`in`("id", chunk.toTypedArray())
+                        .findAll()
+                    queryResults.forEach { log ->
+                        log.id?.let { id -> managedLogs[id] = log }
+                    }
+                }
+            }
+
+            val uploadsWithoutId = results.filter { it.id == null }
+            val fallbackLogs = mutableMapOf<Triple<Long?, String?, String?>, RealmTeamLog>()
+
+            if (uploadsWithoutId.isNotEmpty()) {
+                uploadsWithoutId.chunked(250).forEach { chunk ->
+                    val query = realm.where(RealmTeamLog::class.java)
+                    query.beginGroup()
+                    chunk.forEachIndexed { index, upload ->
+                        if (index > 0) query.or()
+                        query.beginGroup()
+                            .equalTo("time", upload.time)
+                            .equalTo("user", upload.user)
+                            .equalTo("type", upload.type)
+                        .endGroup()
+                    }
+                    query.endGroup()
+
+                    val queryResults = query.findAll()
+                    queryResults.forEach { log ->
+                        val key = Triple(log.time, log.user, log.type)
+                        fallbackLogs[key] = log
+                    }
+                }
+            }
+
+            results.forEach { upload ->
+                val managedLog = if (upload.id != null) {
+                    managedLogs[upload.id]
+                } else {
+                    val key = Triple(upload.time, upload.user, upload.type)
+                    fallbackLogs[key]
+                }
+                managedLog?._id = upload._id
+                managedLog?._rev = upload._rev
             }
         }
     }

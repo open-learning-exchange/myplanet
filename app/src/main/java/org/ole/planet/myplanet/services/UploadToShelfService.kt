@@ -145,15 +145,7 @@ class UploadToShelfService @Inject constructor(
                 model._rev = rev
 
                 // Persist _id and _rev to database
-                dbService.executeTransactionAsync { realm ->
-                    val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
-                    if (managedModel != null) {
-                        managedModel._id = id
-                        managedModel._rev = rev
-                    } else {
-                        android.util.Log.e("UploadToShelfService", "Failed to find user model with id: ${model.id} for persisting _id and _rev")
-                    }
-                }
+                userRepository.markUserUploaded(model.id ?: "", id ?: "", rev ?: "")
 
                 processUserAfterCreation(apiInterface, model, obj)
             }
@@ -203,11 +195,7 @@ class UploadToShelfService @Inject constructor(
 
                 if (updateResponse.isSuccessful) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
-                    dbService.executeTransactionAsync { realm ->
-                        val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
-                        managedModel?._rev = updatedRev
-                        managedModel?.isUpdated = false
-                    }
+                    userRepository.markUserRevUpdated(model.id ?: "", updatedRev)
                 }
             }
         } catch (e: Exception) {
@@ -274,11 +262,7 @@ class UploadToShelfService @Inject constructor(
         if (response?.isSuccessful == true && response.body() != null) {
             changeUserSecurity(model, obj)
 
-            dbService.executeTransactionAsync { realm ->
-                val managedModel = realm.where(RealmUser::class.java).equalTo("id", model.id).findFirst()
-                managedModel?.key = keyString
-                managedModel?.iv = iv
-            }
+            userRepository.markUserKeyIvSaved(model.id ?: "", keyString ?: "", iv)
         } else {
             throw IOException("Failed to save key/IV after $maxAttempts attempts")
         }
