@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import java.lang.reflect.Method
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 
@@ -27,12 +28,18 @@ class AuthSessionUpdaterTest {
 
     private lateinit var mockCallback: AuthSessionUpdater.AuthCallback
     private lateinit var mockSharedPrefManager: SharedPrefManager
+    private lateinit var mockDispatcherProvider: DispatcherProvider
     private lateinit var authSessionUpdater: AuthSessionUpdater
 
     @Before
     fun setup() {
         mockCallback = mockk(relaxed = true)
         mockSharedPrefManager = mockk(relaxed = true)
+        mockDispatcherProvider = mockk(relaxed = true)
+        every { mockDispatcherProvider.io } returns testDispatcher
+        every { mockDispatcherProvider.main } returns testDispatcher
+        every { mockDispatcherProvider.default } returns testDispatcher
+        every { mockDispatcherProvider.unconfined } returns testDispatcher
     }
 
     @After
@@ -48,7 +55,8 @@ class AuthSessionUpdaterTest {
         authSessionUpdater = AuthSessionUpdater(
             callback = mockCallback,
             sharedPrefManager = mockSharedPrefManager,
-            scope = testScope
+            scope = testScope,
+            dispatcherProvider = mockDispatcherProvider
         )
 
         mockkObject(UrlUtils)
@@ -66,7 +74,8 @@ class AuthSessionUpdaterTest {
         authSessionUpdater = AuthSessionUpdater(
             callback = mockCallback,
             sharedPrefManager = mockSharedPrefManager,
-            scope = testScope
+            scope = testScope,
+            dispatcherProvider = mockDispatcherProvider
         )
 
         every { mockSharedPrefManager.getUrlUser() } throws RuntimeException("Mocked exception")
@@ -86,11 +95,11 @@ class AuthSessionUpdaterTest {
         authSessionUpdater = AuthSessionUpdater(
             callback = mockCallback,
             sharedPrefManager = mockSharedPrefManager,
-            scope = this
+            scope = this,
+            dispatcherProvider = mockDispatcherProvider
         )
 
-        // Wait for coroutine inside AuthSessionUpdater constructor to finish
-        advanceUntilIdle()
+        testScheduler.advanceTimeBy(100L) // Or 1, as start() will try to infinitely loop until stopped.
 
         authSessionUpdater.stop()
 
