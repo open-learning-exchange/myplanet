@@ -170,4 +170,34 @@ class ActivitiesRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun getUnuploadedLoginActivities(context: android.content.Context): List<Triple<String, String, com.google.gson.JsonObject>> {
+        return queryList(RealmOfflineActivity::class.java) {
+            isNull("_rev")
+            equalTo("type", "login")
+        }.mapNotNull { activity ->
+            if (activity.userId?.startsWith("guest") == true || activity.id == null || activity.userId == null) {
+                null
+            } else {
+                Triple(
+                    activity.id!!,
+                    activity.userId!!,
+                    RealmOfflineActivity.serializeLoginActivities(activity, context)
+                )
+            }
+        }
+    }
+
+    override suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>) {
+        executeTransaction { transactionRealm ->
+            val activities = transactionRealm.where(RealmOfflineActivity::class.java)
+                .`in`("id", ids)
+                .findAll()
+
+            activities.forEach { activity ->
+                val updateData = revMap[activity.id]
+                activity.changeRev(updateData)
+            }
+        }
+    }
 }
