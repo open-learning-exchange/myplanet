@@ -122,4 +122,3 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
 tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
-junit = { module = "junit:junit", version.ref = "junit" }
