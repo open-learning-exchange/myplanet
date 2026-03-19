@@ -727,7 +727,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private suspend fun filterLocalLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        var filteredList = resourcesRepository.search(s)
+        var filteredList = resourcesRepository.search(s, isMyCourseLib, model?.id)
 
         if (tags.isNotEmpty()) {
             filteredList = filteredList.filter { library ->

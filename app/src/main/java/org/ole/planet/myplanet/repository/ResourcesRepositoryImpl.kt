@@ -58,16 +58,22 @@ class ResourcesRepositoryImpl @Inject constructor(
             .replace(DIACRITICS_REGEX, "")
     }
 
-    override suspend fun search(query: String): List<RealmMyLibrary> {
+    override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
         return withRealm { realm ->
             val queryObj = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false)
+
+            val data = if (isMyCourseLib) {
+                queryObj.findAll().filter { it.userId?.contains(userId) == true }
+            } else {
+                queryObj.findAll().filter { it.userId?.contains(userId) == false }
+            }
+
             if (query.isEmpty()) {
-                return@withRealm realm.copyFromRealm(queryObj.findAll())
+                return@withRealm realm.copyFromRealm(data)
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
-            val data = queryObj.findAll()
             val normalizedQuery = normalizeText(query)
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
             val containsQuery = mutableListOf<RealmMyLibrary>()
