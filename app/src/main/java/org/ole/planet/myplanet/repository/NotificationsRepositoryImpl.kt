@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Calendar
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -17,64 +16,6 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
 ) : RealmRepository(databaseService), NotificationsRepository {
-    override suspend fun checkAndCreateNotifications(
-        userId: String?,
-        taskData: List<Triple<String, String, String>>,
-        joinRequestData: List<JoinRequestNotification>,
-        joinRequestMessageTemplate: String,
-        storageRatio: Int,
-        surveyTitles: List<String>
-    ): List<RealmNotification> {
-        val actualUserId = userId ?: ""
-
-        return databaseService.withRealm { realm ->
-            realm.executeTransaction { r ->
-                val existingNotifications = r.where(RealmNotification::class.java)
-                    .equalTo("userId", actualUserId).findAll()
-                val notificationLookup = existingNotifications.mapTo(mutableSetOf()) {
-                    Triple(it.type, it.relatedId, it.userId)
-                }
-
-                fun createIfMissing(type: String, message: String, relatedId: String?) {
-                    if (!notificationLookup.contains(Triple(type, relatedId, actualUserId))) {
-                        r.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
-                            this.userId = actualUserId
-                            this.type = type
-                            this.message = message
-                            this.relatedId = relatedId
-                            this.createdAt = Date()
-                        }
-                        notificationLookup.add(Triple(type, relatedId, actualUserId))
-                    }
-                }
-
-                surveyTitles.forEach { title ->
-                    createIfMissing("survey", title, title)
-                }
-
-                taskData.forEach { (title, deadline, id) ->
-                    createIfMissing("task", "$title $deadline", id)
-                }
-
-                if (storageRatio > 85) {
-                    createIfMissing("storage", "$storageRatio%", "storage")
-                }
-                createIfMissing("storage", "90%", "storage_test")
-
-                joinRequestData.forEach { (requesterName, teamName, requestId) ->
-                    val message = String.format(joinRequestMessageTemplate, requesterName, teamName)
-                    createIfMissing("join_request", message, requestId)
-                }
-            }
-
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", actualUserId)
-                .equalTo("isRead", false)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun refresh() {
         withRealm { it.refresh() }
     }
@@ -88,7 +29,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     .equalTo("type", type)
                     .equalTo("isRead", false)
                     .findAll()
-                    .forEach { it.isRead = true }
+                    .forEach { it.isRead = true; it.needsSync = it.isFromServer }
             }
         } else {
             executeTransaction { realm ->
@@ -96,46 +37,22 @@ class NotificationsRepositoryImpl @Inject constructor(
                     .equalTo("id", notificationId)
                     .findFirst()
                 notification?.isRead = true
+                notification?.needsSync = notification?.isFromServer == true
             }
         }
     }
 
-    override suspend fun createNotificationIfMissing(
-        type: String,
-        message: String,
-        relatedId: String?,
-        userId: String?,
-    ) {
-        val actualUserId = userId ?: ""
-        executeTransaction { realm ->
-            val query = realm.where(RealmNotification::class.java)
-                .equalTo("userId", actualUserId)
-                .equalTo("type", type)
-
-            val existingNotification =
-                if (relatedId != null) {
-                    query.equalTo("relatedId", relatedId).findFirst()
-                } else {
-                    query.isNull("relatedId").findFirst()
-                }
-
-            if (existingNotification == null) {
-                realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
-                    this.userId = actualUserId
-                    this.type = type
-                    this.message = message
-                    this.relatedId = relatedId
-                    this.createdAt = Date()
-                }
-            }
-        }
-    }
-
-    override suspend fun getUnreadCount(userId: String?): Int {
+    override suspend fun getUnreadCount(userId: String?, isAdmin: Boolean): Int {
         if (userId == null) return 0
 
         return count(RealmNotification::class.java) {
+            beginGroup()
             equalTo("userId", userId)
+            if (isAdmin) {
+                or()
+                equalTo("userId", "SYSTEM")
+            }
+            endGroup()
             equalTo("isRead", false)
         }.toInt()
     }
@@ -184,6 +101,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             notifications.forEach { notification ->
                 notification.isRead = true
                 notification.createdAt = now
+                if (notification.isFromServer) notification.needsSync = true
                 updatedIds.add(notification.id)
             }
         }
@@ -202,15 +120,22 @@ class NotificationsRepositoryImpl @Inject constructor(
                 ?.forEach { notification ->
                     notification.isRead = true
                     notification.createdAt = now
+                    if (notification.isFromServer) notification.needsSync = true
                     updatedIds.add(notification.id)
                 }
         }
         return updatedIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
+    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<RealmNotification> {
         return queryList(RealmNotification::class.java) {
+            beginGroup()
             equalTo("userId", userId)
+            if (isAdmin) {
+                or()
+                equalTo("userId", "SYSTEM")
+            }
+            endGroup()
             notEqualTo("message", "INVALID")
             isNotEmpty("message")
             when (filter) {

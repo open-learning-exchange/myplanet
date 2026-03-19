@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
@@ -318,6 +319,54 @@ class TransactionSyncManager @Inject constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    suspend fun syncNotificationReads() = withContext(Dispatchers.IO) {
+        val pending = databaseService.withRealm { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("needsSync", true)
+                .isNotNull("rev")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+        if (pending.isEmpty()) return@withContext
+
+        for (notification in pending) {
+            val rev = notification.rev ?: continue
+            val body = JsonObject().apply {
+                addProperty("_id", notification.id)
+                addProperty("_rev", rev)
+                addProperty("status", "read")
+                addProperty("user", notification.userId)
+                addProperty("message", notification.message)
+                addProperty("type", notification.type)
+                notification.link?.let { addProperty("link", it) }
+                addProperty("priority", notification.priority)
+                addProperty("time", notification.createdAt.time)
+            }
+            try {
+                val response = apiInterface.putDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/notifications/${notification.id}",
+                    body
+                )
+                if (response.isSuccessful) {
+                    val newRev = response.body()?.get("rev")?.asString
+                    databaseService.executeTransactionAsync { realm ->
+                        realm.where(RealmNotification::class.java)
+                            .equalTo("id", notification.id)
+                            .findFirst()
+                            ?.apply {
+                                needsSync = false
+                                if (newRev != null) this.rev = newRev
+                            }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }
