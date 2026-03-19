@@ -7,13 +7,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
 import javax.inject.Inject
 
 import java.util.HashMap
 
 data class CoursesUiState(
-    val courses: List<RealmMyCourse> = emptyList(),
+    val courses: List<Course> = emptyList(),
     val map: HashMap<String?, JsonObject> = HashMap(),
     val progressMap: HashMap<String?, JsonObject>? = null
 )
@@ -27,22 +28,33 @@ class CoursesViewModel @Inject constructor() : ViewModel() {
     fun processCourses(
         isMyCourseLib: Boolean,
         userId: String?,
-        allCourses: List<RealmMyCourse>,
+        validCourses: List<RealmMyCourse>,
         myCourses: List<RealmMyCourse>,
         map: HashMap<String?, JsonObject>,
         progressMap: HashMap<String?, JsonObject>?
     ) {
-        viewModelScope.launch {
-            val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-            val validMyCourses = myCourses.filter { !it.courseTitle.isNullOrBlank() }
-            val sortedCourseList = if (isMyCourseLib) {
-                validMyCourses.forEach { it.isMyCourse = true }
-                validMyCourses.sortedBy { it.courseTitle }
-            } else {
-                validCourses.forEach { it.isMyCourse = it.userId?.contains(userId) == true }
-                validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-            }
-            _coursesState.value = CoursesUiState(sortedCourseList, map, progressMap)
+        val sortedCourseList = if (isMyCourseLib) {
+            myCourses.forEach { it.isMyCourse = true }
+            myCourses.sortedBy { it.courseTitle }
+        } else {
+            validCourses.forEach { it.isMyCourse = it.userId?.contains(userId) == true }
+            validCourses.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
         }
+
+        val mappedCourses = sortedCourseList.map { it.toCourse() }
+        _coursesState.value = CoursesUiState(mappedCourses, map, progressMap)
+    }
+
+    private fun RealmMyCourse.toCourse(): Course {
+        return Course(
+            courseId = this.courseId ?: "",
+            courseTitle = this.courseTitle ?: "",
+            description = this.description ?: "",
+            gradeLevel = this.gradeLevel ?: "",
+            subjectLevel = this.subjectLevel ?: "",
+            createdDate = this.createdDate,
+            numberOfSteps = this.getNumberOfSteps(),
+            isMyCourse = this.isMyCourse
+        )
     }
 }

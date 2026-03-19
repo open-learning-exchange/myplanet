@@ -278,12 +278,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (!::adapterCourses.isInitialized) return@collectLatest
 
                 if (isMyCourseLib) {
-                    val courseIds = state.courses.mapNotNull { it.id }
+                    val courseIds = state.courses.mapNotNull { it.courseId }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
 
-                val courses = state.courses.map { it.toCourse() }
+                val courses = state.courses
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
                 adapterCourses.submitList(courses) {
@@ -758,12 +758,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val map = coursesRepository.getCourseRatings(model?.id)
                     val progressMap = coursesRepository.getCourseProgress(model?.id)
                     val allCourses = coursesRepository.getAllCourses()
+                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
                     val myCourses = if (isMyCourseLib) {
-                        coursesRepository.getMyCourses(model?.id, allCourses)
+                        coursesRepository.getMyCourses(model?.id, validCourses)
                     } else {
                         emptyList()
                     }
-                    viewModel.processCourses(isMyCourseLib, model?.id, allCourses, myCourses, map, progressMap)
+                    viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
                 }
             } else {
                 loadDataAsync()
