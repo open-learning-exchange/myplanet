@@ -9,6 +9,7 @@ import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
+import java.util.Locale
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
@@ -86,7 +87,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val communityName = sharedPrefManager.getCommunityName()
         binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, sharedPrefManager)
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter)
+                .getPageTitle(position)
+                .toString()
+                .uppercase(Locale.ENGLISH)
         }.attach()
         binding.title.text = communityName
         binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
