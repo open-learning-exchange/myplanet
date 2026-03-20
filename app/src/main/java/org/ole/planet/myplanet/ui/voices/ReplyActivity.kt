@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
