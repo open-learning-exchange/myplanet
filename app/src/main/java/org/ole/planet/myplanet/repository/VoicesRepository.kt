@@ -12,8 +12,8 @@ interface VoicesRepository {
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
     suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
-    suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews
-    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean
+    suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?, videoList: List<String>? = null): RealmNews
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?, videoList: List<String>? = null): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)

@@ -328,7 +328,6 @@
     <string name="members">الأعضاء</string>
     <string name="tasks">المهام</string>
     <string name="join_requests">طلبات الانضمام</string>
-    <string name="add_image">إضافة صورة</string>
     <string name="clear_data">مسح البيانات</string>
     <string name="reset_app">إعادة تعيين التطبيق</string>
     <string name="freeup_space">تحرير مساحة القرص</string>
@@ -1182,6 +1181,10 @@
     <string name="team_surveys">استطلاعات الفريق</string>
     <string name="enterprise_created">تم إنشاء المؤسسة</string>
     <string name="image_already_added">تمت إضافة هذه الصورة بالفعل</string>
+    <string name="add_media">إضافة وسائط</string>
+    <string name="video_already_added">تمت إضافة الفيديو بالفعل</string>
+    <string name="please_select_video">يرجى تحديد ملف فيديو</string>
+    <string name="please_select_image_or_video">يرجى تحديد ملف صورة أو فيديو</string>
     <string name="debug_retry_queue">قائمة إعادة المحاولة (تصحيح)</string>
     <string name="debug_retry_queue_summary">عرض وإدارة محاولات الرفع الفاشلة</string>
     <string name="retry_queue_status">حالة قائمة إعادة المحاولة</string>
