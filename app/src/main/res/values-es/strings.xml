@@ -1030,6 +1030,9 @@
     <string name="chart_label">N.º de inicios de sesión</string>
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
+    <string name="no_notifications">Sin notificaciones</string>
+    <string name="no_unread_notifications">Sin notificaciones no leídas</string>
+    <string name="no_read_notifications">Sin notificaciones leídas</string>
     <string name="mark_as_read">Marcar como leído</string>
     <string name="our_voices">nuestras voces</string>
     <string name="no_voices_available">no hay voces disponibles</string>

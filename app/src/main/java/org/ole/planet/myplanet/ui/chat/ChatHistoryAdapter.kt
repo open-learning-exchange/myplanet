@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -113,6 +114,7 @@ class ChatHistoryAdapter(
     private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
         val normalizedQuery = normalizeText(s)
         val inTitleStartQuery = mutableListOf<RealmChatHistory>()
         val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
@@ -131,7 +133,7 @@ class ChatHistoryAdapter(
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
                         if (i == 0) inTitleStartQuery.add(chat) else startsWithQuery.add(chat)
                         break
-                    } else if (queryParts.all { conversation.contains(normalizeText(it), ignoreCase = true) }) {
+                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
                         if (i == 0) inTitleContainsQuery.add(chat) else containsQuery.add(chat)
                         break
                     }
@@ -144,6 +146,7 @@ class ChatHistoryAdapter(
     private fun searchByTitle(s: String): List<RealmChatHistory> {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<RealmChatHistory>()
         val containsQuery = mutableListOf<RealmChatHistory>()
@@ -157,7 +160,7 @@ class ChatHistoryAdapter(
             if (title == null) continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(chat)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
                 containsQuery.add(chat)
             }
         }
@@ -245,7 +248,7 @@ class ChatHistoryAdapter(
         }
     }
 
-    private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, section: String, realmChatHistory: RealmChatHistory) {
+    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 
@@ -274,7 +277,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
+    private fun showEditTextAndShareButton(team: TeamSummary? = null, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)

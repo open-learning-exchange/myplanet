@@ -27,10 +27,8 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.model.Course
+import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
@@ -43,11 +41,11 @@ import org.ole.planet.myplanet.utils.Utilities
 class CoursesAdapter(
     private val context: Context,
     private val map: HashMap<String?, JsonObject>,
-    private var userModel: RealmUser?,
-    private val tagsRepository: TagsRepository,
+    private val isGuest: Boolean,
+    private val tagsProvider: suspend (String) -> List<Tag>,
     var isMyCourseLib: Boolean = false
-) : ListAdapter<RealmMyCourse, RecyclerView.ViewHolder>(
-    DiffUtils.itemCallback<RealmMyCourse>(
+) : ListAdapter<Course, CoursesAdapter.CoursesViewHolder>(
+    DiffUtils.itemCallback<Course>(
         areItemsTheSame = { old, new -> old.courseId == new.courseId },
         areContentsTheSame = { old, new ->
             old.courseTitle == new.courseTitle &&
@@ -56,11 +54,11 @@ class CoursesAdapter(
                     old.subjectLevel == new.subjectLevel &&
                     old.createdDate == new.createdDate &&
                     old.isMyCourse == new.isMyCourse &&
-                    old.getNumberOfSteps() == new.getNumberOfSteps()
+                    old.numberOfSteps == new.numberOfSteps
         }
     )
 ) {
-    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
+    private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -69,7 +67,7 @@ class CoursesAdapter(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    private val tagCache: MutableMap<String, List<RealmTag>> = mutableMapOf()
+    private val tagCache: MutableMap<String, List<Tag>> = mutableMapOf()
     private val activeJobs: MutableMap<String, Job> = mutableMapOf()
 
     companion object {
@@ -89,8 +87,13 @@ class CoursesAdapter(
         this.ratingChangeListener = ratingChangeListener
     }
 
+    fun removeCourses(courseIds: List<String>) {
+        val updated = currentList.filter { it.courseId !in courseIds }
+        submitList(updated)
+    }
+
     fun updateData(
-        newCourseList: List<RealmMyCourse>,
+        newCourseList: List<Course>,
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
@@ -105,31 +108,22 @@ class CoursesAdapter(
         }
     }
 
-    private fun sortCourseListByTitle(list: List<RealmMyCourse>): List<RealmMyCourse> {
+    private fun sortCourseListByTitle(list: List<Course>): List<Course> {
         return list.sortedWith { course1, course2 ->
             if (isTitleAscending) {
-                course1.courseTitle?.compareTo(course2.courseTitle ?: "", ignoreCase = true) ?: 0
+                course1.courseTitle.compareTo(course2.courseTitle, ignoreCase = true)
             } else {
-                course2.courseTitle?.compareTo(course1.courseTitle ?: "", ignoreCase = true) ?: 0
+                course2.courseTitle.compareTo(course1.courseTitle, ignoreCase = true)
             }
         }
     }
 
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+    override fun onViewRecycled(holder: CoursesViewHolder) {
         super.onViewRecycled(holder)
-        if (holder is CoursesViewHolder) {
-            val position = holder.bindingAdapterPosition
-            if (position != RecyclerView.NO_POSITION && position < itemCount) {
-                val course = getItem(position)
-                course?.id?.let { courseId ->
-                    activeJobs[courseId]?.cancel()
-                    activeJobs.remove(courseId)
-                }
-            }
-        }
+        holder.onRecycled()
     }
 
-    private fun sortCourseList(list: List<RealmMyCourse>): List<RealmMyCourse> {
+    private fun sortCourseList(list: List<Course>): List<Course> {
         return list.sortedWith { course1, course2 ->
             if (isAscending) {
                 course1.createdDate.compareTo(course2.createdDate)
@@ -159,156 +153,23 @@ class CoursesAdapter(
         this.progressMap = progressMap
     }
 
+    fun setRatingMap(ratingMap: HashMap<String?, JsonObject>) {
+        this.map.clear()
+        this.map.putAll(ratingMap)
+    }
+
     fun setListener(listener: OnCourseItemSelectedListener?) {
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesViewHolder {
         val binding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return CoursesViewHolder(binding)
+        return CourseViewHolder(binding)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder !is CoursesViewHolder) return
-
-        holder.bind(position)
+    override fun onBindViewHolder(holder: CoursesViewHolder, position: Int) {
         val course = getItem(position) ?: return
-
-        updateVisibilityForMyCourse(holder, course)
-        holder.rowCourseBinding.title.text = course.courseTitle
-        configureDescription(holder, course, position)
-        configureDateViews(holder, course)
-        setTextViewContent(
-            holder.rowCourseBinding.gradLevel,
-            course.gradeLevel,
-            holder.rowCourseBinding.gradLevel,
-            context.getString(R.string.grade_level_colon)
-        )
-        setTextViewContent(
-            holder.rowCourseBinding.subjectLevel,
-            course.subjectLevel,
-            holder.rowCourseBinding.subjectLevel,
-            context.getString(R.string.subject_level_colon)
-        )
-        holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
-        displayTagCloud(holder, position)
-
-        val isGuest = userModel?.isGuest() ?: true
-        if (!isGuest) setupRatingBar(holder, course)
-        setupCheckbox(holder, course, position, isGuest)
-
-        updateRatingViews(holder, position)
-        updateProgressViews(holder, position)
-
-        holder.rowCourseBinding.root.setOnClickListener {
-            val newPosition = holder.bindingAdapterPosition
-            if (newPosition != RecyclerView.NO_POSITION) {
-                openCourse(getItem(newPosition), 0)
-            }
-        }
-    }
-
-    private fun updateVisibilityForMyCourse(holder: CoursesViewHolder, course: RealmMyCourse) {
-        if (isMyCourseLib) {
-            holder.rowCourseBinding.isMyCourse.visibility = View.GONE
-            holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-        } else {
-            if (course.isMyCourse) {
-                holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
-                holder.rowCourseBinding.checkbox.visibility = View.GONE
-            } else {
-                holder.rowCourseBinding.isMyCourse.visibility = View.GONE
-                holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun configureDescription(holder: CoursesViewHolder, course: RealmMyCourse, position: Int) {
-        holder.rowCourseBinding.description.apply {
-            text = course.description
-            val markdownContentWithLocalPaths = prependBaseUrlToImages(
-                course.description,
-                "file://${context.getExternalFilesDir(null)}/ole/",
-                150,
-                100
-            )
-            setMarkdownText(this, markdownContentWithLocalPaths)
-
-            setOnClickListener {
-                homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {
-                    arguments = Bundle().apply {
-                        putString("id", course.courseId)
-                        putInt("position", position)
-                    }
-                })
-            }
-        }
-    }
-
-    private fun configureDateViews(holder: CoursesViewHolder, course: RealmMyCourse) {
-        if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
-            holder.rowCourseBinding.holder.visibility = View.VISIBLE
-            holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
-            holder.rowCourseBinding.tvDate.visibility = View.GONE
-            try {
-                holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
-            } catch (e: Exception) {
-                throw RuntimeException(e)
-            }
-        } else {
-            holder.rowCourseBinding.tvDate.visibility = View.VISIBLE
-            holder.rowCourseBinding.tvDate2.visibility = View.GONE
-            holder.rowCourseBinding.holder.visibility = View.GONE
-            try {
-                holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
-            } catch (e: Exception) {
-                throw RuntimeException(e)
-            }
-        }
-    }
-
-    private fun setupRatingBar(holder: CoursesViewHolder, course: RealmMyCourse) {
-        holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-            if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
-                "course",
-                course.courseId,
-                course.courseTitle,
-                ratingChangeListener
-            )
-            true
-        }
-    }
-
-    private fun setupCheckbox(holder: CoursesViewHolder, course: RealmMyCourse, position: Int, isGuest: Boolean) {
-        if (!isGuest) {
-            val showCheckbox = isMyCourseLib || !course.isMyCourse
-            if (showCheckbox) {
-                holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
-                holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                    holder.rowCourseBinding.checkbox.contentDescription =
-                        context.getString(R.string.select_res_course, course.courseTitle)
-                    val adapterPosition = holder.bindingAdapterPosition
-                    if (adapterPosition != RecyclerView.NO_POSITION) {
-                        SelectionUtils.handleCheck((view as CheckBox).isChecked, adapterPosition, selectedItems, currentList)
-                        listener?.onSelectedListChange(selectedItems)
-                    }
-                }
-            } else {
-                holder.rowCourseBinding.checkbox.visibility = View.GONE
-            }
-        } else {
-            holder.rowCourseBinding.checkbox.visibility = View.GONE
-        }
-    }
-
-    private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {
-        if (content.isNullOrEmpty()) {
-            layout?.visibility = View.GONE
-        } else {
-            layout?.visibility = View.VISIBLE
-            textView?.text = context.getString(R.string.prefix_content, prefix, content)
-        }
+        holder.bind(position, course)
     }
 
     fun cancelAllJobs() {
@@ -317,7 +178,7 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { !it.isMyCourse }
+        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
@@ -326,12 +187,12 @@ class CoursesAdapter(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filter { !it.isMyCourse }
+            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
             selectedItems.addAll(selectableCourses)
         }
 
         currentList.forEachIndexed { index, course ->
-            if (!course.isMyCourse) {
+            if (isMyCourseLib || !course.isMyCourse) {
                 notifyItemChanged(index)
             }
         }
@@ -340,11 +201,11 @@ class CoursesAdapter(
     }
 
     override fun onBindViewHolder(
-        holder: RecyclerView.ViewHolder,
+        holder: CoursesViewHolder,
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (holder !is CoursesViewHolder) {
+        if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
             return
         }
@@ -355,116 +216,18 @@ class CoursesAdapter(
         val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
 
         if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
-            if (hasTagPayload) {
-                val courseId = getItem(position)?.id ?: return
-                val tags = tagCache[courseId].orEmpty()
-                renderTagCloud(holder.rowCourseBinding.flexboxDrawable, tags)
-            }
-            if (hasRatingPayload) {
-                updateRatingViews(holder, position)
-            }
-            if (hasProgressPayload) {
-                updateProgressViews(holder, position)
-            }
+            val course = getItem(position) ?: return
+            holder.bindPayloads(position, course, hasTagPayload, hasRatingPayload, hasProgressPayload)
         } else {
             super.onBindViewHolder(holder, position, payloads)
         }
     }
 
-    private fun displayTagCloud(holder: CoursesViewHolder, position: Int) {
-        val flexboxDrawable = holder.rowCourseBinding.flexboxDrawable
-        val courseId = getItem(position)?.id
-        if (courseId == null) {
-            flexboxDrawable.removeAllViews()
-            return
-        }
-
-        val cachedTags = tagCache[courseId]
-        if (cachedTags != null) {
-            renderTagCloud(flexboxDrawable, cachedTags)
-            return
-        }
-
-        flexboxDrawable.removeAllViews()
-
-        activeJobs[courseId]?.cancel()
-
-        val job = holder.itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-            try {
-                val tags = tagsRepository.getTagsForCourse(courseId)
-                tagCache[courseId] = tags
-                val adapterPosition = holder.bindingAdapterPosition
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        notifyItemChanged(adapterPosition, TAG_PAYLOAD)
-                    }
-                }
-            } finally {
-                activeJobs.remove(courseId)
-            }
-        }
-        if (job != null) {
-            activeJobs[courseId] = job
-        }
-    }
-
-    private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<RealmTag>) {
-        flexboxDrawable.removeAllViews()
-        if (tags.isEmpty()) {
-            return
-        }
-        val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        tags.forEach { tag ->
-            chipCloud.addChip(tag.name ?: "")
-        }
-        chipCloud.setListener { index: Int, _: Boolean, isSelected: Boolean ->
-            if (isSelected) {
-                tags.getOrNull(index)?.let { selectedTag ->
-                    listener?.onTagClicked(selectedTag)
-                }
-            }
-        }
-    }
-
-    private fun updateRatingViews(holder: CoursesViewHolder, position: Int) {
-        val course = getItem(position) ?: return
-        if (map.containsKey(course.courseId)) {
-            val ratingObject = map[course.courseId]
-            CourseRatingUtils.showRating(
-                context,
-                ratingObject,
-                holder.rowCourseBinding.rating,
-                holder.rowCourseBinding.timesRated,
-                holder.rowCourseBinding.ratingBar
-            )
-        } else {
-            holder.rowCourseBinding.ratingBar.rating = 0f
-            holder.rowCourseBinding.rating.text = context.getString(R.string.zero_point_zero)
-            holder.rowCourseBinding.timesRated.text = context.getString(R.string.rating_count_format, 0)
-        }
-    }
-
-    private fun updateProgressViews(holder: CoursesViewHolder, position: Int) {
-        val course = getItem(position) ?: return
-        val progress = progressMap?.get(course.courseId)
-        if (progress != null) {
-            holder.rowCourseBinding.courseProgress.max = getInt("max", progress)
-            val currentProgress = getInt("current", progress)
-            holder.rowCourseBinding.courseProgress.progress = currentProgress
-            if (currentProgress < holder.rowCourseBinding.courseProgress.max) {
-                holder.rowCourseBinding.courseProgress.secondaryProgress = currentProgress + 1
-            }
-            holder.rowCourseBinding.courseProgress.visibility = View.VISIBLE
-        } else {
-            holder.rowCourseBinding.courseProgress.visibility = View.GONE
-        }
-    }
-
-    private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
+    private fun openCourse(course: Course?, step: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
-            b.putString("id", realmMyCourses?.courseId)
+            b.putString("id", course?.courseId)
             b.putInt("position", step)
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
@@ -476,14 +239,29 @@ class CoursesAdapter(
         cancelAllJobs()
     }
 
-    internal inner class CoursesViewHolder(val rowCourseBinding: RowCourseBinding) :
-        RecyclerView.ViewHolder(rowCourseBinding.root) {
-        private var adapterPosition = 0
+    abstract inner class CoursesViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        abstract fun bind(position: Int, course: Course)
+        abstract fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean)
+
+        open fun onRecycled() {
+            val position = bindingAdapterPosition
+            if (position != RecyclerView.NO_POSITION && position < itemCount) {
+                val course = getItem(position)
+                val courseId = course.courseId
+                activeJobs[courseId]?.cancel()
+                activeJobs.remove(courseId)
+            }
+        }
+    }
+
+    internal inner class CourseViewHolder(val rowCourseBinding: RowCourseBinding) :
+        CoursesViewHolder(rowCourseBinding.root) {
 
         init {
             itemView.setOnClickListener {
-                if (adapterPosition != RecyclerView.NO_POSITION) {
-                    openCourse(getItem(adapterPosition), 0)
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    openCourse(getItem(position), 0)
                 }
             }
             rowCourseBinding.courseProgress.scaleY = 0.3f
@@ -507,8 +285,238 @@ class CoursesAdapter(
             })
         }
 
-        fun bind(position: Int) {
-            adapterPosition = position
+        override fun bind(position: Int, course: Course) {
+            updateVisibilityForMyCourse(course)
+            rowCourseBinding.title.text = course.courseTitle
+            configureDescription(course, position)
+            configureDateViews(course)
+            setTextViewContent(
+                rowCourseBinding.gradLevel,
+                course.gradeLevel,
+                rowCourseBinding.gradLevel,
+                context.getString(R.string.grade_level_colon)
+            )
+            setTextViewContent(
+                rowCourseBinding.subjectLevel,
+                course.subjectLevel,
+                rowCourseBinding.subjectLevel,
+                context.getString(R.string.subject_level_colon)
+            )
+            rowCourseBinding.courseProgress.max = course.numberOfSteps
+            displayTagCloud(position)
+
+            if (!isGuest) setupRatingBar(course)
+            setupCheckbox(course, position, isGuest)
+
+            updateRatingViews(position)
+            updateProgressViews(position)
         }
+
+        override fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean) {
+            if (hasTagPayload) {
+                val tags = tagCache[course.courseId].orEmpty()
+                renderTagCloud(rowCourseBinding.flexboxDrawable, tags)
+            }
+            if (hasRatingPayload) {
+                updateRatingViews(position)
+            }
+            if (hasProgressPayload) {
+                updateProgressViews(position)
+            }
+        }
+
+        private fun updateVisibilityForMyCourse(course: Course) {
+            if (isMyCourseLib) {
+                rowCourseBinding.isMyCourse.visibility = View.GONE
+                rowCourseBinding.checkbox.visibility = View.VISIBLE
+            } else {
+                if (course.isMyCourse) {
+                    rowCourseBinding.isMyCourse.visibility = View.VISIBLE
+                    rowCourseBinding.checkbox.visibility = View.GONE
+                } else {
+                    rowCourseBinding.isMyCourse.visibility = View.GONE
+                    rowCourseBinding.checkbox.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        private fun configureDescription(course: Course, position: Int) {
+            rowCourseBinding.description.apply {
+                text = course.description
+                val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                    course.description,
+                    "file://${context.getExternalFilesDir(null)}/ole/",
+                    150,
+                    100
+                )
+                setMarkdownText(this, markdownContentWithLocalPaths)
+
+                setOnClickListener {
+                    homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {
+                        arguments = Bundle().apply {
+                            putString("id", course.courseId)
+                            putInt("position", position)
+                        }
+                    })
+                }
+            }
+        }
+
+        private fun configureDateViews(course: Course) {
+            if (course.gradeLevel.isEmpty() && course.subjectLevel.isEmpty()) {
+                rowCourseBinding.holder.visibility = View.VISIBLE
+                rowCourseBinding.tvDate2.visibility = View.VISIBLE
+                rowCourseBinding.tvDate.visibility = View.GONE
+                try {
+                    rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
+                } catch (e: Exception) {
+                    throw RuntimeException(e)
+                }
+            } else {
+                rowCourseBinding.tvDate.visibility = View.VISIBLE
+                rowCourseBinding.tvDate2.visibility = View.GONE
+                rowCourseBinding.holder.visibility = View.GONE
+                try {
+                    rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
+                } catch (e: Exception) {
+                    throw RuntimeException(e)
+                }
+            }
+        }
+
+        private fun setupRatingBar(course: Course) {
+            rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
+                    "course",
+                    course.courseId,
+                    course.courseTitle,
+                    ratingChangeListener
+                )
+                true
+            }
+        }
+
+        private fun setupCheckbox(course: Course, position: Int, isGuest: Boolean) {
+            if (!isGuest) {
+                val showCheckbox = isMyCourseLib || !course.isMyCourse
+                if (showCheckbox) {
+                    rowCourseBinding.checkbox.visibility = View.VISIBLE
+                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                        rowCourseBinding.checkbox.contentDescription =
+                            context.getString(R.string.select_res_course, course.courseTitle)
+                        val adapterPosition = bindingAdapterPosition
+                        if (adapterPosition != RecyclerView.NO_POSITION) {
+                            SelectionUtils.handleCheck((view as CheckBox).isChecked, adapterPosition, selectedItems, currentList)
+                            listener?.onSelectedListChange(selectedItems)
+                        }
+                    }
+                } else {
+                    rowCourseBinding.checkbox.visibility = View.GONE
+                }
+            } else {
+                rowCourseBinding.checkbox.visibility = View.GONE
+            }
+        }
+
+        private fun displayTagCloud(position: Int) {
+            val flexboxDrawable = rowCourseBinding.flexboxDrawable
+            val course = getItem(position)
+            val courseId = course?.courseId
+            if (courseId == null) {
+                flexboxDrawable.removeAllViews()
+                return
+            }
+
+            val cachedTags = tagCache[courseId]
+            if (cachedTags != null) {
+                renderTagCloud(flexboxDrawable, cachedTags)
+                return
+            }
+
+            flexboxDrawable.removeAllViews()
+
+            activeJobs[courseId]?.cancel()
+
+            val job = itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                try {
+                    val tags = tagsProvider(courseId)
+                    tagCache[courseId] = tags
+                    val adapterPosition = bindingAdapterPosition
+                    if (adapterPosition != RecyclerView.NO_POSITION) {
+                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            notifyItemChanged(adapterPosition, TAG_PAYLOAD)
+                        }
+                    }
+                } finally {
+                    activeJobs.remove(courseId)
+                }
+            }
+            if (job != null) {
+                activeJobs[courseId] = job
+            }
+        }
+
+        private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<Tag>) {
+            flexboxDrawable.removeAllViews()
+            if (tags.isEmpty()) {
+                return
+            }
+            val chipCloud = ChipCloud(context, flexboxDrawable, config)
+            tags.forEach { tag ->
+                chipCloud.addChip(tag.name ?: "")
+            }
+            chipCloud.setListener { index: Int, _: Boolean, isSelected: Boolean ->
+                if (isSelected) {
+                    tags.getOrNull(index)?.let { selectedTag ->
+                        listener?.onTagClicked(selectedTag)
+                    }
+                }
+            }
+        }
+
+        private fun updateRatingViews(position: Int) {
+            val course = getItem(position) ?: return
+            if (map.containsKey(course.courseId)) {
+                val ratingObject = map[course.courseId]
+                CourseRatingUtils.showRating(
+                    context,
+                    ratingObject,
+                    rowCourseBinding.rating,
+                    rowCourseBinding.timesRated,
+                    rowCourseBinding.ratingBar
+                )
+            } else {
+                rowCourseBinding.ratingBar.rating = 0f
+                rowCourseBinding.rating.text = context.getString(R.string.zero_point_zero)
+                rowCourseBinding.timesRated.text = context.getString(R.string.rating_count_format, 0)
+            }
+        }
+
+        private fun updateProgressViews(position: Int) {
+            val course = getItem(position) ?: return
+            val progress = progressMap?.get(course.courseId)
+            if (progress != null) {
+                rowCourseBinding.courseProgress.max = getInt("max", progress)
+                val currentProgress = getInt("current", progress)
+                rowCourseBinding.courseProgress.progress = currentProgress
+                if (currentProgress < rowCourseBinding.courseProgress.max) {
+                    rowCourseBinding.courseProgress.secondaryProgress = currentProgress + 1
+                }
+                rowCourseBinding.courseProgress.visibility = View.VISIBLE
+            } else {
+                rowCourseBinding.courseProgress.visibility = View.GONE
+            }
+        }
+
+        private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {
+            if (content.isNullOrEmpty()) {
+                layout?.visibility = View.GONE
+            } else {
+                layout?.visibility = View.VISIBLE
+                textView?.text = context.getString(R.string.prefix_content, prefix, content)
+            }
+        }
+
     }
 }

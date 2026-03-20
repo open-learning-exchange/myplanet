@@ -11,7 +11,9 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
@@ -39,7 +41,8 @@ class NotificationsFragment : Fragment() {
     private lateinit var userId: String
     private var notificationUpdateListener: OnNotificationsListener? = null
     private lateinit var dashboardActivity: DashboardActivity
-    private var unreadCountCache: Int = 0
+    private var currentFilter: String = "all"
+    private var isAdmin: Boolean = false
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -55,6 +58,7 @@ class NotificationsFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
+        isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
         adapter = NotificationsAdapter(
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
@@ -72,20 +76,37 @@ class NotificationsFragment : Fragment() {
         binding.status.adapter = spinnerAdapter
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
-                viewModel.loadNotifications(userId, selectedOption)
+                currentFilter = parent.getItemAtPosition(position).toString().lowercase()
+                viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
-        viewModel.loadNotifications(userId, "all")
+        viewModel.loadNotifications(userId, "all", isAdmin)
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.notifications.collect { notifications ->
-                adapter.submitList(notifications)
-                binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.notifications.collect { notifications ->
+                        adapter.submitList(notifications)
+                        val isEmpty = notifications.isEmpty()
+                        binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                        binding.emptyData.text = when (currentFilter) {
+                            "unread" -> getString(R.string.no_unread_notifications)
+                            "read" -> getString(R.string.no_read_notifications)
+                            else -> getString(R.string.no_notifications)
+                        }
+                        binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
+                    }
+                }
+                launch {
+                    viewModel.unreadCount.collect { count ->
+                        notificationUpdateListener?.onNotificationCountUpdated(count)
+                        val showButton = count > 0 && currentFilter != "read"
+                        binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
+                    }
+                }
             }
         }
-        refreshUnreadCountCache()
         binding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
@@ -158,37 +179,17 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAsReadById(notificationId: String) {
-        viewModel.markAsRead(notificationId, userId)
+        viewModel.markAsRead(notificationId)
     }
 
     private fun markAllAsRead() {
         viewModel.markAllAsRead(userId)
     }
 
-    private fun updateMarkAllAsReadButtonVisibility() {
-        _binding?.let { binding ->
-            binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
-        }
-    }
-
-    private fun updateUnreadCount() {
-        notificationUpdateListener?.onNotificationCountUpdated(unreadCountCache)
-    }
-
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
-            val selectedFilter = binding.status.selectedItem.toString().lowercase()
-            viewModel.loadNotifications(userId, selectedFilter)
-            refreshUnreadCountCache()
-        }
-    }
-
-    private fun refreshUnreadCountCache() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val count = viewModel.getUnreadCount(userId)
-            unreadCountCache = count
-            updateMarkAllAsReadButtonVisibility()
-            updateUnreadCount()
+            currentFilter = binding.status.selectedItem.toString().lowercase()
+            viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
     }
 

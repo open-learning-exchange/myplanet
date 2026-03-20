@@ -5,9 +5,7 @@ import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
 import android.content.ContentValues
-import android.content.Context.MODE_PRIVATE
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -33,7 +31,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -53,6 +53,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
@@ -61,8 +62,8 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -71,8 +72,8 @@ class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
     private val viewModel: UserProfileViewModel by viewModels()
-    private lateinit var rowStatBinding: RowStatBinding
-    private lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private var model: RealmUser? = null
@@ -141,41 +142,17 @@ class UserProfileFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.offlineVisits.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
+                combine(
+                    viewModel.offlineVisits,
+                    viewModel.maxOpenedResource,
+                    viewModel.lastVisit,
+                    viewModel.numberOfResourceOpen
+                ) { _, _, _, _ -> Unit }
+                    .collect {
+                        if (isAdded) {
+                            setupStatsRecycler()
+                        }
                     }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.maxOpenedResource.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
-                    }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.lastVisit.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
-                    }
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.numberOfResourceOpen.collect {
-                    if (isAdded) {
-                        setupStatsRecycler()
-                    }
-                }
             }
         }
     }
@@ -187,16 +164,16 @@ class UserProfileFragment : Fragment() {
         binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
         setupStatsRecycler()
         observeUserProfile()
-        viewModel.loadUserProfile(settings.getString("userId", ""))
+        viewModel.loadUserProfile(sharedPrefManager.getUserId())
         viewModel.getOfflineVisits()
 
         return binding.root
     }
 
     private fun initializeDependencies() {
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
+        binding.rvStat.adapter = StatsAdapter()
     }
 
     private fun observeUserProfile() {
@@ -431,7 +408,7 @@ class UserProfileFragment : Fragment() {
             val email = binding.email.text.toString()
             val phoneNumber = binding.phoneNumber.text.toString()
             val dob = date ?: model?.dob
-            val userId = settings.getString("userId", "")
+            val userId = sharedPrefManager.getUserId()
 
             viewModel.updateUserProfile(
                 userId = userId,
@@ -496,29 +473,39 @@ class UserProfileFragment : Fragment() {
 
     private fun setupStatsRecycler() {
         val map = createStatsMap()
-        val keys = LinkedList(map.keys)
-        binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
-            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-                rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-                return ViewHolderRowStat(rowStatBinding)
-            }
+        (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
+    }
 
-            override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-                rowStatBinding.tvTitle.text = keys[position]
-                rowStatBinding.tvTitle.visibility = View.VISIBLE
-                rowStatBinding.tvDescription.text = map[keys[position]]
-                if (position % 2 == 0) {
-                    rowStatBinding.root.setBackgroundColor(
-                        ContextCompat.getColor(
-                            requireContext(),
-                            R.color.user_profile_background
-                        )
+    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(
+        DiffUtils.itemCallback<Pair<String, String?>>(
+            { oldItem, newItem -> oldItem.first == newItem.first },
+            { oldItem, newItem -> oldItem == newItem }
+        )
+    ) {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
+            val rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
+            return ViewHolderRowStat(rowStatBinding)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
+            val item = getItem(position)
+            holder.rowStatBinding.tvTitle.text = item.first
+            holder.rowStatBinding.tvTitle.visibility = View.VISIBLE
+            holder.rowStatBinding.tvDescription.text = item.second
+            if (holder.bindingAdapterPosition % 2 == 0) {
+                holder.rowStatBinding.root.setBackgroundColor(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        R.color.user_profile_background
                     )
-                }
-            }
-
-            override fun getItemCount(): Int {
-                return keys.size
+                )
+            } else {
+                holder.rowStatBinding.root.setBackgroundColor(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        android.R.color.transparent
+                    )
+                )
             }
         }
     }
@@ -569,10 +556,10 @@ class UserProfileFragment : Fragment() {
 
     private fun startIntent(uri: Uri?) {
         val path = uri?.toString()
-        viewModel.updateProfileImage(settings.getString("userId", ""), path)
+        viewModel.updateProfileImage(sharedPrefManager.getUserId(), path)
     }
 
-    inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
+    inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 
     override fun onDestroyView() {
         editProfileDialog?.dismiss()

@@ -25,10 +25,12 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -38,15 +40,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 
-private data class AchievementData(
-    val goals: String = "",
-    val purpose: String = "",
-    val achievementsHeader: String = "",
-    val achievements: List<String> = emptyList(),
-    val achievementResources: List<RealmMyLibrary> = emptyList(),
-    val references: List<String> = emptyList()
-)
-
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
     private var _binding: FragmentAchievementBinding? = null
@@ -55,20 +48,18 @@ class AchievementFragment : BaseContainerFragment() {
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
-    
+
     @Inject
     lateinit var syncManager: SyncManager
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = prefData.getServerUrl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         startAchievementSync()
     }
 
@@ -94,8 +85,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startAchievementSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isAchievementsSynced()) {
+        val isFastSync = prefData.getFastSync()
+        if (isFastSync && !prefData.isAchievementsSynced()) {
             checkServerAndStartSync()
         }
     }
@@ -129,7 +120,7 @@ class AchievementFragment : BaseContainerFragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshAchievementData()
-                        prefManager.setAchievementsSynced(true)
+                        prefData.setAchievementsSynced(true)
                     }
                 }
             }
@@ -149,7 +140,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, prefData.rawPreferences) { url ->
             isServerReachable(url)
         }
     }
@@ -167,40 +158,10 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    private suspend fun loadAchievementDataAsync(): AchievementData = databaseService.withRealmAsync { realm ->
-        val achievement = realm.where(RealmAchievement::class.java)
-            .equalTo("_id", user?.id + "@" + user?.planetCode)
-            .findFirst()
-
-        if (achievement != null) {
-            val achievementCopy = realm.copyFromRealm(achievement)
-            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                JsonUtils.gson.fromJson(json, JsonObject::class.java)
-                    ?.getAsJsonArray("resources")
-                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
-            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
-
-            val resources = if (resourceIds.isNotEmpty()) {
-                realm.copyFromRealm(
-                    realm.where(RealmMyLibrary::class.java)
-                        .`in`("id", resourceIds)
-                        .findAll()
-                )
-            } else {
-                emptyList()
-            }
-
-            AchievementData(
-                goals = achievementCopy.goals ?: "",
-                purpose = achievementCopy.purpose ?: "",
-                achievementsHeader = achievementCopy.achievementsHeader ?: "",
-                achievements = achievementCopy.achievements ?: emptyList(),
-                achievementResources = resources,
-                references = achievementCopy.references ?: emptyList()
-            )
-        } else {
-            AchievementData()
-        }
+    private suspend fun loadAchievementDataAsync(): AchievementData {
+        val uId = user?.id ?: return AchievementData()
+        val pCode = user?.planetCode ?: return AchievementData()
+        return userRepository.getAchievementData(uId, pCode)
     }
 
 
@@ -313,9 +274,7 @@ class AchievementFragment : BaseContainerFragment() {
                 openResource(lib)
             } else {
                 lifecycleScope.launch {
-                    if (resourcesRepository.downloadResources(listOf(lib))) {
-                        showProgressDialog()
-                    }
+                    resourcesRepository.downloadResources(listOf(lib))
                 }
             }
         }

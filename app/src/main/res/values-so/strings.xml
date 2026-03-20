@@ -1030,6 +1030,9 @@
     <string name="chart_label">Tirada galitaanka</string>
     <string name="copied_to_clipboard">waxaa lagu koobay clipboard-ka</string>
     <string name="mark_all_as_read">Calaamadee dhammaan sidii la aqriyay</string>
+    <string name="no_notifications">Wax ogeysiis ah ma jiro</string>
+    <string name="no_unread_notifications">Wax ogeysiis aan la akhiyin ma jiro</string>
+    <string name="no_read_notifications">Wax ogeysiis la akhiyay ma jiro</string>
     <string name="mark_as_read">Calaamadee sidii la aqriyay</string>
     <string name="our_voices">codadkeena</string>
     <string name="no_voices_available">ma jiro cod la heli karo</string>

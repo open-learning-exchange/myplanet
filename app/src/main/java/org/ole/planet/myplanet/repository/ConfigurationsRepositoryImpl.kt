@@ -26,8 +26,10 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -41,23 +43,25 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     @param:AppPreferences private val preferences: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     private val databaseService: DatabaseService,
-    private val serverUrlMapper: ServerUrlMapper
+    private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override fun checkHealth(listener: OnSuccessListener) {
         serviceScope.launch {
             try {
-                val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
+                val healthUrl = UrlUtils.getHealthAccessUrl(sharedPrefManager)
                 if (healthUrl.isBlank()) {
-                    withContext(Dispatchers.Main) { listener.onSuccess("") }
+                    withContext(dispatcherProvider.main) { listener.onSuccess("") }
                     return@launch
                 }
 
                 try {
-                    val response = withContext(Dispatchers.IO) { apiInterface.healthAccess(healthUrl) }
-                    withContext(Dispatchers.Main) {
+                    val response = withContext(dispatcherProvider.io) { apiInterface.healthAccess(healthUrl) }
+                    withContext(dispatcherProvider.main) {
                         when (response.code()) {
                             200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
                             401 -> listener.onSuccess("Unauthorized - Invalid credentials")
@@ -78,32 +82,32 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         is IOException -> "Network connection error"
                         else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                     }
-                    withContext(Dispatchers.Main) { listener.onSuccess(errorMsg) }
+                    withContext(dispatcherProvider.main) { listener.onSuccess(errorMsg) }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { listener.onSuccess("Health access initialization failed") }
+                withContext(dispatcherProvider.main) { listener.onSuccess("Health access initialization failed") }
             }
         }
     }
 
-    override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, settings: SharedPreferences) {
-        val baseUrl = UrlUtils.baseUrl(settings)
+    override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
+        val baseUrl = UrlUtils.baseUrl(spm)
         if (baseUrl.isEmpty()) {
             return
         }
 
         serviceScope.launch {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 callback.onCheckingVersion()
             }
-            val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
+            val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
 
             if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
-                val cachedVersionDetail = preferences.getString("versionDetail", null)
-                val cachedApkVersion = preferences.getInt("cachedApkVersion", -1)
+                val cachedVersionDetail = sharedPrefManager.getVersionDetail()
+                val cachedApkVersion = sharedPrefManager.rawPreferences.getInt("cachedApkVersion", -1)
 
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
@@ -117,32 +121,32 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = withContext(Dispatchers.IO) { fetchVersionInfo(settings) }
+                val planetInfo = withContext(dispatcherProvider.io) { fetchVersionInfo(spm) }
                 if (planetInfo == null) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         callback.onError(context.getString(R.string.version_not_found), true)
                     }
                     return@launch
                 }
 
-                preferences.edit {
+                sharedPrefManager.rawPreferences.edit {
                     putLong("last_version_check_timestamp", System.currentTimeMillis())
-                    putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                    putString("versionDetail", JsonUtils.gson.toJson(planetInfo))
                 }
+                sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
+                sharedPrefManager.setVersionDetail(JsonUtils.gson.toJson(planetInfo))
 
-                val rawApkVersion = fetchApkVersionString(settings)
+                val rawApkVersion = fetchApkVersionString(spm)
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     }
                     return@launch
                 }
 
-                val apkVersion = parseApkVersionString(versionStr)
+                val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
-                        withContext(Dispatchers.Main) {
+                        withContext(dispatcherProvider.main) {
                             callback.onError(
                                 context.getString(R.string.new_apk_version_required_but_not_found_on_server),
                                 false
@@ -151,14 +155,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         return@launch
                     }
 
-                preferences.edit {
+                sharedPrefManager.rawPreferences.edit {
                     putInt("cachedApkVersion", apkVersion)
                 }
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
             }
@@ -166,7 +170,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun checkServerAvailability(): Boolean {
-        val updateUrl = "${preferences.getString("serverURL", "")}"
+        val updateUrl = sharedPrefManager.getServerUrl()
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
             if (System.currentTimeMillis() - timestamp < 30000) {
                 return available
@@ -175,28 +179,28 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
             val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
 
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = preferences.edit()
+                    val editor = sharedPrefManager.rawPreferences.edit()
 
                     serverUrlMapper.updateUrlPreferences(
                         editor,
                         uri,
                         alternativeUrl,
                         mapping.primaryUrl,
-                        preferences
+                        sharedPrefManager.rawPreferences
                     )
                 }
             }
         }
 
         return try {
-            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(preferences))
+            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(sharedPrefManager))
             serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
             isAvailable
         } catch (e: Exception) {
@@ -210,7 +214,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcherProvider.io) {
             try {
                 val response = apiInterface.isPlanetAvailable(url)
                 val code = response.code()
@@ -228,9 +232,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun checkCheckSum(path: String): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun checkCheckSum(path: String): Boolean = withContext(dispatcherProvider.io) {
         try {
-            val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))
+            val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(sharedPrefManager))
             if (response.isSuccessful) {
                 val checksum = response.body()?.string()
                 if (!checksum.isNullOrEmpty()) {
@@ -300,7 +304,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val minApkVersion = jsonObject?.get("minapk")?.asString
                 val currentVersion = context.getString(R.string.app_version)
 
-                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
+                if (minApkVersion != null && VersionUtils.isVersionAllowed(currentVersion, minApkVersion)) {
                     val couchdbURL = buildCouchdbUrl(currentUrl, pin)
 
                     fetchConfiguration(couchdbURL)?.let { (id, code) ->
@@ -350,17 +354,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private suspend fun processConfigurationDoc(doc: JsonObject) {
         val parentCode = doc.getAsJsonPrimitive("parentCode").asString
 
-        withContext(Dispatchers.IO) {
-            preferences.edit { putString("parentCode", parentCode) }
+        withContext(dispatcherProvider.io) {
+            sharedPrefManager.setParentCode(parentCode)
         }
 
         if (doc.has("preferredLang")) {
             val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
-                withContext(Dispatchers.IO) {
+                withContext(dispatcherProvider.io) {
                     LocaleUtils.setLocale(context, languageCode)
-                    preferences.edit { putString("pendingLanguageChange", languageCode) }
+                    sharedPrefManager.setPendingLanguageChange(languageCode)
                 }
             }
         }
@@ -369,15 +373,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
 
-            withContext(Dispatchers.IO) {
-                preferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
+            withContext(dispatcherProvider.io) {
+                sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
             }
         }
 
         if (doc.has("planetType")) {
             val planetType = doc.getAsJsonPrimitive("planetType").asString
-            withContext(Dispatchers.IO) {
-                preferences.edit { putString("planetType", planetType) }
+            withContext(dispatcherProvider.io) {
+                sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
             }
         }
     }
@@ -390,22 +394,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val urlUser = "satellite"
             "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
         }
-    }
-
-    private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
-        return compareVersions(currentVersion, minApkVersion) >= 0
-    }
-
-    private fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
-        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
-
-        for (i in 0 until kotlin.math.min(parts1.size, parts2.size)) {
-            if (parts1[i] != parts2[i]) {
-                return parts1[i].compareTo(parts2[i])
-            }
-        }
-        return parts1.size.compareTo(parts2.size)
     }
 
     private fun getLanguageCodeFromName(languageName: String): String? {
@@ -429,10 +417,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         data class Failure(val url: String) : UrlCheckResult()
     }
 
-    private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
-        withContext(Dispatchers.IO) {
+    private suspend fun fetchVersionInfo(spm: SharedPrefManager): MyPlanet? =
+        withContext(dispatcherProvider.io) {
             val result = ApiClient.executeWithResult {
-                apiInterface.checkVersion(UrlUtils.getUpdateUrl(settings))
+                apiInterface.checkVersion(UrlUtils.getUpdateUrl(spm))
             }
             when (result) {
                 is NetworkResult.Success -> result.data
@@ -440,10 +428,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-    private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
-        withContext(Dispatchers.IO) {
+    private suspend fun fetchApkVersionString(spm: SharedPrefManager): String? =
+        withContext(dispatcherProvider.io) {
             val result = ApiClient.executeWithResult {
-                apiInterface.getApkVersion(UrlUtils.getApkVersionUrl(settings))
+                apiInterface.getApkVersion(UrlUtils.getApkVersionUrl(spm))
             }
             when (result) {
                 is NetworkResult.Success -> result.data.string()
@@ -451,19 +439,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-    private fun parseApkVersionString(raw: String?): Int? {
-        if (raw.isNullOrEmpty()) return null
-        var vsn = raw.replace("v".toRegex(), "")
-        vsn = vsn.replace("\\.".toRegex(), "")
-        val cleaned = if (vsn.startsWith("0")) vsn.replaceFirst("0", "") else vsn
-        return cleaned.toIntOrNull()
-    }
-
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onUpdateAvailable(info, false)
                 }
             }
@@ -471,7 +451,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
         if (apkVersion > currentVersion) {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
                 }
             }
@@ -479,16 +459,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
         if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onUpdateAvailable(info, true)
                 }
             }
         } else {
             serviceScope.launch {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                 }
             }
         }
     }
+
 }

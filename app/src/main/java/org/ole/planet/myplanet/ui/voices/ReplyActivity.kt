@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -61,10 +59,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
 
-    private lateinit var imageList: RealmList<String>
+    private lateinit var imageList: MutableList<String>
     private var llImage: ViewGroup? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
 
@@ -76,7 +72,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         title = "Reply"
-        imageList = RealmList()
+        imageList = mutableListOf()
         id = intent.getStringExtra("id")
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
@@ -107,15 +103,55 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     teamName = "",
                     teamId = null,
                     userSessionManager = userSessionManager,
-                    scope = lifecycleScope,
-                    isTeamLeaderFn = { false },
-                    getUserFn = { userId -> userRepository.getUserById(userId) },
-                    getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
-                    deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    isTeamLeaderFn = { onResult ->
+                        val job = lifecycleScope.launch {
+                            onResult(false)
+                        }
+                        return@VoicesAdapter { job.cancel() }
                     },
-                    getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                    getUserFn = { userId, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = userRepository.getUserById(userId)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    getReplyCountFn = { newsId, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val result = voicesRepository.getReplyCount(newsId)
+                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    deletePostFn = { newsId, onComplete ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            voicesRepository.deletePost(newsId, "")
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    getLibraryResourceFn = { resourceId, onResult ->
+                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            val result = voicesRepository.getLibraryResource(resourceId)
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        }
+                        return@VoicesAdapter { job.cancel() }
+                    },
+                    launchCoroutine = { action ->
+                        val job = lifecycleScope.launch { action() }
+                        return@VoicesAdapter { job.cancel() }
+                    },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository
                 )
@@ -179,7 +215,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
     }
 
-    override fun getCurrentImageList(): RealmList<String> {
+    override fun getCurrentImageList(): List<String> {
         return imageList
     }
 

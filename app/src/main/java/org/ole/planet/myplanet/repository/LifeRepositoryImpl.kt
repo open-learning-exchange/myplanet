@@ -17,9 +17,14 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) :
 
     override suspend fun updateMyLifeListOrder(list: List<RealmMyLife>) {
         executeTransaction { realm ->
-            list.forEachIndexed { index, myLife ->
-                val realmMyLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLife._id).findFirst()
-                realmMyLife?.weight = index
+            val ids = list.mapNotNull { it._id }.toTypedArray()
+            if (ids.isEmpty()) return@executeTransaction
+            val managedLives = realm.where(RealmMyLife::class.java).`in`("_id", ids).findAll()
+            managedLives.forEach { managedLife ->
+                val index = list.indexOfFirst { it._id == managedLife._id }
+                if (index != -1) {
+                    managedLife.weight = index
+                }
             }
         }
     }
@@ -35,15 +40,17 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) :
             val existing = realm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
             if (existing.isEmpty()) {
                 var weight = 1
-                for (item in items) {
-                    val ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
+                val newItems = items.map { item ->
+                    RealmMyLife().apply {
+                        _id = UUID.randomUUID().toString()
+                        title = item.title
+                        imageId = item.imageId
+                        this.weight = weight++
+                        this.userId = item.userId
+                        isVisible = true
+                    }
                 }
+                realm.insertOrUpdate(newItems)
             }
         }
     }

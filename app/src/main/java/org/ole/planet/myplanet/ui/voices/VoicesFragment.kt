@@ -23,12 +23,13 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -52,10 +53,6 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -173,8 +170,8 @@ class VoicesFragment : BaseVoicesFragment() {
         if (defaultUserIdentifier.isNotEmpty() && defaultUserIdentifier != "@") {
             return defaultUserIdentifier
         }
-        val planetCode = settings.getString("planetCode", "") ?: ""
-        val parentCode = settings.getString("parentCode", "") ?: ""
+        val planetCode = sharedPrefManager.getPlanetCode()
+        val parentCode = sharedPrefManager.getParentCode()
         return "$planetCode@$parentCode"
     }
 
@@ -196,9 +193,7 @@ class VoicesFragment : BaseVoicesFragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 if (resourceIds.isNotEmpty()) {
                     val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                    if (resourcesRepository.downloadResources(libraries)) {
-                        showProgressDialog()
-                    }
+                    resourcesRepository.downloadResources(libraries)
                 }
             }
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
@@ -218,15 +213,55 @@ class VoicesFragment : BaseVoicesFragment() {
                 teamName = "",
                 teamId = null,
                 userSessionManager = userSessionManager,
-                scope = viewLifecycleOwner.lifecycleScope,
-                isTeamLeaderFn = { false },
-                getUserFn = { userId -> userRepository.getUserById(userId) },
-                getReplyCountFn = { newsId -> voicesRepository.getReplyCount(newsId) },
-                deletePostFn = { newsId -> voicesRepository.deletePost(newsId, "") },
-                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
-                    voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                isTeamLeaderFn = { onResult ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch {
+                        onResult(false)
+                    }
+                    return@VoicesAdapter { job.cancel() }
                 },
-                getLibraryResourceFn = { resourceId -> voicesRepository.getLibraryResource(resourceId) },
+                getUserFn = { userId, onResult ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val result = userRepository.getUserById(userId)
+                        withContext(Dispatchers.Main) { onResult(result) }
+                    }
+                    return@VoicesAdapter { job.cancel() }
+                },
+                getReplyCountFn = { newsId, onResult ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            val result = voicesRepository.getReplyCount(newsId)
+                            withContext(Dispatchers.Main) { onResult(result) }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                    return@VoicesAdapter { job.cancel() }
+                },
+                deletePostFn = { newsId, onComplete ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        voicesRepository.deletePost(newsId, "")
+                        withContext(Dispatchers.Main) { onComplete() }
+                    }
+                    return@VoicesAdapter { job.cancel() }
+                },
+                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                        withContext(Dispatchers.Main) { onResult(result) }
+                    }
+                    return@VoicesAdapter { job.cancel() }
+                },
+                getLibraryResourceFn = { resourceId, onResult ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        val result = voicesRepository.getLibraryResource(resourceId)
+                        withContext(Dispatchers.Main) { onResult(result) }
+                    }
+                    return@VoicesAdapter { job.cancel() }
+                },
+                launchCoroutine = { action ->
+                    val job = viewLifecycleOwner.lifecycleScope.launch { action() }
+                    return@VoicesAdapter { job.cancel() }
+                },
                 labelManager = labelManager,
                 voicesRepository = voicesRepository
             )

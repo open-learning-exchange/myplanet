@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.community
 
-import android.content.Context.MODE_PRIVATE
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,14 +9,20 @@ import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.services.SharedPrefManager
 
+@AndroidEntryPoint
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
+
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -77,17 +82,16 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         binding.llActionButtons.visibility = View.GONE
-        val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val sParentcode = settings.getString("parentCode", "")
-        val communityName = settings.getString("communityName", "")
-        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, settings)
+        val sParentcode = sharedPrefManager.getParentCode()
+        val communityName = sharedPrefManager.getCommunityName()
+        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, sharedPrefManager)
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
             tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
         binding.title.text = communityName
         binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         binding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        binding.subtitle.text = settings.getString("planetType", "")
+        binding.subtitle.text = sharedPrefManager.getRawString("planetType")
         binding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
     }
 

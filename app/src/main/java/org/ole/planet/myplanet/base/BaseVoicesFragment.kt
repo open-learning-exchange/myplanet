@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
-import io.realm.RealmList
 import java.io.File
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -46,8 +45,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
-    lateinit var imageList: RealmList<String>
-    lateinit var videoList: RealmList<String>
+    lateinit var imageList: MutableList<String>
+    lateinit var videoList: MutableList<String>
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
@@ -61,8 +60,8 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        imageList = RealmList()
-        videoList = RealmList()
+        imageList = mutableListOf()
+        videoList = mutableListOf()
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
@@ -182,11 +181,11 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         openVideoLauncher.launch(openFolderIntent)
     }
 
-    override fun getCurrentImageList(): RealmList<String>? {
+    override fun getCurrentImageList(): List<String>? {
         return if (::imageList.isInitialized) imageList else null
     }
 
-    override fun getCurrentVideoList(): RealmList<String>? {
+    override fun getCurrentVideoList(): List<String>? {
         return if (::videoList.isInitialized) videoList else null
     }
 

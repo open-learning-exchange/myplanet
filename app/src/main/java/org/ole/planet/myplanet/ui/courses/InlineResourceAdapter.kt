@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.graphics.createBitmap
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -18,15 +19,26 @@ import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private var resources: List<RealmMyLibrary>,
     private val onResourceClick: (RealmMyLibrary) -> Unit
-) : RecyclerView.Adapter<InlineResourceAdapter.ViewHolder>() {
+) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
+    DiffUtils.itemCallback<RealmMyLibrary>(
+        areItemsTheSame = { old, new -> old.id == new.id },
+        areContentsTheSame = { old, new ->
+            old._rev == new._rev &&
+                old.downloadedRev == new.downloadedRev &&
+                old.resourceLocalAddress == new.resourceLocalAddress &&
+                old.title == new.title &&
+                old.isResourceOffline() == new.isResourceOffline()
+        }
+    )
+) {
 
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -38,7 +50,7 @@ class InlineResourceAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val resource = resources[position]
+        val resource = getItem(position)
         val context = holder.itemView.context
         val binding = holder.binding
 
@@ -199,10 +211,4 @@ class InlineResourceAdapter(
         }
     }
 
-    override fun getItemCount(): Int = resources.size
-
-    fun updateResources(newResources: List<RealmMyLibrary>) {
-        resources = newResources
-        notifyDataSetChanged()
-    }
 }

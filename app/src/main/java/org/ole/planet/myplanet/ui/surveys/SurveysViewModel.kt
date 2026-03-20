@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.surveys
 
-import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,20 +12,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+
+private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val syncManager: SyncManager,
     private val userSessionManager: UserSessionManager,
-    @DefaultPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper
 ) : ViewModel() {
 
@@ -142,6 +143,7 @@ class SurveysViewModel @Inject constructor(
 
     private fun filter(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<RealmStepExam>()
         val containsQuery = mutableListOf<RealmStepExam>()
@@ -150,7 +152,7 @@ class SurveysViewModel @Inject constructor(
             val title = item.name?.let { normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
-            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
                 containsQuery.add(item)
             }
         }
@@ -159,12 +161,12 @@ class SurveysViewModel @Inject constructor(
 
     private fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(DIACRITICS_REGEX, "")
     }
 
     fun startExamSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        val isExamsSynced = settings.getBoolean("isExamsSynced", false)
+        val isFastSync = sharedPrefManager.getFastSync()
+        val isExamsSynced = sharedPrefManager.isExamsSynced()
 
         if (isFastSync && !isExamsSynced) {
             checkServerAndStartSync()
@@ -172,11 +174,11 @@ class SurveysViewModel @Inject constructor(
     }
 
     private fun checkServerAndStartSync() {
-        val serverUrl = settings.getString("serverURL", "") ?: ""
+        val serverUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewModelScope.launch {
-            serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
                 MainApplication.isServerReachable(url)
             }
             startSyncManager()
@@ -190,7 +192,7 @@ class SurveysViewModel @Inject constructor(
             }
 
             override fun onSyncComplete() {
-                settings.edit().putBoolean("isExamsSynced", true).apply()
+                sharedPrefManager.setExamsSynced(true)
                 _isLoading.value = false
                 loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
             }

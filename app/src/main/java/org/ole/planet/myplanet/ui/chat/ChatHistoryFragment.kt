@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
@@ -12,6 +11,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
@@ -53,15 +52,13 @@ private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C
 class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
-    private lateinit var sharedViewModel: ChatViewModel
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     var user: RealmUser? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
     @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private var sharedNewsMessages: List<RealmNews> = emptyList()
@@ -84,12 +81,10 @@ class ChatHistoryFragment : Fragment() {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = sharedPrefManager.getServerUrl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
-        prefManager = SharedPrefManager(requireContext())
         startChatHistorySync()
     }
 
@@ -188,8 +183,8 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun startChatHistorySync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isChatHistorySynced()) {
+        val isFastSync = sharedPrefManager.getFastSync()
+        if (isFastSync && !sharedPrefManager.isChatHistorySynced()) {
             checkServerAndStartSync()
         }
     }
@@ -223,7 +218,7 @@ class ChatHistoryFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-                            prefManager.setChatHistorySynced(true)
+                            sharedPrefManager.setChatHistorySynced(true)
 
                             refreshChatHistory()
                         }
@@ -248,7 +243,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }
@@ -258,12 +253,12 @@ class ChatHistoryFragment : Fragment() {
             val cachedUser = user
             val cachedTargets = memoizedShareTargets
 
-            val currentUser = cachedUser ?: loadCurrentUser(settings.getString("userId", ""))
-            val newsMessages = chatRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
+            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
             val targets = cachedTargets ?: loadShareTargets(
-                settings.getString("parentCode", ""),
-                settings.getString("communityName", "")
+                sharedPrefManager.getParentCode(),
+                sharedPrefManager.getCommunityName()
             )
 
             user = currentUser
@@ -278,9 +273,23 @@ class ChatHistoryFragment : Fragment() {
                     chatHistory,
                     currentUser,
                     sharedNewsMessages,
-                    shareTargets,
-                    ::shareChat,
-                )
+                    shareTargets
+                ) { map, chat ->
+                    if (!isAdded || _binding == null) {
+                        return@ChatHistoryAdapter
+                    }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val currentUser = user
+                        val createdNews = voicesRepository.createNews(map, currentUser, null)
+                        if (currentUser?.planetCode != null) {
+                            sharedNewsMessages = sharedNewsMessages + createdNews
+                        }
+                        (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
+                            adapter.updateCachedData(currentUser, sharedNewsMessages)
+                            adapter.notifyChatShared(chat._id)
+                        }
+                    }
+                }
                 newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -315,32 +324,15 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamsRepository.getShareableTeams()
-        val enterprises = teamsRepository.getShareableEnterprises()
+        val teams = teamsRepository.getTeamSummaries()
+        val enterprises = teamsRepository.getShareableEnterpriseSummaries()
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
             null
         }
-        val community = communityId?.let { teamsRepository.getTeamById(it) }
+        val community = communityId?.let { teamsRepository.getTeamSummaryById(it) }
         return ChatShareTargets(community, teams, enterprises)
-    }
-
-    private fun shareChat(map: HashMap<String?, String>, chatHistory: RealmChatHistory) {
-        if (!isAdded || _binding == null) {
-            return
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = user
-            val createdNews = voicesRepository.createNews(map, currentUser, null)
-            if (currentUser?.planetCode != null) {
-                sharedNewsMessages = sharedNewsMessages + createdNews
-            }
-            (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
-                adapter.notifyChatShared(chatHistory._id)
-            }
-        }
     }
 
     private fun checkAiProvidersIfNeeded() {

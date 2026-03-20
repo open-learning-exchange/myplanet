@@ -7,8 +7,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.viewpager.widget.ViewPager
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
 import org.ole.planet.myplanet.model.OnboardingItem
@@ -16,17 +17,18 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utils.SecurePrefs
 
+@AndroidEntryPoint
 class OnboardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnboardingBinding
     private lateinit var mAdapter: OnboardingAdapter
     private val onBoardItems = ArrayList<OnboardingItem>()
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
+    @Inject
     lateinit var prefData: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,16 +36,14 @@ class OnboardingActivity : AppCompatActivity() {
         binding = ActivityOnboardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
-        prefData = SharedPrefManager(this)
 
         copyAssets(this)
-        val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val savedUser = SecurePrefs.getUserName(this, settings)
-        val savedPass = SecurePrefs.getPassword(this, settings)
-        if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !settings.getBoolean(Constants.KEY_LOGIN, false)) {
-            settings.edit { putBoolean(Constants.KEY_LOGIN, true) }
+        val savedUser = SecurePrefs.getUserName(this, prefData.rawPreferences)
+        val savedPass = SecurePrefs.getPassword(this, prefData.rawPreferences)
+        if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !prefData.isLoggedIn()) {
+            prefData.setLoggedIn(true)
         }
-        if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
+        if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
             val dashboard = Intent(applicationContext, DashboardActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 .putExtra("from_login", true)

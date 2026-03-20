@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -84,7 +83,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            mRealm = databaseService.createManagedRealmInstance()
+            requireRealmInstance()
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -92,7 +91,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 resources?.let { showDownloadDialog(it) }
             } else if (isMyCourseLib && courseLib == null && !isSurvey) {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = settings.getString("userId", "--")
+                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                     val libraryList = resourcesRepository.getLibraryListForUser(userId)
                     showDownloadDialog(libraryList)
                 }
@@ -105,7 +104,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    deleteSelected(false)
+                }
+            }
         }
     }
 
@@ -141,18 +144,26 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             var libraryAdded = false
             var courseAdded = false
+            var errorOccurred: Throwable? = null
 
-            val result = runCatching {
-                if (resourceIds.isNotEmpty()) {
-                    resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+            if (resourceIds.isNotEmpty()) {
+                val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                libraryResult.onSuccess {
                     libraryAdded = true
+                }.onFailure {
+                    errorOccurred = it
                 }
+            }
 
-                if (courseIds.isNotEmpty()) {
-                    courseIds.forEach { courseId ->
-                        if (coursesRepository.markCourseAdded(courseId, userId)) {
+            if (courseIds.isNotEmpty()) {
+                courseIds.forEach { courseId ->
+                    val courseResult = coursesRepository.markCourseAdded(courseId, userId)
+                    courseResult.onSuccess { added ->
+                        if (added) {
                             courseAdded = true
                         }
+                    }.onFailure {
+                        errorOccurred = it
                     }
                 }
             }
@@ -162,15 +173,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            if (!mRealm.isClosed) {
-                mRealm.refresh()
+            if (!requireRealmInstance().isClosed) {
+                requireRealmInstance().refresh()
             }
 
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
             showNoData(tvMessage, newAdapter.itemCount, "")
 
-            result.exceptionOrNull()?.let {
+            errorOccurred?.let {
                 it.printStackTrace()
                 toast(activity, "An error occurred: ${it.message}")
                 return@launch
@@ -194,24 +205,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEach { item ->
-            try {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-                val `object` = item as RealmObject
-                deleteCourseProgress(deleteProgress, `object`)
-                removeFromShelf(`object`)
-                if (mRealm.isInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
+    open suspend fun deleteSelected(deleteProgress: Boolean) {
+        selectedItems?.forEachIndexed { _, item ->
+            val `object` = item as RealmObject
+            deleteCourseProgress(deleteProgress, `object`)
+            removeFromShelf(`object`)
         }
         selectedItems?.clear()
     }
@@ -220,82 +218,44 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
-        }
-    }
-
-    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
-        for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
-                .equalTo("linkId", course?.courseId).count()
-            if (count > 0 && !courses.contains(course)) {
-                course?.let { courses.add(it) }
-            }
-        }
-    }
-
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        val query = mRealm.where(c)
-        if (c == RealmMyLibrary::class.java) {
-            query.equalTo("isPrivate", false)
-        }
-        if (s.isEmpty()) return query.findAll()
-
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val data: RealmResults<LI> = query.findAll()
-        val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<LI>()
-        val containsQuery = mutableListOf<LI>()
-
-        for (item in data) {
-            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
-
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(item)
-            }
-        }
-        return startsWithQuery + containsQuery
-    }
-
-    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
-        return when {
-            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-            else -> (item as RealmMyCourse).courseTitle
+            coursesRepository.deleteCourseProgress(`object`.courseId)
         }
     }
 
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(DIACRITICS_REGEX, "")
     }
 
-    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
+    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
+            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
         }
-        var list = getData(s, RealmMyCourse::class.java)
+        var list = coursesRepository.search(s)
         list = if (isMyCourseLib) {
             coursesRepository.getMyCourses(model?.id, list)
         } else {
-            getAllCourses(model?.id, list)
+            RealmMyCourse.getAllCourses(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list
         }
+
+        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
+        val linkedCourseIds = requireRealmInstance().where(RealmTag::class.java)
+            .equalTo("db", "courses")
+            .`in`("tagId", tagIds)
+            .findAll()
+            .mapNotNull { it.linkId }
+            .toSet()
+
         val courses = RealmList<RealmMyCourse>()
         list.forEach { course ->
-            checkAndAddToList(course, courses, tags)
+            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
+                courses.add(course)
+            }
         }
         return applyCourseFilter(courses)
     }
@@ -342,20 +302,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun cleanupRealm() {
         if (isRealmInitialized()) {
             try {
-                mRealm.removeAllChangeListeners()
+                requireRealmInstance().removeAllChangeListeners()
 
-                if (mRealm.isInTransaction) {
+                if (requireRealmInstance().isInTransaction) {
                     try {
-                        mRealm.commitTransaction()
-                    } catch (e: Exception) {
-                        mRealm.cancelTransaction()
+                        requireRealmInstance().commitTransaction()
+                    } catch (_: Exception) {
+                        requireRealmInstance().cancelTransaction()
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
+                if (!requireRealmInstance().isClosed) {
+                    requireRealmInstance().close()
                 }
             }
         }
@@ -375,6 +335,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,

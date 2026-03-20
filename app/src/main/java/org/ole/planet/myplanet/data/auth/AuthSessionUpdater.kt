@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.auth
 
-import android.content.SharedPreferences
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -15,14 +14,16 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class AuthSessionUpdater @AssistedInject constructor(
     @Assisted private val callback: AuthCallback,
-    @param:AppPreferences private val settings: SharedPreferences,
-    @param:ApplicationScope private val scope: CoroutineScope
+    private val sharedPrefManager: SharedPrefManager,
+    @param:ApplicationScope private val scope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     interface AuthCallback {
@@ -45,7 +46,7 @@ class AuthSessionUpdater @AssistedInject constructor(
         job?.cancel()
         job = scope.launch {
             while (isActive) {
-                sendPost(settings)
+                sendPost()
                 delay(15 * 60 * 1000L)
             }
         }
@@ -58,9 +59,9 @@ class AuthSessionUpdater @AssistedInject constructor(
     // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
     // It creates a session of about 20 mins after which a new AuthSession Token will be needed.
     // During these 20 mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
-    private suspend fun sendPost(settings: SharedPreferences) {
+    private suspend fun sendPost() {
         try {
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 val conn = getSessionUrl()?.openConnection() as HttpURLConnection
                 conn.requestMethod = "GET"
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -69,7 +70,7 @@ class AuthSessionUpdater @AssistedInject constructor(
                 conn.doInput = true
 
                 val os = DataOutputStream(conn.outputStream)
-                os.writeBytes(getJsonObject(settings).toString())
+                os.writeBytes(getJsonObject().toString())
 
                 os.flush()
                 os.close()
@@ -83,11 +84,11 @@ class AuthSessionUpdater @AssistedInject constructor(
         }
     }
 
-    private fun getJsonObject(settings: SharedPreferences): JSONObject? {
+    private fun getJsonObject(): JSONObject? {
         return try {
             val jsonParam = JSONObject()
-            jsonParam.put("name", settings.getString("url_user", ""))
-            jsonParam.put("password", settings.getString("url_pwd", ""))
+            jsonParam.put("name", sharedPrefManager.getUrlUser())
+            jsonParam.put("password", sharedPrefManager.getUrlPwd())
             jsonParam
         } catch (e: Exception) {
             e.printStackTrace()

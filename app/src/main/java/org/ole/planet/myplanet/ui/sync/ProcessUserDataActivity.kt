@@ -36,11 +36,11 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -48,14 +48,14 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
-    @AppPreferences
-    lateinit var appPreferences: SharedPreferences
-    
+    lateinit var prefData: SharedPrefManager
+
     @Inject
     lateinit var uploadManager: UploadManager
 
@@ -143,8 +143,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun setUrlParts(url: String, password: String): String {
-
-        val editor = settings.edit()
         val uri = url.toUri()
 
         var couchdbURL: String
@@ -165,14 +163,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        editor.putString("serverPin", password)
-        saveUrlScheme(editor, uri, url, couchdbURL)
-        editor.putString("url_user", urlUser)
-        editor.putString("url_pwd", urlPwd)
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.apply()
-
+        prefData.setServerPin(password)
+        prefData.setUrlScheme(uri.scheme ?: "")
+        prefData.setUrlHost(uri.host ?: "")
+        prefData.setUrlPort(if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
+        prefData.setServerUrl(url)
+        prefData.setCouchdbUrl(couchdbURL)
+        prefData.setUrlUser(urlUser)
+        prefData.setUrlPwd(urlPwd)
 
         if (!couchdbURL.endsWith("db")) {
             couchdbURL += "/db"
@@ -307,16 +305,18 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+        SecurePrefs.saveCredentials(this, settings, user?.name, password)
         this.settings = settings
-        settings.edit {
-            putString("userId", user?.id)
-            putString("name", user?.name)
-            putString("password", password)
+        prefData.setUserId(user?.id ?: "")
+        prefData.setUserName(user?.name ?: "")
+        prefData.rawPreferences.edit().apply {
+            remove("password")
             putString("firstName", user?.firstName)
             putString("lastName", user?.lastName)
             putString("middleName", user?.middleName)
             user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
             putLong("lastLogin", System.currentTimeMillis())
+            apply()
         }
     }
 
@@ -340,14 +340,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             }
             return ar
         }
-    }
-
-    private fun saveUrlScheme(editor: SharedPreferences.Editor, uri: Uri, url: String?, couchdbURL: String?) {
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
-        editor.putString("serverURL", url)
-        editor.putString("couchdbURL", couchdbURL)
     }
 
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {

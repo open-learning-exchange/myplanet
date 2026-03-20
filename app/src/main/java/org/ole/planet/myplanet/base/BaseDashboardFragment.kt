@@ -269,7 +269,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val user = profileDbHandler.getUserModel()
-        val userId = settings.getString("userId", "--")
+        val userId = prefData.getUserId().ifEmpty { "--" }
 
         val allForUser = lifeRepository.getMyLifeByUserId(userId)
         var visibleItems = allForUser.filter { it.isVisible }
@@ -327,7 +327,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
 
-        val userId = settings.getString("userId", "--")
+        val userId = prefData.getUserId().ifEmpty { "--" }
         viewModel.loadUserContent(userId)
         observeUiState()
 
@@ -343,7 +343,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     override fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = settings.getString("userId", "--")
+            val userId = prefData.getUserId().ifEmpty { "--" }
             val libraryList = viewModel.getLibraryListForUser(userId)
             showDownloadDialog(libraryList)
         }
@@ -400,9 +400,9 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     override fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
-            transactionSyncManager.syncAllHealthData(settings, this)
+            transactionSyncManager.syncAllHealthData(prefData.rawPreferences, this)
         } else {
-            transactionSyncManager.syncKeyIv(settings, this, profileDbHandler)
+            transactionSyncManager.syncKeyIv(prefData.rawPreferences, this, profileDbHandler)
         }
     }
 

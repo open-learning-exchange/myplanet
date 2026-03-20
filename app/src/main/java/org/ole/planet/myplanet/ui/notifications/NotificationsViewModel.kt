@@ -9,6 +9,7 @@ import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
@@ -25,13 +26,50 @@ class NotificationsViewModel @Inject constructor(
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications: StateFlow<List<Notification>> = _notifications
 
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount
+
     private var currentFilter: String = "all"
 
-    fun loadNotifications(userId: String, filter: String) {
+    fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
         viewModelScope.launch {
-            val realmNotifications = notificationsRepository.getNotifications(userId, filter)
+            val realmNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
             _notifications.value = realmNotifications.map { formatNotification(it) }
+            _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
+        }
+    }
+
+    companion object {
+        private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+
+        internal fun parseTaskDate(message: String): Pair<String, String>? {
+            val matcher = TASK_DATE_PATTERN.matcher(message)
+            return if (matcher.find()) {
+                val taskTitle = message.substring(0, matcher.start()).trim()
+                val dateValue = message.substring(matcher.start()).trim()
+                Pair(taskTitle, dateValue)
+            } else {
+                null
+            }
+        }
+
+        internal fun formatStorageNotification(message: String, storageRunningLowStr: String, storageAvailableStr: String): String {
+            val storageValue = message.replace("%", "").toIntOrNull()
+            return storageValue?.let {
+                when {
+                    it <= 10 -> "$storageRunningLowStr ${it}%"
+                    it <= 40 -> "$storageRunningLowStr ${it}%"
+                    else -> "$storageAvailableStr ${it}%"
+                }
+            } ?: message
+        }
+
+        internal fun formatJoinRequestNotification(
+            prefixStr: String,
+            userRequestedToJoinTeamStr: String
+        ): String {
+            return "<b>$prefixStr</b> $userRequestedToJoinTeamStr"
         }
     }
 
@@ -39,12 +77,9 @@ class NotificationsViewModel @Inject constructor(
         val formattedText = when (notification.type.lowercase()) {
             "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
             "task" -> {
-                val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
-                val matcher = datePattern.matcher(notification.message)
-                if (matcher.find()) {
-                    val taskTitle = notification.message.substring(0, matcher.start()).trim()
-                    val dateValue = notification.message.substring(matcher.start()).trim()
-                    formatTaskNotification(taskTitle, dateValue)
+                val parsedDate = parseTaskDate(notification.message)
+                if (parsedDate != null) {
+                    formatTaskNotification(parsedDate.first, parsedDate.second)
                 } else {
                     notification.message
                 }
@@ -55,19 +90,19 @@ class NotificationsViewModel @Inject constructor(
                 } ?: notification.message
             }
             "storage" -> {
-                val storageValue = notification.message.replace("%", "").toIntOrNull()
-                storageValue?.let {
-                    when {
-                        it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
-                        it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
-                        else -> context.getString(R.string.storage_available) + " ${it}%"
-                    }
-                } ?: notification.message
+                formatStorageNotification(
+                    notification.message,
+                    context.getString(R.string.storage_running_low),
+                    context.getString(R.string.storage_available)
+                )
             }
             "join_request" -> {
                 val (requesterName, teamName) = notificationsRepository.getJoinRequestDetails(notification.relatedId)
-                "<b>${context.getString(R.string.join_request_prefix)}</b> " +
-                        context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                val userRequestedStr = context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                formatJoinRequestNotification(
+                    context.getString(R.string.join_request_prefix),
+                    userRequestedStr
+                )
             }
             else -> notification.message
         }
@@ -89,17 +124,48 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun markAsRead(notificationId: String, userId: String) {
+    fun markAsRead(notificationId: String) {
         viewModelScope.launch {
-            notificationsRepository.markNotificationsAsRead(setOf(notificationId))
-            loadNotifications(userId, currentFilter)
+            val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
+            if (markedIds.contains(notificationId)) {
+                var wasUnread = false
+                _notifications.update { currentList ->
+                    val targetNotification = currentList.find { it.id == notificationId }
+                    if (targetNotification != null && !targetNotification.isRead) {
+                        wasUnread = true
+                        if (currentFilter == "unread") {
+                            currentList.filter { it.id != notificationId }
+                        } else {
+                            currentList.map {
+                                if (it.id == notificationId) it.copy(isRead = true) else it
+                            }
+                        }
+                    } else {
+                        currentList
+                    }
+                }
+                if (wasUnread && _unreadCount.value > 0) {
+                    _unreadCount.value -= 1
+                }
+            }
         }
     }
 
     fun markAllAsRead(userId: String) {
         viewModelScope.launch {
-            notificationsRepository.markAllUnreadAsRead(userId)
-            loadNotifications(userId, currentFilter)
+            val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
+            if (markedIds.isNotEmpty()) {
+                _notifications.update { currentList ->
+                    if (currentFilter == "unread") {
+                        currentList.filterNot { it.id in markedIds }
+                    } else {
+                        currentList.map {
+                            if (it.id in markedIds && !it.isRead) it.copy(isRead = true) else it
+                        }
+                    }
+                }
+                _unreadCount.value = 0
+            }
         }
     }
 

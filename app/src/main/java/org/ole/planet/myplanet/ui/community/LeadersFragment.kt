@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.community
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,15 +10,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
 class LeadersFragment : Fragment() {
     private var binding: FragmentMembersBinding? = null
     @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
+    lateinit var sharedPrefManager: SharedPrefManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentMembersBinding.inflate(inflater, container, false)
@@ -28,8 +26,8 @@ class LeadersFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val leaders = settings.getString("communityLeaders", "")
-        if (leaders.isNullOrEmpty()) {
+        val leaders = sharedPrefManager.getCommunityLeaders()
+        if (leaders.isEmpty()) {
             binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
         } else {
             val leadersList = RealmUser.parseLeadersJson(leaders)

@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.utils
 
-import android.content.Context
 import android.util.Log
 import androidx.core.net.toUri
+import dagger.hilt.android.EntryPointAccessors
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -10,11 +10,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 object SyncTimeLogger {
     private val processTimes = ConcurrentHashMap<String, Long>()
@@ -74,10 +73,10 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             MainApplication.createLog("sync summary", summary)
-            val updateUrl = "${settings.getString("serverURL", "")}"
+            val updateUrl = spm.getServerUrl()
             val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, ServerUrlMapperEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
@@ -89,15 +88,15 @@ object SyncTimeLogger {
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-
+                    val prefs = spm.rawPreferences
+                    val editor = prefs.edit()
 
                     serverUrlMapper.updateUrlPreferences(
                         editor,
                         uri,
                         alternativeUrl,
                         mapping.primaryUrl,
-                        settings
+                        prefs
                     )
                 }
             }

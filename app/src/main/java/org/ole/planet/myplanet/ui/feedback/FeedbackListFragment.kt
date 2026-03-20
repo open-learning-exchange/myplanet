@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.feedback
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -24,7 +23,6 @@ import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -38,19 +36,17 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    lateinit var prefManager: SharedPrefManager
     private val viewModel: FeedbackListViewModel by viewModels()
 
     @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
     @Inject
     lateinit var syncManager: SyncManager
     private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+        get() = sharedPrefManager.getServerUrl()
 
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
@@ -58,8 +54,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
-
         startFeedbackSync()
     }
 
@@ -101,8 +95,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun startFeedbackSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isFeedbackSynced()) {
+        val isFastSync = sharedPrefManager.getFastSync()
+        if (isFastSync && !sharedPrefManager.isFeedbackSynced()) {
             checkServerAndStartSync()
         }
     }
@@ -136,7 +130,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshFeedbackListData()
-                        prefManager.setFeedbackSynced(true)
+                        sharedPrefManager.setFeedbackSynced(true)
                     }
                 }
             }
@@ -156,7 +150,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
             isServerReachable(url)
         }
     }

@@ -24,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
@@ -52,6 +53,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var hasInstallPermissionValue = false
     private var currentLibrary: RealmMyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
+    @Inject
     lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
@@ -68,7 +70,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
             }
         }
-        prefData = SharedPrefManager(requireContext())
     }
 
     fun setRatings(`object`: JsonObject?) {
@@ -79,7 +80,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
-            DownloadUtils.openDownloadService(requireContext(), urls, false)
+            DownloadUtils.openPriorityDownloadService(requireContext(), urls)
         }
     }
     fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
@@ -87,7 +88,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             pendingAutoOpenLibrary = libraryToOpen
             shouldAutoOpenAfterDownload = true
         }
+        trackDownloadUrls(urls)
         startDownload(urls)
+        showProgressDialog()
     }
     override fun onDownloadComplete() {
         super.onDownloadComplete()

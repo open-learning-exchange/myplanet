@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -16,7 +13,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -71,7 +68,6 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
-            context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
@@ -124,9 +120,8 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun saveConcatenatedLinksToPrefs() {
-            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            val existingJsonLinks = settings.getString("concatenated_links", null)
+        fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
+            val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
                 JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
             } else {
@@ -142,7 +137,7 @@ open class RealmMyCourse : RealmObject() {
                 }
             }
             val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
-            settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
+            spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
 
@@ -172,8 +167,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyCourse> {
-            val userId = settings?.getString("userId", "--")
+        fun getMyByUserId(mRealm: Realm, userId: String?): RealmResults<RealmMyCourse> {
             return mRealm.where(RealmMyCourse::class.java)
                 .equalTo("userId", userId)
                 .findAll()
@@ -181,13 +175,7 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
-            val libraries: MutableList<RealmMyCourse> = ArrayList()
-            for (item in libs ?: emptyList()) {
-                if (item.userId?.contains(userId) == true) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
+            return libs?.filter { it.userId?.contains(userId) == true } ?: emptyList()
         }
 
         @JvmStatic
@@ -209,18 +197,6 @@ open class RealmMyCourse : RealmObject() {
                 }
             }
             return libraries
-        }
-
-        @JvmStatic
-        @Deprecated("Use CoursesRepository.isMyCourse instead")
-        fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean {
-            return getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findAll()).isNotEmpty()
-        }
-
-        @JvmStatic
-        @Deprecated("Use CoursesRepository.getCourseByCourseId instead")
-        fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
-            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         }
 
         @JvmStatic
@@ -267,17 +243,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        @Deprecated("Use CoursesRepository.getMyCourseIds instead")
-        fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
-            val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
-            val ids = JsonArray()
-            for (lib in myCourses) {
-                ids.add(lib.courseId)
-            }
-            return ids
-        }
-
-        @JvmStatic
         fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
@@ -292,6 +257,11 @@ open class RealmMyCourse : RealmObject() {
             obj.addProperty("memberLimit", course.memberLimit)
 
             val stepsArray = JsonArray()
+            val allResourcesForCourse = realm.where(RealmMyLibrary::class.java)
+                .equalTo("courseId", course.courseId)
+                .findAll()
+            val resourcesByStepId = allResourcesForCourse.groupBy { it.stepId }
+
             course.courseSteps?.forEach { step ->
                 val stepObj = JsonObject()
                 stepObj.addProperty("stepTitle", step.stepTitle)
@@ -299,10 +269,7 @@ open class RealmMyCourse : RealmObject() {
                 stepObj.addProperty("id", step.id)
 
                 val resourcesArray = JsonArray()
-                val stepResources = realm.where(RealmMyLibrary::class.java)
-                    .equalTo("stepId", step.id)
-                    .equalTo("courseId", course.courseId)
-                    .findAll()
+                val stepResources = resourcesByStepId[step.id] ?: emptyList()
 
                 stepResources.forEach { resource ->
                     resourcesArray.add(resource.serializeResource())

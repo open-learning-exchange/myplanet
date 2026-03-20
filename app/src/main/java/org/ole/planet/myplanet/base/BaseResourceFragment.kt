@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -17,19 +16,19 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -41,8 +40,10 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -56,8 +57,7 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    protected lateinit var mRealm: Realm
-    var editor: SharedPreferences.Editor? = null
+    private lateinit var mRealm: Realm
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -70,21 +70,21 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
+    lateinit var surveysRepository: SurveysRepository
+    @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
+    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
     private var stayOnlineDialog: AlertDialog? = null
-    private var broadcastJob: Job? = null
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
@@ -105,6 +105,7 @@ abstract class BaseResourceFragment : Fragment() {
     internal fun showProgressDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             if (isFragmentActive()) {
+                prgDialog.setIndeterminateMode(true)
                 prgDialog.show()
             }
         }
@@ -145,7 +146,7 @@ abstract class BaseResourceFragment : Fragment() {
                         val panelIntent = Intent(Settings.Panel.ACTION_WIFI)
                         try {
                             startActivity(panelIntent)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) {
                             startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
                         }
                     } else {
@@ -161,6 +162,13 @@ abstract class BaseResourceFragment : Fragment() {
             stayOnlineDialog?.show()
         }
     }
+    private val pendingDownloadUrls = mutableSetOf<String>()
+
+    protected fun trackDownloadUrls(urls: Collection<String>) {
+        pendingDownloadUrls.clear()
+        pendingDownloadUrls.addAll(urls)
+    }
+
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -171,8 +179,17 @@ abstract class BaseResourceFragment : Fragment() {
                     intent.getParcelableExtra("download")
                 }
                 if (download?.failed == false) {
-                    setProgress(download)
+                    if (pendingDownloadUrls.isNotEmpty()) {
+                        val fileUrl = download.fileUrl
+                        if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
+                            if (download.progress == 100) {
+                                pendingDownloadUrls.remove(fileUrl)
+                            }
+                            setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
+                        }
+                    }
                 } else {
+                    pendingDownloadUrls.clear()
                     prgDialog.dismiss()
                     download?.message?.let { showError(prgDialog, it) }
                 }
@@ -182,9 +199,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        val librariesForDialog = dbMyLibrary
-
-        if (librariesForDialog.isEmpty()) {
+        if (dbMyLibrary.isEmpty()) {
             return
         }
 
@@ -200,9 +215,13 @@ abstract class BaseResourceFragment : Fragment() {
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
                             lv?.selectedItemsList?.let {
-                                addToLibrary(librariesForDialog, it)
-                                val selectedLibraries = it.mapNotNull { index -> librariesForDialog.getOrNull(index) }
-                                if (resourcesRepository.downloadResources(selectedLibraries.filterNotNull())) {
+                                addToLibrary(dbMyLibrary, it)
+                                val selectedLibraries = it.mapNotNull { index ->
+                                    dbMyLibrary.getOrNull(
+                                        index
+                                    ) }
+                                if (resourcesRepository.downloadResources(selectedLibraries)) {
+                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress })
                                     showProgressDialog()
                                 }
                             }
@@ -213,8 +232,10 @@ abstract class BaseResourceFragment : Fragment() {
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(librariesForDialog)
-                            if (resourcesRepository.downloadResources(librariesForDialog.filterNotNull())) {
+                            addAllToLibrary(dbMyLibrary)
+                            val filtered = dbMyLibrary.filterNotNull()
+                            if (resourcesRepository.downloadResources(filtered)) {
+                                trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
                                 showProgressDialog()
                             }
                         } else {
@@ -225,7 +246,7 @@ abstract class BaseResourceFragment : Fragment() {
             downloadSuggestionDialog?.dismiss()
             downloadSuggestionDialog = alertDialogBuilder.create()
             downloadSuggestionDialog?.let { dialog ->
-                createListView(librariesForDialog, dialog)
+                createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
                     downloadSuggestionDialog = null
                 }
@@ -307,22 +328,17 @@ abstract class BaseResourceFragment : Fragment() {
             prgDialog.setTitle(download.fileName)
         }
         if (download.completeAll) {
-            showError(prgDialog, getString(R.string.all_files_downloaded_successfully))
             onDownloadComplete()
         }
     }
 
     open fun onDownloadComplete() {
-        prgDialog.setPositiveButton("Finish", isVisible = true){
-            prgDialog.dismiss()
-        }
-        prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
+        prgDialog.dismiss()
 
-        if (settings.getBoolean("isAlternativeUrl", false)) {
-            editor?.putString("alternativeUrl", "")
-            editor?.putString("processedAlternativeUrl", "")
-            editor?.putBoolean("isAlternativeUrl", false)
-            editor?.apply()
+        if (sharedPrefManager.isAlternativeUrl()) {
+            sharedPrefManager.setAlternativeUrl("")
+            sharedPrefManager.setProcessedAlternativeUrl("")
+            sharedPrefManager.setIsAlternativeUrl(false)
         }
     }
 
@@ -338,15 +354,16 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun registerReceiver() {
-        broadcastJob?.cancel()
-        broadcastJob = lifecycleScope.launch {
-            broadcastService.events.collect { intent ->
-                if (isActive) {
-                    when (intent.action) {
-                        DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
-                        "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
-                        "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
-                        DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (isActive) {
+                        when (intent.action) {
+                            DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
+                            "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
+                            "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
+                            DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
+                        }
                     }
                 }
             }
@@ -354,16 +371,15 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        registerReceiver()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
-        editor = settings.edit()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        broadcastJob?.cancel()
     }
 
     override fun onDetach() {
@@ -396,7 +412,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        registerReceiver()
     }
 
     fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
@@ -411,7 +426,12 @@ abstract class BaseResourceFragment : Fragment() {
                 libraryItems.getOrNull(index)?.resourceId
             }
             resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
+                .onSuccess {
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                }
+                .onFailure {
+                    Utilities.toast(activity, getString(R.string.error, it.message))
+                }
         }
     }
 
@@ -421,7 +441,12 @@ abstract class BaseResourceFragment : Fragment() {
             val userId = user?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
+                .onSuccess {
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                }
+                .onFailure {
+                    Utilities.toast(activity, getString(R.string.error, it.message))
+                }
         }
     }
 
@@ -435,7 +460,6 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null
-        broadcastJob?.cancel()
         super.onDestroyView()
     }
 
@@ -451,7 +475,7 @@ abstract class BaseResourceFragment : Fragment() {
                 if (mRealm.isInTransaction) {
                     try {
                         mRealm.commitTransaction()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         mRealm.cancelTransaction()
                     }
                 }
@@ -467,15 +491,5 @@ abstract class BaseResourceFragment : Fragment() {
 
     companion object {
         var auth = ""
-
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
-        }
     }
 }

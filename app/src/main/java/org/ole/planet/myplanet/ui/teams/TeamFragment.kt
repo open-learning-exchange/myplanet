@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.teams
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -23,10 +22,10 @@ import org.ole.planet.myplanet.callback.OnTeamEditListener
 import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -44,14 +43,11 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
     private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUser? = null
-    private var teamList: List<RealmMyTeam> = emptyList()
+    private var teamList: List<TeamSummary> = emptyList()
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
     private var textWatcher: TextWatcher? = null
@@ -275,25 +271,6 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     }
 
 
-    private fun getList(searchText: String): Pair<List<RealmMyTeam>, Boolean> {
-        val nameFilteredList = teamList.filter {
-            it.name?.contains(searchText, ignoreCase = true) == true
-        }
-
-        val typeFilteredList: List<RealmMyTeam>
-        val newConditionApplied: Boolean
-
-        if (TextUtils.isEmpty(type) || type == "team") {
-            typeFilteredList = nameFilteredList.filter { it.type != "enterprise" }
-            newConditionApplied = false
-        } else {
-            typeFilteredList = nameFilteredList.filter { it.type == "enterprise" }
-            newConditionApplied = true
-        }
-
-        return Pair(typeFilteredList, newConditionApplied)
-    }
-
     private fun setTeamList() {
         viewModel.prepareTeamData(teamList, user?.id)
         listContentDescription(conditionApplied)
@@ -304,20 +281,35 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
             when {
                 fromDashboard -> {
                     user?._id?.let { userId ->
-                        teamsRepository.getMyTeamsFlow(userId).collectLatest {
-                            teamList = it
+                        teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
+                            teamList = list.mapNotNull {
+                                val id = it._id ?: return@mapNotNull null
+                                org.ole.planet.myplanet.model.TeamSummary(
+                                    _id = id,
+                                    name = it.name ?: "",
+                                    teamType = it.teamType,
+                                    teamPlanetCode = it.teamPlanetCode,
+                                    createdDate = it.createdDate,
+                                    type = it.type,
+                                    status = it.status,
+                                    teamId = it.teamId,
+                                    description = it.description,
+                                    services = it.services,
+                                    rules = it.rules
+                                )
+                            }
                             setTeamList()
                         }
                     }
                 }
                 type == "enterprise" -> {
                     conditionApplied = true
-                    teamList = teamsRepository.getShareableEnterprises()
+                    teamList = teamsRepository.getShareableEnterpriseSummaries()
                     setTeamList()
                 }
                 else -> {
                     conditionApplied = false
-                    teamList = teamsRepository.getShareableTeams()
+                    teamList = teamsRepository.getTeamSummaries()
                     setTeamList()
                 }
             }

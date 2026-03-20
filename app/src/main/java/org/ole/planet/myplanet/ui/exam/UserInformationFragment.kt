@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.exam
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -33,12 +32,12 @@ import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.SubmissionUploadExecutor
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -60,6 +59,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var submissionUploadExecutor: SubmissionUploadExecutor
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -310,8 +311,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-            checkAvailableServer(settings)
+            checkAvailableServer()
             val activity = requireActivity()
             if (activity is AppCompatActivity) {
                 FragmentNavigator.popBackStack(activity.supportFragmentManager)
@@ -319,18 +319,18 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
-    private fun checkAvailableServer(settings: SharedPreferences) {
+    private fun checkAvailableServer() {
         Log.d("UserInformationFragment", "checkAvailableServer started, syncStartTime: $syncStartTime")
-        val updateUrl = "${settings.getString("serverURL", "")}"
+        val updateUrl = sharedPrefManager.getServerUrl()
         Log.d("UserInformationFragment", "Server URL: $updateUrl")
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         // Capture syncStartTime before launching coroutine to preserve it across lifecycle changes
         val capturedSyncStartTime = syncStartTime
 
-        // Use GlobalScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
+        // Use ApplicationScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
         submissionUploadExecutor.execute {
-            Log.d("UserInformationFragment", "GlobalScope coroutine started, will not be cancelled by fragment lifecycle")
+            Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
             Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
             val checkStartTime = System.currentTimeMillis()
 
@@ -372,8 +372,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 if (!primaryAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
-                        val editor = settings.edit()
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                        val editor = sharedPrefManager.rawPreferences.edit()
+                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
                     }
                 }
                 uploadSubmissionsWithTiming(capturedSyncStartTime)

@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -12,6 +13,8 @@ import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -63,12 +66,19 @@ open class RealmSubmission : RealmObject() {
 
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
                 val isNewSubmission = sub == null
+                val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+                val serverStatus = JsonUtils.getString("status", submission)
+                val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
+                    (sub?.status == "complete" || sub?.status == "requires grading")
+                val skipOverwrite = hadLocalChanges || isStatusDowngrade
 
                 if (sub == null) {
                     sub = mRealm.createObject(RealmSubmission::class.java, id)
                 }
                 sub?._id = id
-                sub?.status = JsonUtils.getString("status", submission)
+                if (!skipOverwrite) {
+                    sub?.status = serverStatus
+                }
                 sub?._rev = JsonUtils.getString("_rev", submission)
                 sub?.grade = JsonUtils.getLong("grade", submission)
                 sub?.type = JsonUtils.getString("type", submission)
@@ -91,7 +101,9 @@ open class RealmSubmission : RealmObject() {
                     sub.teamObject = teamRef
                 }
 
-                sub.isUpdated = false
+                if (!skipOverwrite) {
+                    sub.isUpdated = false
+                }
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
@@ -111,13 +123,15 @@ open class RealmSubmission : RealmObject() {
                     userId
                 }
 
-                if (submission.has("answers")) {
+                if (!skipOverwrite && submission.has("answers")) {
                     val answersArray = submission.get("answers").asJsonArray
                     sub?.answers = RealmList<RealmAnswer>()
 
+                    val unmanagedAnswers = mutableListOf<RealmAnswer>()
                     for (i in 0 until answersArray.size()) {
                         val answerJson = answersArray[i].asJsonObject
-                        val realmAnswer = mRealm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+                        val realmAnswer = RealmAnswer()
+                        realmAnswer.id = UUID.randomUUID().toString()
 
                         realmAnswer.value = JsonUtils.getString("value", answerJson)
                         realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
@@ -132,7 +146,12 @@ open class RealmSubmission : RealmObject() {
                             "$examIdPart-$i"
                         }
 
-                        sub?.answers?.add(realmAnswer)
+                        unmanagedAnswers.add(realmAnswer)
+                    }
+
+                    if (unmanagedAnswers.isNotEmpty()) {
+                        val managedAnswers = mRealm.copyToRealmOrUpdate(unmanagedAnswers)
+                        sub?.answers?.addAll(managedAnswers)
                     }
                 }
 
@@ -181,9 +200,9 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             `object`.addProperty("sender", sub.sender)
-            val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-            `object`.addProperty("source", prefs.getString("planetCode", ""))
-            `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
+            val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+            `object`.addProperty("source", spm.getPlanetCode())
+            `object`.addProperty("parentCode", spm.getParentCode())
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
             if (exam != null) {
                 `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
@@ -197,35 +216,6 @@ open class RealmSubmission : RealmObject() {
                 `object`.add("user", JsonParser.parseString(sub.user))
             }
             return `object`
-        }
-
-        @JvmStatic
-        fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
-            var submission = sub
-            if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
-                submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            submission!!.lastUpdateTime = Date().time
-            return submission
-        }
-
-        @JvmStatic
-        fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
-            val exams = HashMap<String?, RealmStepExam>()
-            for (sub in submissions ?: emptyList()){
-                var id = sub.parentId
-                if (checkParentId(sub.parentId)) {
-                    id = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
-                }
-                val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-                if (survey != null) {
-                    exams[sub.parentId] = survey
-                }
-            }
-            return exams
-        }
-
-        private fun checkParentId(parentId: String?): Boolean {
-            return parentId != null && parentId.contains("@")
         }
 
         @JvmStatic
@@ -256,9 +246,9 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
                 jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 jsonObject.addProperty("sender", submission.sender)
-                val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-                jsonObject.addProperty("source", prefs.getString("planetCode", ""))
-                jsonObject.addProperty("parentCode", prefs.getString("parentCode", ""))
+                val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                jsonObject.addProperty("source", spm.getPlanetCode())
+                jsonObject.addProperty("parentCode", spm.getParentCode())
                 jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
                 if (exam != null) {
                     jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))

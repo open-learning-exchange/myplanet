@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRetryOperation
@@ -39,16 +39,15 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -59,14 +58,6 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
-
-    @Inject
-    @AppPreferences
-    lateinit var appPreferences: SharedPreferences
-
-    @Inject
-    @DefaultPreferences 
-    lateinit var defaultPreferences: SharedPreferences
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -110,8 +101,7 @@ class SettingsActivity : AppCompatActivity() {
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
         @Inject
-        @AppPreferences
-        lateinit var settings: SharedPreferences
+        lateinit var sharedPrefManager: SharedPrefManager
         @Inject
         lateinit var retryQueue: RetryQueue
         @Inject
@@ -176,11 +166,11 @@ class SettingsActivity : AppCompatActivity() {
             }
 
             val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = settings.getBoolean("fastSync", false)
+            val isFastSync = sharedPrefManager.getFastSync()
             fastSync?.isChecked = isFastSync
             fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
                 val isChecked = newValue as Boolean
-                settings.edit { putBoolean("fastSync", isChecked) }
+                sharedPrefManager.setFastSync(isChecked)
                 true
             }
 
@@ -369,8 +359,7 @@ class SettingsActivity : AppCompatActivity() {
             }
             autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
-            val syncPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            val lastSynced = syncPreferences.getLong("LastSync", 0)
+            val lastSynced = sharedPrefManager.getLastSync()
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
@@ -380,10 +369,10 @@ class SettingsActivity : AppCompatActivity() {
 
         private fun setImprovedSyncToggleOn() {
             val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
-            improvedSyncPreference?.isChecked = settings.getBoolean("useImprovedSync", false)
+            improvedSyncPreference?.isChecked = sharedPrefManager.getUseImprovedSync()
             improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
                 val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
-                settings.edit { putBoolean("useImprovedSync", isChecked) }
+                sharedPrefManager.setUseImprovedSync(isChecked)
                 val state = if (isChecked) "enabled" else "disabled"
                 createLog("improved_sync_toggle", state)
                 true

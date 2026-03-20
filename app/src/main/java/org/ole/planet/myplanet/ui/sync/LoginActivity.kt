@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -118,7 +119,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            configurationsRepository.checkVersion(this, settings)
+            configurationsRepository.checkVersion(this, prefData)
         }
         checkUsagesPermission()
         forceSyncTrigger()
@@ -227,9 +228,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 settingDialog()
             }
         }
-        if (!settings.contains("serverProtocol")) settings.edit {
-            putString("serverProtocol", "http://")
-        }
+        if (prefData.getServerProtocol().isEmpty()) prefData.setServerProtocol("http://")
         binding.becomeMember.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
@@ -262,9 +261,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         syncIconDrawable = syncIcon.drawable as AnimationDrawable
         syncIcon.setOnClickListener {
             if (getUrl() != "/db") {
-                val protocol = settings.getString("serverProtocol", "")
-                val serverUrl = "${settings.getString("serverURL", "")}"
-                val serverPin = "${settings.getString("serverPin", "")}"
+                val protocol = prefData.getServerProtocol()
+                val serverUrl = prefData.getServerUrl()
+                val serverPin = prefData.getServerPin()
 
                 val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
                     serverUrl
@@ -550,7 +549,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     }
                 }
             } else {
-                submitForm(user.name, user.password)
+                val password = user.password
+                val decrypted = if (password.isNullOrEmpty()) null else SecurePrefs.decryptString(this, password)
+
+                if (decrypted == null && password?.let { it.length > 30 } == true) {
+                    toast(this, getString(R.string.err_msg_login))
+                    binding.inputName.setText(user.name)
+                    binding.inputPassword.requestFocus()
+                } else {
+                    submitForm(user.name, decrypted ?: password)
+                }
             }
         }
     }
@@ -603,42 +611,48 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     fun saveUsers(name: String?, password: String?, source: String) {
         lifecycleScope.launch {
-            if (source === "guest") {
-                val newUser = User("", name, password, "", "guest")
-                val existingUsers: MutableList<User> = ArrayList(
-                    prefData.getSavedUsers()
-                )
-                var newUserExists = false
-                for ((_, name1) in existingUsers) {
-                    if (name1 == newUser.name?.trim { it <= ' ' }) {
-                        newUserExists = true
+            val encryptedPassword = if (password?.isNotEmpty() == true) {
+                SecurePrefs.encryptString(this@LoginActivity, password)
+            } else {
+                password
+            }
+            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
+            if (source == "guest") {
+                val newUser = User("", name, encryptedPassword, "", "guest")
+                var newUserIndex = -1
+                for (i in existingUsers.indices) {
+                    if (existingUsers[i].name == newUser.name?.trim { it <= ' ' }) {
+                        newUserIndex = i
                         break
                     }
                 }
-                if (!newUserExists) {
+                if (newUserIndex != -1) {
+                    existingUsers[newUserIndex] = newUser
+                } else {
                     existingUsers.add(newUser)
-                    prefData.setSavedUsers(existingUsers)
                 }
-            } else if (source === "member") {
+                prefData.setSavedUsers(existingUsers)
+            } else if (source == "member") {
                 val userModel = profileDbHandler.getUserModel()
                 var userProfile = userModel?.userImage
                 val userName: String? = userModel?.name
                 if (userProfile == null) {
                     userProfile = ""
                 }
-                val newUser = User(userName, name, password, userProfile, "member")
-                val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
-                var newUserExists = false
-                for ((fullName1) in existingUsers) {
-                    if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
-                        newUserExists = true
+                val newUser = User(userName, name, encryptedPassword, userProfile, "member")
+                var newUserIndex = -1
+                for (i in existingUsers.indices) {
+                    if (existingUsers[i].fullName == newUser.fullName?.trim { it <= ' ' }) {
+                        newUserIndex = i
                         break
                     }
                 }
-                if (!newUserExists) {
+                if (newUserIndex != -1) {
+                    existingUsers[newUserIndex] = newUser
+                } else {
                     existingUsers.add(newUser)
-                    prefData.setSavedUsers(existingUsers)
                 }
+                prefData.setSavedUsers(existingUsers)
             }
         }
     }
@@ -653,7 +667,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun getCustomDeviceName(): String? {
-        return settings.getString("customDeviceName", NetworkUtils.getDeviceName())
+        return prefData.getCustomDeviceName().ifEmpty { NetworkUtils.getDeviceName() }
     }
 
     fun invalidateTeamsCacheAndReload() {

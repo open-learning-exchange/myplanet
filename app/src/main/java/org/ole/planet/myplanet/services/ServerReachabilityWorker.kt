@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
@@ -22,7 +21,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -33,7 +32,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 class ServerReachabilityWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
-    @AppPreferences private val preferences: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     private val uploadManager: UploadManager,
     private val submissionsRepository: SubmissionsRepository,
     private val serverUrlMapper: ServerUrlMapper
@@ -55,7 +54,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
 
             val isNetworkReconnection = inputData.getBoolean(NETWORK_RECONNECTION_KEY, false)
-            val serverUrl = preferences.getString("serverURL", "") ?: ""
+            val serverUrl = sharedPrefManager.getServerUrl()
 
             if (serverUrl.isEmpty()) {
                 return Result.success()
@@ -70,12 +69,12 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
 
             if (isReachable && isNetworkReconnection) {
-                val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
+                val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
                 val currentTime = System.currentTimeMillis()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                     showServerNotification()
-                    preferences.edit {
+                    sharedPrefManager.rawPreferences.edit {
                         putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                     }
                 }
@@ -99,17 +98,17 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
 
                 if (alternativeReachable) {
-                    serverUrlMapper.updateServerIfNecessary(mapping, preferences) { url ->
+                    serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
                         isServerReachable(url)
                     }
 
                     if (isNetworkReconnection) {
-                        val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
+                        val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
                         val currentTime = System.currentTimeMillis()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                             showServerNotification()
-                            preferences.edit {
+                            sharedPrefManager.rawPreferences.edit {
                                 putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                             }
                         }
@@ -154,7 +153,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
     }
 
     private suspend fun checkAvailableServerAndUpload() {
-        val updateUrl = "${preferences.getString("serverURL", "")}"
+        val updateUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         try {
@@ -173,8 +172,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = preferences.edit()
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
+                    val editor = sharedPrefManager.rawPreferences.edit()
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
                 }
             }
             uploadSubmissions()
@@ -230,7 +229,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
     private fun getServerDisplayName(): String {
         return try {
-            val communityName = preferences.getString("communityName", "") ?: ""
+            val communityName = sharedPrefManager.getCommunityName()
             val planetString = applicationContext.getString(R.string.planet)
 
             if (communityName.isNotEmpty()) {

@@ -1030,6 +1030,9 @@
     <string name="chart_label">Nbre de connexions</string>
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
     <string name="mark_all_as_read">Marquer tout comme lu</string>
+    <string name="no_notifications">Aucune notification</string>
+    <string name="no_unread_notifications">Aucune notification non lue</string>
+    <string name="no_read_notifications">Aucune notification lue</string>
     <string name="mark_as_read">Marquer comme lu</string>
     <string name="our_voices">nos voix</string>
     <string name="no_voices_available">aucune voix disponible</string>

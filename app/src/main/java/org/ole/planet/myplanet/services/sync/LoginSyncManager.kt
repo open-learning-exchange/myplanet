@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Base64
-import androidx.core.content.edit
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
@@ -15,10 +13,9 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -26,8 +23,9 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    @AppPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val apiInterface: ApiInterface,
 ) {
 
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
@@ -39,8 +37,6 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 withContext(Dispatchers.Main) { listener.onSyncStarted() }
-
-                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
 
                 val authHeader = try {
                     "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
@@ -133,8 +129,6 @@ class LoginSyncManager @Inject constructor(
                 selector.addProperty("isUserAdmin", true)
                 `object`.add("selector", selector)
 
-                val apiInterface = ApiClient.client.create(ApiInterface::class.java)
-
                 val header = UrlUtils.header
                 if (header.isBlank()) {
                     return@launch
@@ -151,12 +145,12 @@ class LoginSyncManager @Inject constructor(
                     val response = apiInterface.findDocs(header, "application/json", url, `object`)
                     if (response.isSuccessful && response.body() != null) {
                         val responseBody = response.body()
-                        settings.edit { putString("communityLeaders", "$responseBody") }
+                        sharedPrefManager.setCommunityLeaders("$responseBody")
 
                         val array = JsonUtils.getJsonArray("docs", responseBody)
                         if (array.size() > 0) {
                             try {
-                                settings.edit { putString("user_admin", JsonUtils.gson.toJson(array[0])) }
+                                sharedPrefManager.setRawString("user_admin", JsonUtils.gson.toJson(array[0]))
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
@@ -179,7 +173,7 @@ class LoginSyncManager @Inject constructor(
             return
         }
 
-        userRepository.saveUser(jsonDoc, settings)
+        userRepository.saveUser(jsonDoc, sharedPrefManager.rawPreferences)
         withContext(Dispatchers.Main) {
             listener.onSyncComplete()
         }

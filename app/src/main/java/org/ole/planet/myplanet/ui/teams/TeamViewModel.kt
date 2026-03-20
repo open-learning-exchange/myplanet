@@ -10,11 +10,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class TeamActionResult {
     object Success : TeamActionResult()
@@ -24,26 +27,27 @@ sealed class TeamActionResult {
 
 @HiltViewModel
 class TeamViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository
+    private val teamsRepository: TeamsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
-    private var currentTeams: List<RealmMyTeam> = emptyList()
+    private var currentTeams: List<TeamSummary> = emptyList()
 
 
-    fun prepareTeamData(teams: List<RealmMyTeam>, userId: String?) {
+    fun prepareTeamData(teams: List<TeamSummary>, userId: String?) {
         currentTeams = teams
         viewModelScope.launch {
-            val processedTeams = withContext(Dispatchers.IO) {
+            val processedTeams = withContext(dispatcherProvider.io) {
                 val validTeams = teams.filter {
-                    !it._id.isNullOrBlank() && (it.status == null || it.status != "archived")
+                    !it._id.isBlank() && (it.status == null || it.status != "archived")
                 }
 
                 if (validTeams.isEmpty()) {
                     return@withContext emptyList<TeamDetails>()
                 }
 
-                val teamIds = validTeams.mapNotNull { it._id }
+                val teamIds = validTeams.map { it._id }
 
                 val visitCountsDeferred = async { teamsRepository.getRecentVisitCounts(teamIds) }
                 val memberStatusesDeferred = async { teamsRepository.getTeamMemberStatuses(userId, teamIds) }
@@ -52,7 +56,7 @@ class TeamViewModel @Inject constructor(
                 val memberStatuses = memberStatusesDeferred.await()
 
                 val teamDataList = validTeams.map { team ->
-                    val teamId = team._id.orEmpty()
+                    val teamId = team._id
                     val status = memberStatuses[teamId]
                     TeamDetails(
                         _id = team._id,
@@ -121,17 +125,17 @@ class TeamViewModel @Inject constructor(
             return TeamActionResult.NameExists
         }
 
-        val teamObject = com.google.gson.JsonObject().apply {
-            addProperty("name", name)
-            addProperty("description", description)
-            addProperty("services", services)
-            addProperty("rules", rules)
-            addProperty("teamType", teamType)
-            addProperty("isPublic", isPublic)
-            addProperty("category", category)
-        }
+        val request = CreateTeamRequest(
+            name = name,
+            description = description,
+            services = services,
+            rules = rules,
+            teamType = teamType,
+            isPublic = isPublic,
+            category = category
+        )
 
-        return teamsRepository.createTeamAndAddMember(teamObject, userModel)
+        return teamsRepository.createTeamAndAddMember(request, userModel)
             .fold(
                 onSuccess = { TeamActionResult.Success },
                 onFailure = { TeamActionResult.Failure(it.message) }

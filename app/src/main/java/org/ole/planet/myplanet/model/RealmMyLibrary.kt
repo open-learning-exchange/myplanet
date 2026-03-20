@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -13,8 +11,9 @@ import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -240,7 +239,7 @@ open class RealmMyLibrary : RealmObject() {
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             val wasPrivate = resource?.isPrivate == true
             val hadPrivateFor = resource?.privateFor
@@ -284,7 +283,7 @@ open class RealmMyLibrary : RealmObject() {
                         this.attachments?.add(realmAttachment)
 
                         if (key.indexOf("/") < 0) {
-                            resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
+                            resourceRemoteAddress = "${spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(context, resourceRemoteAddress)
                         }
@@ -339,32 +338,6 @@ open class RealmMyLibrary : RealmObject() {
                 }
             }
             return list
-        }
-
-        @Deprecated("Use ResourcesRepository.getMyLibIds instead")
-        @JvmStatic
-        fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
-            val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
-            return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
-            }
-        }
-
-        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
-        @JvmStatic
-        fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
-            return libraries.flatMap { it.level ?: emptyList() }.toSet()
-        }
-
-        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
-        @JvmStatic
-        fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
-            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
-        }
-
-        @Deprecated("Use ResourcesRepository.getFilterFacets instead")
-        @JvmStatic
-        fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
-            return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }
     }
 }

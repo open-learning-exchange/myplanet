@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
-import androidx.core.content.edit
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -35,6 +33,7 @@ class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
     @param:AppPreferences private val preferences: SharedPreferences,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val syncManager: SyncManager,
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService,
@@ -44,16 +43,16 @@ class AutoSyncWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         if (isStopped) return Result.success()
 
-        val lastSync = preferences.getLong("LastSync", 0)
+        val lastSync = sharedPrefManager.getLastSync()
         val currentTime = System.currentTimeMillis()
-        val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
+        val syncInterval = sharedPrefManager.getAutoSyncInterval()
         if (currentTime - lastSync > syncInterval * 1000) {
             if (isAppInForeground(context)) {
                 withContext(Dispatchers.Main) {
                     Utilities.toast(context, "Syncing started...")
                 }
             }
-            configurationsRepository.checkVersion(this, preferences)
+            configurationsRepository.checkVersion(this, sharedPrefManager)
         }
         return Result.success()
     }
@@ -123,8 +122,7 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onSuccess(success: String?) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        settings.edit { putLong("lastUsageUploaded", Date().time) }
+        sharedPrefManager.setLastUsageUploaded(Date().time)
     }
 
     private fun isAppInForeground(context: Context): Boolean {
