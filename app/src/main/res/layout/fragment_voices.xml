@@ -139,13 +139,36 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="@dimen/padding_normal" />
-            <TextView
+            <LinearLayout
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:textColor="@color/daynight_textColor" />
+                android:orientation="vertical"
+                android:padding="24dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/iv_empty_icon"
+                    android:layout_width="72dp"
+                    android:layout_height="72dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp"
+                    android:alpha="0.4"
+                    android:src="@drawable/ic_mic"
+                    android:tint="@color/daynight_textColor"
+                    android:contentDescription="@null"
+                    android:importantForAccessibility="no" />
+
+                <TextView
+                    android:id="@+id/tv_empty_message"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp" />
+            </LinearLayout>
         </FrameLayout>
     </LinearLayout>
 </FrameLayout>
