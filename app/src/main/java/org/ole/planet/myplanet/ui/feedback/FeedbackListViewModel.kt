@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,15 +23,22 @@ class FeedbackListViewModel @Inject constructor(
     private val _feedbackList = MutableStateFlow<List<RealmFeedback>>(emptyList())
     val feedbackList: StateFlow<List<RealmFeedback>> = _feedbackList.asStateFlow()
 
+    private var loadJob: Job? = null
+
     init {
         loadFeedback()
     }
 
     private fun loadFeedback() {
-        viewModelScope.launch {
-            val user = userSessionManager.getUserModel()
-            feedbackRepository.getFeedback(user).collectLatest { feedback ->
-                _feedbackList.value = feedback
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            try {
+                val user = userSessionManager.getUserModel()
+                feedbackRepository.getFeedback(user).collectLatest { feedback ->
+                    _feedbackList.value = feedback
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
