@@ -50,7 +50,8 @@ class FeedbackListViewModelTest {
     }
 
     @Test
-    fun testInitialStateIsEmptyList() = runTest(testDispatcher) {
+    fun testInitialStateIsPreloadEmptyList() = runTest(testDispatcher) {
+        // This test validates the pre-load default state of the StateFlow before the init coroutine has executed
         assertEquals(emptyList<RealmFeedback>(), viewModel.feedbackList.value)
     }
 
@@ -78,7 +79,7 @@ class FeedbackListViewModelTest {
     }
 
     @Test
-    fun testRefreshFeedbackRetriggersFlowCollection() = runTest(testDispatcher) {
+    fun testRefreshFeedbackCancelsPreviousJobAndRetriggersFlowCollection() = runTest(testDispatcher) {
         val user = mockk<RealmUser>()
         val initialFeedback = listOf(mockk<RealmFeedback>())
         val updatedFeedback = listOf(mockk<RealmFeedback>(), mockk<RealmFeedback>())
