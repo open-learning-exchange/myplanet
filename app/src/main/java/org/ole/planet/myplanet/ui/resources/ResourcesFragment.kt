@@ -225,7 +225,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return TagItem(id = id, name = name)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): ResourcesAdapter {
         allLibraryItems = if (isMyCourseLib) {
             resourcesRepository.getMyLibrary(model?.id)
         } else {
