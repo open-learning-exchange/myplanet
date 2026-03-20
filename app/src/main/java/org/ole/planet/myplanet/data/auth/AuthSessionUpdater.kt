@@ -60,7 +60,7 @@ class AuthSessionUpdater @AssistedInject constructor(
     private suspend fun sendPost() {
         try {
             withContext(Dispatchers.IO) {
-                val conn = getSessionUrl()?.openConnection() as HttpURLConnection
+                val conn = getSessionUrl()?.openConnection() as HttpURLConnection? ?: throw Exception("Unable to get session URL")
                 conn.requestMethod = "GET"
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.setRequestProperty("Accept", "application/json")

@@ -30,12 +30,10 @@ data class UserSurveyProfile(
         }
 
         if (yob.isNotEmpty()) {
-            val yobInt = yob.toIntOrNull()
-            if (yobInt != null) {
-                val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
-                val calculatedAge = currentYear - yobInt
-                user.addProperty("age", calculatedAge.toString())
-            }
+            val yobInt = yob.toInt()
+            val currentYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
+            val calculatedAge = currentYear - yobInt
+            user.addProperty("age", calculatedAge.toString())
         }
 
         if (level.isNotEmpty()) user.addProperty("level", level)
