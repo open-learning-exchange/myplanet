@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed interface CourseDetailUiState {
     object Loading : CourseDetailUiState
@@ -36,14 +37,15 @@ class CourseDetailViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val ratingsRepository: RatingsRepository,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
     val uiState: StateFlow<CourseDetailUiState> = _uiState
 
     fun loadCourseDetail(courseId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             try {
                 _uiState.value = CourseDetailUiState.Loading
                 val user = userSessionManager.getUserModel()
@@ -94,7 +96,7 @@ class CourseDetailViewModel @Inject constructor(
     }
 
     fun refreshRatings(courseId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val currentState = _uiState.value
             if (currentState is CourseDetailUiState.Success) {
                 try {
