@@ -18,24 +18,24 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun \`shouldFetchAiProviders returns true when aiProviders is null and aiProvidersLoading is false\`() {
+    fun `shouldFetchAiProviders returns true when aiProviders is null and aiProvidersLoading is false`() {
         assertTrue(viewModel.shouldFetchAiProviders())
     }
 
     @Test
-    fun \`shouldFetchAiProviders returns false when aiProvidersLoading is set to true\`() {
+    fun `shouldFetchAiProviders returns false when aiProvidersLoading is set to true`() {
         viewModel.setAiProvidersLoading(true)
         assertFalse(viewModel.shouldFetchAiProviders())
     }
 
     @Test
-    fun \`shouldFetchAiProviders returns false after setAiProviders\`() {
+    fun `shouldFetchAiProviders returns false after setAiProviders`() {
         viewModel.setAiProviders(mapOf("openai" to true))
         assertFalse(viewModel.shouldFetchAiProviders())
     }
 
     @Test
-    fun \`clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values\`() {
+    fun `clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values`() {
         val dummyHistory = listOf(RealmConversation())
         viewModel.setSelectedChatHistory(dummyHistory)
         viewModel.setSelectedId("test_id")
