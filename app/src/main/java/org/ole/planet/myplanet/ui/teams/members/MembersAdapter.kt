@@ -30,6 +30,7 @@ class MembersAdapter(
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
+    private val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
@@ -84,8 +85,7 @@ class MembersAdapter(
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-            sdf.format(Date(memberData.lastVisitDate))
+            dateFormat.format(Date(memberData.lastVisitDate))
         } else {
             context.getString(R.string.no_visit)
         }
