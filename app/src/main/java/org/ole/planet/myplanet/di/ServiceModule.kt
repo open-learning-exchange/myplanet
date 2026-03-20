@@ -67,13 +67,15 @@ object ServiceModule {
         personalsRepository: PersonalsRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
-        uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
-        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
+        uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
+        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
+        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         apiInterface: ApiInterface,
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         @ApplicationScope scope: CoroutineScope
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, uploadConfigs, teamsRepository, voicesRepository, apiInterface, scope)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, scope)
     }
 
     @Provides
@@ -86,10 +88,11 @@ object ServiceModule {
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, appScope, dispatcherProvider)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, appScope, dispatcherProvider)
     }
 
     @Provides
@@ -98,10 +101,11 @@ object ServiceModule {
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
         @ApplicationContext context: Context,
+        voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, chatRepository, feedbackRepository, sharedPrefManager)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager)
     }
 }

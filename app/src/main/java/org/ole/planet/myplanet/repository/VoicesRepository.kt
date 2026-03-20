@@ -46,4 +46,8 @@ interface VoicesRepository {
     suspend fun getNewsById(id: String): RealmNews?
     suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?)
     suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?)
+    suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
+    suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
+    suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
+    fun serializeNews(news: RealmNews): com.google.gson.JsonObject
 }
