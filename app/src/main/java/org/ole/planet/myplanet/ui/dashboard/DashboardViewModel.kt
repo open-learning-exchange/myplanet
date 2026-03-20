@@ -132,7 +132,7 @@ class DashboardViewModel @Inject constructor(
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
-        userContentJob = viewModelScope.launch {
+        userContentJob = viewModelScope.launch(dispatcherProvider.io) {
             val libraryDeferred = async {
                 resourcesRepository.getMyLibrary(userId)
             }
@@ -180,7 +180,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun loadUsers() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
             _uiState.update { it.copy(users = users) }
         }
@@ -196,7 +196,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun handleTaskNavigation(taskId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val teamData = teamsRepository.getTaskTeamInfo(taskId)
             if (teamData != null) {
                 _taskNavigationEvent.emit(teamData)
@@ -205,7 +205,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun handleJoinRequestNavigation(requestId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val teamId = teamsRepository.getJoinRequestTeamId(requestId)
             if (teamId != null) {
                 _joinRequestNavigationEvent.emit(teamId)
@@ -214,7 +214,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             var lastException: Exception? = null
             repeat(maxRetries) { attempt ->
                 try {
@@ -235,7 +235,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun markNotificationAsRead(notificationId: String, userId: String?) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             try {
                 notificationsRepository.markNotificationAsRead(notificationId, userId)
             } catch (e: Exception) {
@@ -245,7 +245,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun refreshNotificationsBadge(userId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             kotlinx.coroutines.delay(100)
             try {
                 notificationsRepository.refresh()
@@ -258,7 +258,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun handleSurveyNavigation(surveyId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val survey = surveysRepository.getSurvey(surveyId)
             if (survey != null && survey.id != null) {
                 _surveyNavigationEvent.emit(survey.id!!)
@@ -276,7 +276,7 @@ class DashboardViewModel @Inject constructor(
         val endTime = 1734307200000
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
 
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             try {
                 val courseData = progressRepository.fetchCourseData(userId)
                 val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
