@@ -333,6 +333,8 @@ class TransactionSyncManager @Inject constructor(
         }
         if (pending.isEmpty()) return@withContext
 
+        val successfulSyncs = mutableListOf<Pair<String, String?>>()
+
         for (notification in pending) {
             val rev = notification.rev ?: continue
             val body = JsonObject().apply {
@@ -355,18 +357,24 @@ class TransactionSyncManager @Inject constructor(
                 )
                 if (response.isSuccessful) {
                     val newRev = response.body()?.get("rev")?.asString
-                    databaseService.executeTransactionAsync { realm ->
-                        realm.where(RealmNotification::class.java)
-                            .equalTo("id", notification.id)
-                            .findFirst()
-                            ?.apply {
-                                needsSync = false
-                                if (newRev != null) this.rev = newRev
-                            }
-                    }
+                    successfulSyncs.add(Pair(notification.id, newRev))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+
+        if (successfulSyncs.isNotEmpty()) {
+            databaseService.executeTransactionAsync { realm ->
+                for ((id, newRev) in successfulSyncs) {
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("id", id)
+                        .findFirst()
+                        ?.apply {
+                            needsSync = false
+                            if (newRev != null) this.rev = newRev
+                        }
+                }
             }
         }
     }
