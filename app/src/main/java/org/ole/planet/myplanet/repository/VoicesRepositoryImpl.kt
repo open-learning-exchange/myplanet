@@ -558,19 +558,15 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun saveConcatenatedLinksToPrefs() {
         val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
         val existingConcatenatedLinks = if (existingJsonLinks != null) {
-            JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+            LinkedHashSet(JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
         } else {
-            mutableListOf()
+            LinkedHashSet()
         }
         val linksToProcess: List<String>
         synchronized(concatenatedLinks) {
             linksToProcess = concatenatedLinks.toList()
         }
-        for (link in linksToProcess) {
-            if (!existingConcatenatedLinks.contains(link)) {
-                existingConcatenatedLinks.add(link)
-            }
-        }
+        existingConcatenatedLinks.addAll(linksToProcess)
         val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
     }
