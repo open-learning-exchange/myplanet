@@ -12,11 +12,13 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class FeedbackListViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _feedbackList = MutableStateFlow<List<RealmFeedback>>(emptyList())
@@ -27,7 +29,7 @@ class FeedbackListViewModel @Inject constructor(
     }
 
     private fun loadFeedback() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val user = userSessionManager.getUserModel()
             feedbackRepository.getFeedback(user).collectLatest { feedback ->
                 _feedbackList.value = feedback
