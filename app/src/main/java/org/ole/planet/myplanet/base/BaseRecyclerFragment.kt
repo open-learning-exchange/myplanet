@@ -47,7 +47,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
