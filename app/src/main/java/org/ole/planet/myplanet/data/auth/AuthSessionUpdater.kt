@@ -15,13 +15,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class AuthSessionUpdater @AssistedInject constructor(
     @Assisted private val callback: AuthCallback,
     private val sharedPrefManager: SharedPrefManager,
-    @param:ApplicationScope private val scope: CoroutineScope
+    @param:ApplicationScope private val scope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     interface AuthCallback {
@@ -59,7 +61,7 @@ class AuthSessionUpdater @AssistedInject constructor(
     // During these 20 mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
     private suspend fun sendPost() {
         try {
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 val conn = getSessionUrl()?.openConnection() as HttpURLConnection
                 conn.requestMethod = "GET"
                 conn.setRequestProperty("Content-Type", "application/json")

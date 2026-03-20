@@ -5,11 +5,33 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmUser
+
+data class ResourceUploadData(
+    val libraryId: String?,
+    val title: String?,
+    val isPrivate: Boolean,
+    val privateFor: String?,
+    val serialized: JsonObject
+)
+
+data class UploadedResourceInfo(
+    val libraryId: String,
+    val id: String,
+    val rev: String,
+    val isPrivate: Boolean,
+    val privateFor: String?,
+    val title: String?
+)
 
 interface ResourcesRepository {
+    suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData>
+    suspend fun markResourceUploaded(libraryId: String, id: String, rev: String)
+    suspend fun markResourcesUploaded(uploadedInfos: List<UploadedResourceInfo>, planetCode: String?)
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
+    suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary>
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary>
