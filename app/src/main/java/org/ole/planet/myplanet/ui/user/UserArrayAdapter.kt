@@ -4,7 +4,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
+import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -16,7 +16,12 @@ import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
     private val onItemClick: (RealmUser) -> Unit
-) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(UserDiffCallback()) {
+) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(
+    DiffUtils.itemCallback<RealmUser>(
+        { oldItem, newItem -> oldItem.id == newItem.id },
+        { oldItem, newItem -> oldItem.id == newItem.id && oldItem.name == newItem.name }
+    )
+) {
 
     var selectedPosition = 0
 
@@ -60,16 +65,6 @@ class UserArrayAdapter(
             notifyItemChanged(oldPos)
             notifyItemChanged(selectedPosition)
             onItemClick(user)
-        }
-    }
-
-    class UserDiffCallback : DiffUtil.ItemCallback<RealmUser>() {
-        override fun areItemsTheSame(oldItem: RealmUser, newItem: RealmUser): Boolean {
-            return oldItem.id == newItem.id
-        }
-
-        override fun areContentsTheSame(oldItem: RealmUser, newItem: RealmUser): Boolean {
-            return oldItem.id == newItem.id && oldItem.name == newItem.name
         }
     }
 }

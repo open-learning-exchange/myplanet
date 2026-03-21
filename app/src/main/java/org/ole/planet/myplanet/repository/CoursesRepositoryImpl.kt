@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import java.util.Calendar
 import java.util.UUID
+import java.text.Normalizer
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -178,6 +180,40 @@ class CoursesRepositoryImpl @Inject constructor(
             equalTo("courseId", courseId)
             equalTo("resourceOffline", isOffline)
             isNotNull("resourceLocalAddress")
+        }
+    }
+
+    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
+    private fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(DIACRITICS_REGEX, "")
+    }
+
+    override suspend fun search(query: String): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val queryObj = realm.where(RealmMyCourse::class.java)
+            if (query.isEmpty()) {
+                return@withRealm realm.copyFromRealm(queryObj.findAll())
+            }
+
+            val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val data = queryObj.findAll()
+            val normalizedQuery = normalizeText(query)
+            val startsWithQuery = mutableListOf<RealmMyCourse>()
+            val containsQuery = mutableListOf<RealmMyCourse>()
+
+            for (item in data) {
+                val title = item.courseTitle?.let { normalizeText(it) } ?: continue
+
+                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    containsQuery.add(item)
+                }
+            }
+            realm.copyFromRealm(startsWithQuery + containsQuery)
         }
     }
 
@@ -502,5 +538,80 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
+    }
+
+    override suspend fun deleteCourseProgress(courseId: String?) {
+        executeTransaction { realm ->
+            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
+            val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
+            val examIds = examList.mapNotNull { it.id }.toTypedArray()
+            if (examIds.isNotEmpty()) {
+                realm.where(RealmSubmission::class.java)
+                    .`in`("parentId", examIds)
+                    .notEqualTo("type", "survey")
+                    .equalTo("uploaded", false)
+                    .findAll()
+                    .deleteAllFromRealm()
+            }
+        }
+    }
+
+    override suspend fun filterCoursesByTag(
+        query: String,
+        tags: List<RealmTag>,
+        isMyCourseLib: Boolean,
+        userId: String?
+    ): List<RealmMyCourse> {
+        return withRealm { realm ->
+            val data = realm.where(RealmMyCourse::class.java).findAll()
+
+            var list: List<RealmMyCourse> = if (query.isEmpty()) {
+                realm.copyFromRealm(data)
+            } else {
+                val queryParts = query.split(" ").filterNot { it.isEmpty() }
+                val normalizedQueryParts = queryParts.map { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) }
+                val normalizedQuery = org.ole.planet.myplanet.utils.Utilities.normalizeText(query)
+                val startsWithQuery = mutableListOf<RealmMyCourse>()
+                val containsQuery = mutableListOf<RealmMyCourse>()
+
+                for (item in data) {
+                    val title = item.courseTitle?.let { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) } ?: continue
+
+                    if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                        startsWithQuery.add(item)
+                    } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                        containsQuery.add(item)
+                    }
+                }
+                val filteredData = startsWithQuery + containsQuery
+                realm.copyFromRealm(filteredData)
+            }
+
+            list = if (isMyCourseLib) {
+                getMyCourses(userId, list)
+            } else {
+                RealmMyCourse.getAllCourses(userId, list)
+            }
+
+            if (tags.isEmpty()) {
+                return@withRealm list
+            }
+
+            val tagIds = tags.mapNotNull { it.id }.toTypedArray()
+            val linkedCourseIds = realm.where(RealmTag::class.java)
+                .equalTo("db", "courses")
+                .`in`("tagId", tagIds)
+                .findAll()
+                .mapNotNull { it.linkId }
+                .toSet()
+
+            val courses = mutableListOf<RealmMyCourse>()
+            list.forEach { course ->
+                if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
+                    courses.add(course)
+                }
+            }
+            courses
+        }
     }
 }

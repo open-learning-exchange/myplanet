@@ -18,6 +18,8 @@ interface UserRepository {
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun findUserByName(name: String): RealmUser?
+    suspend fun getSyncedUsers(): List<RealmUser>
+    suspend fun getSyncedUserByName(name: String): RealmUser?
     suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
@@ -93,5 +95,8 @@ interface UserRepository {
         achievements: JsonArray,
         references: JsonArray
     )
+    suspend fun markUserUploaded(userId: String, id: String, rev: String)
+    suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)
+    suspend fun markUserRevUpdated(userId: String, rev: String?)
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
 }
