@@ -1206,5 +1206,6 @@
     <string name="select_open_with">Ouvrir</string>
     <string name="select_media">Médias</string>
     <string name="select_resource_type">Type de ressource</string>
+    <string name="no_results_for_filter">Aucun résultat ne correspond à votre filtre actuel</string>
 
 </resources>

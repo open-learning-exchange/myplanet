@@ -1218,5 +1218,6 @@
     <string name="select_open_with">افتح</string>
     <string name="select_media">وسائط</string>
     <string name="select_resource_type">نوع المورد</string>
+    <string name="no_results_for_filter">لا توجد نتائج تطابق الفلتر الحالي</string>
 
 </resources>
