@@ -57,7 +57,7 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    protected lateinit var mRealm: Realm
+    private lateinit var mRealm: Realm
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -181,12 +181,12 @@ abstract class BaseResourceFragment : Fragment() {
                 if (download?.failed == false) {
                     if (pendingDownloadUrls.isNotEmpty()) {
                         val fileUrl = download.fileUrl
-                        if (!fileUrl.isNullOrEmpty() && download.progress == 100) {
-                            pendingDownloadUrls.remove(fileUrl)
+                        if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
+                            if (download.progress == 100) {
+                                pendingDownloadUrls.remove(fileUrl)
+                            }
+                            setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
                         }
-                        setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
-                    } else {
-                        setProgress(download)
                     }
                 } else {
                     pendingDownloadUrls.clear()
