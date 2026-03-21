@@ -153,7 +153,6 @@
                     android:tint="@color/daynight_textColor"
                     android:contentDescription="@null"
                     android:importantForAccessibility="no" />
-
                 <TextView
                     android:id="@+id/tv_empty_message"
                     android:layout_width="wrap_content"
