@@ -135,7 +135,7 @@
     <string name="login">تسجيل الدخول</string>
     <string name="courses">الدورات</string>
     <string name="what_would">ما الذي ترغب في مشاركته؟</string>
-    <string name="delete_record">هل أنت متأكد من رغبتك في حذف ما يلي؟</string>
+    <string name="delete_record">هل أنت متحقِّق من رغبتك في حذف ما يلي؟</string>
     <string name="edit_post">تعديل المنشور</string>
     <string name="get_started">البدء</string>
     <string name="year">السنة</string>
@@ -866,7 +866,11 @@
     <string name="services">الخدمات</string>
 
     <plurals name="survey_taken_count">
-        <item quantity="one">تم أخذ الاستبيان %d مرة</item>
+        <item quantity="zero">لم يُؤخذ الاستبيان</item>
+        <item quantity="one">تم أخذ الاستبيان مرة واحدة</item>
+        <item quantity="two">تم أخذ الاستبيان مرتين</item>
+        <item quantity="few">تم أخذ الاستبيان %d مرات</item>
+        <item quantity="many">تم أخذ الاستبيان %d مرة</item>
         <item quantity="other">تم أخذ الاستبيان %d مرات</item>
     </plurals>
 
@@ -1106,17 +1110,29 @@
     <string name="reminder_surveys_to_complete">تذكير: لديك %1$d %2$s للإكمال</string>
 
     <plurals name="minutes">
+        <item quantity="zero">صفر دقائق</item>
         <item quantity="one">دقيقة واحدة</item>
+        <item quantity="two">دقيقتان</item>
+        <item quantity="few">%d دقائق</item>
+        <item quantity="many">%d دقيقة</item>
         <item quantity="other">%d دقيقة</item>
     </plurals>
 
     <plurals name="hours">
+        <item quantity="zero">صفر ساعات</item>
         <item quantity="one">ساعة واحدة</item>
+        <item quantity="two">ساعتان</item>
+        <item quantity="few">%d ساعات</item>
+        <item quantity="many">%d ساعة</item>
         <item quantity="other">%d ساعة</item>
     </plurals>
 
     <plurals name="days">
+        <item quantity="zero">صفر أيام</item>
         <item quantity="one">يوم واحد</item>
+        <item quantity="two">يومان</item>
+        <item quantity="few">%d أيام</item>
+        <item quantity="many">%d يومًا</item>
         <item quantity="other">%d يوم</item>
     </plurals>
 
