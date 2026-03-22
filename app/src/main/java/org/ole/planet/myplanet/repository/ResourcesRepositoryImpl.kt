@@ -8,7 +8,9 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
 import java.io.File
+import java.text.Normalizer
 import java.util.Calendar
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -37,6 +39,64 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val tagsRepository: TagsRepository
 ) : RealmRepository(databaseService), ResourcesRepository {
 
+    override suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData> {
+        return queryList(RealmMyLibrary::class.java, true) {
+            isNull("_rev")
+        }.map { library ->
+            ResourceUploadData(
+                libraryId = library.id,
+                title = library.title,
+                isPrivate = library.isPrivate,
+                privateFor = library.privateFor,
+                serialized = RealmMyLibrary.serialize(library, user)
+            )
+        }
+    }
+
+    override suspend fun markResourceUploaded(libraryId: String, id: String, rev: String) {
+        update(RealmMyLibrary::class.java, "id", libraryId) { library ->
+            library._id = id
+            library._rev = rev
+        }
+    }
+
+    override suspend fun markResourcesUploaded(uploadedInfos: List<UploadedResourceInfo>, planetCode: String?) {
+        executeTransaction { realm ->
+            val libraryIds = uploadedInfos.map { it.libraryId }.toTypedArray()
+            val managedLibrariesMap = mutableMapOf<String, RealmMyLibrary>()
+            if (libraryIds.isNotEmpty()) {
+                val results = realm.where(RealmMyLibrary::class.java)
+                    .`in`("id", libraryIds)
+                    .findAll()
+                results.forEach { lib ->
+                    lib.id?.let { id -> managedLibrariesMap[id] = lib }
+                }
+            }
+
+            uploadedInfos.forEach { info ->
+                managedLibrariesMap[info.libraryId]?.let { sub ->
+                    sub._rev = info.rev
+                    sub._id = info.id
+                }
+
+                if (info.isPrivate && !info.privateFor.isNullOrBlank()) {
+                    val teamResource = realm.createObject(
+                        RealmMyTeam::class.java,
+                        UUID.randomUUID().toString()
+                    )
+                    teamResource.teamId = info.privateFor
+                    teamResource.title = info.title
+                    teamResource.resourceId = info.id
+                    teamResource.docType = "resourceLink"
+                    teamResource.updated = true
+                    teamResource.teamType = "local"
+                    teamResource.teamPlanetCode = planetCode
+                    teamResource.sourcePlanet = planetCode
+                }
+            }
+        }
+    }
+
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
         return withRealm { realm ->
             realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
@@ -46,6 +106,45 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
+        }
+    }
+
+    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
+    private fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(DIACRITICS_REGEX, "")
+    }
+
+    override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
+        return withRealm { realm ->
+            val queryObj = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false)
+
+            val data = if (isMyCourseLib) {
+                queryObj.findAll().filter { it.userId?.contains(userId) == true }
+            } else {
+                queryObj.findAll().filter { it.userId?.contains(userId) == false }
+            }
+
+            if (query.isEmpty()) {
+                return@withRealm realm.copyFromRealm(data)
+            }
+
+            val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val normalizedQuery = normalizeText(query)
+            val startsWithQuery = mutableListOf<RealmMyLibrary>()
+            val containsQuery = mutableListOf<RealmMyLibrary>()
+
+            for (item in data) {
+                val title = item.title?.let { normalizeText(it) } ?: continue
+                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    containsQuery.add(item)
+                }
+            }
+            realm.copyFromRealm(startsWithQuery + containsQuery)
         }
     }
 
