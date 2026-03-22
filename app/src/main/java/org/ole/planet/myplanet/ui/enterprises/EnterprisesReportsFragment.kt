@@ -53,7 +53,6 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
-        prefData = SharedPrefManager(requireContext())
         binding.addReports.isVisible = false
         binding.addReports.setOnClickListener{
             showAddReportDialog()
