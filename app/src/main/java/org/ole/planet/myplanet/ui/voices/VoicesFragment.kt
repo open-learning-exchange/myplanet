@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -54,8 +53,6 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -173,6 +170,9 @@ class VoicesFragment : BaseVoicesFragment() {
         return "$planetCode@$parentCode"
     }
 
+    private val currentEmptyStateSource: String
+        get() = if (etSearch.text.isNotEmpty() || selectedLabel != "All") "news_filtered" else "news"
+
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
@@ -272,7 +272,7 @@ class VoicesFragment : BaseVoicesFragment() {
         } else {
             (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -314,15 +314,15 @@ class VoicesFragment : BaseVoicesFragment() {
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
     }
 
