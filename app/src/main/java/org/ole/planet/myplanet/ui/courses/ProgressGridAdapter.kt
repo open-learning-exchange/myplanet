@@ -12,7 +12,12 @@ import org.ole.planet.myplanet.databinding.RowMyProgressGridBinding
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class ProgressGridAdapter(private val context: Context) :
-    ListAdapter<JsonObject, ProgressGridAdapter.ViewHolderMyProgress>(DIFF_CALLBACK) {
+    ListAdapter<JsonObject, ProgressGridAdapter.ViewHolderMyProgress>(
+        DiffUtils.itemCallback<JsonObject>(
+            areItemsTheSame = { oldItem, newItem -> oldItem["stepId"] == newItem["stepId"] },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
+    ) {
     private lateinit var rowMyProgressGridBinding: RowMyProgressGridBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyProgress {
         rowMyProgressGridBinding =
@@ -46,12 +51,5 @@ class ProgressGridAdapter(private val context: Context) :
     inner class ViewHolderMyProgress(rowMyProgressGridBinding: RowMyProgressGridBinding) :
         RecyclerView.ViewHolder(rowMyProgressGridBinding.root) {
         var tvProgress = rowMyProgressGridBinding.tvProgress
-    }
-
-    companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<JsonObject>(
-            areItemsTheSame = { oldItem, newItem -> oldItem["stepId"] == newItem["stepId"] },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
     }
 }

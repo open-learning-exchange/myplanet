@@ -867,6 +867,7 @@
 
     <plurals name="survey_taken_count">
         <item quantity="one">Enquête effectuée %d fois</item>
+        <item quantity="many">Enquête effectuée %d fois</item>
         <item quantity="other">Enquête effectuée %d fois</item>
     </plurals>
 
@@ -1107,16 +1108,19 @@
 
     <plurals name="minutes">
         <item quantity="one">%d minute</item>
+        <item quantity="many">%d minutes</item>
         <item quantity="other">%d minutes</item>
     </plurals>
 
     <plurals name="hours">
         <item quantity="one">%d heure</item>
+        <item quantity="many">%d heures</item>
         <item quantity="other">%d heures</item>
     </plurals>
 
     <plurals name="days">
         <item quantity="one">%d jour</item>
+        <item quantity="many">%d jours</item>
         <item quantity="other">%d jours</item>
     </plurals>
 
@@ -1202,5 +1206,6 @@
     <string name="select_open_with">Ouvrir</string>
     <string name="select_media">Médias</string>
     <string name="select_resource_type">Type de ressource</string>
+    <string name="no_results_for_filter">Aucun résultat ne correspond à votre filtre actuel</string>
 
 </resources>
