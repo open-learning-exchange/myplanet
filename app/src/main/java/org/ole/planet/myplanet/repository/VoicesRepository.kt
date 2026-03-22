@@ -2,11 +2,29 @@ package org.ole.planet.myplanet.repository
 
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 
+data class NewsUploadData(
+    val id: String?,
+    val _id: String?,
+    val message: String?,
+    val imageUrls: List<String>,
+    val newsJson: JsonObject
+)
+
+data class NewsUpdateData(
+    val id: String?,
+    val _id: String?,
+    val _rev: String?,
+    val imagesArray: com.google.gson.JsonArray
+)
+
 interface VoicesRepository {
+    suspend fun getNewsForUpload(serializeNews: (RealmNews) -> JsonObject): List<NewsUploadData>
+    suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>

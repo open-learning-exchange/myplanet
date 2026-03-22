@@ -622,38 +622,11 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
 
-        data class NewsUploadData(
-            val id: String?,
-            val _id: String?,
-            val message: String?,
-            val imageUrls: List<String>,
-            val newsJson: JsonObject
-        )
-
-        val newsItems = databaseService.withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .findAll()
-                .mapNotNull { news ->
-                    if (news.userId?.startsWith("guest") == true) null
-                    else NewsUploadData(
-                        id = news.id,
-                        _id = news._id,
-                        message = news.message,
-                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = voicesRepository.serializeNews(news)
-                    )
-                }
-        }
-
-        data class NewsUpdateData(
-            val id: String?,
-            val body: JsonObject?,
-            val imagesArray: com.google.gson.JsonArray
-        )
+        val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
         withContext(Dispatchers.IO) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableListOf<NewsUpdateData>()
+                val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
                 batch.forEach { news ->
                     try {
                         // Upload images first and collect metadata
@@ -721,7 +694,13 @@ class UploadManager @Inject constructor(
 
                         // Update database on success
                         if (newsResponse.isSuccessful && newsResponse.body() != null) {
-                            successfulUpdates.add(NewsUpdateData(news.id, newsResponse.body(), imagesArray))
+                            val body = newsResponse.body()
+                            successfulUpdates.add(org.ole.planet.myplanet.repository.NewsUpdateData(
+                                id = news.id,
+                                _id = getString("id", body),
+                                _rev = getString("rev", body),
+                                imagesArray = imagesArray
+                            ))
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -729,32 +708,7 @@ class UploadManager @Inject constructor(
                 }
 
                 if (successfulUpdates.isNotEmpty()) {
-                    databaseService.executeTransactionAsync { realm ->
-                        val ids = successfulUpdates.mapNotNull { it.id }
-                        val managedNewsMap = mutableMapOf<String, RealmNews>()
-
-                        if (ids.isNotEmpty()) {
-                            ids.chunked(999).forEach { chunk ->
-                                val results = realm.where(RealmNews::class.java)
-                                    .`in`("id", chunk.toTypedArray())
-                                    .findAll()
-                                results.forEach { n ->
-                                    n.id?.let { id -> managedNewsMap[id] = n }
-                                }
-                            }
-                        }
-
-                        successfulUpdates.forEach { update ->
-                            update.id?.let { id ->
-                                managedNewsMap[id]?.let { managedNews ->
-                                    managedNews.imageUrls?.clear()
-                                    managedNews._id = getString("id", update.body)
-                                    managedNews._rev = getString("rev", update.body)
-                                    managedNews.images = gson.toJson(update.imagesArray)
-                                }
-                            }
-                        }
-                    }
+                    voicesRepository.markNewsUploaded(successfulUpdates)
                 }
             }
         }
