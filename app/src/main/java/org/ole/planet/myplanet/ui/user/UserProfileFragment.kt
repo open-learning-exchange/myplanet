@@ -31,7 +31,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.DiffUtil
+import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -476,7 +476,12 @@ class UserProfileFragment : Fragment() {
         (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
     }
 
-    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(StatsDiffCallback()) {
+    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(
+        DiffUtils.itemCallback<Pair<String, String?>>(
+            { oldItem, newItem -> oldItem.first == newItem.first },
+            { oldItem, newItem -> oldItem == newItem }
+        )
+    ) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
             val rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
             return ViewHolderRowStat(rowStatBinding)
@@ -502,16 +507,6 @@ class UserProfileFragment : Fragment() {
                     )
                 )
             }
-        }
-    }
-
-    class StatsDiffCallback : DiffUtil.ItemCallback<Pair<String, String?>>() {
-        override fun areItemsTheSame(oldItem: Pair<String, String?>, newItem: Pair<String, String?>): Boolean {
-            return oldItem.first == newItem.first
-        }
-
-        override fun areContentsTheSame(oldItem: Pair<String, String?>, newItem: Pair<String, String?>): Boolean {
-            return oldItem == newItem
         }
     }
 

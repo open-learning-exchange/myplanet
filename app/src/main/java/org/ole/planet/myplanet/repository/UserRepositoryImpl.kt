@@ -73,6 +73,21 @@ class UserRepositoryImpl @Inject constructor(
         return findByField(RealmUser::class.java, "name", name, true)
     }
 
+    override suspend fun getSyncedUsers(): List<RealmUser> {
+        return queryList(RealmUser::class.java) {
+            isNotEmpty("_id")
+            not().beginsWith("id", "guest")
+        }
+    }
+
+    override suspend fun getSyncedUserByName(name: String): RealmUser? {
+        return queryList(RealmUser::class.java) {
+            equalTo("name", name)
+            isNotEmpty("_id")
+            not().beginsWith("id", "guest")
+        }.firstOrNull()
+    }
+
     override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
         return withRealm { realm ->
             RealmUser.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
@@ -307,7 +322,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserProfile(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return queryList(RealmUser::class.java) {
+        return queryList(RealmUser::class.java, true) {
             equalTo("id", userId).or().equalTo("_id", userId)
         }.firstOrNull()
     }
@@ -679,6 +694,27 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
             }
+        }
+    }
+
+    override suspend fun markUserUploaded(userId: String, id: String, rev: String) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user._id = id
+            user._rev = rev
+        }
+    }
+
+    override suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user.key = key
+            user.iv = iv
+        }
+    }
+
+    override suspend fun markUserRevUpdated(userId: String, rev: String?) {
+        update(RealmUser::class.java, "id", userId) { user ->
+            user._rev = rev
+            user.isUpdated = false
         }
     }
 

@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -60,8 +59,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
 
     private lateinit var imageList: MutableList<String>
     private var llImage: ViewGroup? = null

@@ -27,6 +27,7 @@ interface CoursesRepository {
     suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>
     suspend fun isMyCourse(userId: String?, courseId: String?): Boolean
+    suspend fun search(query: String): List<RealmMyCourse>
     suspend fun filterCourses(
         searchText: String,
         gradeLevel: String,
@@ -56,4 +57,6 @@ interface CoursesRepository {
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTags(courseId: String): List<RealmTag>
     suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
+    suspend fun deleteCourseProgress(courseId: String?)
+    suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
 }
