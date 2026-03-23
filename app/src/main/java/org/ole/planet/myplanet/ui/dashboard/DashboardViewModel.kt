@@ -76,16 +76,16 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    private val _surveyNavigationEvent = MutableSharedFlow<String>()
+    private val _surveyNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
 
-    private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>()
+    private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>(extraBufferCapacity = 1)
     val taskNavigationEvent: SharedFlow<Triple<String, String, String>> = _taskNavigationEvent.asSharedFlow()
 
-    private val _joinRequestNavigationEvent = MutableSharedFlow<String>()
+    private val _joinRequestNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val joinRequestNavigationEvent: SharedFlow<String> = _joinRequestNavigationEvent.asSharedFlow()
 
-    private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>()
+    private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>(extraBufferCapacity = 1)
     val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
     private var userContentJob: Job? = null
@@ -132,32 +132,40 @@ class DashboardViewModel @Inject constructor(
     fun loadUserContent(userId: String?) {
         if (userId == null) return
         userContentJob?.cancel()
-        userContentJob = viewModelScope.launch(dispatcherProvider.io) {
-            val libraryDeferred = async {
+        userContentJob = viewModelScope.launch {
+            val libraryDeferred = async(dispatcherProvider.io) {
                 resourcesRepository.getMyLibrary(userId)
             }
 
-            val coursesFlowJob = launch {
+            val coursesFlowJob = launch(dispatcherProvider.io) {
                 coursesRepository.getMyCoursesFlow(userId).collect { courses ->
-                    _uiState.update { it.copy(courses = courses) }
+                    withContext(dispatcherProvider.main) {
+                        _uiState.update { it.copy(courses = courses) }
+                    }
                 }
             }
 
-            val teamsFlowJob = launch {
+            val teamsFlowJob = launch(dispatcherProvider.io) {
                 teamsRepository.getMyTeamsFlow(userId).collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
+                    withContext(dispatcherProvider.main) {
+                        _uiState.update { it.copy(teams = teams) }
+                    }
                 }
             }
 
-            launch {
+            launch(dispatcherProvider.io) {
                 val user = userRepository.getUserById(userId)
                 val userName = user?.name
                 val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-                _uiState.update { it.copy(fullName = fullName) }
+                withContext(dispatcherProvider.main) {
+                    _uiState.update { it.copy(fullName = fullName) }
+                }
 
                 if (userName != null) {
                     activitiesRepository.getOfflineLogins(userName).collect { logins ->
-                        _uiState.update { it.copy(offlineLogins = logins.size) }
+                        withContext(dispatcherProvider.main) {
+                            _uiState.update { it.copy(offlineLogins = logins.size) }
+                        }
                     }
                 }
             }
@@ -180,8 +188,10 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun loadUsers() {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+        viewModelScope.launch {
+            val users = withContext(dispatcherProvider.io) {
+                userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            }
             _uiState.update { it.copy(users = users) }
         }
     }
@@ -196,8 +206,10 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun handleTaskNavigation(taskId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val teamData = teamsRepository.getTaskTeamInfo(taskId)
+        viewModelScope.launch {
+            val teamData = withContext(dispatcherProvider.io) {
+                teamsRepository.getTaskTeamInfo(taskId)
+            }
             if (teamData != null) {
                 _taskNavigationEvent.emit(teamData)
             }
@@ -205,8 +217,10 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun handleJoinRequestNavigation(requestId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val teamId = teamsRepository.getJoinRequestTeamId(requestId)
+        viewModelScope.launch {
+            val teamId = withContext(dispatcherProvider.io) {
+                teamsRepository.getJoinRequestTeamId(requestId)
+            }
             if (teamId != null) {
                 _joinRequestNavigationEvent.emit(teamId)
             }
@@ -214,12 +228,14 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             var lastException: Exception? = null
             repeat(maxRetries) { attempt ->
                 try {
-                    notificationsRepository.refresh()
-                    val unreadCount = getUnreadNotificationsSize(userId)
+                    val unreadCount = withContext(dispatcherProvider.io) {
+                        notificationsRepository.refresh()
+                        getUnreadNotificationsSize(userId)
+                    }
                     setUnreadNotifications(unreadCount)
                     return@launch
                 } catch (e: Exception) {
@@ -235,9 +251,11 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun markNotificationAsRead(notificationId: String, userId: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
-                notificationsRepository.markNotificationAsRead(notificationId, userId)
+                withContext(dispatcherProvider.io) {
+                    notificationsRepository.markNotificationAsRead(notificationId, userId)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -245,11 +263,13 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun refreshNotificationsBadge(userId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             kotlinx.coroutines.delay(100)
             try {
-                notificationsRepository.refresh()
-                val unreadCount = getUnreadNotificationsSize(userId)
+                val unreadCount = withContext(dispatcherProvider.io) {
+                    notificationsRepository.refresh()
+                    getUnreadNotificationsSize(userId)
+                }
                 setUnreadNotifications(unreadCount)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -258,8 +278,10 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun handleSurveyNavigation(surveyId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val survey = surveysRepository.getSurvey(surveyId)
+        viewModelScope.launch {
+            val survey = withContext(dispatcherProvider.io) {
+                surveysRepository.getSurvey(surveyId)
+            }
             if (survey != null && survey.id != null) {
                 _surveyNavigationEvent.emit(survey.id!!)
             }
@@ -276,13 +298,13 @@ class DashboardViewModel @Inject constructor(
         val endTime = 1734307200000
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
 
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
-                val courseData = progressRepository.fetchCourseData(userId)
-                val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
-                val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
-                val courseName = coursesRepository.getCourseTitleById(courseId)
-                val hasUnfinishedSurvey = hasPendingSurvey(courseId, userId)
+                val courseData = withContext(dispatcherProvider.io) { progressRepository.fetchCourseData(userId) }
+                val uniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
+                val allUniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
+                val courseName = withContext(dispatcherProvider.io) { coursesRepository.getCourseTitleById(courseId) }
+                val hasUnfinishedSurvey = withContext(dispatcherProvider.io) { hasPendingSurvey(courseId, userId) }
 
                 val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
 
@@ -298,7 +320,7 @@ class DashboardViewModel @Inject constructor(
                     val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                     var hasValidSync = false
                     if (prereqsMet) {
-                        hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                        hasValidSync = withContext(dispatcherProvider.io) { progressRepository.hasUserCompletedSync(userId ?: "") }
                     }
                     _challengeDialogEvent.emit(
                         ChallengeDialogData(
@@ -340,10 +362,12 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun checkAndCreateNewNotifications(userId: String?, isAdmin: Boolean = false) = withContext(dispatcherProvider.io) {
+    suspend fun checkAndCreateNewNotifications(userId: String?, isAdmin: Boolean = false) {
         try {
-            updateResourceNotification(userId)
-            val unreadCount = getUnreadNotificationsSize(userId, isAdmin)
+            val unreadCount = withContext(dispatcherProvider.io) {
+                updateResourceNotification(userId)
+                getUnreadNotificationsSize(userId, isAdmin)
+            }
             _uiState.update { it.copy(unreadNotifications = unreadCount) }
         } catch (e: Exception) {
             e.printStackTrace()
