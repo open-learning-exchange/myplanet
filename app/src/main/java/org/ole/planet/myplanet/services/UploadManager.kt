@@ -499,31 +499,10 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            data class ActivityData(
-                val activityId: String?,
-                val userId: String?,
-                val serialized: JsonObject
-            )
-
-            val activitiesToUpload = databaseService.withRealm { realm ->
-                val activities = realm.where(RealmOfflineActivity::class.java)
-                    .isNull("_rev").equalTo("type", "login").findAll()
-
-                activities.mapNotNull { activity ->
-                    if (activity.userId?.startsWith("guest") == true) {
-                        null
-                    } else {
-                        ActivityData(
-                            activityId = activity.id,
-                            userId = activity.userId,
-                            serialized = RealmOfflineActivity.serializeLoginActivities(activity, context)
-                        )
-                    }
-                }
-            }
+            val activitiesToUpload = activitiesRepository.getUnuploadedLoginActivities()
 
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableMapOf<String, JsonObject?>()
+                val successfulUpdates = mutableMapOf<String, com.google.gson.JsonObject?>()
 
                 batch.forEach { activityData ->
                     try {
@@ -532,30 +511,20 @@ class UploadManager @Inject constructor(
                             "${UrlUtils.getUrl()}/login_activities", activityData.serialized
                         ).body()
 
-                        if (activityData.activityId != null) {
-                            successfulUpdates[activityData.activityId] = `object`
-                        }
-                    } catch (e: IOException) {
+                        successfulUpdates[activityData.id] = `object`
+                    } catch (e: java.io.IOException) {
                         e.printStackTrace()
                     }
                 }
 
                 if (successfulUpdates.isNotEmpty()) {
                     val idsToUpdate = successfulUpdates.keys.toTypedArray()
-                    databaseService.executeTransactionAsync { transactionRealm ->
-                        val activities = transactionRealm.where(RealmOfflineActivity::class.java)
-                            .`in`("id", idsToUpdate)
-                            .findAll()
-
-                        activities.forEach { activity ->
-                            val updateData = successfulUpdates[activity.id]
-                            activity.changeRev(updateData)
-                        }
-                    }
+                    activitiesRepository.markActivitiesUploaded(idsToUpdate, successfulUpdates)
                 }
             }
 
             uploadTeamActivitiesRefactored()
+
             withContext(Dispatchers.Main) {
                 listener.onSuccess("User activities sync completed successfully")
             }
