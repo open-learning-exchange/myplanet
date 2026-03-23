@@ -37,6 +37,10 @@ object TimeUtils {
         DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
     }
 
+    private val csvDateFormatter by lazy {
+        DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US).withZone(ZoneId.systemDefault())
+    }
+
     fun getRelativeTime(timestamp: Long): String {
         val timeNow = System.currentTimeMillis()
         return if (timestamp < timeNow) {
@@ -66,6 +70,14 @@ object TimeUtils {
         try {
             val instant = Instant.ofEpochMilli(data)
             tzFormatter.format(instant)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+
+    fun formatDateForCsv(date: Long): String =
+        try {
+            csvDateFormatter.format(Instant.ofEpochMilli(date))
         } catch (e: Exception) {
             e.printStackTrace()
             ""
