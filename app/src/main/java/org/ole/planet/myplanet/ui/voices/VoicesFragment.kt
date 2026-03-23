@@ -170,6 +170,9 @@ class VoicesFragment : BaseVoicesFragment() {
         return "$planetCode@$parentCode"
     }
 
+    private val currentEmptyStateSource: String
+        get() = if (etSearch.text.isNotEmpty() || selectedLabel != "All") "news_filtered" else "news"
+
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
@@ -269,7 +272,7 @@ class VoicesFragment : BaseVoicesFragment() {
         } else {
             (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -311,15 +314,15 @@ class VoicesFragment : BaseVoicesFragment() {
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
     }
 

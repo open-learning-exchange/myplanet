@@ -176,6 +176,23 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUnuploadedLoginActivities(): List<org.ole.planet.myplanet.model.LoginActivityData> {
+        return queryList(RealmOfflineActivity::class.java) {
+            isNull("_rev")
+            equalTo("type", "login")
+        }.mapNotNull { activity ->
+            if (activity.userId?.startsWith("guest") == true || activity.id == null || activity.userId == null) {
+                null
+            } else {
+                org.ole.planet.myplanet.model.LoginActivityData(
+                    activity.id!!,
+                    activity.userId!!,
+                    RealmOfflineActivity.serializeLoginActivities(activity, context)
+                )
+            }
+        }
+    }
+
     override suspend fun getUnuploadedTeamLogs(): List<TeamLogData> {
         return withRealm { realm ->
             val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
@@ -187,6 +204,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
                     type = log.type,
                     serialized = RealmTeamLog.serializeTeamActivities(log, context)
                 )
+            }
+        }
+    }
+
+    override suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>) {
+        executeTransaction { transactionRealm ->
+            val activities = transactionRealm.where(RealmOfflineActivity::class.java)
+                .`in`("id", ids)
+                .findAll()
+
+            activities.forEach { activity ->
+                revMap[activity.id]?.let { activity.changeRev(it) }
             }
         }
     }
