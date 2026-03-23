@@ -33,6 +33,52 @@ class VoicesRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
+    override suspend fun getNewsForUpload(serializeNews: (RealmNews) -> JsonObject): List<NewsUploadData> {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .findAll()
+                .mapNotNull { news ->
+                    if (news.userId?.startsWith("guest") == true) null
+                    else NewsUploadData(
+                        id = news.id,
+                        _id = news._id,
+                        message = news.message,
+                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                        newsJson = serializeNews(news)
+                    )
+                }
+        }
+    }
+
+    override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {
+        databaseService.executeTransactionAsync { realm ->
+            val ids = updates.mapNotNull { it.id }
+            val managedNewsMap = mutableMapOf<String, RealmNews>()
+
+            if (ids.isNotEmpty()) {
+                ids.chunked(999).forEach { chunk ->
+                    val results = realm.where(RealmNews::class.java)
+                        .`in`("id", chunk.toTypedArray())
+                        .findAll()
+                    results.forEach { n ->
+                        n.id?.let { id -> managedNewsMap[id] = n }
+                    }
+                }
+            }
+
+            updates.forEach { update ->
+                update.id?.let { id ->
+                    managedNewsMap[id]?.let { managedNews ->
+                        managedNews.imageUrls?.clear()
+                        managedNews._id = update._id
+                        managedNews._rev = update._rev
+                        managedNews.images = gson.toJson(update.imagesArray)
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
         return withRealm { realm ->
             realm.findCopyByField(RealmMyLibrary::class.java, "_id", resourceId)
