@@ -7,7 +7,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
-import io.mockk.spyk
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.realm.Realm
@@ -25,6 +24,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
@@ -35,8 +35,7 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         databaseService = mockk(relaxed = true)
-
-        repository = spyk(ChatRepositoryImpl(databaseService))
+        repository = ChatRepositoryImpl(databaseService)
     }
 
     @After
@@ -58,27 +57,25 @@ class ChatRepositoryImplTest {
         val mockRealm = mockk<Realm>(relaxed = true)
         val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
         val mockChat = mockk<RealmChatHistory>(relaxed = true)
+        val expectedList = listOf(mockChat)
 
         every { mockQuery.equalTo(any<String>(), any<String>()) } returns mockQuery
         every { mockQuery.sort(any<String>(), any<Sort>()) } returns mockQuery
 
-        // Use slot to capture the lambda function
-        val builderSlot = slot<RealmQuery<RealmChatHistory>.() -> Unit>()
-        val expectedList = listOf(mockChat)
-
-        coEvery {
-            repository["queryList"](RealmChatHistory::class.java, capture(builderSlot))
-        } answers {
-            // Apply the captured lambda to mockQuery
-            builderSlot.captured.invoke(mockQuery)
-            expectedList
+        val operationSlot = slot<(Realm) -> List<RealmChatHistory>>()
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
         }
+
+        val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockRealm.copyFromRealm(mockResults) } returns expectedList
 
         val result = repository.getChatHistoryForUser(userName)
 
         assertEquals(expectedList, result)
 
-        // Verify the lambda actually configured the query correctly
         verify(exactly = 1) { mockQuery.equalTo("user", userName) }
         verify(exactly = 1) { mockQuery.sort("id", Sort.DESCENDING) }
     }
@@ -88,9 +85,8 @@ class ChatRepositoryImplTest {
         val id = "testId"
         val mockRealm = mockk<Realm>(relaxed = true)
 
-        // Mock the withRealm method from RealmRepository to provide our mockRealm
         val operationSlot = slot<(Realm) -> String?>()
-        coEvery { repository["withRealm"](any<Boolean>(), capture(operationSlot)) } answers {
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
             operationSlot.captured.invoke(mockRealm)
         }
 
@@ -101,7 +97,6 @@ class ChatRepositoryImplTest {
         every { mockQuery.equalTo("_id", id) } returns mockQuery
         every { mockQuery.findAll() } returns mockResults
 
-        // Create some mock items
         val item1 = mockk<RealmChatHistory>()
         every { item1._rev } returns "1-abc"
 
@@ -130,7 +125,7 @@ class ChatRepositoryImplTest {
         val mockRealm = mockk<Realm>(relaxed = true)
 
         val operationSlot = slot<(Realm) -> String?>()
-        coEvery { repository["withRealm"](any<Boolean>(), capture(operationSlot)) } answers {
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
             operationSlot.captured.invoke(mockRealm)
         }
 
@@ -154,19 +149,44 @@ class ChatRepositoryImplTest {
         val mockRealm = mockk<Realm>(relaxed = true)
         every { mockRealm.isClosed } returns false
 
-        // This stops the execution from ever reaching the code where Mockk triggers IllegalStateException
-        // for Realm.where by skipping the body of withRealmAsync entirely.
-        // We'll just verify withRealmAsync is called, since we know it triggers RealmChatHistory.insert inside.
-        // But since coVerify on spied repository["withRealmAsync"] doesn't work,
-        // we'll just mock the executeTransactionAsync on databaseService directly, since withRealmAsync just invokes that.
+        // CRITICAL FIX: The reason mockk evaluating Realm.where throws IllegalStateException is because
+        // when the lambda executes, the companion method code calls Realm.where.
+        // We tried mockkStatic but it still leaked.
+        // We will fully mock the query first BEFORE executing the captured block.
 
-        coEvery { databaseService.withRealmAsync<Unit>(any()) } answers {
-            // no-op
+        val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.equalTo(any<String>(), any<String>()) } returns mockQuery
+        every { mockQuery.findFirst() } returns null
+        every { mockRealm.createObject(RealmChatHistory::class.java, any<String>()) } returns mockk(relaxed = true)
+
+        val operationSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.withRealmAsync<Unit>(capture(operationSlot)) } answers {
+            // we capture but DO NOT evaluate the lambda yet
         }
 
         repository.saveNewChat(chatObj)
 
         coVerify(exactly = 1) { databaseService.withRealmAsync<Unit>(any()) }
+
+        val transactionSlot = slot<Realm.Transaction>()
+        every { mockRealm.executeTransaction(capture(transactionSlot)) } answers {
+            // DO NOTHING - Do not execute transaction block during mockk matching
+        }
+
+        // Execute outer lambda manually
+        operationSlot.captured.invoke(mockRealm)
+
+        verify(exactly = 1) { mockRealm.executeTransaction(any()) }
+
+        io.mockk.mockkObject(RealmChatHistory.Companion)
+        every { RealmChatHistory.insert(any(), any()) } answers { }
+
+        transactionSlot.captured.execute(mockRealm)
+
+        verify(exactly = 1) { RealmChatHistory.insert(mockRealm, chatObj) }
+
+        io.mockk.unmockkObject(RealmChatHistory.Companion)
     }
 
     @Test
@@ -175,15 +195,70 @@ class ChatRepositoryImplTest {
         val query = "hello"
         val response = "hi"
         val rev = "1-rev"
+        val mockRealm = mockk<Realm>(relaxed = true)
+        every { mockRealm.isClosed } returns false
 
-        // This stops the execution from ever reaching the code where Mockk triggers IllegalStateException
-        // for Realm.where by skipping the body of withRealmAsync entirely.
-        coEvery { databaseService.withRealmAsync<Unit>(any()) } answers {
-            // no-op
+        val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.equalTo(any<String>(), any<String>()) } returns mockQuery
+        every { mockQuery.findFirst() } returns null
+        every { mockRealm.createObject(RealmChatHistory::class.java, any<String>()) } returns mockk(relaxed = true)
+
+        val operationSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.withRealmAsync<Unit>(capture(operationSlot)) } answers {
+            // DO NOTHING
         }
 
         repository.continueConversation(id, query, response, rev)
 
         coVerify(exactly = 1) { databaseService.withRealmAsync<Unit>(any()) }
+
+        val transactionSlot = slot<Realm.Transaction>()
+        every { mockRealm.executeTransaction(capture(transactionSlot)) } answers {
+            // DO NOTHING
+        }
+
+        // Execute outer lambda manually
+        operationSlot.captured.invoke(mockRealm)
+
+        verify(exactly = 1) { mockRealm.executeTransaction(any()) }
+
+        io.mockk.mockkObject(RealmChatHistory.Companion)
+        every { RealmChatHistory.Companion.addConversationToChatHistory(any(), any(), any(), any(), any()) } answers { }
+
+        transactionSlot.captured.execute(mockRealm)
+
+        verify(exactly = 1) { RealmChatHistory.Companion.addConversationToChatHistory(mockRealm, id, query, response, rev) }
+
+        io.mockk.unmockkObject(RealmChatHistory.Companion)
+    }
+
+    @Test
+    fun `saveNewChat propagates exceptions from withRealmAsync`() = runTest {
+        val chatObj = JsonObject()
+        val expectedException = RuntimeException("Realm failed")
+
+        coEvery { databaseService.withRealmAsync<Unit>(any()) } throws expectedException
+
+        try {
+            repository.saveNewChat(chatObj)
+            assert(false) { "Expected exception was not thrown" }
+        } catch (e: Exception) {
+            assertEquals(expectedException, e)
+        }
+    }
+
+    @Test
+    fun `continueConversation propagates exceptions from withRealmAsync`() = runTest {
+        val expectedException = RuntimeException("Realm failed")
+
+        coEvery { databaseService.withRealmAsync<Unit>(any()) } throws expectedException
+
+        try {
+            repository.continueConversation("id", "query", "response", "rev")
+            assert(false) { "Expected exception was not thrown" }
+        } catch (e: Exception) {
+            assertEquals(expectedException, e)
+        }
     }
 }
