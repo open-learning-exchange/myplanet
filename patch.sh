@@ -1,3 +1,4 @@
+cat << 'INNER' > app/src/test/java/org/ole/planet/myplanet/repository/RealmRepositoryTest.kt
 package org.ole.planet.myplanet.repository
 
 import io.mockk.*
@@ -163,3 +164,4 @@ class RealmRepositoryTest {
         assertEquals(exceptionMessage, caughtException?.message)
     }
 }
+INNER
