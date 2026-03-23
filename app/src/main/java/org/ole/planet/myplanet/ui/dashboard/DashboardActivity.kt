@@ -376,7 +376,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
             R.id.menu_goOnline -> wifiStatusSwitch()
-            R.id.action_sync -> logSyncInSharedPrefs()
+            R.id.action_sync -> logUserSyncInSharedPrefs()
             R.id.action_feedback -> {
                 if (user?.id?.startsWith("guest") == false) {
                     openCallFragment(

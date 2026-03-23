@@ -161,6 +161,78 @@ class SyncManager @Inject constructor(
         }
     }
 
+    fun startUserSync(listener: OnSyncListener?) {
+        this.listener = listener
+        Log.d("SyncRoute", "[1] startUserSync called — isSyncing=${isSyncing.get()}")
+        if (isSyncing.compareAndSet(false, true)) {
+            Log.d("SyncRoute", "[2] isSyncing lock acquired — proceeding with user sync")
+            _syncStatus.value = SyncStatus.Idle
+            sharedPrefManager.removeKey("concatenated_links")
+            listener?.onSyncStarted()
+            _syncStatus.value = SyncStatus.Syncing
+            createLog("sync_manager_route", "user_specific")
+            backgroundSync = syncScope.launch(Dispatchers.IO) {
+                Log.d("SyncRoute", "[3] authenticating…")
+                val authStart = System.currentTimeMillis()
+                val authenticated = transactionSyncManager.authenticate()
+                Log.d("SyncRoute", "[4] authentication ${if (authenticated) "SUCCESS" else "FAILED"} in ${System.currentTimeMillis() - authStart}ms")
+                if (authenticated) {
+                    startUserDataSync()
+                } else {
+                    handleException(context.getString(R.string.invalid_configuration))
+                    cleanupMainSync()
+                }
+            }
+        } else {
+            Log.d("SyncRoute", "[!] startUserSync SKIPPED — another sync is already in progress")
+        }
+    }
+
+    private suspend fun startUserDataSync() {
+        val logger = SyncTimeLogger
+        logger.startLogging()
+        val startTime = System.currentTimeMillis()
+        Log.d("SyncRoute", "[5] USER SYNC STARTED — ${USER_SYNC_TABLES.size} tables: ${USER_SYNC_TABLES.joinToString()}")
+        Log.d("SyncRoute", "[5] Skipping: submissions, ratings, login_activities, notifications, chat_history, teams, tasks, tablet_users, feedback, courses, resources, exams, tags")
+        try {
+            val initStart = System.currentTimeMillis()
+            initializeSync()
+            Log.d("SyncRoute", "[6] initializeSync done in ${System.currentTimeMillis() - initStart}ms")
+            coroutineScope {
+                val syncJobs = USER_SYNC_TABLES.map { table ->
+                    async {
+                        val t = System.currentTimeMillis()
+                        logger.startProcess("${table}_sync")
+                        transactionSyncManager.syncDb(table)
+                        logger.endProcess("${table}_sync")
+                        Log.d("SyncRoute", "[7] $table synced in ${System.currentTimeMillis() - t}ms")
+                    }
+                }
+                syncJobs.awaitAll()
+            }
+            Log.d("SyncRoute", "[8] all tables done — ${System.currentTimeMillis() - startTime}ms elapsed")
+            val adminStart = System.currentTimeMillis()
+            logger.startProcess("admin_sync")
+            loginSyncManager.syncAdmin()
+            logger.endProcess("admin_sync")
+            Log.d("SyncRoute", "[9] syncAdmin done in ${System.currentTimeMillis() - adminStart}ms")
+            logger.startProcess("notification_reads_upload")
+            transactionSyncManager.syncNotificationReads()
+            logger.endProcess("notification_reads_upload")
+            databaseService.withRealm { realm ->
+                onSynced(realm, sharedPrefManager.rawPreferences)
+            }
+            logger.stopLogging()
+            val elapsed = System.currentTimeMillis() - startTime
+            Log.d("SyncRoute", "[10] USER SYNC COMPLETED in ${elapsed}ms")
+        } catch (err: Exception) {
+            err.printStackTrace()
+            handleException(err.message)
+        } finally {
+            destroy()
+        }
+    }
+
     private suspend fun startSync(type: String, syncTables: List<String>?) {
         val isFastSync = sharedPrefManager.getFastSync()
         if (!isFastSync || type == "upload") {
@@ -172,6 +244,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun startFullSync() {
         val syncStartTime = System.currentTimeMillis()
+        Log.d("SyncRoute", "[F1] FULL SYNC STARTED")
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
@@ -319,6 +392,7 @@ class SyncManager @Inject constructor(
             Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            Log.d("SyncRoute", "[F2] FULL SYNC COMPLETED in ${minutes}m ${seconds}s (${totalSyncTime}ms)")
         } catch (err: Exception) {
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
@@ -326,6 +400,7 @@ class SyncManager @Inject constructor(
             Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
             Log.d("SyncPerf", "Error: ${err.message}")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            Log.d("SyncRoute", "[F!] FULL SYNC FAILED after ${totalSyncTime}ms — ${err.message}")
             err.printStackTrace()
             handleException(err.message)
         } finally {
@@ -1039,4 +1114,19 @@ class SyncManager @Inject constructor(
         return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }
 
+    companion object {
+        // Tables that are small enough to sync quickly for a single user session.
+        // Excluded from user sync because they contain ALL users' data and are too large:
+        //   submissions (~644s), ratings (~239s), login_activities (~228s),
+        //   notifications (~51s), chat_history (~40s), teams (~9s), tasks (~9s),
+        //   tablet_users (~14s), feedback (~6s)
+        // Those remain part of the full sync (syncIcon).
+        val USER_SYNC_TABLES = listOf(
+            "achievements",     // ~350ms
+            "certifications",   // ~373ms
+            "health",           // ~1.4s
+            "meetups",          // ~1.7s
+            "courses_progress"  // ~19s  — most important for UX
+        )
+    }
 }

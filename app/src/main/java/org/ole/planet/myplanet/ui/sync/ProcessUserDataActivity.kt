@@ -217,12 +217,16 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.show()
 
         applicationScope.launch(Dispatchers.IO) {
+            val uploadStartTime = System.currentTimeMillis()
+            android.util.Log.d("SyncRoute", "[U1] UPLOAD STARTED — pushing local changes for current user")
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
             val activity = this@ProcessUserDataActivity
 
             suspend fun checkAllOperationsComplete() {
                 if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                    val elapsed = System.currentTimeMillis() - uploadStartTime
+                    android.util.Log.d("SyncRoute", "[U2] UPLOAD COMPLETED in ${elapsed}ms")
                     withContext(Dispatchers.Main) {
                         if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()

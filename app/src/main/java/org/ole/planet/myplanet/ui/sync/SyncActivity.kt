@@ -119,6 +119,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
+    var isUserSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
     @Inject
@@ -215,8 +216,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
 
                 override fun onVersionCheckSuccess() {
-                    isSync = false
-                    forceSync = true
+                    if (isUserSync) {
+                        android.util.Log.d("SyncRoute", "onVersionCheckSuccess: isUserSync=true → download path")
+                        isSync = true
+                        forceSync = false
+                    } else {
+                        android.util.Log.d("SyncRoute", "onVersionCheckSuccess: isUserSync=false → upload path")
+                        isSync = false
+                        forceSync = true
+                    }
                     configurationsRepository.checkVersion(this@SyncActivity, prefData)
                 }
 
@@ -409,7 +417,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun startSync(type: String) {
-        syncManager.start(null, type)
+        if (isUserSync && type == "sync") {
+            android.util.Log.d("SyncRoute", "startSync: routing to user-specific sync (tables: ${SyncManager.USER_SYNC_TABLES.joinToString()})")
+            syncManager.startUserSync(null)
+        } else {
+            android.util.Log.d("SyncRoute", "startSync: routing to full sync (type=$type)")
+            syncManager.start(null, type)
+        }
     }
 
     private fun saveConfigAndContinue(
