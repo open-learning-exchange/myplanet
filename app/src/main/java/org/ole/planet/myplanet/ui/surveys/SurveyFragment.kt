@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
@@ -38,7 +37,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
-    private lateinit var prefManager: SharedPrefManager
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
     private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private var textWatcher: TextWatcher? = null
@@ -63,7 +61,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        prefManager = SharedPrefManager(requireContext())
         
         viewModel.startExamSync()
     }
