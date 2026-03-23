@@ -201,18 +201,8 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        databaseService.executeTransactionAsync { transactionRealm ->
-            val list: List<RealmAchievement> = transactionRealm.where(RealmAchievement::class.java).findAll()
-            list.processInBatches { sub ->
-                try {
-                    if (sub._id?.startsWith("guest") == true) {
-                        return@processInBatches
-                    }
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-            }
-        }
+        val list = userRepository.getAchievementsForUpload()
+        // TODO: Implement actual upload logic or track issue for missing implementation
     }
 
     private suspend fun uploadCourseProgress() {
@@ -509,31 +499,10 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            data class ActivityData(
-                val activityId: String?,
-                val userId: String?,
-                val serialized: JsonObject
-            )
-
-            val activitiesToUpload = databaseService.withRealm { realm ->
-                val activities = realm.where(RealmOfflineActivity::class.java)
-                    .isNull("_rev").equalTo("type", "login").findAll()
-
-                activities.mapNotNull { activity ->
-                    if (activity.userId?.startsWith("guest") == true) {
-                        null
-                    } else {
-                        ActivityData(
-                            activityId = activity.id,
-                            userId = activity.userId,
-                            serialized = RealmOfflineActivity.serializeLoginActivities(activity, context)
-                        )
-                    }
-                }
-            }
+            val activitiesToUpload = activitiesRepository.getUnuploadedLoginActivities()
 
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableMapOf<String, JsonObject?>()
+                val successfulUpdates = mutableMapOf<String, com.google.gson.JsonObject?>()
 
                 batch.forEach { activityData ->
                     try {
@@ -542,30 +511,20 @@ class UploadManager @Inject constructor(
                             "${UrlUtils.getUrl()}/login_activities", activityData.serialized
                         ).body()
 
-                        if (activityData.activityId != null) {
-                            successfulUpdates[activityData.activityId] = `object`
-                        }
-                    } catch (e: IOException) {
+                        successfulUpdates[activityData.id] = `object`
+                    } catch (e: java.io.IOException) {
                         e.printStackTrace()
                     }
                 }
 
                 if (successfulUpdates.isNotEmpty()) {
                     val idsToUpdate = successfulUpdates.keys.toTypedArray()
-                    databaseService.executeTransactionAsync { transactionRealm ->
-                        val activities = transactionRealm.where(RealmOfflineActivity::class.java)
-                            .`in`("id", idsToUpdate)
-                            .findAll()
-
-                        activities.forEach { activity ->
-                            val updateData = successfulUpdates[activity.id]
-                            activity.changeRev(updateData)
-                        }
-                    }
+                    activitiesRepository.markActivitiesUploaded(idsToUpdate, successfulUpdates)
                 }
             }
 
             uploadTeamActivitiesRefactored()
+
             withContext(Dispatchers.Main) {
                 listener.onSuccess("User activities sync completed successfully")
             }
@@ -622,38 +581,11 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
 
-        data class NewsUploadData(
-            val id: String?,
-            val _id: String?,
-            val message: String?,
-            val imageUrls: List<String>,
-            val newsJson: JsonObject
-        )
-
-        val newsItems = databaseService.withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .findAll()
-                .mapNotNull { news ->
-                    if (news.userId?.startsWith("guest") == true) null
-                    else NewsUploadData(
-                        id = news.id,
-                        _id = news._id,
-                        message = news.message,
-                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = voicesRepository.serializeNews(news)
-                    )
-                }
-        }
-
-        data class NewsUpdateData(
-            val id: String?,
-            val body: JsonObject?,
-            val imagesArray: com.google.gson.JsonArray
-        )
+        val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
         withContext(Dispatchers.IO) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableListOf<NewsUpdateData>()
+                val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
                 batch.forEach { news ->
                     try {
                         // Upload images first and collect metadata
@@ -721,7 +653,13 @@ class UploadManager @Inject constructor(
 
                         // Update database on success
                         if (newsResponse.isSuccessful && newsResponse.body() != null) {
-                            successfulUpdates.add(NewsUpdateData(news.id, newsResponse.body(), imagesArray))
+                            val body = newsResponse.body()
+                            successfulUpdates.add(org.ole.planet.myplanet.repository.NewsUpdateData(
+                                id = news.id,
+                                _id = getString("id", body),
+                                _rev = getString("rev", body),
+                                imagesArray = imagesArray
+                            ))
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -729,32 +667,7 @@ class UploadManager @Inject constructor(
                 }
 
                 if (successfulUpdates.isNotEmpty()) {
-                    databaseService.executeTransactionAsync { realm ->
-                        val ids = successfulUpdates.mapNotNull { it.id }
-                        val managedNewsMap = mutableMapOf<String, RealmNews>()
-
-                        if (ids.isNotEmpty()) {
-                            ids.chunked(999).forEach { chunk ->
-                                val results = realm.where(RealmNews::class.java)
-                                    .`in`("id", chunk.toTypedArray())
-                                    .findAll()
-                                results.forEach { n ->
-                                    n.id?.let { id -> managedNewsMap[id] = n }
-                                }
-                            }
-                        }
-
-                        successfulUpdates.forEach { update ->
-                            update.id?.let { id ->
-                                managedNewsMap[id]?.let { managedNews ->
-                                    managedNews.imageUrls?.clear()
-                                    managedNews._id = getString("id", update.body)
-                                    managedNews._rev = getString("rev", update.body)
-                                    managedNews.images = gson.toJson(update.imagesArray)
-                                }
-                            }
-                        }
-                    }
+                    voicesRepository.markNewsUploaded(successfulUpdates)
                 }
             }
         }
