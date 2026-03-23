@@ -723,4 +723,10 @@ class UserRepositoryImpl @Inject constructor(
             AchievementData()
         }
     }
+
+    override suspend fun getAchievementsForUpload(): List<JsonObject> {
+        return queryList(RealmAchievement::class.java) {
+            not().beginsWith("_id", "guest")
+        }.map { RealmAchievement.serialize(it) }
+    }
 }

@@ -94,4 +94,5 @@ interface UserRepository {
         references: JsonArray
     )
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
+    suspend fun getAchievementsForUpload(): List<JsonObject>
 }
