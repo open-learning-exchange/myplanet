@@ -373,32 +373,41 @@ class CoursesRepositoryImpl @Inject constructor(
                 emptyMap()
             }
 
-            val userSubmissions = realm.where(RealmSubmission::class.java)
+            // To eliminate N+1 queries, we fetch all relevant submissions for the user upfront.
+            // We fetch all 'exam' submissions for the user and filter in memory to handle legacy formats
+            // and avoid doubling the query size with multiple ID variants.
+            val examIdsSet = examIds.toSet()
+            val submissionsByUser = realm.where(RealmSubmission::class.java)
                 .equalTo("userId", userId)
                 .equalTo("type", "exam")
                 .findAll()
 
-            val relevantSubmissions = userSubmissions.filter { sub ->
-                examIds.any { examId -> sub.parentId?.contains(examId) == true }
+            val filteredSubmissions = submissionsByUser.filter { sub ->
+                val pId = sub.parentId
+                val basePId = if (pId?.contains("@") == true) pId.split("@")[0] else pId
+                examIdsSet.contains(basePId)
             }
 
-            val submissionIds = relevantSubmissions.mapNotNull { it.id }.toTypedArray()
+            val submissionsByExamId = filteredSubmissions.groupBy { sub ->
+                val pId = sub.parentId
+                // Strip @courseId suffix if present to group by the base exam ID.
+                // Filter out nulls to ensure non-nullable keys in the map.
+                if (pId?.contains("@") == true) pId.split("@")[0] else pId
+            }.filterKeys { it != null } as Map<String, List<RealmSubmission>>
 
-            val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                realm.where(RealmAnswer::class.java)
-                    .`in`("submissionId", submissionIds)
-                    .findAll()
-                    .groupBy { it.submissionId }
+            val allSubmissionIds = filteredSubmissions.mapNotNull { it.id }
+            val answersBySubmissionId = if (allSubmissionIds.isNotEmpty()) {
+                val allAnswers = mutableListOf<RealmAnswer>()
+                // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
+                allSubmissionIds.chunked(1000).forEach { chunk ->
+                    val chunkAnswers = realm.where(RealmAnswer::class.java)
+                        .`in`("submissionId", chunk.toTypedArray())
+                        .findAll()
+                    allAnswers.addAll(chunkAnswers)
+                }
+                allAnswers.groupBy { it.submissionId }
             } else {
                 emptyMap()
-            }
-
-            val submissionsByExamId = relevantSubmissions.groupBy { sub ->
-                if (sub.parentId?.contains("@") == true) {
-                    sub.parentId!!.split("@")[0]
-                } else {
-                    sub.parentId ?: ""
-                }
             }
 
             val array = JsonArray()
