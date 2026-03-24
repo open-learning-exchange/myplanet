@@ -982,7 +982,9 @@
     <string name="dark_mode">dark mode</string>
     <string name="dark_mode_off">off</string>
     <string name="dark_mode_on">on</string>
-    <string name="dark_mode_follow_system">follow system</string>
+    <string name="dark_mode_follow_system">Follow system</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
@@ -1002,7 +1004,7 @@
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
     <string name="server_address_content_description">server address: %1$s</string>
-    <string name="select_theme_mode">select theme mode</string>
+    <string name="select_theme_mode">Select theme mode</string>
     <string name="beta_resources_auto_download">Beta resources auto download</string>
     <string name="course_steps">Course Steps</string>
     <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
