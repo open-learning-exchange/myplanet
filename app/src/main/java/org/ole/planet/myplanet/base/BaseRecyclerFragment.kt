@@ -36,7 +36,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var gradeLevel = ""
     var subjectLevel = ""
     lateinit var recyclerView: RecyclerView
-    lateinit var tvMessage: TextView
+    var tvMessage: View? = null
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
@@ -47,7 +47,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<*>
+    abstract suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -340,8 +340,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,
+            "resources_filtered" to R.string.no_results_for_filter,
             "finances" to R.string.no_finance_record,
             "news" to R.string.no_voices_available,
+            "news_filtered" to R.string.no_results_for_filter,
             "teamCourses" to R.string.no_team_courses,
             "teamResources" to R.string.no_team_resources,
             "tasks" to R.string.no_tasks,
@@ -362,13 +364,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             v.visibility = if (count == 0) View.VISIBLE else View.GONE
             val messageRes = noDataMessages[source]
                 ?: R.string.no_data_available_please_check_and_try_again
-            (v as TextView).setText(messageRes)
+            val textView = if (v is TextView) v else v.findViewById<TextView>(R.id.tv_empty_message)
+            textView?.setText(messageRes)
         }
 
         fun showNoFilter(v: View?, count: Int) {
             v ?: return
             v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            (v as TextView).setText(R.string.no_course_matched_filter)
+            val textView = if (v is TextView) v else v.findViewById<TextView>(R.id.tv_empty_message)
+            textView?.setText(R.string.no_course_matched_filter)
         }
     }
 }

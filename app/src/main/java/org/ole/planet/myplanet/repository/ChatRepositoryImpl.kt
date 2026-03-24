@@ -1,16 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import android.text.TextUtils
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Case
-import io.realm.Realm
 import io.realm.Sort
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
-import org.ole.planet.myplanet.model.RealmNews
+
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), ChatRepository {
@@ -36,18 +32,14 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveNewChat(chat: JsonObject) {
-        withRealmAsync { realm ->
-            realm.executeTransaction {
-                RealmChatHistory.insert(it, chat)
-            }
+        executeTransaction { realm ->
+            RealmChatHistory.insert(realm, chat)
         }
     }
 
     override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
-        withRealmAsync { realm ->
-            realm.executeTransaction {
-                addConversationToChatHistory(it, id, query, response, rev)
-            }
+        executeTransaction { realm ->
+            addConversationToChatHistory(realm, id, query, response, rev)
         }
     }
 }
