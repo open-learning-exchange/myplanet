@@ -69,11 +69,19 @@ class TransactionSyncManager @Inject constructor(
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val users = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
+                val userIds = databaseService.withRealm { realm ->
+                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().mapNotNull { it._id }
                 }
-                users.forEach { userModel ->
-                    syncHealthData(userModel, header)
+                userIds.chunked(50).forEach { chunk ->
+                    val usersChunk = databaseService.withRealm { realm ->
+                        realm.where(RealmUser::class.java)
+                            .`in`("_id", chunk.toTypedArray())
+                            .findAll()
+                            .map { realm.copyFromRealm(it) }
+                    }
+                    usersChunk.forEach { userModel ->
+                        syncHealthData(userModel, header)
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     listener.onSyncComplete()
