@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -35,8 +34,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.android.controller.ServiceController
 import java.io.File
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.EmptyCoroutineContext
+import java.lang.reflect.Field
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltAndroidTest
@@ -48,8 +46,8 @@ class DownloadServiceTest {
     @get:Rule
     val hiltRule = HiltAndroidRule(this)
 
+    private lateinit var serviceController: ServiceController<DownloadService>
     private lateinit var downloadService: DownloadService
-    private lateinit var context: Context
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
     private lateinit var notificationManager: NotificationManager
@@ -62,8 +60,6 @@ class DownloadServiceTest {
     fun setup() {
         hiltRule.inject()
         Dispatchers.setMain(testDispatcher)
-
-        context = mockk<Context>(relaxed = true)
 
         sharedPreferences = mockk(relaxed = true)
         sharedPreferencesEditor = mockk(relaxed = true)
@@ -95,19 +91,29 @@ class DownloadServiceTest {
         mockkStatic("org.ole.planet.myplanet.di.BroadcastServiceEntryPointKt")
         every { org.ole.planet.myplanet.di.getBroadcastService(any()) } returns broadcastService
 
-        downloadService = spyk(DownloadService())
+        // Build service properly using Robolectric
+        serviceController = Robolectric.buildService(DownloadService::class.java)
+        downloadService = serviceController.get()
+
+        // Inject dependencies into the real Hilt-managed service
         downloadService.downloadRepository = downloadRepository
 
-        every { downloadService.getSharedPreferences(any(), any()) } returns sharedPreferences
-        every { downloadService.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
-        every { downloadService.startForeground(any(), any()) } just Runs
-        every { downloadService.stopSelf() } just Runs
-        every { downloadService.stopForeground(any<Int>()) } just Runs
-        every { downloadService.getString(any()) } returns "Downloading..."
+        // Mock internal context dependencies
+        val spiedService = spyk(downloadService)
+        every { spiedService.getSharedPreferences(any(), any()) } returns sharedPreferences
+        every { spiedService.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
+        every { spiedService.startForeground(any(), any()) } just Runs
+        every { spiedService.stopSelf() } just Runs
+        every { spiedService.stopForeground(any<Int>()) } just Runs
+        every { spiedService.getString(any()) } returns "Downloading..."
 
-        val prefField = DownloadService::class.java.getDeclaredField("preferences")
-        prefField.isAccessible = true
-        prefField.set(downloadService, sharedPreferences)
+        // Inject the spy back into our reference and replace the actual context calls.
+        downloadService = spiedService
+
+        // Ensure that `downloadScope` in `DownloadService` operates on the test dispatcher
+        val field = DownloadService::class.java.getDeclaredField("downloadScope")
+        field.isAccessible = true
+        field.set(downloadService, kotlinx.coroutines.CoroutineScope(testDispatcher))
     }
 
     @After
@@ -117,22 +123,20 @@ class DownloadServiceTest {
     }
 
     @Test
-    fun `test onStartCommand with empty queue`() = runTest {
+    fun `test onStartCommand with empty queue stops service`() = runTest(testDispatcher) {
         every { sharedPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
         every { sharedPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns emptySet()
 
-        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
-        processMethod.isAccessible = true
-        val cont = mockk<Continuation<Unit>>()
-        every { cont.context } returns EmptyCoroutineContext
-        every { cont.resumeWith(any()) } just Runs
-        processMethod.invoke(downloadService, cont)
+        val intent = Intent()
+        downloadService.onStartCommand(intent, 0, 1)
 
-        verify(timeout = 1000) { downloadService.stopSelf() }
+        advanceUntilIdle()
+
+        verify { downloadService.stopSelf() }
     }
 
     @Test
-    fun `test onStartCommand with priority queue`() = runTest {
+    fun `test onStartCommand with priority queue processes url`() = runTest(testDispatcher) {
         val url = "http://example.com/file.txt"
         val urlSet = setOf(url)
         every { sharedPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returnsMany listOf(urlSet, emptySet())
@@ -143,19 +147,17 @@ class DownloadServiceTest {
         val responseBody = "test content".toResponseBody("text/plain".toMediaTypeOrNull())
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Success(responseBody)
 
-        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
-        processMethod.isAccessible = true
-        val cont = mockk<Continuation<Unit>>()
-        every { cont.context } returns EmptyCoroutineContext
-        every { cont.resumeWith(any()) } just Runs
-        processMethod.invoke(downloadService, cont)
+        val intent = Intent()
+        downloadService.onStartCommand(intent, 0, 1)
 
-        coVerify(timeout = 1000) { downloadRepository.downloadFileResponse(url, any()) }
+        advanceUntilIdle()
+
+        coVerify { downloadRepository.downloadFileResponse(url, any()) }
         verify(atLeast = 1) { downloadService.stopSelf() }
     }
 
     @Test
-    fun `test onStartCommand with pending queue`() = runTest {
+    fun `test onStartCommand with pending queue processes url`() = runTest(testDispatcher) {
         val url = "http://example.com/pending.txt"
         val urlSet = setOf(url)
         every { sharedPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
@@ -166,19 +168,17 @@ class DownloadServiceTest {
         val responseBody = "test content".toResponseBody("text/plain".toMediaTypeOrNull())
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Success(responseBody)
 
-        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
-        processMethod.isAccessible = true
-        val cont = mockk<Continuation<Unit>>()
-        every { cont.context } returns EmptyCoroutineContext
-        every { cont.resumeWith(any()) } just Runs
-        processMethod.invoke(downloadService, cont)
+        val intent = Intent()
+        downloadService.onStartCommand(intent, 0, 1)
 
-        coVerify(timeout = 1000) { downloadRepository.downloadFileResponse(url, any()) }
+        advanceUntilIdle()
+
+        coVerify { downloadRepository.downloadFileResponse(url, any()) }
         verify(atLeast = 1) { downloadService.stopSelf() }
     }
 
     @Test
-    fun `test download failure`() = runTest {
+    fun `test download failure updates error and continues`() = runTest(testDispatcher) {
         val url = "http://example.com/fail.txt"
         val urlSet = setOf(url)
         every { sharedPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returnsMany listOf(urlSet, emptySet())
@@ -188,14 +188,12 @@ class DownloadServiceTest {
 
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Error("Not Found")
 
-        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
-        processMethod.isAccessible = true
-        val cont = mockk<Continuation<Unit>>()
-        every { cont.context } returns EmptyCoroutineContext
-        every { cont.resumeWith(any()) } just Runs
-        processMethod.invoke(downloadService, cont)
+        val intent = Intent()
+        downloadService.onStartCommand(intent, 0, 1)
 
-        coVerify(timeout = 1000) { downloadRepository.downloadFileResponse(url, any()) }
+        advanceUntilIdle()
+
+        coVerify { downloadRepository.downloadFileResponse(url, any()) }
         verify(atLeast = 1) { downloadService.stopSelf() }
     }
 }
