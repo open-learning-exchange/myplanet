@@ -2,17 +2,19 @@ package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,12 +28,9 @@ import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -39,6 +38,7 @@ import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
@@ -185,9 +185,20 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-        binding.tvFirstName.text = user?.firstName
-        binding.tvName.text =
-            String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+
+        if (!TextUtils.isEmpty(user?.userImage)) {
+            Glide.with(requireActivity())
+                .load(user?.userImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(200, 200)
+                .circleCrop()
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.imageView)
+        } else {
+            binding.imageView.setImageResource(R.drawable.profile)
+        }
+        binding.tvName.text = String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
     }
 
 
