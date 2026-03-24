@@ -12,12 +12,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
-import org.robolectric.RobolectricTestRunner
 
-@RunWith(RobolectricTestRunner::class)
 class ThemeManagerTest {
     private lateinit var mockContext: Context
     private lateinit var mockSpm: SharedPrefManager
@@ -26,6 +23,9 @@ class ThemeManagerTest {
     @Before
     fun setUp() {
         mockContext = mockk(relaxed = true)
+        val mockAppContext = mockk<Context>(relaxed = true)
+        every { mockContext.applicationContext } returns mockAppContext
+
         mockSpm = mockk(relaxed = true)
         mockEntryPoint = mockk(relaxed = true)
 
