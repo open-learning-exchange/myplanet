@@ -68,8 +68,11 @@ class AndroidDecrypter {
                 val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
                 cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv)
                 val encryptedBytes = hexStringToByteArray(encrypted)
-                val actualEncryptedBytes = if (encryptedBytes.size >= 16 && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until 16))) {
-                    encryptedBytes.sliceArray(16 until encryptedBytes.size)
+                // Invariant: New-format encrypted data prepends the IV to the ciphertext.
+                // We check if the payload starts with the provided IV to decide whether to strip it.
+                // This maintains backward compatibility with legacy data containing only the ciphertext.
+                val actualEncryptedBytes = if (encryptedBytes.size >= ivBytes.size && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until ivBytes.size))) {
+                    encryptedBytes.sliceArray(ivBytes.size until encryptedBytes.size)
                 } else {
                     encryptedBytes
                 }

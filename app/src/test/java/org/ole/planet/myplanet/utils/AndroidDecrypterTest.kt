@@ -27,6 +27,20 @@ class AndroidDecrypterTest {
     }
 
     @Test
+    fun testDecryptLegacyFormat() {
+        val plainText = "Legacy format test"
+        val key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        val iv = "abcdef0123456789abcdef0123456789"
+
+        val encryptedWithIv = AndroidDecrypter.encrypt(plainText, key, iv)
+        // Remove the prepended IV (32 hex chars for 16 bytes) to simulate legacy format
+        val legacyEncrypted = encryptedWithIv.substring(32)
+
+        val decrypted = AndroidDecrypter.decrypt(legacyEncrypted, key, iv)
+        assertEquals(plainText, decrypted)
+    }
+
+    @Test
     fun testEncryptWithNullKeyAndIv() {
         val plainText = "Null key and IV"
 
