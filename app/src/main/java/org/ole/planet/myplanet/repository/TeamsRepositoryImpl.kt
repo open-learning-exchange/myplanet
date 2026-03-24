@@ -432,7 +432,8 @@ class TeamsRepositoryImpl @Inject constructor(
     private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<Transaction> {
         val transactionDataList = mutableListOf<Transaction>()
         var balance = 0
-        for (team in transactions.filter { it._id != null }) {
+        for (team in transactions) {
+            val id = team._id ?: continue
             balance += if ("debit".equals(team.type, ignoreCase = true)) {
                 -team.amount
             } else {
@@ -440,7 +441,7 @@ class TeamsRepositoryImpl @Inject constructor(
             }
             transactionDataList.add(
                 Transaction(
-                    id = team._id!!,
+                    id = id,
                     date = team.date,
                     description = team.description,
                     type = team.type,
