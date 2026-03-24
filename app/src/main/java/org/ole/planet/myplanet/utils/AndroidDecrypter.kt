@@ -31,7 +31,7 @@ class AndroidDecrypter {
             val encryptedIVAndText = ByteArray(ivSize + encrypted.size)
             System.arraycopy(ivBytes, 0, encryptedIVAndText, 0, ivSize)
             System.arraycopy(encrypted, 0, encryptedIVAndText, ivSize, encrypted.size)
-            return bytesToHex(encrypted)
+            return bytesToHex(encryptedIVAndText)
         }
 
         @JvmStatic
@@ -61,12 +61,19 @@ class AndroidDecrypter {
                 if (encrypted == null || key == null || initVector == null) {
                     return null
                 }
-                val iv = IvParameterSpec(hexStringToByteArray(initVector))
+                val ivBytes = hexStringToByteArray(initVector)
+                val iv = IvParameterSpec(ivBytes)
                 val skeySpec = SecretKeySpec(hexStringToByteArray(key), "AES")
 
                 val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
                 cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv)
-                val original = cipher.doFinal(hexStringToByteArray(encrypted))
+                val encryptedBytes = hexStringToByteArray(encrypted)
+                val actualEncryptedBytes = if (encryptedBytes.size >= 16 && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until 16))) {
+                    encryptedBytes.sliceArray(16 until encryptedBytes.size)
+                } else {
+                    encryptedBytes
+                }
+                val original = cipher.doFinal(actualEncryptedBytes)
                 return String(original)
             } catch (ex: Exception) {
                 ex.printStackTrace()
