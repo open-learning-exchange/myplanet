@@ -11,6 +11,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -333,40 +335,49 @@ class TransactionSyncManager @Inject constructor(
         }
         if (pending.isEmpty()) return@withContext
 
-        for (notification in pending) {
-            val rev = notification.rev ?: continue
-            val body = JsonObject().apply {
-                addProperty("_id", notification.id)
-                addProperty("_rev", rev)
-                addProperty("status", "read")
-                addProperty("user", notification.userId)
-                addProperty("message", notification.message)
-                addProperty("type", notification.type)
-                notification.link?.let { addProperty("link", it) }
-                addProperty("priority", notification.priority)
-                addProperty("time", notification.createdAt.time)
-            }
-            try {
-                val response = apiInterface.putDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                    body
-                )
-                if (response.isSuccessful) {
-                    val newRev = response.body()?.get("rev")?.asString
-                    databaseService.executeTransactionAsync { realm ->
-                        realm.where(RealmNotification::class.java)
-                            .equalTo("id", notification.id)
-                            .findFirst()
-                            ?.apply {
-                                needsSync = false
-                                if (newRev != null) this.rev = newRev
-                            }
-                    }
+        val successfulSyncs = pending.map { notification ->
+            async {
+                val rev = notification.rev ?: return@async null
+                val body = JsonObject().apply {
+                    addProperty("_id", notification.id)
+                    addProperty("_rev", rev)
+                    addProperty("status", "read")
+                    addProperty("user", notification.userId)
+                    addProperty("message", notification.message)
+                    addProperty("type", notification.type)
+                    notification.link?.let { addProperty("link", it) }
+                    addProperty("priority", notification.priority)
+                    addProperty("time", notification.createdAt.time)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                try {
+                    val response = apiInterface.putDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/notifications/${notification.id}",
+                        body
+                    )
+                    if (response.isSuccessful) {
+                        val newRev = response.body()?.get("rev")?.asString
+                        Pair(notification.id, newRev)
+                    } else null
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+            }
+        }.awaitAll().filterNotNull()
+
+        if (successfulSyncs.isNotEmpty()) {
+            databaseService.executeTransactionAsync { realm ->
+                for ((id, newRev) in successfulSyncs) {
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("id", id)
+                        .findFirst()
+                        ?.apply {
+                            needsSync = false
+                            if (newRev != null) this.rev = newRev
+                        }
+                }
             }
         }
     }
