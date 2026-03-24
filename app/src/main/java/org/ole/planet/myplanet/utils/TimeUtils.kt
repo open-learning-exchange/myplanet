@@ -10,6 +10,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 object TimeUtils {
+    const val DATE_FORMAT = "dd MMM yyyy"
+
     private val defaultLocale: Locale
         get() = Locale.getDefault()
 
