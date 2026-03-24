@@ -6,17 +6,39 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 
 object ExamAnswerUtils {
+    private val choicesCache = android.util.LruCache<String, Map<String, String>>(100)
+
     fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
-        val choices = getStringAsJsonArray(question.choices)
-        for (i in 0 until choices.size()) {
-            if (choices[i].isJsonObject) {
-                val obj = choices[i].asJsonObject
-                if (obj.get("id").asString == id) {
-                    return obj.get("text").asString
+        val questionId = question.id
+        if (questionId != null) {
+            var map = choicesCache.get(questionId)
+            if (map == null) {
+                val mutableMap = mutableMapOf<String, String>()
+                val choices = getStringAsJsonArray(question.choices)
+                for (i in 0 until choices.size()) {
+                    if (choices[i].isJsonObject) {
+                        val obj = choices[i].asJsonObject
+                        if (obj.has("id") && obj.has("text")) {
+                            mutableMap[obj.get("id").asString] = obj.get("text").asString
+                        }
+                    }
+                }
+                map = mutableMap
+                choicesCache.put(questionId, map)
+            }
+            return map[id] ?: id
+        } else {
+            val choices = getStringAsJsonArray(question.choices)
+            for (i in 0 until choices.size()) {
+                if (choices[i].isJsonObject) {
+                    val obj = choices[i].asJsonObject
+                    if (obj.get("id").asString == id) {
+                        return obj.get("text").asString
+                    }
                 }
             }
+            return id
         }
-        return id
     }
 
     fun checkCorrectAnswer(
