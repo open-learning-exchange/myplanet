@@ -7,11 +7,13 @@ import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
+    private var scope: CoroutineScope? = null
     private var job: Job? = null
     companion object {
         private const val DEFAULT_ANR_TIMEOUT = 5000L
@@ -40,7 +42,8 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
         tick = SystemClock.elapsedRealtime()
         mainHandler.post(tickUpdater)
 
-        job = CoroutineScope(Dispatchers.Default).launch {
+        scope = CoroutineScope(Dispatchers.Default)
+        job = scope?.launch {
             while (isWatching && isActive) {
                 val lastTick = tick
                 val currentTime = SystemClock.elapsedRealtime()
@@ -81,5 +84,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
         mainHandler.removeCallbacks(tickUpdater)
         job?.cancel()
         job = null
+        scope?.cancel()
+        scope = null
     }
 }
