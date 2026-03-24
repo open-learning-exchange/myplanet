@@ -35,16 +35,8 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModel() suspend function instead")
-    val userModel: RealmUser? get() = userRepository.getUserModel()
-
-    @Deprecated("Use getUserModel() suspend function instead")
-    fun getUserModelCopy(): RealmUser? {
-        return userRepository.getUserModel()
-    }
-
     suspend fun getUserModel(): RealmUser? {
-        return userRepository.getUserModelSuspending()
+        return userRepository.getUserModel()
     }
 
     fun onLogin() {
