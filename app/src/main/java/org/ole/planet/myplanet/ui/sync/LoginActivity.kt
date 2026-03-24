@@ -504,32 +504,35 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         lifecycleScope.launch {
             selectedTeamId = prefData.getSelectedTeamId().toString()
             if (selectedTeamId?.isNotEmpty() == true) {
-                fetchAndSaveTeamMembers(selectedTeamId!!)
+                users = fetchAndSaveTeamMembers(selectedTeamId!!)
             }
             setupAndPopulateRecyclerView()
         }
     }
 
-    private suspend fun fetchAndSaveTeamMembers(teamId: String) {
+    private suspend fun fetchAndSaveTeamMembers(teamId: String) = withContext(Dispatchers.IO) {
         val teamMembers = teamsRepository.getJoinedMembers(teamId)
-        users = teamMembers
-        val userList = users?.map {
+        val userList = teamMembers.map {
             User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-        } ?: emptyList()
+        }
 
         val existingUsers = prefData.getSavedUsers().toMutableList()
         val filteredExistingUsers = existingUsers.filter { it.source != "team" }
         val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
         prefData.setSavedUsers(updatedUserList)
+
+        teamMembers
     }
 
-    private fun setupAndPopulateRecyclerView() {
+    private suspend fun setupAndPopulateRecyclerView() {
         if (mAdapter == null) {
             mAdapter = UsersAdapter(this@LoginActivity)
             binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
             binding.recyclerView.adapter = mAdapter
         }
-        mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
+
+        val savedUsers = withContext(Dispatchers.IO) { prefData.getSavedUsers().toMutableList() }
+        mAdapter?.submitList(savedUsers)
 
         binding.recyclerView.isNestedScrollingEnabled = true
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
