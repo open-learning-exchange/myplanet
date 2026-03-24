@@ -18,6 +18,12 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
@@ -35,6 +41,8 @@ object CameraUtils {
     private var backgroundHandler: Handler? = null
     private var backgroundThread: HandlerThread? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
+    private var cameraJob = SupervisorJob()
+    private var cameraScope = CoroutineScope(Dispatchers.Default + cameraJob)
 
     private fun startBackgroundThread() {
         if (backgroundThread == null || backgroundThread?.isAlive == false) {
@@ -42,6 +50,10 @@ object CameraUtils {
                 start()
                 backgroundHandler = Handler(looper)
             }
+        }
+        if (cameraJob.isCancelled) {
+            cameraJob = SupervisorJob()
+            cameraScope = CoroutineScope(Dispatchers.Default + cameraJob)
         }
     }
 
@@ -61,6 +73,7 @@ object CameraUtils {
     fun release() {
         closeCamera()
         stopBackgroundThread()
+        cameraScope.cancel()
     }
 
     @JvmStatic
@@ -73,11 +86,15 @@ object CameraUtils {
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
             val image = reader.acquireLatestImage()
-            val buffer = image.planes[0].buffer
-            val bytes = ByteArray(buffer.capacity())
-            buffer.get(bytes)
-            savePicture(bytes, callback)
-            image.close()
+            if (image != null) {
+                val buffer = image.planes[0].buffer
+                val bytes = ByteArray(buffer.capacity())
+                buffer.get(bytes)
+                image.close()
+                cameraScope.launch {
+                    savePicture(bytes, callback)
+                }
+            }
         }, backgroundHandler)
 
         try {
@@ -113,8 +130,7 @@ object CameraUtils {
         imageReader = null
     }
 
-    @JvmStatic
-    private fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
+    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
         val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
         if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
             pictureFileDir.mkdirs()
@@ -126,7 +142,9 @@ object CameraUtils {
             FileOutputStream(mainPicture).use { fos ->
                 fos.write(data)
             }
-            callback.onImageCapture(mainPicture.absolutePath)
+            withContext(Dispatchers.Main) {
+                callback.onImageCapture(mainPicture.absolutePath)
+            }
         } catch (error: Exception) {
             error.printStackTrace()
         }
