@@ -218,7 +218,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
         if (userModel == null) {
             userModel = userSessionManager.getUserModel()
         }
