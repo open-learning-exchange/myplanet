@@ -201,8 +201,14 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        val list = userRepository.getAchievementsForUpload()
-        // TODO: Implement actual upload logic or track issue for missing implementation
+        try {
+            val list = userRepository.getAchievementsForUpload()
+            if (list.isNotEmpty()) {
+                Log.w("UploadManager", "Achievement upload logic is not yet implemented. Skipping upload for ${list.size} achievements.")
+            }
+        } catch (e: Exception) {
+            Log.e("UploadManager", "Error fetching achievements for upload", e)
+        }
     }
 
     private suspend fun uploadCourseProgress() {
