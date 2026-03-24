@@ -569,18 +569,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
-        var msg = getString(R.string.success_you_have_added_the_following_courses)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices!!) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
+        val msg = buildString {
+            append(getString(R.string.success_you_have_added_the_following_courses))
+            if ((selectedItems?.size ?: 0) <= 5) {
+                selectedItems?.indices?.let {
+                    for (i in it) {
+                        append(" - ${selectedItems?.get(i)?.courseTitle} \n")
+                    }
+                }
+            } else {
+                for (i in 0..4) {
+                    append(" - ${selectedItems?.get(i)?.courseTitle} \n")
+                }
+                append(getString(R.string.and))
+                append(((selectedItems?.size ?: 0) - 5))
+                append(getString(R.string.more_course_s))
             }
-        } else {
-            for (i in 0..4) {
-                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
-            }
-            msg += "${getString(R.string.and)}${((selectedItems?.size ?: 0) - 5)}${getString(R.string.more_course_s)}"
+            append(getString(R.string.return_to_the_home_tab_to_access_mycourses))
         }
-        msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { _: DialogInterface, _: Int ->
