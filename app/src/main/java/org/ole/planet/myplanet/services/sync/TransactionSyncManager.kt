@@ -335,9 +335,9 @@ class TransactionSyncManager @Inject constructor(
         }
         if (pending.isEmpty()) return@withContext
 
-        pending.map { notification ->
+        val successfulSyncs = pending.map { notification ->
             async {
-                val rev = notification.rev ?: return@async
+                val rev = notification.rev ?: return@async null
                 val body = JsonObject().apply {
                     addProperty("_id", notification.id)
                     addProperty("_rev", rev)
@@ -358,20 +358,27 @@ class TransactionSyncManager @Inject constructor(
                     )
                     if (response.isSuccessful) {
                         val newRev = response.body()?.get("rev")?.asString
-                        databaseService.executeTransactionAsync { realm ->
-                            realm.where(RealmNotification::class.java)
-                                .equalTo("id", notification.id)
-                                .findFirst()
-                                ?.apply {
-                                    needsSync = false
-                                    if (newRev != null) this.rev = newRev
-                                }
-                        }
-                    }
+                        Pair(notification.id, newRev)
+                    } else null
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    null
                 }
             }
-        }.awaitAll()
+        }.awaitAll().filterNotNull()
+
+        if (successfulSyncs.isNotEmpty()) {
+            databaseService.executeTransactionAsync { realm ->
+                for ((id, newRev) in successfulSyncs) {
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("id", id)
+                        .findFirst()
+                        ?.apply {
+                            needsSync = false
+                            if (newRev != null) this.rev = newRev
+                        }
+                }
+            }
+        }
     }
 }
