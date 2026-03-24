@@ -2,12 +2,15 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.slot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.User
@@ -47,16 +50,86 @@ class SharedPrefManagerTest {
 
         // Set users
         val users = listOf(User(name = "Test User"))
+        val jsonSlot = slot<String>()
         sharedPrefManager.setSavedUsers(users)
-        verify { mockEditor.putString("savedUsers", any()) }
+        verify { mockEditor.putString("savedUsers", capture(jsonSlot)) }
         verify { mockEditor.apply() }
 
-        // Retrieve mocked
-        val usersJson = "[{\"name\":\"Test User\"}]"
-        every { mockSharedPreferences.getString("savedUsers", null) } returns usersJson
+        val expectedJson = Gson().toJson(users)
+        assertEquals(expectedJson, jsonSlot.captured)
+
+        // Retrieve mocked using the generated JSON
+        every { mockSharedPreferences.getString("savedUsers", null) } returns expectedJson
         val retrievedUsers = sharedPrefManager.getSavedUsers()
         assertEquals(1, retrievedUsers.size)
         assertEquals("Test User", retrievedUsers[0].name)
+    }
+
+    @Test
+    fun testGetSelectedTeamId() {
+        // Test non-empty string
+        every { mockSharedPreferences.getString("selectedTeamId", "") } returns "team123"
+        assertEquals("team123", sharedPrefManager.getSelectedTeamId())
+
+        // Test null return from SharedPreferences
+        every { mockSharedPreferences.getString("selectedTeamId", "") } returns null
+        assertEquals("", sharedPrefManager.getSelectedTeamId())
+
+        // Test empty string return from SharedPreferences
+        every { mockSharedPreferences.getString("selectedTeamId", "") } returns ""
+        assertEquals("", sharedPrefManager.getSelectedTeamId())
+    }
+
+    @Test
+    fun testGetTeamName() {
+        // Test non-empty string
+        every { mockSharedPreferences.getString("teamName", "") } returns "My Team"
+        assertEquals("My Team", sharedPrefManager.getTeamName())
+
+        // Test null return from SharedPreferences
+        every { mockSharedPreferences.getString("teamName", "") } returns null
+        assertEquals("", sharedPrefManager.getTeamName())
+
+        // Test empty string return from SharedPreferences
+        every { mockSharedPreferences.getString("teamName", "") } returns ""
+        assertEquals("", sharedPrefManager.getTeamName())
+    }
+
+    @Test
+    fun testSetPendingLanguageChange() {
+        // Test with non-null value
+        sharedPrefManager.setPendingLanguageChange("fr")
+        verify { mockEditor.putString("pendingLanguageChange", "fr") }
+        verify(exactly = 0) { mockEditor.remove("pendingLanguageChange") }
+        verify { mockEditor.apply() }
+
+        // Test with null value
+        sharedPrefManager.setPendingLanguageChange(null)
+        verify { mockEditor.remove("pendingLanguageChange") }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testSetSynced() {
+        // Since setSynced is private, we test it via the public wrapper setChatHistorySynced.
+        // Test false synced
+        sharedPrefManager.setChatHistorySynced(false)
+        verify { mockEditor.putBoolean("chat_history_synced", false) }
+        verify(exactly = 0) { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
+        verify { mockEditor.apply() }
+
+        // Test true synced
+        sharedPrefManager.setChatHistorySynced(true)
+        verify { mockEditor.putBoolean("chat_history_synced", true) }
+        verify { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetSyncTime() {
+        val testTime = 1634567890L
+        every { mockSharedPreferences.getLong("chat_history_synced_time", 0L) } returns testTime
+        assertEquals(testTime, sharedPrefManager.getSyncTime(SharedPrefManager.SyncKey.CHAT_HISTORY))
     }
 
     @Test
