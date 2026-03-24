@@ -23,7 +23,7 @@ class ChatAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
 ) : ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
-        { old, new -> old == new },
+        { old, new -> old.message == new.message && old.viewType == new.viewType },
         { old, new -> old == new }
     )
 ) {
