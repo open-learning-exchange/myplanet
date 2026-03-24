@@ -30,6 +30,7 @@ object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
     private const val COMPLETION_CHANNEL = "DownloadCompletionChannel"
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
+    private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
     @JvmStatic
     fun createChannels(context: Context) {
@@ -259,8 +260,7 @@ object DownloadUtils {
 
     fun extractLinks(text: String?): ArrayList<String> {
         val links = ArrayList<String>()
-        val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
-        val matcher = text?.let { pattern.matcher(it) }
+        val matcher = text?.let { LINK_PATTERN.matcher(it) }
         if (matcher != null) {
             while (matcher.find()) {
                 val link = matcher.group(1)
