@@ -132,7 +132,7 @@ object MarkdownUtils {
         val result = StringBuffer()
         while (matcher.find()) {
             val relativePath = matcher.group(1)
-            val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
+            val modifiedPath = relativePath?.replaceFirst("resources/", "")
             val fullUrl = baseUrl + modifiedPath
             matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
         }

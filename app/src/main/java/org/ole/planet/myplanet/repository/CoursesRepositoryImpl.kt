@@ -605,13 +605,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 .mapNotNull { it.linkId }
                 .toSet()
 
-            val courses = mutableListOf<RealmMyCourse>()
-            list.forEach { course ->
-                if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
-                    courses.add(course)
-                }
-            }
-            courses
+            list.filter { linkedCourseIds.contains(it.courseId) }.distinct()
         }
     }
 }
