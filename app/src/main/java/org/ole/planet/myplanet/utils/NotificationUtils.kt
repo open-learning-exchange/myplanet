@@ -179,55 +179,79 @@ object NotificationUtils {
         val summaryId = "summary_${type}"
 
         return when (type) {
-            "survey" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📋 New Surveys Available",
-                message = "$count new surveys are waiting for you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "task" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "✅ New Tasks Assigned",
-                message = "$count new tasks have been assigned to you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "join_request" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "👥 Team Join Requests",
-                message = "$count new team join requests to review",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_SOCIAL
-            )
-            "resource" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📚 New Resources Available",
-                message = "$count new resources have been added",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_RECOMMENDATION
-            )
-            "storage" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "⚠️ Storage Warnings",
-                message = "$count storage warnings need attention",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_STATUS
-            )
-            else -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📱 App Notifications",
-                message = "$count new notifications",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_MESSAGE
-            )
+            "survey" -> createSurveySummaryConfig(summaryId, type, count)
+            "task" -> createTaskSummaryConfig(summaryId, type, count)
+            "join_request" -> createJoinRequestSummaryConfig(summaryId, type, count)
+            "resource" -> createResourceSummaryConfig(summaryId, type, count)
+            "storage" -> createStorageSummaryConfig(summaryId, type, count)
+            else -> createDefaultSummaryConfig(summaryId, type, count)
         }
+    }
+
+    private fun createSurveySummaryConfig(summaryId: String, type: String, count: Int): NotificationConfig {
+        return NotificationConfig(
+            id = summaryId,
+            type = type,
+            title = "📋 New Surveys Available",
+            message = "$count new surveys are waiting for you",
+            priority = NotificationCompat.PRIORITY_HIGH,
+            category = NotificationCompat.CATEGORY_REMINDER
+        )
+    }
+
+    private fun createTaskSummaryConfig(summaryId: String, type: String, count: Int): NotificationConfig {
+        return NotificationConfig(
+            id = summaryId,
+            type = type,
+            title = "✅ New Tasks Assigned",
+            message = "$count new tasks have been assigned to you",
+            priority = NotificationCompat.PRIORITY_HIGH,
+            category = NotificationCompat.CATEGORY_REMINDER
+        )
+    }
+
+    private fun createJoinRequestSummaryConfig(summaryId: String, type: String, count: Int): NotificationConfig {
+        return NotificationConfig(
+            id = summaryId,
+            type = type,
+            title = "👥 Team Join Requests",
+            message = "$count new team join requests to review",
+            priority = NotificationCompat.PRIORITY_DEFAULT,
+            category = NotificationCompat.CATEGORY_SOCIAL
+        )
+    }
+
+    private fun createResourceSummaryConfig(summaryId: String, type: String, count: Int): NotificationConfig {
+        return NotificationConfig(
+            id = summaryId,
+            type = type,
+            title = "📚 New Resources Available",
+            message = "$count new resources have been added",
+            priority = NotificationCompat.PRIORITY_DEFAULT,
+            category = NotificationCompat.CATEGORY_RECOMMENDATION
+        )
+    }
+
+    private fun createStorageSummaryConfig(summaryId: String, type: String, count: Int): NotificationConfig {
+        return NotificationConfig(
+            id = summaryId,
+            type = type,
+            title = "⚠️ Storage Warnings",
+            message = "$count storage warnings need attention",
+            priority = NotificationCompat.PRIORITY_DEFAULT,
+            category = NotificationCompat.CATEGORY_STATUS
+        )
+    }
+
+    private fun createDefaultSummaryConfig(summaryId: String, type: String, count: Int): NotificationConfig {
+        return NotificationConfig(
+            id = summaryId,
+            type = type,
+            title = "📱 App Notifications",
+            message = "$count new notifications",
+            priority = NotificationCompat.PRIORITY_DEFAULT,
+            category = NotificationCompat.CATEGORY_MESSAGE
+        )
     }
 
     private fun isTaskUrgent(deadline: String): Boolean {
