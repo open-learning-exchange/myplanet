@@ -3,6 +3,9 @@ package org.ole.planet.myplanet.utils
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import androidx.lifecycle.lifecycleScope
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -32,34 +35,43 @@ object AuthUtils {
             return
         }
 
-        loginSyncManager.login(name, password, object : OnSyncListener {
-            override fun onSyncStarted() {
-                activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
-                activity.customProgressDialog.show()
-            }
+        val syncResult = suspendCancellableCoroutine<Boolean> { continuation ->
+            loginSyncManager.login(name, password, object : OnSyncListener {
+                override fun onSyncStarted() {
+                    activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
+                    activity.customProgressDialog.show()
+                }
 
-            override fun onSyncComplete() {
-                activity.lifecycleScope.launch(Dispatchers.Main) {
+                override fun onSyncComplete() {
                     activity.customProgressDialog.dismiss()
-                    val log = activity.authenticateUser(activity.settings, name, password, true)
-                    if (log) {
-                        Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        activity.onLogin()
-                        activity.saveUsers(name, password, "member")
-                    } else {
-                        activity.alertDialogOkay(activity.getString(R.string.err_msg_login))
+                    if (continuation.isActive) {
+                        continuation.resume(true)
                     }
+                }
+
+                override fun onSyncFailed(msg: String?) {
+                    Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
+                    activity.customProgressDialog.dismiss()
                     activity.syncIconDrawable.stop()
                     activity.syncIconDrawable.selectDrawable(0)
+                    if (continuation.isActive) {
+                        continuation.resume(false)
+                    }
                 }
-            }
+            })
+        }
 
-            override fun onSyncFailed(msg: String?) {
-                Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
-                activity.customProgressDialog.dismiss()
-                activity.syncIconDrawable.stop()
-                activity.syncIconDrawable.selectDrawable(0)
+        if (syncResult) {
+            val log = activity.authenticateUser(activity.settings, name, password, true)
+            if (log) {
+                Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                activity.onLogin()
+                activity.saveUsers(name, password, "member")
+            } else {
+                activity.alertDialogOkay(activity.getString(R.string.err_msg_login))
             }
-        })
+            activity.syncIconDrawable.stop()
+            activity.syncIconDrawable.selectDrawable(0)
+        }
     }
 }
