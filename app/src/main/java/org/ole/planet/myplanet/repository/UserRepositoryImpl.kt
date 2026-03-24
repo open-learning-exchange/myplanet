@@ -617,9 +617,9 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser? {
+    override suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser? {
         try {
-            val user = databaseService.withRealm { realm ->
+            val user = databaseService.withRealmAsync { realm ->
                 realm.where(RealmUser::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
             }
             user?.let {
