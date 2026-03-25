@@ -36,5 +36,21 @@ class RealmMigrations : RealmMigration {
                 ?.addField("needsSync", Boolean::class.java)
             version++
         }
+
+        if (version == 7L) {
+            schema.get("RealmAchievement")
+                ?.addRealmListField("links", String::class.java)
+                ?.addRealmListField("otherInfo", String::class.java)
+                ?.addField("dateSortOrder", String::class.java)
+                ?.setNullable("dateSortOrder", true)
+                ?.addField("createdOn", String::class.java)
+                ?.setNullable("createdOn", true)
+                ?.addField("username", String::class.java)
+                ?.setNullable("username", true)
+                ?.addField("parentCode", String::class.java)
+                ?.setNullable("parentCode", true)
+                ?.addField("isUpdated", Boolean::class.java)
+            version++
+        }
     }
 }

@@ -297,13 +297,13 @@ object NotificationUtils {
             }
         }
 
-        fun showNotification(config: NotificationConfig): Boolean {
+        private fun getNotificationIdIfShouldShow(config: NotificationConfig): Int? {
             if (!canShowNotification(config.type)) {
-                return false
+                return null
             }
 
             if (sessionShownNotifications.contains(config.id)) {
-                return false
+                return null
             }
 
             val notificationId = config.id.hashCode()
@@ -311,17 +311,23 @@ object NotificationUtils {
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
             
             if (isAlreadyShowing) {
-                return false
+                return null
             }
 
-            try {
+            return notificationId
+        }
+
+        fun showNotification(config: NotificationConfig): Boolean {
+            val notificationId = getNotificationIdIfShouldShow(config) ?: return false
+
+            return try {
                 val notification = buildNotification(config)
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
-                return true
+                true
             } catch (e: Exception) {
                 e.printStackTrace()
-                return false
+                false
             }
         }
 
