@@ -93,13 +93,15 @@ class DashboardViewModel @Inject constructor(
 
     private var userContentJob: Job? = null
 
-    fun loadVisibleMyLifeItems(userId: String?, defaultItems: List<RealmMyLife>): List<RealmMyLife> {
-        val allForUser = lifeRepository.getMyLifeByUserId(userId)
-        return if (allForUser.isEmpty()) {
-            lifeRepository.seedMyLifeIfEmpty(userId, defaultItems)
-            lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
-        } else {
-            allForUser.filter { it.isVisible }
+    suspend fun loadVisibleMyLifeItems(userId: String?, defaultItems: List<RealmMyLife>): List<RealmMyLife> {
+        return withContext(dispatcherProvider.io) {
+            val allForUser = lifeRepository.getMyLifeByUserId(userId)
+            if (allForUser.isEmpty()) {
+                lifeRepository.seedMyLifeIfEmpty(userId, defaultItems)
+                lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
+            } else {
+                allForUser.filter { it.isVisible }
+            }
         }
     }
 
