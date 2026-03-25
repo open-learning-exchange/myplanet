@@ -116,8 +116,9 @@ class RetryInterceptorTest {
             fail("Expected IOException due to interruption")
         } catch (e: IOException) {
             assertEquals("Interrupted during retry delay", e.message)
-            // The interrupted status is cleared by runBlocking/delay
-            Thread.interrupted() // Clear any remaining interrupted status just in case
+            // Thread.interrupted() returns true if the thread was interrupted,
+            // and clears the interrupted status so subsequent tests aren't affected.
+            assertTrue(Thread.interrupted())
         }
     }
 }

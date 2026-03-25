@@ -1,6 +1,0 @@
-{
-  "title": "Fix RetryInterceptor to use non-blocking delay",
-  "body": "Replaced Thread.sleep with kotlinx.coroutines.delay in RetryInterceptor.",
-  "head": "fix-retry-interceptor",
-  "base": "master"
-}
