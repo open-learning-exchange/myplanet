@@ -225,7 +225,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return TagItem(id = id, name = name)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
+    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
         allLibraryItems = if (isMyCourseLib) {
             resourcesRepository.getMyLibrary(model?.id)
         } else {
@@ -464,21 +464,23 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun buildAlertMessage(): String {
-        var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
+        return buildString {
+            append(getString(R.string.success_you_have_added_these_resources_to_your_mylibrary))
+            val itemsSize = selectedItems?.size ?: 0
+            if (itemsSize <= 5) {
+                selectedItems?.forEach { item ->
+                    append(" - ").append(item?.title).append("\n")
+                }
+            } else {
+                for (i in 0..4) {
+                    append(" - ").append(selectedItems?.get(i)?.title).append("\n")
+                }
+                append(getString(R.string.and)).append(itemsSize - 5)
+                    .append(getString(R.string.more_resource_s))
             }
-        } else {
-            for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
-            }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
-                getString(R.string.more_resource_s)
+            append(getString(R.string.return_to_the_home_tab_to_access_mylibrary))
+            append(getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources))
         }
-        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
-            getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
-        return msg
     }
 
     private fun clearTagsButton() {

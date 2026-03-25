@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.R
 object MarkdownUtils {
     private var currentZoomDialog: Dialog? = null
     private val markwonCache = WeakHashMap<Context, Markwon>()
+    private val imagePattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
     fun create(context: Context): Markwon {
         return markwonCache.getOrPut(context) {
@@ -125,14 +126,16 @@ object MarkdownUtils {
         width: Int = 150,
         height: Int = 100
     ): String {
-        val pattern = "!\\[.*?]\\((.*?)\\)"
-        val imagePattern = Pattern.compile(pattern)
         val matcher = markdownContent?.let { imagePattern.matcher(it) }
             ?: return markdownContent.orEmpty()
         val result = StringBuffer()
         while (matcher.find()) {
             val relativePath = matcher.group(1)
-            val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
+            val modifiedPath = if (relativePath != null && relativePath.startsWith("resources/")) {
+                relativePath.substring("resources/".length)
+            } else {
+                relativePath
+            }
             val fullUrl = baseUrl + modifiedPath
             matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
         }

@@ -635,6 +635,7 @@
     <string name="invalid_resource_url">URL de recurso no válida</string>
     <string name="my_library">" miBiblioteca"</string>
     <string name="link_not_available">Enlace no disponible</string>
+    <string name="link_optional">Enlace (opcional)</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu miBiblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nRegresa a la pestaña de Inicio para acceder a miBiblioteca.\n</string>
@@ -1107,16 +1108,19 @@
 
     <plurals name="minutes">
         <item quantity="one">%d minuto</item>
+        <item quantity="many">%d minutos</item>
         <item quantity="other">%d minutos</item>
     </plurals>
 
     <plurals name="hours">
         <item quantity="one">%d hora</item>
+        <item quantity="many">%d horas</item>
         <item quantity="other">%d horas</item>
     </plurals>
 
     <plurals name="days">
         <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
         <item quantity="other">%d días</item>
     </plurals>
 
@@ -1202,5 +1206,6 @@
     <string name="select_open_with">Abrir</string>
     <string name="select_media">Medios</string>
     <string name="select_resource_type">Tipo de recurso</string>
+    <string name="no_results_for_filter">No hay resultados que coincidan con tu filtro actual</string>
 
 </resources>

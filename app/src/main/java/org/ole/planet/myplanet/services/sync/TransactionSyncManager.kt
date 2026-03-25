@@ -11,6 +11,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -67,10 +69,16 @@ class TransactionSyncManager @Inject constructor(
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
-                val users = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
+                val usersToSync = databaseService.withRealm { realm ->
+                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { managedUser ->
+                        RealmUser().apply {
+                            this.id = managedUser.id
+                            this.name = managedUser.name
+                            this.planetCode = managedUser.planetCode
+                        }
+                    }
                 }
-                users.forEach { userModel ->
+                usersToSync.forEach { userModel ->
                     syncHealthData(userModel, header)
                 }
                 withContext(Dispatchers.Main) {
@@ -333,40 +341,52 @@ class TransactionSyncManager @Inject constructor(
         }
         if (pending.isEmpty()) return@withContext
 
-        for (notification in pending) {
-            val rev = notification.rev ?: continue
-            val body = JsonObject().apply {
-                addProperty("_id", notification.id)
-                addProperty("_rev", rev)
-                addProperty("status", "read")
-                addProperty("user", notification.userId)
-                addProperty("message", notification.message)
-                addProperty("type", notification.type)
-                notification.link?.let { addProperty("link", it) }
-                addProperty("priority", notification.priority)
-                addProperty("time", notification.createdAt.time)
+        val successfulSyncs = pending.map { notification ->
+            async {
+                val rev = notification.rev ?: return@async null
+                val body = JsonObject().apply {
+                    addProperty("_id", notification.id)
+                    addProperty("_rev", rev)
+                    addProperty("status", "read")
+                    addProperty("user", notification.userId)
+                    addProperty("message", notification.message)
+                    addProperty("type", notification.type)
+                    notification.link?.let { addProperty("link", it) }
+                    addProperty("priority", notification.priority)
+                    addProperty("time", notification.createdAt.time)
+                }
+                try {
+                    val response = apiInterface.putDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/notifications/${notification.id}",
+                        body
+                    )
+                    if (response.isSuccessful) {
+                        val newRev = response.body()?.get("rev")?.asString
+                        Pair(notification.id, newRev)
+                    } else null
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
             }
-            try {
-                val response = apiInterface.putDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                    body
-                )
-                if (response.isSuccessful) {
-                    val newRev = response.body()?.get("rev")?.asString
-                    databaseService.executeTransactionAsync { realm ->
-                        realm.where(RealmNotification::class.java)
-                            .equalTo("id", notification.id)
-                            .findFirst()
-                            ?.apply {
-                                needsSync = false
-                                if (newRev != null) this.rev = newRev
-                            }
+        }.awaitAll().filterNotNull()
+
+        if (successfulSyncs.isNotEmpty()) {
+            val ids = successfulSyncs.map { it.first }.toTypedArray()
+            val revMap = successfulSyncs.toMap()
+            databaseService.executeTransactionAsync { realm ->
+                val notifications = realm.where(RealmNotification::class.java)
+                    .`in`("id", ids)
+                    .findAll()
+
+                notifications.forEach { notification ->
+                    notification.needsSync = false
+                    revMap[notification.id]?.let { newRev ->
+                        notification.rev = newRev
                     }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
