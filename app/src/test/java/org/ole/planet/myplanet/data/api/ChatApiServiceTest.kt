@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -31,8 +32,12 @@ class ChatApiServiceTest {
     @Before
     fun setUp() {
         apiInterface = mockk()
-        context = mockk()
+        context = mockk() // Intentionally injecting mock Context despite not being used in public methods.
         chatApiService = ChatApiService(apiInterface, context)
+
+        // Note: mockkObject(UrlUtils) makes UrlUtils a global singleton mock.
+        // If tests ever run in parallel, this will cause flaky failures.
+        // It's a limitation due to the production code using the static/singleton UrlUtils directly.
         mockkObject(UrlUtils)
     }
 
@@ -73,7 +78,15 @@ class ChatApiServiceTest {
     @Test
     fun fetchAiProviders_whenResponseBodyStringIsBlank_returnsNull() = runTest {
         every { UrlUtils.hostUrl } returns "https://example.com/"
-        coEvery { apiInterface.checkAiProviders("https://example.com/checkProviders/") } returns Response.success("".toResponseBody("application/json".toMediaTypeOrNull()))
+
+        // Mock ResponseBody to explicitly return "" on string() call.
+        // Because string() consumes the stream, a regular toResponseBody() with ""
+        // doesn't correctly simulate the specific line `if (responseString.isNullOrBlank())`
+        // cleanly as the body exists and is not null.
+        val mockResponseBody = mockk<ResponseBody>()
+        every { mockResponseBody.string() } returns "   " // Returns a blank string
+
+        coEvery { apiInterface.checkAiProviders("https://example.com/checkProviders/") } returns Response.success(mockResponseBody)
 
         val result = chatApiService.fetchAiProviders()
 
