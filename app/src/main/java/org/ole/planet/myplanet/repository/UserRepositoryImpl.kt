@@ -680,7 +680,10 @@ class UserRepositoryImpl @Inject constructor(
         purpose: String,
         sendToNation: String,
         achievements: JsonArray,
-        references: JsonArray
+        references: JsonArray,
+        createdOn: String,
+        username: String,
+        parentCode: String
     ) {
         executeTransaction { transactionRealm ->
             val achievement = transactionRealm.where(RealmAchievement::class.java)
@@ -691,8 +694,12 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.goals = goals
                 achievement.purpose = purpose
                 achievement.sendToNation = sendToNation
+                achievement.createdOn = createdOn
+                achievement.username = username
+                achievement.parentCode = parentCode
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
+                achievement.isUpdated = true
             }
         }
     }
@@ -757,6 +764,25 @@ class UserRepositoryImpl @Inject constructor(
             )
         } else {
             AchievementData()
+        }
+    }
+
+    override suspend fun getAchievementsForUpload(): List<JsonObject> {
+        return queryList(RealmAchievement::class.java) {
+            not().beginsWith("_id", "guest")
+            equalTo("isUpdated", true)
+        }.map { RealmAchievement.serialize(it) }
+    }
+
+    override suspend fun markAchievementUploaded(id: String, rev: String?) {
+        executeTransaction { transactionRealm ->
+            val achievement = transactionRealm.where(RealmAchievement::class.java)
+                .equalTo("_id", id)
+                .findFirst()
+            if (achievement != null) {
+                if (!rev.isNullOrEmpty()) achievement._rev = rev
+                achievement.isUpdated = false
+            }
         }
     }
 }

@@ -635,6 +635,7 @@
     <string name="invalid_resource_url">Invalid resource url</string>
     <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">Link not available</string>
+    <string name="link_optional">Link (optional)</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Success! You have added these resources to your myLibrary:\n\n</string>
     <string name="more_resource_s">" more resource(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
@@ -1202,5 +1203,6 @@
     <string name="select_open_with">Open</string>
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
+    <string name="no_results_for_filter">No results match your current filter</string>
 
 </resources>

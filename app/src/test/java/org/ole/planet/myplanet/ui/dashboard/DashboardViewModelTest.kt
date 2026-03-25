@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.Application
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.every
 import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,6 +56,10 @@ class DashboardViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { dispatcherProvider.main } returns testDispatcher
+        every { dispatcherProvider.io } returns testDispatcher
+        every { dispatcherProvider.default } returns testDispatcher
+        every { dispatcherProvider.unconfined } returns testDispatcher
 
         viewModel = DashboardViewModel(
             application,
