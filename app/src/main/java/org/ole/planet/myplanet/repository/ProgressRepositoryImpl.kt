@@ -88,6 +88,8 @@ class ProgressRepositoryImpl @Inject constructor(
         }
 
         var i = 1
+        // Loop looks for the first missing step from 1 to stepsSize.
+        // It returns the number of consecutive completed steps from the start.
         while (i <= stepsSize && completed[i]) {
             i++
         }
