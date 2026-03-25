@@ -488,7 +488,6 @@
     <string name="recording_audio">جارٍ تسجيل الصوت…</string>
     <string name="selected">"المحدد: "</string>
     <string name="last_sync">%s :آخر مزامنة مع الخادم</string>
-    <string name="last_syncs">آخر مزامنة</string>
     <string name="no_team_available">لا توجد فرق/مؤسسات متاحة</string>
     <string name="last_sync_date">%s :تاريخ آخر مزامنة</string>
     <string name="no_assignee">لا يوجد مُعيَّن</string>
@@ -577,7 +576,6 @@
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
     <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
-    <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
     <string name="removed_from_mylibrary">تمت الإزالة من مكتبتي</string>
     <string name="removed_from_mycourse">تمت الإزالة من دوراتي</string>
     <string name="please_allow_usages_permission_to_myplanet_app">يرجى السماح بإذن الاستخدام لتطبيق MyPlanet.</string>
@@ -713,7 +711,6 @@
     <string name="invalid_url">عنوان URL غير صالح</string>
     <string name="please_enter_valid_url_to_continue">يرجى إدخال عنوان URL صالح للمتابعة</string>
     <string name="uploading_data_to_server_please_wait">جارٍ تحميل البيانات إلى الخادم، يرجى الانتظار…</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">تحقق مرة أخرى من عنوان الخادم. ما قمت بالاتصال به ليس خادم بلانت</string>
     <string name="device_couldn_t_reach_local_server">لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بشبكة Wi-Fi الصحيحة للخادم المحلي (المجتمع).</string>
     <string name="device_couldn_t_reach_nation_server">لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بالإنترنت وحاول مرة أخرى.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">الخادم لم يتم تكوينه بشكل صحيح. اتصل بهذا الجهاز بخادم بلانت</string>
@@ -955,7 +952,6 @@
     <string name="share_chat">شارك الدردشة</string>
     <string name="shared_chat">دردشة مشتركة</string>
     <string name="check_apk_version">جارٍ فحص إصدار apk</string>
-    <string name="checking_server">جارٍ فحص الخادم</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
@@ -1072,7 +1068,6 @@
     <string name="no_reports">لا توجد تقارير متاحة</string>
     <string name="fetching_ai_providers">جلب مزودي الذكاء الاصطناعي…</string>
     <string name="adopt_survey">تبنَّى الاستبيان</string>
-    <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
     <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
     <string name="beta_improved_sync">beta improved sync</string>
     <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
@@ -1171,7 +1166,6 @@
     <string name="is_available">%1$s متاح. انقر للمتابعة في التعلم</string>
     <string name="failed_to_add_please_retry">فشل في الإضافة. الرجاء المحاولة مرة أخرى</string>
     <string name="failed_to_remove_resource">فشل في إزالة المورد. الرجاء المحاولة مرة أخرى</string>
-    <string name="failed_to_adopt_survey">فشل في اعتماد الاستبيان. الرجاء المحاولة مرة أخرى</string>
     <string name="failed_to_save_chat">فشل في حفظ الدردشة. الرجاء المحاولة مرة أخرى.</string>
     <string name="failed_to_delete_report">فشل في حذف التقرير. الرجاء المحاولة مرة أخرى</string>
     <string name="delete_report">حذف التقرير</string>

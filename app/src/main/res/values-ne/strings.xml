@@ -488,7 +488,6 @@
     <string name="recording_audio">आवाज रेकर्ड गर्दै......</string>
     <string name="selected">"छानिएको: "</string>
     <string name="last_sync">सर्भरसँग अन्तिम समिकरण: %s</string>
-    <string name="last_syncs">अन्तिमसर्वरसिङ्क</string>
     <string name="no_team_available">कुनै टिम/एन्टरप्राइज उपलब्ध छैन</string>
     <string name="last_sync_date">अन्तिम सिङ्क मिति: %s</string>
     <string name="no_assignee">कुनै निर्धारित व्यक्ति छैन</string>
@@ -577,7 +576,6 @@
     <string name="added_to_my_courses">myCourses मा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
     <string name="device_not_connected_to_planet">उपकरण ग्रहसँग जडान गरिएको छैन।</string>
-    <string name="all_files_downloaded_successfully">सबै फाइलहरू सफलतापूर्वक डाउनलोड भयो</string>
     <string name="removed_from_mylibrary">मेरो पुस्तकालयबाट हटाइयो</string>
     <string name="removed_from_mycourse">मेरो पाठ्यक्रमबाट हटाइयो</string>
     <string name="please_allow_usages_permission_to_myplanet_app">कृपया myPlanet अनुप्रयोगमा प्रयोगको अनुमति दिनुहोस्।</string>
@@ -713,7 +711,6 @@
     <string name="invalid_url">अमान्य URL</string>
     <string name="please_enter_valid_url_to_continue">कृपया जारी राख्नका लागि वैध URL लेख्नुहोस्।</string>
     <string name="uploading_data_to_server_please_wait">सर्भरमा डाटा अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">कृपया पुन: सर्भर ठेगाना जाँच गर्नुहोस्। म जुन सर्भरसँग कनेक्ट गरें भनेर थिएन त्यो प्लानेट सर्भर थिएन</string>
     <string name="device_couldn_t_reach_local_server">डिभाइसले सर्भरसम्म पुग्न सकेन। स्थानीय सर्भर (समुदाय) को लागि तपाईं सही Wi-Fi नेटवर्कमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस्।</string>
     <string name="device_couldn_t_reach_nation_server">डिभाइसले सर्भरसम्म पुग्न सकेन। इन्टरनेटमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">सर्भर सही ढंगले कन्फिगर गरिएको छैन। यो डिभाइसलाई प्लानेट सर्भरसँग कनेक्ट गर्नुहोस्</string>
@@ -951,7 +948,6 @@
     <string name="share_chat">च्याट साझेदारी गर्नुहोस्</string>
     <string name="shared_chat">साझेदारी गरिएको कुराकानी</string>
     <string name="check_apk_version">एप संस्करण जाँच गर्दै</string>
-    <string name="checking_server">सर्भर जाँच गर्दै</string>
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
@@ -1068,7 +1064,6 @@
     <string name="no_reports">कुनै प्रतिवेदन उपलब्ध छैन</string>
     <string name="fetching_ai_providers">एआई प्रदायकहरू प्राप्त गर्दै…</string>
     <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
-    <string name="survey_adopted_successfully">सर्वेक्षण सफलतापूर्वक अपनाइयो!</string>
     <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
     <string name="beta_improved_sync">beta improved sync</string>
     <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
@@ -1155,7 +1150,6 @@
     <string name="is_available">%1$s उपलब्ध छ। सिकाइ जारी राख्न ट्याप गर्नुहोस्।</string>
     <string name="failed_to_add_please_retry">थप गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_remove_resource">स्रोत हटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
-    <string name="failed_to_adopt_survey">सर्वेक्षण अपनाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_save_chat">कुराकानी सुरक्षित गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्।</string>
     <string name="failed_to_delete_report">प्रतिवेदन मेटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
