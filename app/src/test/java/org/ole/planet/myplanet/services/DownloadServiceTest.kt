@@ -6,9 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,13 +35,13 @@ import org.robolectric.android.controller.ServiceController
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = dagger.hilt.android.testing.HiltTestApplication::class, sdk = [33])
+@dagger.hilt.android.testing.HiltAndroidTest
 class DownloadServiceTest {
+    @get:org.junit.Rule
+    val hiltRule = dagger.hilt.android.testing.HiltAndroidRule(this)
 
-    @get:Rule
-    val hiltRule = HiltAndroidRule(this)
 
     private lateinit var serviceController: ServiceController<DownloadService>
     private lateinit var downloadService: DownloadService
