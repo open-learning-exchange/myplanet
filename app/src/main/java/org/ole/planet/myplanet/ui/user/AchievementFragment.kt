@@ -233,6 +233,11 @@ class AchievementFragment : BaseContainerFragment() {
         binding.tvDescription.text = desc
         binding.tvDate.text = getString("date", ob)
         binding.tvTitle.text = getString("title", ob)
+        val link = getString("link", ob)
+        if (link.isNotEmpty()) {
+            binding.tvLink.visibility = View.VISIBLE
+            binding.tvLink.text = link
+        }
 
         val resourceIds = ob.getAsJsonArray("resources")?.mapNotNull {
             it.asJsonObject?.get("_id")?.asString
