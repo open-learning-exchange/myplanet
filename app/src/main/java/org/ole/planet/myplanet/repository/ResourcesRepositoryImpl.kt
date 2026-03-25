@@ -559,7 +559,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                             wrapper.add("doc", doc)
                             chunkDocuments.add(wrapper)
                         }
-                        savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx))
+                    savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx, sharedPrefManager))
                     }
                 }
                 savedIds
@@ -575,7 +575,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                             val wrapper = JsonObject()
                             wrapper.add("doc", doc)
                             singleDocArray.add(wrapper)
-                            savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx))
+                        savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx, sharedPrefManager))
                         }
                     } catch (e2: Exception) {
                         e2.printStackTrace()

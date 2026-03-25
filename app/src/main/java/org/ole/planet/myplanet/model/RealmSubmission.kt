@@ -4,7 +4,6 @@ import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -167,7 +166,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
+        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context, spm: org.ole.planet.myplanet.services.SharedPrefManager): JsonObject {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUser::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
@@ -200,7 +199,6 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             `object`.addProperty("sender", sub.sender)
-            val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
             `object`.addProperty("source", spm.getPlanetCode())
             `object`.addProperty("parentCode", spm.getParentCode())
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
@@ -219,7 +217,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context): JsonObject {
+        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context, spm: org.ole.planet.myplanet.services.SharedPrefManager): JsonObject {
             val jsonObject = JsonObject()
 
             try {
@@ -246,7 +244,6 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
                 jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 jsonObject.addProperty("sender", submission.sender)
-                val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
                 jsonObject.addProperty("source", spm.getPlanetCode())
                 jsonObject.addProperty("parentCode", spm.getParentCode())
                 jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
