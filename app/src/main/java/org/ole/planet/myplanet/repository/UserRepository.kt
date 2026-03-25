@@ -81,6 +81,7 @@ interface UserRepository {
     suspend fun getUserImageUrl(): String?
     suspend fun getActiveUserIdSuspending(): String
     suspend fun validateUsername(username: String): String?
+    suspend fun isUserExists(name: String?): Boolean
     suspend fun cleanupDuplicateUsers()
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean

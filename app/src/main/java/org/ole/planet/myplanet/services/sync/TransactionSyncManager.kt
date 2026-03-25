@@ -23,8 +23,9 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -306,7 +307,7 @@ class TransactionSyncManager @Inject constructor(
                 insertCourseStepsExams("", "", jsonDoc, mRealm)
             }
             "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+                UserRepositoryImpl.populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
             }
             else -> {
                 callMethod(mRealm, jsonDoc, table)
