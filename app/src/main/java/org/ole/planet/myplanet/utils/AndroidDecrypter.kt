@@ -31,7 +31,7 @@ class AndroidDecrypter {
             val encryptedIVAndText = ByteArray(ivSize + encrypted.size)
             System.arraycopy(ivBytes, 0, encryptedIVAndText, 0, ivSize)
             System.arraycopy(encrypted, 0, encryptedIVAndText, ivSize, encrypted.size)
-            return bytesToHex(encrypted)
+            return bytesToHex(encryptedIVAndText)
         }
 
         @JvmStatic
@@ -61,12 +61,22 @@ class AndroidDecrypter {
                 if (encrypted == null || key == null || initVector == null) {
                     return null
                 }
-                val iv = IvParameterSpec(hexStringToByteArray(initVector))
+                val ivBytes = hexStringToByteArray(initVector)
+                val iv = IvParameterSpec(ivBytes)
                 val skeySpec = SecretKeySpec(hexStringToByteArray(key), "AES")
 
                 val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
                 cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv)
-                val original = cipher.doFinal(hexStringToByteArray(encrypted))
+                val encryptedBytes = hexStringToByteArray(encrypted)
+                // Invariant: New-format encrypted data prepends the IV to the ciphertext.
+                // We check if the payload starts with the provided IV to decide whether to strip it.
+                // This maintains backward compatibility with legacy data containing only the ciphertext.
+                val actualEncryptedBytes = if (encryptedBytes.size >= ivBytes.size && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until ivBytes.size))) {
+                    encryptedBytes.sliceArray(ivBytes.size until encryptedBytes.size)
+                } else {
+                    encryptedBytes
+                }
+                val original = cipher.doFinal(actualEncryptedBytes)
                 return String(original)
             } catch (ex: Exception) {
                 ex.printStackTrace()
