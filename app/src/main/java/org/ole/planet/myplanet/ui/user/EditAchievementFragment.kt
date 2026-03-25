@@ -102,7 +102,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     purpose = purpose,
                     sendToNation = sendToNation,
                     achievements = achievementArray ?: JsonArray(),
-                    references = referenceArray ?: JsonArray()
+                    references = referenceArray ?: JsonArray(),
+                    createdOn = user?.planetCode ?: "",
+                    username = user?.name ?: "",
+                    parentCode = user?.parentCode ?: ""
                 )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
@@ -136,7 +139,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val flexboxLayout = editAttachmentBinding.flexbox
             flexboxLayout.removeAllViews()
             val chipCloud = ChipCloud(activity, flexboxLayout, config)
-            for (element in e.asJsonObject.getAsJsonArray("resources")) {
+            val resources = e.asJsonObject.getAsJsonArray("resources") ?: JsonArray()
+            for (element in resources) {
                 chipCloud.addChip(element.asJsonObject["title"].asString)
             }
             editAttachmentBinding.ivDelete.setOnClickListener {
@@ -248,21 +252,24 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             etTitle.setText(`object`["title"].asString)
             etDescription.setText(`object`["description"].asString)
             tvDate.text = `object`["date"].asString
-            val array = `object`.getAsJsonArray("resources")
+            alertAddAttachmentBinding.etLink.setText(`object`["link"]?.asString ?: "")
+            val array = `object`.getAsJsonArray("resources") ?: JsonArray()
             date = `object`["date"].asString
             for (o in array) {
                 prevList.add(o.asJsonObject["title"].asString)
             }
-            resourceArray = `object`.getAsJsonArray("resources")
+            resourceArray = array
         }
         return prevList
     }
 
     private fun saveAchievement(desc: String, title: String) {
+        val link = alertAddAttachmentBinding.etLink.text.toString().trim()
         val `object` = JsonObject()
         `object`.addProperty("description", desc)
         `object`.addProperty("title", title)
         `object`.addProperty("date", date)
+        `object`.addProperty("link", link)
         `object`.add("resources", resourceArray)
         achievementArray?.add(`object`)
         showAchievementAndInfo()
