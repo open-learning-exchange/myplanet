@@ -509,9 +509,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findAll()
 
             val ids = JsonArray()
-            for (course in myCourses) {
-                ids.add(course.courseId)
-            }
+            myCourses.asSequence().mapNotNull { it.courseId }.forEach { ids.add(it) }
             ids
         }
     }
