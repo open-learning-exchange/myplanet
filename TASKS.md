@@ -1,7 +1,7 @@
 # myPlanet Improvement Tasks (Sorted by Importance)
 
-## Task 1 — Score: 70
-### Add @HiltViewModel + DispatcherProvider to RatingsViewModel
+### Task 1 — Score: 70
+## Add @HiltViewModel + DispatcherProvider to RatingsViewModel
 Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Additionally the two `viewModelScope.launch` blocks have no explicit dispatcher.
 
 **Files:**
@@ -14,8 +14,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 2 — Score: 65
-### Fix flowOn(Dispatchers.Main) in RealmRepository.queryListFlow
+### Task 2 — Score: 65
+## Fix flowOn(Dispatchers.Main) in RealmRepository.queryListFlow
 `RealmRepository.queryListFlow()` and `VoicesRepositoryImpl.getCommunityNews()` both use `flowOn(Dispatchers.Main)` because Realm async queries require a Looper thread. This forces query orchestration onto the main thread. A dedicated single-thread Looper dispatcher for Realm would keep the main thread free.
 
 **Files:**
@@ -30,8 +30,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 3 — Score: 60
-### Remove EntryPointAccessors from RealmMyLibrary and RealmSubmission Models
+### Task 3 — Score: 60
+## Remove EntryPointAccessors from RealmMyLibrary and RealmSubmission Models
 `RealmMyLibrary.insertMyLibrary()` and `RealmSubmission.serialize()` call `EntryPointAccessors.fromApplication()` inside model companion objects. Models should not perform manual DI; the caller should pass already-resolved dependencies as parameters.
 
 **Files:**
@@ -46,8 +46,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 4 — Score: 60
-### Replace Raw Realm Queries in UploadManager with Repository Calls
+### Task 4 — Score: 60
+## Replace Raw Realm Queries in UploadManager with Repository Calls
 `UploadManager` queries `RealmSubmitPhotos` and `RealmMyLibrary` directly via `databaseService.withRealm` and calls `RealmMyPersonal.serialize()` as a static method. These should route through `SubmissionsRepository`, `ResourcesRepository`, and `PersonalsRepository`.
 
 **Merges:** Tasks 7, 8, and "Replace direct Realm queries in UploadManager"
@@ -66,8 +66,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 5 — Score: 55
-### Add DispatcherProvider to ProgressViewModel, NotificationsViewModel, UserProfileViewModel
+### Task 5 — Score: 55
+## Add DispatcherProvider to ProgressViewModel, NotificationsViewModel, UserProfileViewModel
 10 total `viewModelScope.launch` blocks across these three ViewModels have no explicit dispatcher while performing Realm work.
 
 **Merges:** Original tasks 2, 3, 5
@@ -83,8 +83,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 6 — Score: 55
-### Move RealmUser Static Methods into UserRepositoryImpl
+### Task 6 — Score: 55
+## Move RealmUser Static Methods into UserRepositoryImpl
 `RealmUser.companion` contains `createGuestUser()`, `populateUsersTable()`, `isUserExists()`, `updateUserDetails()`, and `cleanupDuplicateUsers()` — over 300 lines of business logic with raw Realm transactions inside a model class.
 
 **Files:**
@@ -100,8 +100,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 7 — Score: 55
-### Replace Thread.sleep in RetryInterceptor with Non-Blocking Retry
+### Task 7 — Score: 55
+## Replace Thread.sleep in RetryInterceptor with Non-Blocking Retry
 `RetryInterceptor` uses `Thread.sleep(delay)` inside the OkHttp interceptor chain, blocking the entire network thread during retries.
 
 **Files:**
@@ -115,8 +115,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 8 — Score: 55
-### Remove Direct Realm Access from BaseResourceFragment / Use Injected DatabaseService
+### Task 8 — Score: 55
+## Remove Direct Realm Access from BaseResourceFragment / Use Injected DatabaseService
 `BaseResourceFragment` has two `Realm.getDefaultInstance()` calls that should use the injected `DatabaseService`. The base class is used by many fragments, so this fix has wide impact.
 
 **Merges:** PR-1 and both BaseResourceFragment DatabaseService tasks
@@ -132,8 +132,8 @@ Missing `@HiltViewModel` is a latent runtime bug; DI graph may silently fail. Ad
 
 ---
 
-## Task 9 — Score: 50
-### Move RealmMyCourse Companion Query Helpers into CoursesRepositoryImpl
+### Task 9 — Score: 50
+## Move RealmMyCourse Companion Query Helpers into CoursesRepositoryImpl
 Static queries in `RealmMyCourse.companion` leak data access into the model layer. Called from `BaseRecyclerParentFragment` and other UI sites.
 
 **Merges:** Original task 10 and "Move RealmMyCourse companion"
@@ -152,8 +152,8 @@ Static queries in `RealmMyCourse.companion` leak data access into the model laye
 
 ---
 
-## Task 10 — Score: 50
-### Move RealmMyTeam Static Query Methods into TeamsRepositoryImpl
+### Task 10 — Score: 50
+## Move RealmMyTeam Static Query Methods into TeamsRepositoryImpl
 `RealmMyTeam.companion` holds `getResourceIds()`, `getResourceIdsByUser()`, `getTeamCreator()`, `isTeamLeader()`, and `getMyTeamsByUserId()` — all taking a raw Realm parameter.
 
 **Files:**
@@ -169,8 +169,8 @@ Static queries in `RealmMyCourse.companion` leak data access into the model laye
 
 ---
 
-## Task 11 — Score: 50
-### Use Injected DispatcherProvider in DatabaseService
+### Task 11 — Score: 50
+## Use Injected DispatcherProvider in DatabaseService
 `DatabaseService` hardcodes `Dispatchers.IO`, hurting testability of the core data layer.
 
 **Files:**
@@ -183,8 +183,8 @@ Static queries in `RealmMyCourse.companion` leak data access into the model laye
 
 ---
 
-## Task 12 — Score: 50
-### Wrap TeamViewModel.requestToJoin and leaveTeam in withContext(dispatcherProvider.io)
+### Task 12 — Score: 50
+## Wrap TeamViewModel.requestToJoin and leaveTeam in withContext(dispatcherProvider.io)
 `TeamViewModel` already injects `dispatcherProvider` but `requestToJoin` and `leaveTeam` call Realm-touching repository methods without a dispatcher wrapper.
 
 **Files:**
@@ -196,8 +196,8 @@ Static queries in `RealmMyCourse.companion` leak data access into the model laye
 
 ---
 
-## Task 13 — Score: 45
-### Replace Direct Realm Queries in TransactionSyncManager with Repository Calls
+### Task 13 — Score: 45
+## Replace Direct Realm Queries in TransactionSyncManager with Repository Calls
 `TransactionSyncManager` directly queries and mutates `RealmUser` through `DatabaseService` and calls static model methods, bypassing injected repositories.
 
 **Merges:** PR-2 and "Replace direct Realm queries in TransactionSyncManager"
@@ -215,8 +215,8 @@ Static queries in `RealmMyCourse.companion` leak data access into the model laye
 
 ---
 
-## Task 14 — Score: 45
-### Replace MainApplication.applicationScope with Injected @ApplicationScope
+### Task 14 — Score: 45
+## Replace MainApplication.applicationScope with Injected @ApplicationScope
 Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applicationScope` while DI already provides `@ApplicationScope`. Split scope pattern causes inconsistent threading control.
 
 **Files:**
@@ -231,8 +231,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 15 — Score: 45
-### Route databaseService.clearAll() Through ConfigurationsRepository
+### Task 15 — Score: 45
+## Route databaseService.clearAll() Through ConfigurationsRepository
 `SyncActivity` and `SettingsActivity` both call `databaseService.clearAll()` directly from the UI layer for the "reset app" flow. This nuclear database operation should be mediated by a repository.
 
 **Files:**
@@ -249,8 +249,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 16 — Score: 40
-### Move updateHealthData from UploadToShelfService to HealthRepository
+### Task 16 — Score: 40
+## Move updateHealthData from UploadToShelfService to HealthRepository
 `UploadToShelfService.updateHealthData` performs a raw Realm query inside a `dbService.executeTransactionAsync` callback. `HealthRepository` already owns `RealmHealthExamination`.
 
 **Files:**
@@ -266,8 +266,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 17 — Score: 40
-### Shift BaseDashboardFragment Repository Reads into DashboardViewModel
+### Task 17 — Score: 40
+## Shift BaseDashboardFragment Repository Reads into DashboardViewModel
 `BaseDashboardFragment` directly uses repositories for user and "My Life" data while also holding `DashboardViewModel`, creating split data ownership.
 
 **Files:**
@@ -281,8 +281,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 18 — Score: 40
-### Move DictionaryActivity Realm Queries into a New DictionaryRepository
+### Task 18 — Score: 40
+## Move DictionaryActivity Realm Queries into a New DictionaryRepository
 `DictionaryActivity` performs four direct Realm operations (count, bulk insert, search) in the UI layer, the only domain without a repository.
 
 **Files:**
@@ -299,8 +299,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 19 — Score: 35
-### Move Shelf Aggregation Realm Work Out of UploadToShelfService
+### Task 19 — Score: 35
+## Move Shelf Aggregation Realm Work Out of UploadToShelfService
 `UploadToShelfService` performs shelf aggregation using direct Realm access via `dbService.withRealm`, bypassing repository boundaries.
 
 **Files:**
@@ -313,8 +313,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 20 — Score: 35
-### Move LoginActivity Team-Member Persistence into Repository
+### Task 20 — Score: 35
+## Move LoginActivity Team-Member Persistence into Repository
 `LoginActivity` fetches team members and mutates saved-user preferences directly, blending UI and data concerns.
 
 **Files:**
@@ -327,8 +327,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 21 — Score: 35
-### Replace Global Realm in EventsDetailFragment with Injected DatabaseService
+### Task 21 — Score: 35
+## Replace Global Realm in EventsDetailFragment with Injected DatabaseService
 `EventsDetailFragment` directly calls `Realm.getDefaultInstance()` instead of using DI.
 
 **Files:**
@@ -340,8 +340,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 22 — Score: 35
-### Realm Flow Listener Lifecycle Hardening in RealmRepository
+### Task 22 — Score: 35
+## Realm Flow Listener Lifecycle Hardening in RealmRepository
 `RealmRepository.queryListFlow` creates async listeners pinned to `Dispatchers.Main`. A narrow improvement pass can reduce risk by adding explicit lifecycle/ownership conventions.
 
 **Files:**
@@ -354,8 +354,8 @@ Both `LoginSyncManager` and `TransactionSyncManager` use `MainApplication.applic
 
 ---
 
-## Task 23 — Score: 30
-### Migrate ChatHistoryFragment + ChatDetailFragment to activityViewModels()
+### Task 23 — Score: 30
+## Migrate ChatHistoryFragment + ChatDetailFragment to activityViewModels()
 Both fragments use manual `ViewModelProvider` instead of the `by activityViewModels()` delegate.
 
 **Merges:** Both chat fragment tasks
@@ -370,8 +370,8 @@ Both fragments use manual `ViewModelProvider` instead of the `by activityViewMod
 
 ---
 
-## Task 24 — Score: 30
-### Realtime List Refresh / DiffUtils Adapter Cleanup
+### Task 24 — Score: 30
+## Realtime List Refresh / DiffUtils Adapter Cleanup
 `RealtimeSyncHelper` force-refreshes generic `ListAdapter` via unsafe cast. Standardize on explicit `OnDiffRefreshListener`.
 
 **Files:**
@@ -384,8 +384,8 @@ Both fragments use manual `ViewModelProvider` instead of the `by activityViewMod
 
 ---
 
-## Task 25 — Score: 30
-### Eliminate Hardcoded Dispatchers in CameraUtils
+### Task 25 — Score: 30
+## Eliminate Hardcoded Dispatchers in CameraUtils
 `CameraUtils` creates `CoroutineScope(Dispatchers.Default + cameraJob)` making it hard to test.
 
 **Files:**
@@ -397,8 +397,8 @@ Both fragments use manual `ViewModelProvider` instead of the `by activityViewMod
 
 ---
 
-## Task 26 — Score: 25
-### Remove Unused DatabaseService from UserSessionManager
+### Task 26 — Score: 25
+## Remove Unused DatabaseService from UserSessionManager
 `UserSessionManager` injects `DatabaseService` as `realmService` but current logic reads/writes through repositories only.
 
 **Files:**
@@ -411,8 +411,8 @@ Both fragments use manual `ViewModelProvider` instead of the `by activityViewMod
 
 ---
 
-## Task 27 — Score: 25
-### Migrate OnboardingAdapter to ViewPager2 with ListAdapter
+### Task 27 — Score: 25
+## Migrate OnboardingAdapter to ViewPager2 with ListAdapter
 Refactor from legacy `PagerAdapter` to `RecyclerView.Adapter` for use with `ViewPager2`.
 
 **Files:**
@@ -425,8 +425,8 @@ Refactor from legacy `PagerAdapter` to `RecyclerView.Adapter` for use with `View
 
 ---
 
-## Task 28 — Score: 20
-### Migrate AddHealthActivity to View Binding
+### Task 28 — Score: 20
+## Migrate AddHealthActivity to View Binding
 Replace all manual `findViewById` calls with View Binding.
 
 **Files:**
@@ -439,8 +439,8 @@ Replace all manual `findViewById` calls with View Binding.
 
 ---
 
-## Task 29 — Score: 15
-### Remove Unused Imports from TakeCourseFragment
+### Task 29 — Score: 15
+## Remove Unused Imports from TakeCourseFragment
 `TakeCourseFragment.kt` imports `ActivitiesRepository`, `ProgressRepository`, and `SubmissionsRepository` but never uses them.
 
 **Files:**
@@ -452,8 +452,8 @@ Replace all manual `findViewById` calls with View Binding.
 
 ---
 
-## Task 30 — Score: 15
-### Replace findViewById in FeedbackFragment with View Binding
+### Task 30 — Score: 15
+## Replace findViewById in FeedbackFragment with View Binding
 Replace `requireView().findViewById<RadioButton>(...)` with direct binding access.
 
 **Files:**
