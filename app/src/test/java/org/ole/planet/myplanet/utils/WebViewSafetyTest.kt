@@ -1,26 +1,48 @@
 package org.ole.planet.myplanet.utils
 
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
+import android.net.Uri
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
-@HiltAndroidTest
-@RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
 class WebViewSafetyTest {
-
-    @get:Rule
-    var hiltRule = HiltAndroidRule(this)
 
     private val trustedHosts = listOf("planet.learning.org", "myplanet.com")
     private val appDir = "/data/user/0/org.ole.planet.myplanet/files"
+
+    @Before
+    fun setUp() {
+        mockkStatic(Uri::class)
+        every { Uri.parse(any()) } answers {
+            val urlString = firstArg<String>()
+            val schemeIndex = urlString.indexOf("://")
+            val scheme = if (schemeIndex != -1) urlString.substring(0, schemeIndex)
+            else if (urlString.startsWith("javascript:")) "javascript"
+            else if (urlString.startsWith("data:")) "data"
+            else null
+
+            val host = if (schemeIndex != -1) {
+                val afterScheme = urlString.substring(schemeIndex + 3)
+                val pathIndex = afterScheme.indexOf("/")
+                if (pathIndex != -1) afterScheme.substring(0, pathIndex) else afterScheme
+            } else null
+
+            val mockUri = io.mockk.mockk<Uri>()
+            every { mockUri.scheme } returns scheme
+            every { mockUri.host } returns host
+            mockUri
+        }
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun `test https urls are allowed`() {
