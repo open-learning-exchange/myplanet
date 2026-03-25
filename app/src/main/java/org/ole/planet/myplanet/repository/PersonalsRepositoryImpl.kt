@@ -66,4 +66,8 @@ class PersonalsRepositoryImpl @Inject constructor(
             personal._rev = rev
         }
     }
+
+    override suspend fun serializePersonal(personal: RealmMyPersonal, context: android.content.Context): com.google.gson.JsonObject {
+        return RealmMyPersonal.serialize(personal, context)
+    }
 }

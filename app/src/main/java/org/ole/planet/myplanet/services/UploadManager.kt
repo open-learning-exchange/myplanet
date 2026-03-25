@@ -273,11 +273,7 @@ class UploadManager @Inject constructor(
 
                 if (listener != null && successfulUploads.isNotEmpty()) {
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
-                    val photos = databaseService.withRealm { realm ->
-                        val results = realm.where(RealmSubmitPhotos::class.java)
-                            .`in`("id", photoIds).findAll()
-                        realm.copyFromRealm(results)
-                    }
+                    val photos = submissionsRepository.getPhotosByIds(photoIds)
 
                     photos?.forEach { photo ->
                         val uploadInfo = successfulUploads.find { it.photoId == photo.id }
@@ -360,16 +356,7 @@ class UploadManager @Inject constructor(
                         if (isTransactionSuccessful) {
                             listener?.let {
                                 try {
-                                    val libraries = databaseService.withRealm { realm ->
-                                        if (libraryIds.isNotEmpty()) {
-                                            val results = realm.where(RealmMyLibrary::class.java)
-                                                .`in`("id", libraryIds)
-                                                .findAll()
-                                            realm.copyFromRealm(results)
-                                        } else {
-                                            emptyList()
-                                        }
-                                    }
+                                    val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
 
                                     val libMap = libraries?.associateBy { it.id } ?: emptyMap()
 
@@ -406,7 +393,7 @@ class UploadManager @Inject constructor(
                 try {
                     val response = apiInterface.postDoc(
                         UrlUtils.header, "application/json",
-                        "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
+                        "${UrlUtils.getUrl()}/resources", personalsRepository.serializePersonal(personal, context)
                     )
 
                     val `object` = response.body()
