@@ -14,8 +14,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
@@ -44,7 +45,8 @@ class TransactionSyncManager @Inject constructor(
     private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -67,7 +69,7 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 val usersToSync = databaseService.withRealm { realm ->
                     realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { managedUser ->
@@ -130,7 +132,7 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             val model = userSessionManager.getUserModel()
             val id = model?.id
             try {
