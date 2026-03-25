@@ -213,6 +213,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         databaseService.executeTransactionAsync { it.deleteAll() }
     }
 
+    override suspend fun resetDatabase() {
+        databaseService.clearAll()
+    }
+
     override suspend fun checkServerAvailability(url: String): Boolean {
         return withContext(dispatcherProvider.io) {
             try {

@@ -31,11 +31,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -105,7 +105,7 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         lateinit var retryQueue: RetryQueue
         @Inject
-        lateinit var databaseService: DatabaseService
+        lateinit var configurationsRepository: ConfigurationsRepository
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -271,7 +271,7 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             lifecycleScope.launch(Dispatchers.IO) {
-                                databaseService.clearAll()
+                                configurationsRepository.resetDatabase()
                                 clearSharedPref()
                                 withContext(Dispatchers.Main) {
                                     restartApp()
