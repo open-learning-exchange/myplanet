@@ -10,7 +10,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
