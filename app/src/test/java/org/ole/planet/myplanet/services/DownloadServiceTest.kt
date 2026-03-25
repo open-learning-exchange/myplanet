@@ -36,7 +36,6 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.android.controller.ServiceController
 import java.io.File
-import java.lang.reflect.Field
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltAndroidTest
@@ -98,10 +97,8 @@ class DownloadServiceTest {
 
         downloadService = serviceController.create().get()
 
-        // Manual dependency injection for test
         downloadService.downloadRepository = downloadRepository
 
-        // Ensure that `downloadScope` in `DownloadService` operates on the test dispatcher
         val field = DownloadService::class.java.getDeclaredField("downloadScope")
         field.isAccessible = true
         field.set(downloadService, kotlinx.coroutines.CoroutineScope(testDispatcher))
@@ -119,7 +116,6 @@ class DownloadServiceTest {
         val realPrefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
         realPrefs.edit().clear().commit()
 
-        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
@@ -139,7 +135,6 @@ class DownloadServiceTest {
         val responseBody = "test content".toResponseBody("text/plain".toMediaTypeOrNull())
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Success(responseBody)
 
-        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
@@ -160,7 +155,6 @@ class DownloadServiceTest {
         val responseBody = "test content".toResponseBody("text/plain".toMediaTypeOrNull())
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Success(responseBody)
 
-        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
@@ -180,7 +174,6 @@ class DownloadServiceTest {
 
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Error("Not Found")
 
-        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
