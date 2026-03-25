@@ -92,16 +92,16 @@ open class RealmMeetup : RealmObject() {
             }
             map["Meetup Time"] = checkNull(meetups.startTime) + " - " + checkNull(meetups.endTime)
             map["Recurring"] = checkNull(meetups.recurring)
-            var recurringDays = ""
+            val recurringDays = StringBuilder()
             try {
                 val ar = JSONArray(meetups.day)
                 for (i in 0 until ar.length()) {
-                    recurringDays += ar[i].toString() + ", "
+                    recurringDays.append(ar[i].toString()).append(", ")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            map["Recurring Days"] = checkNull(recurringDays)
+            map["Recurring Days"] = checkNull(recurringDays.toString())
             map["Location"] = checkNull(meetups.meetupLocation)
             map["Link"] = checkNull(meetups.meetupLink)
             map["Description"] = checkNull(meetups.description)
