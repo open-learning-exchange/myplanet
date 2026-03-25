@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 import java.io.File
 
@@ -17,7 +18,9 @@ class Sha256UtilsTest {
         val checksum = Sha256Utils().getCheckSumFromFile(file)
 
         assertNotEquals("", checksum)
-        assertTrue(checksum.length == 128) // SHA-512 hex string length is 128
+        // Note: The class is named Sha256Utils, but the underlying implementation uses SHA-512.
+        // A SHA-512 hex string length is 128 characters.
+        assertTrue(checksum.length == 128)
     }
 
     @Test
@@ -36,7 +39,10 @@ class Sha256UtilsTest {
         file.deleteOnExit()
 
         // Remove read permission
-        file.setReadable(false)
+        val success = file.setReadable(false)
+
+        // Skip this test if the environment (e.g., running as root in CI) prevents us from removing read permissions.
+        assumeFalse("Could not restrict read permissions on the file; skipping test.", file.canRead())
 
         val checksum = Sha256Utils().getCheckSumFromFile(file)
 
