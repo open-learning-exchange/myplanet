@@ -88,7 +88,7 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         scope.launch {
-            val model = userRepository.getUserModelSuspending() ?: run {
+            val model = userRepository.getUserModel() ?: run {
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Cannot upload activities: user model is null")
                 }
@@ -296,7 +296,7 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         try {
-            val user = userRepository.getUserModelSuspending()
+            val user = userRepository.getUserModel()
 
             val resourcesToUpload = resourcesRepository.getUnuploadedResources(user)
 
@@ -499,7 +499,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
-        val model = userRepository.getUserModelSuspending() ?: run {
+        val model = userRepository.getUserModel() ?: run {
             withContext(Dispatchers.Main) {
                 listener.onSuccess("Cannot upload user activities: user model is null")
             }
@@ -594,7 +594,7 @@ class UploadManager @Inject constructor(
 
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
-        val user = userRepository.getUserModelSuspending()
+        val user = userRepository.getUserModel()
 
         val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
