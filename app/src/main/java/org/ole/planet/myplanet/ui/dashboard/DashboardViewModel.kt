@@ -24,12 +24,14 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -65,6 +67,7 @@ class DashboardViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val teamsRepository: TeamsRepository,
+    private val lifeRepository: LifeRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
@@ -89,6 +92,16 @@ class DashboardViewModel @Inject constructor(
     val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
     private var userContentJob: Job? = null
+
+    fun loadVisibleMyLifeItems(userId: String?, defaultItems: List<RealmMyLife>): List<RealmMyLife> {
+        val allForUser = lifeRepository.getMyLifeByUserId(userId)
+        return if (allForUser.isEmpty()) {
+            lifeRepository.seedMyLifeIfEmpty(userId, defaultItems)
+            lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
+        } else {
+            allForUser.filter { it.isVisible }
+        }
+    }
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }

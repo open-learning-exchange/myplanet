@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -43,6 +44,7 @@ class DashboardViewModelTest {
     private val resourcesRepository = mockk<ResourcesRepository>()
     private val coursesRepository = mockk<CoursesRepository>()
     private val teamsRepository = mockk<TeamsRepository>()
+    private val lifeRepository = mockk<LifeRepository>()
     private val submissionsRepository = mockk<SubmissionsRepository>()
     private val notificationsRepository = mockk<NotificationsRepository>()
     private val surveysRepository = mockk<SurveysRepository>()
@@ -67,6 +69,7 @@ class DashboardViewModelTest {
             resourcesRepository,
             coursesRepository,
             teamsRepository,
+            lifeRepository,
             submissionsRepository,
             notificationsRepository,
             surveysRepository,

@@ -62,9 +62,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
 
-    @Inject
-    lateinit var lifeRepository: LifeRepository
-
     fun onLoaded(v: View) {
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserProfile()
@@ -271,13 +268,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         val user = profileDbHandler.getUserModel()
         val userId = prefData.getUserId().ifEmpty { "--" }
 
-        val allForUser = lifeRepository.getMyLifeByUserId(userId)
-        var visibleItems = allForUser.filter { it.isVisible }
-
-        if (allForUser.isEmpty()) {
-            lifeRepository.seedMyLifeIfEmpty(userId, getMyLifeListBase(userId))
-            visibleItems = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
-        }
+        val visibleItems = viewModel.loadVisibleMyLifeItems(userId, getMyLifeListBase(userId))
 
         for ((itemCnt, items) in visibleItems.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
