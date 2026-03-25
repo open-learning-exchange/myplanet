@@ -15,6 +15,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 
@@ -30,6 +31,8 @@ class NetworkUtilsTest {
     @Before
     fun init() {
         hiltRule.inject()
+        // Initialize MainApplication.context which is required by NetworkUtils to avoid UninitializedPropertyAccessException
+        // It is needed here because NetworkUtils gets system service from it directly
         org.ole.planet.myplanet.MainApplication.context = ApplicationProvider.getApplicationContext()
     }
 
@@ -38,10 +41,10 @@ class NetworkUtilsTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
-        wifiManager.setWifiEnabled(true)
+        wifiManager.isWifiEnabled = true
         assertTrue(NetworkUtils.isWifiEnabled())
 
-        wifiManager.setWifiEnabled(false)
+        wifiManager.isWifiEnabled = false
         assertFalse(NetworkUtils.isWifiEnabled())
     }
 
