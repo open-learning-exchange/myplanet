@@ -4,6 +4,8 @@ import android.content.Intent
 import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
@@ -26,7 +28,12 @@ class RetryInterceptor @Inject constructor(
             tryCount++
             response.close()
 
-            val delay = (initialDelay * factor.pow(tryCount - 1)).toLong()
+            var delay = (initialDelay * factor.pow(tryCount - 1)).toLong()
+
+            // Limit to a maximum sleep of 500ms
+            if (delay > 500L) {
+                delay = 500L
+            }
 
             val intent = Intent(Constants.ACTION_RETRY_EVENT).apply {
                 putExtra("url", request.url.toString())
@@ -37,9 +44,11 @@ class RetryInterceptor @Inject constructor(
             broadcastService.trySendBroadcast(intent)
 
             try {
-                Thread.sleep(delay)
+                // Blocking is acceptable here as OkHttp interceptors run on background worker threads
+                runBlocking {
+                    delay(delay)
+                }
             } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
                 throw IOException("Interrupted during retry delay", e)
             }
 
