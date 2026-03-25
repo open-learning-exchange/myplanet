@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.api
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -26,17 +25,16 @@ import retrofit2.Response
 class ChatApiServiceTest {
 
     private lateinit var apiInterface: ApiInterface
-    private lateinit var context: Context
     private lateinit var chatApiService: ChatApiService
 
     @Before
     fun setUp() {
         apiInterface = mockk()
-        context = mockk() // Intentionally injecting mock Context despite not being used in public methods.
-        chatApiService = ChatApiService(apiInterface, context)
+        // Inject a mockContext but don't hold it as a class field since it's never used by public methods
+        chatApiService = ChatApiService(apiInterface, mockk())
 
         // Note: mockkObject(UrlUtils) makes UrlUtils a global singleton mock.
-        // If tests ever run in parallel, this will cause flaky failures.
+        // Parallel tests would be flaky due to this shared state.
         // It's a limitation due to the production code using the static/singleton UrlUtils directly.
         mockkObject(UrlUtils)
     }
@@ -82,7 +80,7 @@ class ChatApiServiceTest {
         // Mock ResponseBody to explicitly return "" on string() call.
         // Because string() consumes the stream, a regular toResponseBody() with ""
         // doesn't correctly simulate the specific line `if (responseString.isNullOrBlank())`
-        // cleanly as the body exists and is not null.
+        // cleanly as the body exists and is not null. We mock it to explicitly test the `responseString.isNullOrBlank()` branch.
         val mockResponseBody = mockk<ResponseBody>()
         every { mockResponseBody.string() } returns "   " // Returns a blank string
 
