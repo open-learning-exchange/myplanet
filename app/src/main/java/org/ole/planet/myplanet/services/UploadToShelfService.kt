@@ -169,9 +169,7 @@ class UploadToShelfService @Inject constructor(
                 model.iterations = getString("iterations", fetchDataResponse.body())
                 saveKeyIv(apiInterface, model, obj)
 
-                dbService.executeTransactionAsync { realm ->
-                    updateHealthData(realm, model)
-                }
+                healthRepository.updateExaminationUserId(model.id ?: "", model._id ?: "")
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -212,13 +210,6 @@ class UploadToShelfService @Inject constructor(
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)
         return "$protocol://$replacedUrl"
-    }
-
-    private fun updateHealthData(realm: Realm, model: RealmUser) {
-        val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
-        for (p in list) {
-            p.userId = model._id
-        }
     }
 
     suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
