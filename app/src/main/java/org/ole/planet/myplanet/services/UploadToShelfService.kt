@@ -215,10 +215,8 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun updateHealthData(realm: Realm, model: RealmUser) {
-        val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
-        for (p in list) {
-            p.userId = model._id
-        }
+        val list = realm.where(RealmHealthExamination::class.java).equalTo("_id", model.id).findAll()
+        list.setString("userId", model._id)
     }
 
     suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
