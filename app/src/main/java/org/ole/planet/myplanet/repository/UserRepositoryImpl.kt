@@ -80,6 +80,18 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUsersForHealthSync(): List<RealmUser> {
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { managedUser ->
+                RealmUser().apply {
+                    this.id = managedUser.id
+                    this.name = managedUser.name
+                    this.planetCode = managedUser.planetCode
+                }
+            }
+        }
+    }
+
     override suspend fun getSyncedUserByName(name: String): RealmUser? {
         return queryList(RealmUser::class.java) {
             equalTo("name", name)
@@ -122,6 +134,10 @@ class UserRepositoryImpl @Inject constructor(
                 .sort(sortField, sortOrder).findAll()
             realm.copyFromRealm(results)
         }
+    }
+
+    override fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser? {
+        return RealmUser.populateUsersTable(jsonDoc, mRealm, settings)
     }
 
     override suspend fun getMonthlyLoginCounts(
