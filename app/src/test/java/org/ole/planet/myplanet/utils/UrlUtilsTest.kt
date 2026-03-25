@@ -35,28 +35,22 @@ class UrlUtilsTest {
 
     @Test
     fun testGetUserImageUrlWithNullUserId() {
-        val mockBaseUrl = "http://mockurl.com/db"
-        every { UrlUtils.getUrl() } returns mockBaseUrl
-
         val userId: String? = null
         val imageName = "profile.jpg"
 
         val result = UrlUtils.getUserImageUrl(userId, imageName)
 
-        assertEquals("$mockBaseUrl/_users/null/$imageName", result)
+        assertEquals(null, result)
     }
 
     @Test
     fun testGetUserImageUrlWithEmptyStrings() {
-        val mockBaseUrl = "http://mockurl.com/db"
-        every { UrlUtils.getUrl() } returns mockBaseUrl
-
         val userId = ""
         val imageName = ""
 
         val result = UrlUtils.getUserImageUrl(userId, imageName)
 
-        assertEquals("$mockBaseUrl/_users//", result)
+        assertEquals(null, result)
     }
 
     @Test
@@ -69,6 +63,6 @@ class UrlUtilsTest {
 
         val result = UrlUtils.getUserImageUrl(userId, imageName)
 
-        assertEquals("$mockBaseUrl/_users/$userId/$imageName", result)
+        assertEquals("$mockBaseUrl/_users/user%40123/my%20image%20%281%29.jpg", result)
     }
 }
