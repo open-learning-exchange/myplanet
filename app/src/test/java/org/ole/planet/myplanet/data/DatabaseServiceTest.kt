@@ -1,12 +1,14 @@
 package org.ole.planet.myplanet.data
 
 import android.content.Context
-import io.mockk.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import io.realm.RealmModel
 import io.realm.RealmQuery
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
-import io.realm.RealmModel
 
 class DatabaseServiceTest {
 

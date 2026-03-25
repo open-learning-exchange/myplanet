@@ -10,7 +10,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -21,11 +20,11 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -202,7 +201,22 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadAchievement() {
         val list = userRepository.getAchievementsForUpload()
-        // TODO: Implement actual upload logic or track issue for missing implementation
+        if (list.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            list.forEach { achievement ->
+                val id = achievement.get("_id")?.asString ?: return@forEach
+                val url = "${UrlUtils.getUrl()}/achievements/$id"
+                try {
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
+                    if (response.isSuccessful) {
+                        val rev = response.body()?.get("rev")?.asString
+                        userRepository.markAchievementUploaded(id, rev)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     private suspend fun uploadCourseProgress() {
