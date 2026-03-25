@@ -564,7 +564,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthUtils.login(this, loginSyncManager, name, password)
+        lifecycleScope.launch(Dispatchers.Main) {
+            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
+        }
     }
 
     internal fun showGuestDialog(username: String) {
