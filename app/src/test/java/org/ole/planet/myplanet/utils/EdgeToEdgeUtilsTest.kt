@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.app.Application
 import android.view.View
 import android.view.Window
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -17,19 +14,14 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-@HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = Application::class, sdk = [33])
 class EdgeToEdgeUtilsTest {
-
-    @get:Rule
-    var hiltRule = HiltAndroidRule(this)
 
     private lateinit var mockActivity: Activity
     private lateinit var mockWindow: Window
@@ -38,7 +30,6 @@ class EdgeToEdgeUtilsTest {
 
     @Before
     fun setup() {
-        hiltRule.inject()
         mockActivity = mockk()
         mockWindow = mockk(relaxed = true)
         mockRootView = mockk(relaxed = true)
