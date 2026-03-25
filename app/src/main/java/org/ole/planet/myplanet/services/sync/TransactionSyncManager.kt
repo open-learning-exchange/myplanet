@@ -374,15 +374,18 @@ class TransactionSyncManager @Inject constructor(
         }.awaitAll().filterNotNull()
 
         if (successfulSyncs.isNotEmpty()) {
+            val ids = successfulSyncs.map { it.first }.toTypedArray()
+            val revMap = successfulSyncs.toMap()
             databaseService.executeTransactionAsync { realm ->
-                for ((id, newRev) in successfulSyncs) {
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("id", id)
-                        .findFirst()
-                        ?.apply {
-                            needsSync = false
-                            if (newRev != null) this.rev = newRev
-                        }
+                val notifications = realm.where(RealmNotification::class.java)
+                    .`in`("id", ids)
+                    .findAll()
+
+                notifications.forEach { notification ->
+                    notification.needsSync = false
+                    revMap[notification.id]?.let { newRev ->
+                        notification.rev = newRev
+                    }
                 }
             }
         }
