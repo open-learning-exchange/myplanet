@@ -1001,7 +1001,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getResourceIds(teamId: String): List<String> {
+    override suspend fun getResourceIds(teamId: String): List<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
             beginGroup()
@@ -1013,6 +1013,35 @@ class TeamsRepositoryImpl @Inject constructor(
             isNotNull("resourceId")
             isNotEmpty("resourceId")
         }.mapNotNull { it.resourceId }
+    }
+
+    override suspend fun getResourceIdsByUser(userId: String?): List<String> {
+        if (userId.isNullOrBlank()) return emptyList()
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }
+
+        if (teamIds.isEmpty()) return emptyList()
+
+        return queryList(RealmMyTeam::class.java) {
+            `in`("teamId", teamIds.toTypedArray())
+            equalTo("docType", "resourceLink")
+        }.mapNotNull { it.resourceId }
+    }
+
+    override suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam> {
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }
+
+        if (teamIds.isEmpty()) return emptyList()
+
+        return queryList(RealmMyTeam::class.java) {
+            `in`("_id", teamIds.toTypedArray())
+            notEqualTo("status", "archived")
+        }
     }
 
     override suspend fun getTeamType(teamId: String): String? {
@@ -1220,7 +1249,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamCreator(teamId: String): String? {
         if (teamId.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
+        return findByField(RealmMyTeam::class.java, "teamId", teamId)?.userId
     }
 
     override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
