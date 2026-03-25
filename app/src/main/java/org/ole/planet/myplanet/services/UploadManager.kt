@@ -393,7 +393,7 @@ class UploadManager @Inject constructor(
                 try {
                     val response = apiInterface.postDoc(
                         UrlUtils.header, "application/json",
-                        "${UrlUtils.getUrl()}/resources", personalsRepository.serializePersonal(personal, context)
+                        "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
                     )
 
                     val `object` = response.body()

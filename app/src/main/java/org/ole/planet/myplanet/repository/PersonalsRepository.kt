@@ -21,6 +21,4 @@ interface PersonalsRepository {
     suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal>
 
     suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
-
-    suspend fun serializePersonal(personal: RealmMyPersonal, context: android.content.Context): com.google.gson.JsonObject
 }
