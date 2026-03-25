@@ -17,16 +17,26 @@ class AndroidDecrypterTest {
         val encrypted = AndroidDecrypter.encrypt(plainText, key, iv)
         assertNotNull(encrypted)
 
-        // DOCUMENTATION OF LATENT BUG:
-        // AndroidDecrypter.encrypt computes `encryptedIVAndText` by prepending the IV to the ciphertext,
-        // but then mistakenly returns `bytesToHex(encrypted)` instead of `bytesToHex(encryptedIVAndText)`.
-        // This test exposes that the returned string does NOT contain the IV.
         // The expected length of AES/CBC/PKCS5Padding encrypted "Hello, World!" (13 bytes) is 16 bytes.
-        // In hex, that's 32 characters. If the IV (16 bytes) were prepended, it would be 64 hex chars.
-        assertEquals(32, encrypted.length)
+        // In hex, that's 32 characters. The IV (16 bytes) is prepended, making it 64 hex chars.
+        assertEquals(64, encrypted.length)
 
         // Let's verify decryption works with the generated encrypted text
         val decrypted = AndroidDecrypter.decrypt(encrypted, key, iv)
+        assertEquals(plainText, decrypted)
+    }
+
+    @Test
+    fun testDecryptLegacyFormat() {
+        val plainText = "Legacy format test"
+        val key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        val iv = "abcdef0123456789abcdef0123456789"
+
+        val encryptedWithIv = AndroidDecrypter.encrypt(plainText, key, iv)
+        // Remove the prepended IV (32 hex chars for 16 bytes) to simulate legacy format
+        val legacyEncrypted = encryptedWithIv.substring(32)
+
+        val decrypted = AndroidDecrypter.decrypt(legacyEncrypted, key, iv)
         assertEquals(plainText, decrypted)
     }
 

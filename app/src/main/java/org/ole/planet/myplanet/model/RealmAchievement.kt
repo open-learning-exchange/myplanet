@@ -14,6 +14,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 open class RealmAchievement : RealmObject() {
     var achievements: RealmList<String>? = null
     var references: RealmList<String>? = null
+    var links: RealmList<String>? = null
+    var otherInfo: RealmList<String>? = null
     var purpose: String? = null
     var achievementsHeader: String? = null
     var sendToNation: String? = null
@@ -21,6 +23,11 @@ open class RealmAchievement : RealmObject() {
     @PrimaryKey
     var _id: String? = null
     var goals: String? = null
+    var dateSortOrder: String? = null
+    var createdOn: String? = null
+    var username: String? = null
+    var parentCode: String? = null
+    var isUpdated: Boolean = false
 
     val achievementsArray: JsonArray
         get() {
@@ -39,6 +46,44 @@ open class RealmAchievement : RealmObject() {
             array.add(ob)
         }
         return array
+    }
+
+    val linksArray: JsonArray
+        get() {
+            val array = JsonArray()
+            for (s in links ?: emptyList()) {
+                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                array.add(ob)
+            }
+            return array
+        }
+
+    val otherInfoArray: JsonArray
+        get() {
+            val array = JsonArray()
+            for (s in otherInfo ?: emptyList()) {
+                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                array.add(ob)
+            }
+            return array
+        }
+
+    fun setLinks(la: JsonArray?) {
+        links = RealmList()
+        if (la == null) return
+        for (el in la) {
+            val e = JsonUtils.gson.toJson(el)
+            if (links?.contains(e) != true) links?.add(e)
+        }
+    }
+
+    fun setOtherInfo(oi: JsonArray?) {
+        otherInfo = RealmList()
+        if (oi == null) return
+        for (el in oi) {
+            val e = JsonUtils.gson.toJson(el)
+            if (otherInfo?.contains(e) != true) otherInfo?.add(e)
+        }
     }
 
     fun setAchievements(ac: JsonArray) {
@@ -71,8 +116,15 @@ open class RealmAchievement : RealmObject() {
             `object`.addProperty("goals", sub.goals)
             `object`.addProperty("purpose", sub.purpose)
             `object`.addProperty("achievementsHeader", sub.achievementsHeader)
+            `object`.addProperty("sendToNation", sub.sendToNation?.toBoolean() ?: false)
+            `object`.addProperty("dateSortOrder", sub.dateSortOrder ?: "none")
+            `object`.addProperty("createdOn", sub.createdOn ?: "")
+            `object`.addProperty("username", sub.username ?: "")
+            `object`.addProperty("parentCode", sub.parentCode ?: "")
             `object`.add("references", sub.getReferencesArray())
             `object`.add("achievements", sub.achievementsArray)
+            `object`.add("links", sub.linksArray)
+            `object`.add("otherInfo", sub.otherInfoArray)
             return `object`
         }
 
@@ -97,8 +149,16 @@ open class RealmAchievement : RealmObject() {
             achievement?.purpose = JsonUtils.getString("purpose", act)
             achievement?.goals = JsonUtils.getString("goals", act)
             achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
+            achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+            achievement?.dateSortOrder = JsonUtils.getString("dateSortOrder", act)
+            achievement?.createdOn = JsonUtils.getString("createdOn", act)
+            achievement?.username = JsonUtils.getString("username", act)
+            achievement?.parentCode = JsonUtils.getString("parentCode", act)
+            achievement?.isUpdated = false
             achievement?.setReferences(JsonUtils.getJsonArray("references", act))
             achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
+            achievement?.setLinks(JsonUtils.getJsonArray("links", act))
+            achievement?.setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
         }
     }
 }

@@ -1,22 +1,36 @@
 package org.ole.planet.myplanet.utils
 
+import android.util.LruCache
 import java.util.Arrays
 import java.util.Locale
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 
 object ExamAnswerUtils {
+    // Process-lifetime cache mapping a stringified choices JSON to a Map of id -> text.
+    // Using choices as the key prevents stale mapping if the question's choices are updated from the server.
+    private val choicesCache = LruCache<String, Map<String, String>>(100)
+
     fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
-        val choices = getStringAsJsonArray(question.choices)
-        for (i in 0 until choices.size()) {
-            if (choices[i].isJsonObject) {
-                val obj = choices[i].asJsonObject
-                if (obj.get("id").asString == id) {
-                    return obj.get("text").asString
+        val choicesString = question.choices ?: return id
+
+        var map = choicesCache.get(choicesString)
+        if (map == null) {
+            val mutableMap = mutableMapOf<String, String>()
+            val choices = getStringAsJsonArray(choicesString)
+            for (i in 0 until choices.size()) {
+                if (choices[i].isJsonObject) {
+                    val obj = choices[i].asJsonObject
+                    if (obj.has("id") && obj.has("text")) {
+                        mutableMap[obj.get("id").asString] = obj.get("text").asString
+                    }
                 }
             }
+            map = mutableMap
+            choicesCache.put(choicesString, map)
         }
-        return id
+
+        return map[id] ?: id
     }
 
     fun checkCorrectAnswer(
