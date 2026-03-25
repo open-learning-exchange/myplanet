@@ -202,7 +202,22 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadAchievement() {
         val list = userRepository.getAchievementsForUpload()
-        // TODO: Implement actual upload logic or track issue for missing implementation
+        if (list.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            list.forEach { achievement ->
+                val id = achievement.get("_id")?.asString ?: return@forEach
+                val url = "${UrlUtils.getUrl()}/achievements/$id"
+                try {
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
+                    if (response.isSuccessful) {
+                        val rev = response.body()?.get("rev")?.asString
+                        userRepository.markAchievementUploaded(id, rev)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     private suspend fun uploadCourseProgress() {
