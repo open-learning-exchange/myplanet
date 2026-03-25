@@ -82,7 +82,7 @@ interface UserRepository {
     suspend fun getActiveUserIdSuspending(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
-    fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
     suspend fun initializeAchievement(achievementId: String): RealmAchievement?
@@ -93,11 +93,15 @@ interface UserRepository {
         purpose: String,
         sendToNation: String,
         achievements: JsonArray,
-        references: JsonArray
+        references: JsonArray,
+        createdOn: String,
+        username: String,
+        parentCode: String
     )
     suspend fun markUserUploaded(userId: String, id: String, rev: String)
     suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)
     suspend fun markUserRevUpdated(userId: String, rev: String?)
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getAchievementsForUpload(): List<JsonObject>
+    suspend fun markAchievementUploaded(id: String, rev: String?)
 }

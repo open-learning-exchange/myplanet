@@ -225,16 +225,11 @@ class CoursesRepositoryImpl @Inject constructor(
     ): List<RealmMyCourse> {
         return withRealm { realm ->
             val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-                val tagIds = realm.where(RealmTag::class.java)
-                    .`in`("name", tagNames.toTypedArray())
-                    .findAll()
-                    .map { it.id }
-
                 realm.where(RealmTag::class.java)
                     .equalTo("db", "courses")
-                    .`in`("tagId", tagIds.toTypedArray())
+                    .`in`("name", tagNames.toTypedArray())
                     .findAll()
-                    .map { it.linkId }
+                    .mapNotNull { it.linkId }
             } else {
                 null
             }
