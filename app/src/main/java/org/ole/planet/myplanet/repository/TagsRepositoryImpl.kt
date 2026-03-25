@@ -21,11 +21,10 @@ class TagsRepositoryImpl @Inject constructor(
         val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t ->
             t.attachedTo?.forEach { parent ->
-                val list = childMap[parent]?.toMutableList() ?: mutableListOf()
+                val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
                 if (!list.contains(t)) {
                     list.add(t)
                 }
-                childMap[parent] = list
             }
         }
         return childMap
