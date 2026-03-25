@@ -14,15 +14,16 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 
 class MembersAdapter(
     private val context: Context,
@@ -30,6 +31,7 @@ class MembersAdapter(
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private var isLoggedInUserTeamLeader: Boolean = false
+    private val dateFormatter = DateTimeFormatter.ofPattern(TimeUtils.DATE_FORMAT).withZone(ZoneId.systemDefault())
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
@@ -84,8 +86,7 @@ class MembersAdapter(
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-            sdf.format(Date(memberData.lastVisitDate))
+            dateFormatter.format(Instant.ofEpochMilli(memberData.lastVisitDate))
         } else {
             context.getString(R.string.no_visit)
         }
