@@ -38,6 +38,8 @@ import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
+import java.time.Instant
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -242,7 +244,12 @@ class AchievementFragment : BaseContainerFragment() {
         val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
-        binding.tvDate.text = getString("date", ob)
+        binding.tvDate.text = try {
+            val epochMillis = Instant.parse(getString("date", ob)).toEpochMilli()
+            getFormattedDateWithTime(epochMillis)
+        } catch (e: Exception) {
+            getString("date", ob)
+        }
         binding.tvTitle.text = getString("title", ob)
         val link = getString("link", ob)
         if (link.isNotEmpty()) {
@@ -269,10 +276,8 @@ class AchievementFragment : BaseContainerFragment() {
     private fun toggleDescription(binding: RowAchievementBinding) {
         binding.llDesc.visibility = if (binding.llDesc.isGone) View.VISIBLE else View.GONE
         binding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
-            0,
-            0,
-            if (binding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up,
-            0
+            0, 0,
+            if (binding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
         )
     }
 
@@ -280,10 +285,8 @@ class AchievementFragment : BaseContainerFragment() {
         val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(
-            0,
-            0,
-            if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
-            0
+            0, 0,
+            if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download, 0
         )
         btnBinding.root.setOnClickListener {
             if (lib.isResourceOffline()) {
@@ -300,7 +303,7 @@ class AchievementFragment : BaseContainerFragment() {
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = ReferencesAdapter(requireContext(), data.references)
+            binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
         } else {
             (binding.rvOtherInfo.adapter as ReferencesAdapter).submitList(data.references)
         }
