@@ -219,6 +219,9 @@ open class RealmMyTeam : RealmObject() {
                     teamIds.add(team.teamId!!)
                 }
             }
+            if (teamIds.isEmpty()) {
+                return mutableListOf()
+            }
             val l2 = realm.where(RealmMyTeam::class.java)
                 .`in`("teamId", teamIds.toTypedArray())
                 .equalTo("docType", "resourceLink")

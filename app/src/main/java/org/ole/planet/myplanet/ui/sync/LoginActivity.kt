@@ -504,29 +504,39 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         lifecycleScope.launch {
             selectedTeamId = prefData.getSelectedTeamId().toString()
             if (selectedTeamId?.isNotEmpty() == true) {
-                val teamMembers = teamsRepository.getJoinedMembers(selectedTeamId!!)
-                users = teamMembers
-                val userList = users?.map {
-                    User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-                } ?: emptyList()
-
-                val existingUsers = prefData.getSavedUsers().toMutableList()
-                val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-                val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-                prefData.setSavedUsers(updatedUserList)
+                users = fetchAndSaveTeamMembers(selectedTeamId!!)
             }
-
-            if (mAdapter == null) {
-                mAdapter = UsersAdapter(this@LoginActivity)
-                binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
-                binding.recyclerView.adapter = mAdapter
-            }
-            mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
-
-            binding.recyclerView.isNestedScrollingEnabled = true
-            binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-            binding.recyclerView.isVerticalScrollBarEnabled = true
+            setupAndPopulateRecyclerView()
         }
+    }
+
+    private suspend fun fetchAndSaveTeamMembers(teamId: String) = withContext(Dispatchers.IO) {
+        val teamMembers = teamsRepository.getJoinedMembers(teamId)
+        val userList = teamMembers.map {
+            User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+        }
+
+        val existingUsers = prefData.getSavedUsers().toMutableList()
+        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+        val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+        prefData.setSavedUsers(updatedUserList)
+
+        teamMembers
+    }
+
+    private suspend fun setupAndPopulateRecyclerView() {
+        if (mAdapter == null) {
+            mAdapter = UsersAdapter(this@LoginActivity)
+            binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+            binding.recyclerView.adapter = mAdapter
+        }
+
+        val savedUsers = withContext(Dispatchers.IO) { prefData.getSavedUsers().toMutableList() }
+        mAdapter?.submitList(savedUsers)
+
+        binding.recyclerView.isNestedScrollingEnabled = true
+        binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        binding.recyclerView.isVerticalScrollBarEnabled = true
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
@@ -564,7 +574,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthUtils.login(this, loginSyncManager, name, password)
+        lifecycleScope.launch(Dispatchers.Main) {
+            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
+        }
     }
 
     internal fun showGuestDialog(username: String) {

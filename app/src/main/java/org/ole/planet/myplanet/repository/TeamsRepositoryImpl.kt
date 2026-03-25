@@ -432,7 +432,8 @@ class TeamsRepositoryImpl @Inject constructor(
     private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<Transaction> {
         val transactionDataList = mutableListOf<Transaction>()
         var balance = 0
-        for (team in transactions.filter { it._id != null }) {
+        for (team in transactions) {
+            val id = team._id ?: continue
             balance += if ("debit".equals(team.type, ignoreCase = true)) {
                 -team.amount
             } else {
@@ -440,7 +441,7 @@ class TeamsRepositoryImpl @Inject constructor(
             }
             transactionDataList.add(
                 Transaction(
-                    id = team._id!!,
+                    id = id,
                     date = team.date,
                     description = team.description,
                     type = team.type,
@@ -764,12 +765,11 @@ class TeamsRepositoryImpl @Inject constructor(
         csvBuilder.append("$teamName Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
         for (report in reports) {
-            val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
             val totalIncome = report.sales + report.otherIncome
             val totalExpenses = report.wages + report.otherExpenses
             val profitLoss = totalIncome - totalExpenses
             val endingBalance = profitLoss + report.beginningBalance
-            csvBuilder.append("${dateFormat.format(report.startDate)}, ${dateFormat.format(report.endDate)}, ${dateFormat.format(report.createdDate)}, ${dateFormat.format(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+            csvBuilder.append("${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.startDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.endDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.createdDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
         }
         return csvBuilder.toString()
     }
