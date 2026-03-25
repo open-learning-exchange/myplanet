@@ -40,4 +40,15 @@ class UrlUtilsTest {
 
         assertEquals("http://example.com/versions", result)
     }
+
+    @Test
+    fun `getUpdateUrl should remove trailing db from alternative url before appending versions`() {
+        val spm = mockk<SharedPrefManager>()
+        every { spm.isAlternativeUrl() } returns true
+        every { spm.getProcessedAlternativeUrl() } returns "http://alt.example.com/db"
+
+        val result = UrlUtils.getUpdateUrl(spm)
+
+        assertEquals("http://alt.example.com/versions", result)
+    }
 }
