@@ -1,0 +1,6 @@
+{
+  "title": "🧪 [testing improvement] Add missing error path tests for Sha256Utils",
+  "body": "🎯 What: Added tests to cover the try-catch block and file operation paths in Sha256Utils.getCheckSumFromFile().\n📊 Coverage: Covered happy path and non-existent file scenarios.\n✨ Result: Enhanced test coverage for Sha256Utils.",
+  "head": "test-sha256utils-coverage",
+  "base": "master"
+}
