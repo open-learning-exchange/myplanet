@@ -211,18 +211,19 @@ class AddResourceActivity : AppCompatActivity() {
         AlertDialog.Builder(this, R.style.AlertDialogTheme).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
             val selected = listView.checkedItemPositions
             items?.clear()
-            var selection = ""
+            val selectionList = mutableListOf<String>()
             for (i in 0 until listView.count) {
                 if (selected[i]) {
                     val s = list[i]
-                    selection += "$s, "
+                    selectionList.add(s)
                     items?.add(s)
                 }
             }
+            val selection = selectionList.joinToString(", ")
             if (selection.isEmpty()) {
                 (view as TextView).text = title
             } else {
-                (view as TextView).text = selection.trimEnd(',', ' ')
+                (view as TextView).text = selection
             }
         }.setNegativeButton(R.string.dismiss, null).show()
     }
