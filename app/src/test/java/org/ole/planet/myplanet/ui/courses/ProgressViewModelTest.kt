@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import com.google.gson.JsonArray
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -16,7 +17,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import io.mockk.every
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModelTest {
