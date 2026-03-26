@@ -51,6 +51,7 @@ testArch = "2.2.0"
 
 [plugins]
 application = { id = "com.android.application" }
+legacy-kapt = { id = "com.android.legacy-kapt", version.ref = "gradle" }
 ksp = { id = "com.google.devtools.ksp" }
 dagger-hilt-android = { id = "com.google.dagger.hilt.android" }
 realm-android = { id = "realm-android" }
@@ -117,6 +118,7 @@ markwon-image = { module = "io.noties.markwon:image", version.ref = "markwon" }
 markwon-html = { module = "io.noties.markwon:html", version.ref = "markwon" }
 markwon-ext-tables = { module = "io.noties.markwon:ext-tables", version.ref = "markwon" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
