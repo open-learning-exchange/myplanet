@@ -11,6 +11,8 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -27,8 +29,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>
-) : RealmRepository(databaseService), SubmissionsRepository {
+) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
