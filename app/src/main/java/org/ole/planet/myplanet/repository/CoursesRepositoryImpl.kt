@@ -396,21 +396,9 @@ class CoursesRepositoryImpl @Inject constructor(
                 if (pId?.contains("@") == true) pId.split("@")[0] else pId ?: ""
             }.filterKeys { it.isNotEmpty() }
 
-            val submissionIds = relevantSubmissions.mapNotNull { it.id }
-            val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                val allAnswers = mutableListOf<RealmAnswer>()
-                // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
-                submissionIds.chunked(1000).forEach { chunk ->
-                    val chunkAnswers = realm.where(RealmAnswer::class.java)
-                        .`in`("submissionId", chunk.toTypedArray())
-                        .findAll()
-                    allAnswers.addAll(chunkAnswers)
-                }
-                allAnswers.groupBy { it.submissionId ?: "" }
-                    .filterKeys { it.isNotEmpty() }
-            } else {
-                emptyMap()
-            }
+            val answersBySubmissionId = relevantSubmissions.associate { sub ->
+                (sub.id ?: "") to (sub.answers?.toList() ?: emptyList())
+            }.filterKeys { it.isNotEmpty() }
 
             val array = JsonArray()
             stepsList.forEach { step ->
