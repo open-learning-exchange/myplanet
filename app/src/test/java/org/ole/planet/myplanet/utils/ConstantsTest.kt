@@ -124,5 +124,10 @@ class ConstantsTest {
 
         sharedPreferences.edit().putBoolean("some_key", true).commit()
         assertTrue(Constants.autoSynFeature("some_key", context))
+
+        sharedPreferences.edit().putBoolean("some_key", false).commit()
+        assertFalse(Constants.autoSynFeature("some_key", context))
+
+        assertFalse(Constants.autoSynFeature(null, context))
     }
 }
