@@ -4,12 +4,15 @@ import com.google.gson.JsonObject
 import io.realm.Sort
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 
 class ChatRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), ChatRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
 
     override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
         if (userName.isNullOrEmpty()) {
