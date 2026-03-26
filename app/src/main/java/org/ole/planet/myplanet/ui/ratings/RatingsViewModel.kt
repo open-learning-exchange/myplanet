@@ -99,8 +99,6 @@ class RatingsViewModel @Inject constructor(
                 _submitState.value = SubmitState.Success
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
-            } finally {
-                _submitState.value = SubmitState.Idle
             }
         }
     }
