@@ -35,7 +35,7 @@ class ChatRepositoryImplTest {
 
     @Before
     fun setup() {
-        chatRepository = spyk(ChatRepositoryImpl(databaseService), recordPrivateCalls = true)
+        chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher()), recordPrivateCalls = true)
         mockkObject(RealmChatHistory.Companion)
         every { RealmChatHistory.insert(any(), any()) } just Runs
         every { RealmChatHistory.addConversationToChatHistory(any(), any(), any(), any(), any()) } just Runs

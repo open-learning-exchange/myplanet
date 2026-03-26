@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
@@ -78,6 +79,7 @@ class UserRepositoryImplTest {
 
         repository = UserRepositoryImpl(
             databaseService,
+            UnconfinedTestDispatcher(),
             settings,
             sharedPrefManager,
             apiInterface,
