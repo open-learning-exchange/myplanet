@@ -1023,9 +1023,9 @@ class SyncManager @Inject constructor(
                                 chunk.forEach { doc ->
                                     try {
                                         when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx)
+                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx)
+                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
                                             "teams" -> insertMyTeams(doc, realmTx)
                                         }
                                         processedCount++

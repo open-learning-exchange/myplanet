@@ -19,6 +19,7 @@ interface UserRepository {
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun findUserByName(name: String): RealmUser?
     suspend fun getSyncedUsers(): List<RealmUser>
+    suspend fun getUsersForHealthSync(): List<RealmUser>
     suspend fun getSyncedUserByName(name: String): RealmUser?
     suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
@@ -29,6 +30,7 @@ interface UserRepository {
         startMillis: Long,
         endMillis: Long,
     ): Map<Int, Int>
+    fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser?
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
     suspend fun updateSecurityData(

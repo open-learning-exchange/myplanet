@@ -96,16 +96,20 @@ class TeamViewModel @Inject constructor(
 
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
         viewModelScope.launch {
-            teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            teamsRepository.syncTeamActivities()
+            withContext(dispatcherProvider.io) {
+                teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                teamsRepository.syncTeamActivities()
+            }
             prepareTeamData(currentTeams, userId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
-            teamsRepository.leaveTeam(teamId, userId)
-            teamsRepository.syncTeamActivities()
+            withContext(dispatcherProvider.io) {
+                teamsRepository.leaveTeam(teamId, userId)
+                teamsRepository.syncTeamActivities()
+            }
             prepareTeamData(currentTeams, userId)
         }
     }
