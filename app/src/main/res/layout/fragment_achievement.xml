@@ -41,7 +41,6 @@
                         android:src="@drawable/profile"
                         app:civ_border_color="@color/colorPrimaryDark"
                         app:civ_border_width="2dp" />
-
                     <TextView
                         android:id="@+id/tv_name"
                         android:layout_width="wrap_content"
@@ -51,7 +50,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="20sp"
                         android:textStyle="bold" />
-
                     <Button
                         android:id="@+id/btn_edit"
                         style="@style/YellowButtons"
@@ -107,7 +105,6 @@
                                 android:text="★"
                                 android:textColor="#2e7d32"
                                 android:textSize="13sp" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -164,7 +161,6 @@
                                 android:text="◎"
                                 android:textColor="#e65100"
                                 android:textSize="13sp" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -221,7 +217,6 @@
                                 android:text="★"
                                 android:textColor="@color/colorPrimary"
                                 android:textSize="13sp" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -244,7 +239,6 @@
                             android:textColor="@color/daynight_textColor"
                             android:textSize="14sp"
                             tools:text="Summary of achievements" />
-
                         <LinearLayout
                             android:id="@+id/ll_achievement"
                             android:layout_width="match_parent"
@@ -285,7 +279,6 @@
                                 android:text="●"
                                 android:textColor="#6a1b9a"
                                 android:textSize="12sp" />
-
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -301,12 +294,10 @@
                         <androidx.recyclerview.widget.RecyclerView
                             android:id="@+id/rv_other_info"
                             android:layout_width="match_parent"
-
                             android:layout_height="wrap_content"
                             android:nestedScrollingEnabled="false" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
