@@ -11,7 +11,6 @@ interface ConfigurationsRepository {
     suspend fun checkServerAvailability(url: String): Boolean
     suspend fun checkCheckSum(path: String): Boolean
     suspend fun clearAllData()
-    suspend fun resetDatabase()
     suspend fun getMinApk(url: String, pin: String): ConfigurationResult
 
     interface CheckVersionCallback {

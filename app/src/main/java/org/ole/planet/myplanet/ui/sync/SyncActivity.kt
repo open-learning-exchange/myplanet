@@ -264,7 +264,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         customProgressDialog.setText(getString(R.string.clearing_data))
                         customProgressDialog.show()
 
-                        configurationsRepository.resetDatabase()
+                        configurationsRepository.clearAllData()
                         prefData.setManualConfig(config)
                         clearSharedPref()
 

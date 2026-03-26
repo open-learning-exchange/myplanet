@@ -271,7 +271,7 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             lifecycleScope.launch(Dispatchers.IO) {
-                                configurationsRepository.resetDatabase()
+                                configurationsRepository.clearAllData()
                                 clearSharedPref()
                                 withContext(Dispatchers.Main) {
                                     restartApp()
