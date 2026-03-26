@@ -64,7 +64,11 @@ object UrlUtils {
     }
 
     fun dbUrl(url: String): String {
-        return if (url.endsWith("/db")) url else "$url/db"
+        var base = url
+        if (base.endsWith("/")) {
+            base = base.dropLast(1)
+        }
+        return if (base.endsWith("/db")) base else "$base/db"
     }
 
     fun getUrl(library: RealmMyLibrary?): String {

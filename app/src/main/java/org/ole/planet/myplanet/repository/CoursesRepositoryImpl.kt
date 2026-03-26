@@ -9,6 +9,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -28,12 +30,13 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository
-) : RealmRepository(databaseService), CoursesRepository {
+) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java) {
@@ -393,21 +396,9 @@ class CoursesRepositoryImpl @Inject constructor(
                 if (pId?.contains("@") == true) pId.split("@")[0] else pId ?: ""
             }.filterKeys { it.isNotEmpty() }
 
-            val submissionIds = relevantSubmissions.mapNotNull { it.id }
-            val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                val allAnswers = mutableListOf<RealmAnswer>()
-                // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
-                submissionIds.chunked(1000).forEach { chunk ->
-                    val chunkAnswers = realm.where(RealmAnswer::class.java)
-                        .`in`("submissionId", chunk.toTypedArray())
-                        .findAll()
-                    allAnswers.addAll(chunkAnswers)
-                }
-                allAnswers.groupBy { it.submissionId ?: "" }
-                    .filterKeys { it.isNotEmpty() }
-            } else {
-                emptyMap()
-            }
+            val answersBySubmissionId = relevantSubmissions.associate { sub ->
+                (sub.id ?: "") to (sub.answers?.toList() ?: emptyList())
+            }.filterKeys { it.isNotEmpty() }
 
             val array = JsonArray()
             stepsList.forEach { step ->
@@ -509,9 +500,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findAll()
 
             val ids = JsonArray()
-            for (course in myCourses) {
-                ids.add(course.courseId)
-            }
+            myCourses.asSequence().mapNotNull { it.courseId }.forEach { ids.add(it) }
             ids
         }
     }
