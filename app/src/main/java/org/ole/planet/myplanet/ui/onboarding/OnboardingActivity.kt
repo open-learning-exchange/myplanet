@@ -55,6 +55,7 @@ class OnboardingActivity : AppCompatActivity() {
         if (prefData.getFirstLaunch()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
+            return
         }
 
         loadData()
