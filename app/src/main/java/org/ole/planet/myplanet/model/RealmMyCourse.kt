@@ -174,7 +174,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
+        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
                 mRealm.beginTransaction()
