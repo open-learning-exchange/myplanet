@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.utils
 
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import androidx.lifecycle.lifecycleScope
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.repository.UserRepository

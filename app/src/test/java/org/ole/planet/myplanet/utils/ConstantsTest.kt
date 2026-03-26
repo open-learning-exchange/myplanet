@@ -10,7 +10,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -82,11 +97,26 @@ class ConstantsTest {
     }
 
     @Test
-    fun testShowBetaFeature() {
-        assertFalse(Constants.showBetaFeature("", context))
+    fun testShowBetaFeature_betaFunctionFalse_returnsFalse() {
+        sharedPreferences.edit().putBoolean("beta_function", false).commit()
+        assertFalse(Constants.showBetaFeature("any_string", context))
+    }
 
+    @Test
+    fun testShowBetaFeature_betaFunctionTrue_returnsTrue() {
         sharedPreferences.edit().putBoolean("beta_function", true).commit()
-        assertTrue(Constants.showBetaFeature("", context))
+        assertTrue(Constants.showBetaFeature("any_string", context))
+    }
+
+    @Test
+    fun testShowBetaFeature_ignoresParameterS() {
+        sharedPreferences.edit().putBoolean("some_feature", true).commit()
+        sharedPreferences.edit().putBoolean("beta_function", false).commit()
+        assertFalse(Constants.showBetaFeature("some_feature", context))
+
+        sharedPreferences.edit().putBoolean("some_feature", false).commit()
+        sharedPreferences.edit().putBoolean("beta_function", true).commit()
+        assertTrue(Constants.showBetaFeature("some_feature", context))
     }
 
     @Test
@@ -109,5 +139,10 @@ class ConstantsTest {
 
         sharedPreferences.edit().putBoolean("some_key", true).commit()
         assertTrue(Constants.autoSynFeature("some_key", context))
+
+        sharedPreferences.edit().putBoolean("some_key", false).commit()
+        assertFalse(Constants.autoSynFeature("some_key", context))
+
+        assertFalse(Constants.autoSynFeature(null, context))
     }
 }
