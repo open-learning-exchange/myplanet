@@ -3,14 +3,14 @@ package org.ole.planet.myplanet.utils
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import javax.inject.Inject
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import javax.inject.Inject
-import org.junit.Assert.assertNotNull
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
