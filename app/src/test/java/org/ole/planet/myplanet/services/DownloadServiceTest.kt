@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.services
 
 import android.app.Notification
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
+import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -35,13 +37,13 @@ import org.robolectric.android.controller.ServiceController
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = dagger.hilt.android.testing.HiltTestApplication::class, sdk = [33])
-@dagger.hilt.android.testing.HiltAndroidTest
+@Config(application = HiltTestApplication::class, sdk = [33])
 class DownloadServiceTest {
-    @get:org.junit.Rule
-    val hiltRule = dagger.hilt.android.testing.HiltAndroidRule(this)
 
+    @get:Rule
+    val hiltRule = HiltAndroidRule(this)
 
     private lateinit var serviceController: ServiceController<DownloadService>
     private lateinit var downloadService: DownloadService
@@ -94,8 +96,10 @@ class DownloadServiceTest {
 
         downloadService = serviceController.create().get()
 
+        // Manual dependency injection for test
         downloadService.downloadRepository = downloadRepository
 
+        // Ensure that `downloadScope` in `DownloadService` operates on the test dispatcher
         val field = DownloadService::class.java.getDeclaredField("downloadScope")
         field.isAccessible = true
         field.set(downloadService, kotlinx.coroutines.CoroutineScope(testDispatcher))
@@ -113,6 +117,7 @@ class DownloadServiceTest {
         val realPrefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
         realPrefs.edit().clear().commit()
 
+        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
@@ -132,6 +137,7 @@ class DownloadServiceTest {
         val responseBody = "test content".toResponseBody("text/plain".toMediaTypeOrNull())
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Success(responseBody)
 
+        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
@@ -152,6 +158,7 @@ class DownloadServiceTest {
         val responseBody = "test content".toResponseBody("text/plain".toMediaTypeOrNull())
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Success(responseBody)
 
+        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
@@ -171,6 +178,7 @@ class DownloadServiceTest {
 
         coEvery { downloadRepository.downloadFileResponse(url, any()) } returns DownloadResult.Error("Not Found")
 
+        val intent = Intent()
         serviceController.startCommand(0, 1)
 
         advanceUntilIdle()
