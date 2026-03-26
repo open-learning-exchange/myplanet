@@ -81,15 +81,22 @@ class ProgressRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("courseId", courseId)
         }
-        val completedSteps = progresses.map { it.stepNum }.toSet()
-        var i = 0
-        while (i < (steps?.size ?: 0)) {
-            if (!completedSteps.contains(i + 1)) {
-                break
+        val stepsSize = steps?.size ?: 0
+        val completed = BooleanArray(stepsSize + 1)
+        progresses.forEach { progress ->
+            val stepNum = progress.stepNum
+            if (stepNum in 1..stepsSize) {
+                completed[stepNum] = true
             }
+        }
+
+        var i = 1
+        // Loop looks for the first missing step from 1 to stepsSize.
+        // It returns the number of consecutive completed steps from the start.
+        while (i <= stepsSize && completed[i]) {
             i++
         }
-        i
+        i - 1
     }
 
     private suspend fun getCourseProgressMap(

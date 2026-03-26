@@ -237,7 +237,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list = if (isMyCourseLib) {
             coursesRepository.getMyCourses(model?.id, list)
         } else {
-            RealmMyCourse.getAllCourses(model?.id, list)
+            coursesRepository.getAllCourses(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list

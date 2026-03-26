@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -1021,6 +1022,20 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamType(teamId: String): String? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
+    }
+
+    override suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
+        val teamMembers = getJoinedMembers(teamId)
+        val userList = teamMembers.map {
+            User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+        }
+
+        val existingUsers = sharedPrefManager.getSavedUsers().toMutableList()
+        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+        val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+        sharedPrefManager.setSavedUsers(updatedUserList)
+
+        teamMembers
     }
 
     override suspend fun getJoinedMembers(teamId: String): List<RealmUser> {
