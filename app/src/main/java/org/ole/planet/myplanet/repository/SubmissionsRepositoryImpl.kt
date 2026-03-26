@@ -669,6 +669,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
+        if (ids.isEmpty()) return emptyList()
+        return databaseService.withRealm { realm ->
+            val results = realm.where(RealmSubmitPhotos::class.java)
+                .`in`("id", ids)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
+    }
+
     override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
         return databaseService.withRealmAsync { realm ->
             var detachedSub: RealmSubmission? = null
