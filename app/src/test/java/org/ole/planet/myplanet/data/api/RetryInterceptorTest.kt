@@ -4,6 +4,7 @@ import android.app.Application
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.io.IOException
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -17,7 +18,6 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.BroadcastService
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.IOException
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [33], application = Application::class)
