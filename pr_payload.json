@@ -1,6 +1,0 @@
-{
-  "title": "Refactor RealmMyLibrary and RealmSubmission models to remove EntryPointAccessors",
-  "body": "Removed manual dependency injection from RealmMyLibrary and RealmSubmission models, passing SharedPrefManager as parameter.",
-  "head": "fix-entry-point-models",
-  "base": "master"
-}
