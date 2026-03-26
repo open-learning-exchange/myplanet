@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.application)
-    alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.realm.android)
@@ -12,8 +11,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5054
-        versionName = "0.50.54"
+        versionCode = 5055
+        versionName = "0.50.55"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -149,9 +148,6 @@ android {
 realm {
     syncEnabled = true
 }
-kapt {
-    correctErrorTypes = true
-}
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
@@ -220,7 +216,6 @@ dependencies {
     implementation(libs.markwon.html)
     implementation(libs.markwon.ext.tables)
     implementation(libs.osmdroid.android)
-    implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.android.gif.drawable)
