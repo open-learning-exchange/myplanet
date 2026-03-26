@@ -7,9 +7,13 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
 import org.ole.planet.myplanet.model.OnboardingItem
@@ -38,25 +42,36 @@ class OnboardingActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         copyAssets(this)
-        val savedUser = SecurePrefs.getUserName(this, prefData.rawPreferences)
-        val savedPass = SecurePrefs.getPassword(this, prefData.rawPreferences)
-        if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !prefData.isLoggedIn()) {
-            prefData.setLoggedIn(true)
-        }
-        if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
-            val dashboard = Intent(applicationContext, DashboardActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                .putExtra("from_login", true)
-            startActivity(dashboard)
-            finish()
-            return
-        }
 
-        if (prefData.getFirstLaunch()) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-        }
+        lifecycleScope.launch {
+            val savedUser: String?
+            val savedPass: String?
+            withContext(Dispatchers.IO) {
+                savedUser = SecurePrefs.getUserName(this@OnboardingActivity, prefData.rawPreferences)
+                savedPass = SecurePrefs.getPassword(this@OnboardingActivity, prefData.rawPreferences)
+            }
+            if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !prefData.isLoggedIn()) {
+                prefData.setLoggedIn(true)
+            }
+            if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
+                startActivity(Intent(applicationContext, DashboardActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra("from_login", true))
+                finish()
+                return@launch
+            }
 
+            if (prefData.getFirstLaunch()) {
+                startActivity(Intent(this@OnboardingActivity, LoginActivity::class.java))
+                finish()
+                return@launch
+            }
+
+            setupOnboarding()
+        }
+    }
+
+    private fun setupOnboarding() {
         loadData()
         mAdapter = OnboardingAdapter(this, onBoardItems)
         binding.pagerIntroduction.adapter = mAdapter
@@ -82,7 +97,7 @@ class OnboardingActivity : AppCompatActivity() {
             override fun onPageScrollStateChanged(state: Int) {}
         })
 
-        binding.skip.setOnClickListener{
+        binding.skip.setOnClickListener {
             finishTutorial()
         }
 
