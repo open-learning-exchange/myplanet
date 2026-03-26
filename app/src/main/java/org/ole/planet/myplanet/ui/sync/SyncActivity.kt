@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
+import android.os.StrictMode
 import android.text.TextUtils
 import android.util.Log
 import android.view.ContextThemeWrapper
@@ -184,9 +185,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         }
+        
+        val oldPolicy = StrictMode.allowThreadDiskReads()
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        requestAllPermissions()
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
+        StrictMode.setThreadPolicy(oldPolicy)
+        requestAllPermissions()
         processedUrl = UrlUtils.getUrl()
     }
 

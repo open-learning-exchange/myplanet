@@ -12,22 +12,14 @@ import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.Configuration as WorkManagerConfiguration
+import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Date
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Provider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -52,6 +44,7 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -60,6 +53,14 @@ import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Date
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Provider
+import androidx.work.Configuration as WorkManagerConfiguration
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
@@ -211,6 +212,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         super.onCreate()
         context = this
         setupCriticalProperties()
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        PreferenceManager.getDefaultSharedPreferences(this)
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()

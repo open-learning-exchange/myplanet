@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.di
 
+import android.net.TrafficStats
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -7,9 +8,12 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.lang.reflect.Modifier
+import java.net.InetAddress
+import java.net.Socket
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import javax.net.SocketFactory
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -25,6 +29,20 @@ annotation class StandardHttpClient
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
+
+private class TaggedSocketFactory : SocketFactory() {
+    private val delegate = getDefault()
+
+    private fun tag() {
+        if (TrafficStats.getThreadStatsTag() == 0) TrafficStats.setThreadStatsTag(0x1000)
+    }
+
+    override fun createSocket(): Socket { tag(); return delegate.createSocket() }
+    override fun createSocket(host: String, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
+    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(host, port, localHost, localPort) }
+    override fun createSocket(host: InetAddress, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
+    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(address, port, localAddress, localPort) }
+}
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -44,6 +62,7 @@ object NetworkModule {
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
+            .socketFactory(TaggedSocketFactory())
 
         if (retryInterceptor != null) {
             builder.addInterceptor(retryInterceptor)

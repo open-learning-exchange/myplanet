@@ -94,10 +94,15 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         inputName = binding.inputName
         inputPassword = binding.inputPassword
 
-        binding.tvAvailableSpace.text = buildString {
-            append(getString(R.string.available_space_colon))
-            append(" ")
-            append(FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity))
+        lifecycleScope.launch {
+            val storageInfo = withContext(Dispatchers.IO) {
+                FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity)
+            }
+            binding.tvAvailableSpace.text = buildString {
+                append(getString(R.string.available_space_colon))
+                append(" ")
+                append(storageInfo)
+            }
         }
         changeLogoColor()
         declareElements()

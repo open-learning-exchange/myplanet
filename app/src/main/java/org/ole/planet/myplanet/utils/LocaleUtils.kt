@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.content.res.Configuration
 import android.os.LocaleList
+import android.os.StrictMode
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import java.util.Locale
@@ -11,8 +12,13 @@ object LocaleUtils {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"
 
     fun onAttach(context: Context): Context {
-        val lang = getPersistedData(context, Locale.getDefault().language)
-        return setLocale(context, lang)
+        val oldPolicy = StrictMode.allowThreadDiskReads()
+        return try {
+            val lang = getPersistedData(context, Locale.getDefault().language)
+            setLocale(context, lang)
+        } finally {
+            StrictMode.setThreadPolicy(oldPolicy)
+        }
     }
 
     fun getLanguage(context: Context): String {
