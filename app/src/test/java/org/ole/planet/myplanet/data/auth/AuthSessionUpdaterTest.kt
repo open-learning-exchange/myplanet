@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.data.auth
 
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.mockk.coVerify
+import java.lang.reflect.Method
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -15,10 +17,8 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import java.lang.reflect.Method
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthSessionUpdaterTest {

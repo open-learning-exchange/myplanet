@@ -19,6 +19,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -35,13 +37,14 @@ import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
@@ -50,7 +53,7 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService), UserRepository {
+) : RealmRepository(databaseService, realmDispatcher), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
