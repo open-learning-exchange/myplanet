@@ -198,13 +198,7 @@ open class RealmMyTeam : RealmObject() {
         @JvmStatic
         fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
-            val ids = mutableListOf<String>()
-            for (team in teams) {
-                if (!team.resourceId.isNullOrBlank()) {
-                    ids.add(team.resourceId!!)
-                }
-            }
-            return ids
+            return teams.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }.toMutableList()
         }
 
         @JvmStatic
