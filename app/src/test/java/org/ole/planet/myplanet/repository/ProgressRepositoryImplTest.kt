@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
@@ -40,7 +41,11 @@ class ProgressRepositoryImplTest {
     @Before
     fun setUp() {
         every { dispatcherProvider.io } returns testDispatcher
-        repository = spyk(ProgressRepositoryImpl(databaseService, dispatcherProvider), recordPrivateCalls = true)
+        repository = spyk(ProgressRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            dispatcherProvider
+        ), recordPrivateCalls = true)
         coEvery { repository["queryList"](RealmMyCourse::class.java, any<Function1<*, *>>()) } returns emptyList<RealmMyCourse>()
     }
 

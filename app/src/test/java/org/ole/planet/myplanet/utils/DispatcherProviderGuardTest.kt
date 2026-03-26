@@ -4,10 +4,10 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.di.DispatcherModule
-import javax.inject.Singleton
 
 class DispatcherProviderGuardTest {
 
