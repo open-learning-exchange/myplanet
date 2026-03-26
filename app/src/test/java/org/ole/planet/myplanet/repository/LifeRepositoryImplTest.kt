@@ -24,7 +24,7 @@ class LifeRepositoryImplTest {
     @Before
     fun setUp() {
         databaseService = mockk(relaxed = true)
-        repository = LifeRepositoryImpl(databaseService)
+        repository = LifeRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
     }
 
     @Test
