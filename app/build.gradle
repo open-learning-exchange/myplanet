@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.application)
+    alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.realm.android)
@@ -148,6 +149,9 @@ android {
 realm {
     syncEnabled = true
 }
+kapt {
+    correctErrorTypes = true
+}
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
@@ -216,6 +220,7 @@ dependencies {
     implementation(libs.markwon.html)
     implementation(libs.markwon.ext.tables)
     implementation(libs.osmdroid.android)
+    implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.android.gif.drawable)
