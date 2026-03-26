@@ -153,5 +153,6 @@ class OnboardingActivity : AppCompatActivity() {
     private fun finishTutorial() {
         prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
+        finish()
     }
 }
