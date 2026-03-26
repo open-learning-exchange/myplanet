@@ -16,11 +16,13 @@ import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
@@ -33,7 +35,7 @@ class NotificationsViewModel @Inject constructor(
 
     fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val realmNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
             _notifications.value = realmNotifications.map { formatNotification(it) }
             _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
@@ -125,7 +127,7 @@ class NotificationsViewModel @Inject constructor(
     }
 
     fun markAsRead(notificationId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             if (markedIds.contains(notificationId)) {
                 var wasUnread = false
@@ -152,7 +154,7 @@ class NotificationsViewModel @Inject constructor(
     }
 
     fun markAllAsRead(userId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
             if (markedIds.isNotEmpty()) {
                 _notifications.update { currentList ->
