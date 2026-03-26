@@ -2,11 +2,14 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmTag
 
 class TagsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), TagsRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), TagsRepository {
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
         return queryList(RealmTag::class.java) {
