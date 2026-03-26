@@ -174,33 +174,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
-            return libs?.filter { it.userId?.contains(userId) == true } ?: emptyList()
-        }
-
-        @JvmStatic
-        fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-            val libraries: MutableList<RealmMyCourse> = ArrayList()
-            for (item in libs) {
-                item.isMyCourse = item.userId?.contains(userId)!!
-                libraries.add(item)
-            }
-            return libraries
-        }
-
-        @JvmStatic
-        fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-            val libraries: MutableList<RealmMyCourse> = ArrayList()
-            for (item in libs) {
-                if (!item.userId?.contains(userId)!!) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
-        }
-
-        @JvmStatic
-        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
                 mRealm.beginTransaction()

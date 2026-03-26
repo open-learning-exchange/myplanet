@@ -235,11 +235,13 @@ class UploadCoordinator @Inject constructor(
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
 
             val itemsById = mutableMapOf<String, T>()
-            localIds.chunked(1000).forEach { chunk ->
-                val results = realm.where(config.modelClass.java)
-                    .`in`(idFieldName, chunk.toTypedArray())
-                    .findAll()
-
+            if (localIds.isNotEmpty()) {
+                val query = realm.where(config.modelClass.java)
+                localIds.chunked(1000).forEachIndexed { index, chunk ->
+                    if (index > 0) query.or()
+                    query.`in`(idFieldName, chunk.toTypedArray())
+                }
+                val results = query.findAll()
                 results.forEach { item ->
                     val localId = config.idExtractor(item) ?: ""
                     itemsById[localId] = item

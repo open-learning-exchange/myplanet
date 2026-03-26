@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -32,12 +34,13 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository
-) : RealmRepository(databaseService), ResourcesRepository {
+) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
     override suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData> {
         return queryList(RealmMyLibrary::class.java, true) {
