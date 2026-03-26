@@ -18,17 +18,17 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
+import androidx.core.content.ContextCompat
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Date
+import java.util.concurrent.Executor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import androidx.core.content.ContextCompat
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Date
-import java.util.concurrent.Executor
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {

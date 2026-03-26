@@ -11,8 +11,8 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 
 @HiltWorker
 class FreeSpaceWorker @AssistedInject constructor(
