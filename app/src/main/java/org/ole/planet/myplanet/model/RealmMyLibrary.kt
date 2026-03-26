@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -11,7 +12,6 @@ import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
-import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.utils.FileUtils

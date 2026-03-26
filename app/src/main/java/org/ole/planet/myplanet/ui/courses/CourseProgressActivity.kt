@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -10,9 +13,6 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import androidx.activity.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.repeatOnLifecycle
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {

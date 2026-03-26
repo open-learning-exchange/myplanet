@@ -12,10 +12,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.test.resetMain
 import org.junit.After
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
@@ -59,6 +60,7 @@ class TeamsRepositoryImplTest {
 
         teamsRepository = TeamsRepositoryImpl(
             databaseService,
+            UnconfinedTestDispatcher(),
             userSessionManager,
             uploadManager,
             gson,

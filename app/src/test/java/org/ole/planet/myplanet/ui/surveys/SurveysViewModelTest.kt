@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.surveys
 
-import io.mockk.every
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
