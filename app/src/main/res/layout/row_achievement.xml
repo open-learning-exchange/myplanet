@@ -21,7 +21,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid"
             app:drawableRightCompat="@drawable/ic_down" />
-
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="wrap_content"
@@ -45,7 +44,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/tv_link"
             android:layout_width="wrap_content"
@@ -54,7 +52,6 @@
             android:linksClickable="true"
             android:textColor="@color/daynight_textColor"
             android:visibility="gone" />
-
         <com.google.android.flexbox.FlexboxLayout
             android:id="@+id/flexbox_resources"
             android:layout_width="wrap_content"
