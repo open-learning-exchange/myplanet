@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.android.asCoroutineDispatcher
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -20,8 +21,8 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabaseService(@ApplicationContext context: Context): DatabaseService {
-        return DatabaseService(context)
+    fun provideDatabaseService(@ApplicationContext context: Context, dispatcherProvider: DispatcherProvider): DatabaseService {
+        return DatabaseService(context, dispatcherProvider)
     }
 
     @Provides
