@@ -21,7 +21,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="13sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_ref_name"
             android:layout_width="0dp"
@@ -45,7 +44,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="13sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_ref_relationship"
             android:layout_width="0dp"
@@ -69,7 +67,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="13sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_ref_phone"
             android:layout_width="0dp"
@@ -92,7 +89,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="13sp"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_ref_email"
             android:layout_width="0dp"
@@ -109,12 +105,10 @@
         android:layout_height="wrap_content"
         android:textColor="@color/daynight_textColor"
         android:visibility="gone" />
-
     <TextView
         android:id="@+id/tv_description"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textColor="@color/daynight_textColor"
         android:visibility="gone" />
-
 </LinearLayout>
