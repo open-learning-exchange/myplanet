@@ -9,6 +9,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -28,12 +30,13 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository
-) : RealmRepository(databaseService), CoursesRepository {
+) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java) {
