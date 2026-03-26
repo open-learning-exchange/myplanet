@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
@@ -46,6 +46,7 @@ class TransactionSyncManager @Inject constructor(
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
+    private val userRepository: UserRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -71,15 +72,7 @@ class TransactionSyncManager @Inject constructor(
 
         applicationScope.launch(Dispatchers.IO) {
             try {
-                val usersToSync = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { managedUser ->
-                        RealmUser().apply {
-                            this.id = managedUser.id
-                            this.name = managedUser.name
-                            this.planetCode = managedUser.planetCode
-                        }
-                    }
-                }
+                val usersToSync = userRepository.getUsersForHealthSync()
                 usersToSync.forEach { userModel ->
                     syncHealthData(userModel, header)
                 }
@@ -109,10 +102,8 @@ class TransactionSyncManager @Inject constructor(
                     val iv = getString("iv", jsonDoc)
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
-                        databaseService.executeTransactionAsync { realm ->
-                            val managedUser = realm.where(RealmUser::class.java).equalTo("id", userModel.id).findFirst()
-                            managedUser?.key = key
-                            managedUser?.iv = iv
+                        userModel.id?.let {
+                            userRepository.markUserKeyIvSaved(it, key ?: "", iv)
                         }
                     }
                 }
@@ -136,9 +127,7 @@ class TransactionSyncManager @Inject constructor(
             val model = userSessionManager.getUserModel()
             val id = model?.id
             try {
-                val userModel = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
-                }
+                val userModel = id?.let { userRepository.getUserById(it) }
                 if (userModel != null) {
                     syncHealthData(userModel, header)
                 }
@@ -308,7 +297,7 @@ class TransactionSyncManager @Inject constructor(
                 insertCourseStepsExams("", "", jsonDoc, mRealm)
             }
             "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+                userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
             }
             else -> {
                 callMethod(mRealm, jsonDoc, table)

@@ -105,8 +105,9 @@ object ServiceModule {
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+        userRepository: org.ole.planet.myplanet.repository.UserRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, scope)
     }
 }
