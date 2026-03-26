@@ -1,5 +1,9 @@
 package org.ole.planet.myplanet.utils
 
+import java.time.Instant
+import java.time.LocalDate
+import java.util.Locale
+import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -7,10 +11,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import java.time.Instant
-import java.time.LocalDate
-import java.util.Locale
-import java.util.TimeZone
 
 class TimeUtilsTest {
 

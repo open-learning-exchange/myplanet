@@ -1,23 +1,5 @@
 # CLAUDE.md - AI Assistant Guide for myPlanet
 
-This document provides comprehensive guidance for AI assistants working on the myPlanet Android application codebase.
-
-## Table of Contents
-
-1. [Project Overview](#project-overview)
-2. [Codebase Structure](#codebase-structure)
-3. [Technology Stack](#technology-stack)
-4. [Architecture Patterns](#architecture-patterns)
-5. [Development Workflows](#development-workflows)
-6. [Key Conventions](#key-conventions)
-7. [Common Tasks](#common-tasks)
-8. [Testing Guidelines](#testing-guidelines)
-9. [Security Considerations](#security-considerations)
-10. [Troubleshooting](#troubleshooting)
-11. [Codebase Inventory Summary](#codebase-inventory-summary)
-
----
-
 ## Project Overview
 
 **myPlanet** is an Android mobile application serving as an offline extension of the Open Learning Exchange's Planet Learning Management System. It enables learners to access educational resources (books, videos, courses) without continuous internet connectivity.
@@ -206,59 +188,16 @@ myplanet/
 ### 1. Layered Architecture
 
 ```
-┌─────────────────────────────────────────┐
-│     UI Layer (Activities/Fragments)     │
-│  - User interaction & view binding      │
-│  - Lifecycle management                 │
-│  - 16 ViewModels for state management   │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│     Repository Layer (19 domains)       │
-│  - Data access abstraction              │
-│  - Interface + Implementation pairs     │
-│  - Reactive Flow-based queries          │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│     Service Layer                       │
-│  - ApiInterface (remote operations)     │
-│  - SyncManager (synchronization)        │
-│  - UploadCoordinator (upload orchestr.) │
-└──────────────┬──────────────────────────┘
-               │
-┌──────────────▼──────────────────────────┐
-│     Data Sources                        │
-│  - Realm Database (local)               │
-│  - REST API (remote)                    │
-│  - SharedPreferences (settings)         │
-└─────────────────────────────────────────┘
+UI Layer (Activities/Fragments + 16 ViewModels)
+    ↓
+Repository Layer (19 domains, Interface + Impl pairs, Flow-based queries)
+    ↓
+Service Layer (ApiInterface, SyncManager, UploadCoordinator)
+    ↓
+Data Sources (Realm local DB, REST API, SharedPreferences)
 ```
 
-### 2. MVVM with ViewModels
-
-The UI layer uses ViewModels for state management across 16 feature areas:
-
-| ViewModel | Package | Purpose |
-|-----------|---------|---------|
-| `ChatViewModel` | `ui/chat/` | Chat message state and AI interactions |
-| `TeamViewModel` | `ui/teams/` | Team data and operations |
-| `RequestsViewModel` | `ui/teams/` | Team join requests |
-| `DashboardViewModel` | `ui/dashboard/` | Dashboard data aggregation |
-| `BellDashboardViewModel` | `ui/dashboard/` | Bell community dashboard |
-| `ProgressViewModel` | `ui/courses/` | Course progress tracking |
-| `EnterprisesViewModel` | `ui/enterprises/` | Enterprise finances and reports |
-| `RatingsViewModel` | `ui/ratings/` | Resource ratings |
-| `NewsViewModel` | `ui/voices/` | News/voices feed |
-| `ReplyViewModel` | `ui/voices/` | Reply composition |
-| `FeedbackListViewModel` | `ui/feedback/` | Feedback listing |
-| `FeedbackDetailViewModel` | `ui/feedback/` | Feedback detail view |
-| `SubmissionViewModel` | `ui/submissions/` | Submission management |
-| `SubmissionDetailViewModel` | `ui/submissions/` | Submission details |
-| `UserProfileViewModel` | `ui/user/` | User profile data |
-| `NotificationsViewModel` | `ui/notifications/` | Notification management |
-
-### 3. Repository Pattern
+### 2. Repository Pattern
 
 **Convention**: Each data domain has an interface and implementation
 
@@ -833,63 +772,10 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Adding a New Screen
 
-1. **Create Layout**
-   ```xml
-   <!-- app/src/main/res/layout/activity_my_feature.xml -->
-   <?xml version="1.0" encoding="utf-8"?>
-   <androidx.constraintlayout.widget.ConstraintLayout
-       xmlns:android="http://schemas.android.com/apk/res/android"
-       android:layout_width="match_parent"
-       android:layout_height="match_parent">
-
-       <!-- UI components -->
-
-   </androidx.constraintlayout.widget.ConstraintLayout>
-   ```
-
-2. **Create Activity/Fragment**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/ui/myfeature/MyFeatureActivity.kt
-   package org.ole.planet.myplanet.ui.myfeature
-
-   import android.os.Bundle
-   import dagger.hilt.android.AndroidEntryPoint
-   import org.ole.planet.myplanet.base.BaseActivity
-   import org.ole.planet.myplanet.databinding.ActivityMyFeatureBinding
-
-   @AndroidEntryPoint
-   class MyFeatureActivity : BaseActivity() {
-       private lateinit var binding: ActivityMyFeatureBinding
-
-       override fun onCreate(savedInstanceState: Bundle?) {
-           super.onCreate(savedInstanceState)
-           binding = ActivityMyFeatureBinding.inflate(layoutInflater)
-           setContentView(binding.root)
-
-           setupUI()
-       }
-
-       private fun setupUI() {
-           // Initialize UI components
-       }
-   }
-   ```
-
-3. **Register in Manifest**
-   ```xml
-   <!-- app/src/main/AndroidManifest.xml -->
-   <activity
-       android:name=".ui.myfeature.MyFeatureActivity"
-       android:label="@string/my_feature_title"
-       android:theme="@style/AppTheme" />
-   ```
-
-4. **Add Navigation**
-   ```kotlin
-   // From another activity/fragment
-   val intent = Intent(context, MyFeatureActivity::class.java)
-   startActivity(intent)
-   ```
+1. Create layout XML in `res/layout/activity_my_feature.xml`
+2. Create `@AndroidEntryPoint` Activity/Fragment extending appropriate base class with view binding
+3. Register in `AndroidManifest.xml`
+4. Navigate with `Intent(context, MyFeatureActivity::class.java)`
 
 ### Adding a New API Endpoint
 
@@ -922,80 +808,13 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 ### Implementing Offline Sync
 
-1. **Download Data**
-   ```kotlin
-   suspend fun syncFromServer() {
-       val response = apiInterface.getData()
-       if (response.isSuccessful) {
-           response.body()?.let { data ->
-               saveToRealm(data)
-           }
-       }
-   }
-
-   private fun saveToRealm(data: List<JsonObject>) {
-       mRealm.executeTransaction { realm ->
-           data.forEach { item ->
-               RealmMyModel.insert(realm, item)
-           }
-       }
-   }
-   ```
-
-2. **Upload Changes**
-   ```kotlin
-   suspend fun syncToServer() {
-       val pendingChanges = mRealm.where(RealmMyModel::class.java)
-           .equalTo("synced", false)
-           .findAll()
-
-       pendingChanges.forEach { item ->
-           val response = apiInterface.postData(item.toJson())
-           if (response.isSuccessful) {
-               markAsSynced(item._id)
-           }
-       }
-   }
-   ```
+1. **Download**: Fetch from API, save to Realm via `executeTransaction` with model `insert()` method
+2. **Upload**: Query unsynced items (`equalTo("synced", false)`), POST each to server, mark synced on success
 
 ### Adding Background Work
 
-1. **Create Worker**
-   ```kotlin
-   // app/src/main/java/org/ole/planet/myplanet/services/MyWorker.kt
-   class MyWorker(
-       context: Context,
-       params: WorkerParameters
-   ) : CoroutineWorker(context, params) {
-
-       override suspend fun doWork(): Result {
-           return try {
-               // Perform background task
-               Result.success()
-           } catch (e: Exception) {
-               Result.retry()
-           }
-       }
-   }
-   ```
-
-2. **Schedule Work**
-   ```kotlin
-   val workRequest = PeriodicWorkRequestBuilder<MyWorker>(
-       1, TimeUnit.HOURS
-   ).setConstraints(
-       Constraints.Builder()
-           .setRequiredNetworkType(NetworkType.CONNECTED)
-           .build()
-   ).build()
-
-   WorkManager.getInstance(context)
-       .enqueueUniquePeriodicWork(
-           "MyWork",
-           ExistingPeriodicWorkPolicy.REPLACE,
-           workRequest
-       )
-   ```
+1. Create `CoroutineWorker` subclass with `doWork()` returning `Result.success()` or `Result.retry()`
+2. Schedule with `PeriodicWorkRequestBuilder<MyWorker>(interval, unit)` + network constraints + `WorkManager.enqueueUniquePeriodicWork`
 
 ---
 
@@ -1283,39 +1102,6 @@ git rebase --continue
 
 ---
 
-## Quick Command Reference
-
-```bash
-# Build Commands
-./gradlew assembleDefaultDebug          # Build default debug APK
-./gradlew assembleLiteDebug            # Build lite debug APK
-./gradlew assembleDefaultRelease       # Build default release APK
-./gradlew bundleDefaultRelease         # Build default release AAB
-./gradlew installDefaultDebug          # Install default debug on device
-
-# Clean Commands
-./gradlew clean                        # Clean build artifacts
-./gradlew clean build                  # Clean and rebuild
-
-# Dependency Commands
-./gradlew dependencies                 # List all dependencies
-./gradlew app:dependencies             # List app module dependencies
-
-# Diagnostic Commands
-./gradlew build --scan                 # Build with build scan
-./gradlew build --stacktrace          # Build with stack traces
-./gradlew build --info                # Build with info logging
-
-# Git Commands
-git status                             # Check current state
-git checkout -b claude/feature-id      # Create feature branch
-git add .                              # Stage changes
-git commit -m "message"                # Commit changes
-git push -u origin claude/feature-id   # Push to remote
-```
-
----
-
 ## Codebase Inventory Summary
 
 ### Source Files (394 total Kotlin files)
@@ -1352,23 +1138,6 @@ git push -u origin claude/feature-id   # Push to remote
 **System**: PACKAGE_USAGE_STATS, REQUEST_INSTALL_PACKAGES (default flavor only)
 **Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
 **Other**: BLUETOOTH, FOREGROUND_SERVICE_DATA_SYNC, SYSTEM_ALERT_WINDOW
-
----
-
-## Conclusion
-
-This document provides a comprehensive guide for AI assistants working on myPlanet. Key principles:
-
-1. **Understand the architecture** - Layered architecture with clear separation
-2. **Follow conventions** - Consistent naming, patterns, and structure
-3. **Use dependency injection** - Hilt for all dependency management
-4. **Think offline-first** - All features should work offline when possible
-5. **Leverage existing patterns** - Base classes, repositories, utilities
-6. **Test thoroughly** - Build, offline mode, sync, multiple screen sizes
-7. **Document changes** - Clear commit messages and code comments
-8. **Security first** - Never hardcode secrets, use encryption
-
-For questions or clarifications, refer to the Discord community or GitHub issues.
 
 ---
 
