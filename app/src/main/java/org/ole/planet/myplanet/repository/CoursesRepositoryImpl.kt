@@ -1,14 +1,16 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
-import java.util.Calendar
-import java.util.UUID
 import java.text.Normalizer
+import java.util.Calendar
 import java.util.Locale
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -28,12 +30,13 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository
-) : RealmRepository(databaseService), CoursesRepository {
+) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java) {
@@ -225,16 +228,11 @@ class CoursesRepositoryImpl @Inject constructor(
     ): List<RealmMyCourse> {
         return withRealm { realm ->
             val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-                val tagIds = realm.where(RealmTag::class.java)
-                    .`in`("name", tagNames.toTypedArray())
-                    .findAll()
-                    .map { it.id }
-
                 realm.where(RealmTag::class.java)
                     .equalTo("db", "courses")
-                    .`in`("tagId", tagIds.toTypedArray())
+                    .`in`("name", tagNames.toTypedArray())
                     .findAll()
-                    .map { it.linkId }
+                    .mapNotNull { it.linkId }
             } else {
                 null
             }
@@ -365,40 +363,53 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val examIds = allExams.mapNotNull { it.id }
             val questionsByExamId = if (examIds.isNotEmpty()) {
-                realm.where(RealmExamQuestion::class.java)
-                    .`in`("examId", examIds.toTypedArray())
-                    .findAll()
-                    .groupBy { it.examId }
+                val allQuestions = mutableListOf<RealmExamQuestion>()
+                examIds.chunked(1000).forEach { chunk ->
+                    val chunkQuestions = realm.where(RealmExamQuestion::class.java)
+                        .`in`("examId", chunk.toTypedArray())
+                        .findAll()
+                    allQuestions.addAll(chunkQuestions)
+                }
+                allQuestions.groupBy { it.examId ?: "" }
+                    .filterKeys { it.isNotEmpty() }
             } else {
                 emptyMap()
             }
 
+            // To eliminate N+1 queries, we fetch all relevant submissions for the user upfront.
+            // We fetch all 'exam' submissions for the user and filter in memory to handle legacy formats
+            // and avoid doubling the query size with multiple ID variants.
+            val examIdsSet = examIds.toSet()
             val userSubmissions = realm.where(RealmSubmission::class.java)
                 .equalTo("userId", userId)
                 .equalTo("type", "exam")
                 .findAll()
 
             val relevantSubmissions = userSubmissions.filter { sub ->
-                examIds.any { examId -> sub.parentId?.contains(examId) == true }
-            }
-
-            val submissionIds = relevantSubmissions.mapNotNull { it.id }.toTypedArray()
-
-            val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                realm.where(RealmAnswer::class.java)
-                    .`in`("submissionId", submissionIds)
-                    .findAll()
-                    .groupBy { it.submissionId }
-            } else {
-                emptyMap()
+                val pId = sub.parentId
+                val basePId = if (pId?.contains("@") == true) pId.split("@")[0] else pId
+                examIdsSet.contains(basePId)
             }
 
             val submissionsByExamId = relevantSubmissions.groupBy { sub ->
-                if (sub.parentId?.contains("@") == true) {
-                    sub.parentId!!.split("@")[0]
-                } else {
-                    sub.parentId ?: ""
+                val pId = sub.parentId
+                if (pId?.contains("@") == true) pId.split("@")[0] else pId ?: ""
+            }.filterKeys { it.isNotEmpty() }
+
+            val submissionIds = relevantSubmissions.mapNotNull { it.id }
+            val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
+                val allAnswers = mutableListOf<RealmAnswer>()
+                // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
+                submissionIds.chunked(1000).forEach { chunk ->
+                    val chunkAnswers = realm.where(RealmAnswer::class.java)
+                        .`in`("submissionId", chunk.toTypedArray())
+                        .findAll()
+                    allAnswers.addAll(chunkAnswers)
                 }
+                allAnswers.groupBy { it.submissionId ?: "" }
+                    .filterKeys { it.isNotEmpty() }
+            } else {
+                emptyMap()
             }
 
             val array = JsonArray()
@@ -416,15 +427,15 @@ class CoursesRepositoryImpl @Inject constructor(
     private fun getExamObject(
         exams: Iterable<RealmStepExam>,
         ob: com.google.gson.JsonObject,
-        questionsByExamId: Map<String?, List<RealmExamQuestion>>,
+        questionsByExamId: Map<String, List<RealmExamQuestion>>,
         submissionsByExamId: Map<String, List<RealmSubmission>>,
-        answersBySubmissionId: Map<String?, List<RealmAnswer>>
+        answersBySubmissionId: Map<String, List<RealmAnswer>>
     ) {
         exams.forEach { exam ->
             exam.id?.let { examId ->
                 val submissionsForExam = submissionsByExamId[examId] ?: emptyList()
                 submissionsForExam.forEach { submission ->
-                    val answers = answersBySubmissionId[submission.id] ?: emptyList()
+                    val answers = submission.id?.let { answersBySubmissionId[it] } ?: emptyList()
                     val questions = questionsByExamId[examId] ?: emptyList()
                     val questionCount = questions.size
                     if (questionCount == 0) {
@@ -569,13 +580,13 @@ class CoursesRepositoryImpl @Inject constructor(
                 realm.copyFromRealm(data)
             } else {
                 val queryParts = query.split(" ").filterNot { it.isEmpty() }
-                val normalizedQueryParts = queryParts.map { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) }
-                val normalizedQuery = org.ole.planet.myplanet.utils.Utilities.normalizeText(query)
+                val normalizedQueryParts = queryParts.map { normalizeText(it) }
+                val normalizedQuery = normalizeText(query)
                 val startsWithQuery = mutableListOf<RealmMyCourse>()
                 val containsQuery = mutableListOf<RealmMyCourse>()
 
                 for (item in data) {
-                    val title = item.courseTitle?.let { org.ole.planet.myplanet.utils.Utilities.normalizeText(it) } ?: continue
+                    val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
                     if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                         startsWithQuery.add(item)

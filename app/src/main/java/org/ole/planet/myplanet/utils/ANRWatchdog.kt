@@ -4,8 +4,17 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
+    private var scope: CoroutineScope? = null
+    private var job: Job? = null
     companion object {
         private const val DEFAULT_ANR_TIMEOUT = 5000L
     }
@@ -33,20 +42,14 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
         tick = SystemClock.elapsedRealtime()
         mainHandler.post(tickUpdater)
 
-        Thread({
-            val threadName = Thread.currentThread().name
-            Thread.currentThread().name = "ANRWatchdog"
-
-            while (isWatching) {
+        scope = CoroutineScope(Dispatchers.Default)
+        job = scope?.launch {
+            while (isWatching && isActive) {
                 val lastTick = tick
                 val currentTime = SystemClock.elapsedRealtime()
                 mainHandler.post(tickUpdater)
 
-                try {
-                    Thread.sleep(timeout / 2)
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
+                delay(timeout / 2)
 
                 if (isWatching && lastTick == tick) {
                     val duration = currentTime - lastTick
@@ -70,19 +73,18 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
                     }
 
                     listener?.onAppNotResponding(message.toString(), mainThread, duration)
-                    try {
-                        Thread.sleep(timeout)
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
-                    }
+                    delay(timeout)
                 }
             }
-            Thread.currentThread().name = threadName
-        }, "ANRWatchdog").start()
+        }
     }
 
     fun stop() {
         isWatching = false
         mainHandler.removeCallbacks(tickUpdater)
+        job?.cancel()
+        job = null
+        scope?.cancel()
+        scope = null
     }
 }

@@ -34,7 +34,7 @@ class TagsRepositoryImplTest {
             val operation = firstArg<(Realm) -> List<RealmTag>>()
             operation(mockRealm)
         }
-        repository = TagsRepositoryImpl(databaseService)
+        repository = TagsRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
     }
 
     private fun mockQueryResults(vararg results: List<RealmTag>): RealmQuery<RealmTag> {
