@@ -1,25 +1,27 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
-import org.ole.planet.myplanet.model.RealmTeamLog
-
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
+import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context
-) : RealmRepository(databaseService), ActivitiesRepository {
+) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
             equalTo("userName", userName)
