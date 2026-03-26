@@ -1,1 +1,0 @@
-sed -i 's/import org.ole.planet.myplanet.model.Transaction/import org.ole.planet.myplanet.model.Transaction\nimport org.ole.planet.myplanet.model.User/' app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
