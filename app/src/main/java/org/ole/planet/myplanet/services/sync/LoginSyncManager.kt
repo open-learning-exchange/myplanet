@@ -10,8 +10,9 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UserRepository
@@ -26,10 +27,11 @@ class LoginSyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val apiInterface: ApiInterface,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) {
 
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
             try {
                 if (userName.isNullOrBlank() || password.isNullOrBlank()) {
                     withContext(Dispatchers.Main) { listener.onSyncFailed("Username and password are required.") }
@@ -122,7 +124,7 @@ class LoginSyncManager @Inject constructor(
     }
 
     fun syncAdmin() {
-        MainApplication.applicationScope.launch {
+        applicationScope.launch {
             try {
                 val `object` = JsonObject()
                 val selector = JsonObject()

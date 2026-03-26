@@ -11,10 +11,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
-class DatabaseService(context: Context) {
-    val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-    private val realmDispatcher: CoroutineDispatcher = Dispatchers.IO.limitedParallelism(4)
+class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider) {
+    val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
+    private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
 
     init {
         Realm.init(context)
