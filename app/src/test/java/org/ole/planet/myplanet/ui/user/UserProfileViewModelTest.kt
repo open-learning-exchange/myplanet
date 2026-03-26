@@ -13,17 +13,29 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserProfileViewModelTest {
 
+    private val testDispatcher = StandardTestDispatcher()
+
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var userRepository: UserRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var viewModel: UserProfileViewModel
+
+    private val dispatcherProvider = object : DispatcherProvider {
+        override val main: CoroutineDispatcher = testDispatcher
+        override val io: CoroutineDispatcher = testDispatcher
+        override val default: CoroutineDispatcher = testDispatcher
+        override val unconfined: CoroutineDispatcher = testDispatcher
+    }
 
     @Before
     fun setup() {
@@ -34,7 +46,7 @@ class UserProfileViewModelTest {
         coEvery { userSessionManager.getGlobalLastVisit() } returns 123456789L
         coEvery { userSessionManager.getNumberOfResourceOpen() } returns "Resource opened 10 times."
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager)
+        viewModel = UserProfileViewModel(userRepository, userSessionManager, dispatcherProvider)
     }
 
     @Test
