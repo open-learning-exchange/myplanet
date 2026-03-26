@@ -10,7 +10,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
 import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -21,11 +20,11 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -274,11 +273,7 @@ class UploadManager @Inject constructor(
 
                 if (listener != null && successfulUploads.isNotEmpty()) {
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
-                    val photos = databaseService.withRealm { realm ->
-                        val results = realm.where(RealmSubmitPhotos::class.java)
-                            .`in`("id", photoIds).findAll()
-                        realm.copyFromRealm(results)
-                    }
+                    val photos = submissionsRepository.getPhotosByIds(photoIds)
 
                     photos?.forEach { photo ->
                         val uploadInfo = successfulUploads.find { it.photoId == photo.id }
@@ -361,16 +356,7 @@ class UploadManager @Inject constructor(
                         if (isTransactionSuccessful) {
                             listener?.let {
                                 try {
-                                    val libraries = databaseService.withRealm { realm ->
-                                        if (libraryIds.isNotEmpty()) {
-                                            val results = realm.where(RealmMyLibrary::class.java)
-                                                .`in`("id", libraryIds)
-                                                .findAll()
-                                            realm.copyFromRealm(results)
-                                        } else {
-                                            emptyList()
-                                        }
-                                    }
+                                    val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
 
                                     val libMap = libraries?.associateBy { it.id } ?: emptyMap()
 

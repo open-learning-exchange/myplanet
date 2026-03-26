@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
@@ -32,7 +34,6 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
-import android.util.Log
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
@@ -78,6 +79,7 @@ class UserRepositoryImplTest {
 
         repository = UserRepositoryImpl(
             databaseService,
+            UnconfinedTestDispatcher(),
             settings,
             sharedPrefManager,
             apiInterface,
