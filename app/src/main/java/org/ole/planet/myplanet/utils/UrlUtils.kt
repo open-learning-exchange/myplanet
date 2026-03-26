@@ -64,7 +64,11 @@ object UrlUtils {
     }
 
     fun dbUrl(url: String): String {
-        return if (url.endsWith("/db")) url else "$url/db"
+        var base = url
+        if (base.endsWith("/")) {
+            base = base.dropLast(1)
+        }
+        return if (base.endsWith("/db")) base else "$base/db"
     }
 
     fun getUrl(library: RealmMyLibrary?): String {
@@ -75,8 +79,13 @@ object UrlUtils {
         return "${getUrl()}/resources/$id/$file"
     }
 
-    fun getUserImageUrl(userId: String?, imageName: String): String {
-        return "${getUrl()}/_users/$userId/$imageName"
+    fun getUserImageUrl(userId: String?, imageName: String): String? {
+        if (userId.isNullOrBlank() || imageName.isBlank()) {
+            return null
+        }
+        val encodedUserId = java.net.URLEncoder.encode(userId, "UTF-8")
+        val encodedImageName = java.net.URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
+        return "${getUrl()}/_users/$encodedUserId/$encodedImageName"
     }
 
     fun getUrl(): String {
