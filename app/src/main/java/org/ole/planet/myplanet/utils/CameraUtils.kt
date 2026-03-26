@@ -54,8 +54,10 @@ object CameraUtils {
         }
         if (cameraJob.isCancelled) {
             cameraJob = SupervisorJob()
+            cameraScope = CoroutineScope(dispatcher + cameraJob)
+        } else if (cameraScope == null) {
+            cameraScope = CoroutineScope(dispatcher + cameraJob)
         }
-        cameraScope = CoroutineScope(dispatcher + cameraJob)
     }
 
     @JvmStatic
@@ -93,7 +95,7 @@ object CameraUtils {
                 val bytes = ByteArray(buffer.capacity())
                 buffer.get(bytes)
                 image.close()
-                cameraScope?.launch {
+                cameraScope!!.launch {
                     savePicture(bytes, callback)
                 }
             }
