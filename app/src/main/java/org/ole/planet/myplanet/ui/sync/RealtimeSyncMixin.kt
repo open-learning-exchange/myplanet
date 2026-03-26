@@ -50,9 +50,6 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when (adapter) {
                 is OnDiffRefreshListener -> adapter.refreshWithDiff()
-                is org.ole.planet.myplanet.ui.courses.CoursesAdapter -> {
-                    throw IllegalStateException("CoursesAdapter must implement OnDiffRefreshListener explicitly")
-                }
                 is ListAdapter<*, *> -> {
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
