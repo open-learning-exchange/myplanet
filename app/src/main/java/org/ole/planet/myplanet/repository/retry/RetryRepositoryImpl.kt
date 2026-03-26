@@ -2,13 +2,16 @@ package org.ole.planet.myplanet.repository.retry
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.repository.RealmRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 class RetryRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), RetryRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), RetryRepository {
 
     override suspend fun enqueue(
         uploadType: String,
