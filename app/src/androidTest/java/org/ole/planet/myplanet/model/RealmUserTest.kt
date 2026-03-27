@@ -36,17 +36,18 @@ class RealmUserTest {
     @After
     fun tearDown() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            Realm.deleteRealm(realmConfiguration)
+            val realm = Realm.getInstance(realmConfiguration)
+            realm.executeTransaction { it.deleteAll() }
+            realm.close()
         }
     }
 
     @Test
     fun cleanupDuplicateUsers_removesGuestWhenCouchDbUserExists() {
         val latch = CountDownLatch(1)
-        var realm: Realm? = null
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            realm = Realm.getInstance(realmConfiguration)
-            realm?.executeTransaction { r ->
+            val realm = Realm.getInstance(realmConfiguration)
+            realm.executeTransaction { r ->
                 r.createObject(RealmUser::class.java, "1").apply {
                     _id = "org.couchdb.user:testuser"
                     name = "testuser"
@@ -57,16 +58,15 @@ class RealmUserTest {
                 }
             }
 
-            RealmUser.cleanupDuplicateUsers(realm!!) {
+            RealmUser.cleanupDuplicateUsers(realm) {
                 latch.countDown()
+                realm.close() // Close the realm after async transaction finishes
             }
         }
 
         latch.await(5, TimeUnit.SECONDS)
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            realm?.close()
-
             val verifyRealm = Realm.getInstance(realmConfiguration)
             val users = verifyRealm.where(RealmUser::class.java).findAll()
             assertEquals(1, users.size)
@@ -78,10 +78,9 @@ class RealmUserTest {
     @Test
     fun cleanupDuplicateUsers_keepsCouchDbUserWhenGuestExists() {
         val latch = CountDownLatch(1)
-        var realm: Realm? = null
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            realm = Realm.getInstance(realmConfiguration)
-            realm?.executeTransaction { r ->
+            val realm = Realm.getInstance(realmConfiguration)
+            realm.executeTransaction { r ->
                 r.createObject(RealmUser::class.java, "1").apply {
                     _id = "guest_testuser"
                     name = "testuser"
@@ -92,16 +91,15 @@ class RealmUserTest {
                 }
             }
 
-            RealmUser.cleanupDuplicateUsers(realm!!) {
+            RealmUser.cleanupDuplicateUsers(realm) {
                 latch.countDown()
+                realm.close()
             }
         }
 
         latch.await(5, TimeUnit.SECONDS)
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            realm?.close()
-
             val verifyRealm = Realm.getInstance(realmConfiguration)
             val users = verifyRealm.where(RealmUser::class.java).findAll()
             assertEquals(1, users.size)
@@ -113,10 +111,9 @@ class RealmUserTest {
     @Test
     fun cleanupDuplicateUsers_keepsAllUsersWhenNoDuplicates() {
         val latch = CountDownLatch(1)
-        var realm: Realm? = null
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            realm = Realm.getInstance(realmConfiguration)
-            realm?.executeTransaction { r ->
+            val realm = Realm.getInstance(realmConfiguration)
+            realm.executeTransaction { r ->
                 r.createObject(RealmUser::class.java, "1").apply {
                     _id = "guest_testuser1"
                     name = "testuser1"
@@ -127,16 +124,15 @@ class RealmUserTest {
                 }
             }
 
-            RealmUser.cleanupDuplicateUsers(realm!!) {
+            RealmUser.cleanupDuplicateUsers(realm) {
                 latch.countDown()
+                realm.close()
             }
         }
 
         latch.await(5, TimeUnit.SECONDS)
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            realm?.close()
-
             val verifyRealm = Realm.getInstance(realmConfiguration)
             val users = verifyRealm.where(RealmUser::class.java).findAll()
             assertEquals(2, users.size)
