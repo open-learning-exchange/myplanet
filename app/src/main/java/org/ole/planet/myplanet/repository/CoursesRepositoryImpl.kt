@@ -57,7 +57,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
         val libraries: MutableList<RealmMyCourse> = ArrayList()
         for (item in libs) {
-            item.isMyCourse = item.userId?.contains(userId)!!
+            item.isMyCourse = item.userId?.contains(userId) == true
             libraries.add(item)
         }
         return libraries
@@ -70,7 +70,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
         val libraries: MutableList<RealmMyCourse> = ArrayList()
         for (item in libs) {
-            if (!item.userId?.contains(userId)!!) {
+            if (item.userId?.contains(userId) != true) {
                 libraries.add(item)
             }
         }

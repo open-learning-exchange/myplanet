@@ -135,8 +135,10 @@ class RatingsFragment : DialogFragment() {
     
     private fun loadRatingData() {
         val userId = sharedPrefManager.getUserId()
-        if (type != null && id != null && userId.isNotEmpty()) {
-            viewModel.loadRatingData(type!!, id!!, userId)
+        val t = type ?: return
+        val i = id ?: return
+        if (userId.isNotEmpty()) {
+            viewModel.loadRatingData(t, i, userId)
         }
     }
 
@@ -150,11 +152,14 @@ class RatingsFragment : DialogFragment() {
         val rating = binding.ratingBar.rating
         val userId = sharedPrefManager.getUserId()
 
-        if (type != null && id != null && title != null && userId.isNotEmpty()) {
+        val t = type ?: return
+        val i = id ?: return
+        val ttl = title ?: return
+        if (userId.isNotEmpty()) {
             viewModel.submitRating(
-                type = type!!,
-                itemId = id!!,
-                title = title!!,
+                type = t,
+                itemId = i,
+                title = ttl,
                 userId = userId,
                 rating = rating,
                 comment = comment

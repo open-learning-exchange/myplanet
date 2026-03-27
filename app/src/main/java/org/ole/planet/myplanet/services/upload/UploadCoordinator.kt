@@ -155,8 +155,8 @@ class UploadCoordinator @Inject constructor(
                     apiInterface.putDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 }
 
-                if (response.isSuccessful && response.body() != null) {
-                    val responseBody = response.body()!!
+                val responseBody = response.body()
+                if (response.isSuccessful && responseBody != null) {
                     val (idField, revField) = when (config.responseHandler) {
                         is ResponseHandler.Standard -> "id" to "rev"
                         is ResponseHandler.Custom -> config.responseHandler.idField to config.responseHandler.revField
@@ -178,8 +178,8 @@ class UploadCoordinator @Inject constructor(
                             UrlUtils.header,
                             "${UrlUtils.getUrl()}/${config.endpoint}/$docId"
                         )
-                        if (getResponse.isSuccessful && getResponse.body() != null) {
-                            val existingDoc = getResponse.body()!!
+                        val existingDoc = getResponse.body()
+                        if (getResponse.isSuccessful && existingDoc != null) {
                             val uploadedItem = UploadedItem(
                                 localId = preparedItem.localId,
                                 remoteId = getString("_id", existingDoc),

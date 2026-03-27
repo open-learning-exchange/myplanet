@@ -122,12 +122,13 @@ class ChatHistoryAdapter(
         val containsQuery = mutableListOf<RealmChatHistory>()
 
         for (chat in chatHistory) {
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                for (i in 0 until chat.conversations!!.size) {
+            val conversations = chat.conversations
+            if (!conversations.isNullOrEmpty()) {
+                for (i in 0 until conversations.size) {
                     conversation = if (isQuestion) {
-                        chat.conversations?.get(i)?.query?.let { normalizeText(it) }
+                        conversations[i]?.query?.let { normalizeText(it) }
                     } else {
-                        chat.conversations?.get(i)?.response?.let { normalizeText(it) }
+                        conversations[i]?.response?.let { normalizeText(it) }
                     }
                     if (conversation == null) continue
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
