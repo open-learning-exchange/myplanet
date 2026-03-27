@@ -70,8 +70,8 @@
 
     <!--    Button Themes   -->
     <style name="RejectButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorAccent</item>
-        <item name="colorControlHighlight">@color/colorAccent</item>
+        <item name="colorButtonNormal">@color/reject_btn_color</item>
+        <item name="colorControlHighlight">@color/reject_btn_color</item>
     </style>
 
     <!--  Button that uses accent color, primarily as the most important button on the screen  -->
