@@ -131,14 +131,23 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             R.id.action_feedback -> {
                 openCallFragment(FeedbackFragment(), getString(R.string.menu_feedback))
             }
-            R.id.action_sync -> {
-                logSyncInSharedPrefs()
-            }
         }
         return super.onOptionsItemSelected(item)
     }
 
+    fun logUserSyncInSharedPrefs() {
+        android.util.Log.d("SyncRoute", "action_sync clicked → user-specific sync (current user only)")
+        isUserSync = true
+        triggerSyncFlow()
+    }
+
     fun logSyncInSharedPrefs() {
+        android.util.Log.d("SyncRoute", "syncIcon clicked → full sync (all users)")
+        isUserSync = false
+        triggerSyncFlow()
+    }
+
+    private fun triggerSyncFlow() {
         val protocol = prefData.getServerProtocol()
         val serverUrl = prefData.getServerUrl()
         val serverPin = prefData.getServerPin()
