@@ -10,7 +10,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
-import io.realm.annotations.Ignore
+import android.util.LruCache
 
 open class RealmAchievement : RealmObject() {
     var achievements: RealmList<String>? = null
@@ -30,50 +30,18 @@ open class RealmAchievement : RealmObject() {
     var parentCode: String? = null
     var isUpdated: Boolean = false
 
-    @Ignore
-    private var cachedAchievementsArray: JsonArray? = null
-
     val achievementsArray: JsonArray
-        get() {
-            if (cachedAchievementsArray == null) {
-                val array = JsonArray()
-                for (s in achievements ?: emptyList()) {
-                    val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                    array.add(ob)
-                }
-                cachedAchievementsArray = array
-            }
-            return cachedAchievementsArray!!
-        }
+        get() = parseStringListToJsonArray(achievements)
 
     fun getReferencesArray(): JsonArray {
-        val array = JsonArray()
-        for (s in references ?: emptyList()) {
-            val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-            array.add(ob)
-        }
-        return array
+        return parseStringListToJsonArray(references)
     }
 
     val linksArray: JsonArray
-        get() {
-            val array = JsonArray()
-            for (s in links ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                array.add(ob)
-            }
-            return array
-        }
+        get() = parseStringListToJsonArray(links)
 
     val otherInfoArray: JsonArray
-        get() {
-            val array = JsonArray()
-            for (s in otherInfo ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                array.add(ob)
-            }
-            return array
-        }
+        get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
         links = RealmList()
@@ -101,7 +69,6 @@ open class RealmAchievement : RealmObject() {
                 achievements?.add(achievement)
             }
         }
-        cachedAchievementsArray = null
     }
 
     fun setReferences(of: JsonArray?) {
@@ -116,6 +83,21 @@ open class RealmAchievement : RealmObject() {
     }
 
     companion object {
+        private val parsedJsonCache = LruCache<String, JsonElement>(1000)
+
+        private fun parseStringListToJsonArray(list: RealmList<String>?): JsonArray {
+            val array = JsonArray()
+            for (s in list ?: emptyList()) {
+                var ob = parsedJsonCache.get(s)
+                if (ob == null) {
+                    ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                    parsedJsonCache.put(s, ob)
+                }
+                array.add(ob?.deepCopy())
+            }
+            return array
+        }
+
         @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
