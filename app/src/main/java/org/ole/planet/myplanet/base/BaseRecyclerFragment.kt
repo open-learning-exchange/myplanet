@@ -156,15 +156,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
 
             if (courseIds.isNotEmpty()) {
-                courseIds.forEach { courseId ->
-                    val courseResult = coursesRepository.markCourseAdded(courseId, userId)
-                    courseResult.onSuccess { added ->
-                        if (added) {
-                            courseAdded = true
-                        }
-                    }.onFailure {
-                        errorOccurred = it
+                val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
+                courseResult.onSuccess { added ->
+                    if (added) {
+                        courseAdded = true
                     }
+                }.onFailure {
+                    errorOccurred = it
                 }
             }
 
