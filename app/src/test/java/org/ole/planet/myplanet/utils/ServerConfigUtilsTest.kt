@@ -52,6 +52,7 @@ class ServerConfigUtilsTest {
 
         assertEquals(url, result)
 
+        // Note: The pin uses the provided password parameter, while the URL password ("admin123") is extracted for setUrlPwd.
         verify { mockSharedPrefManager.setServerPin(password) }
         verify { mockSharedPrefManager.setUrlUser("admin") }
         verify { mockSharedPrefManager.setUrlPwd("admin123") }
@@ -60,5 +61,57 @@ class ServerConfigUtilsTest {
         verify { mockSharedPrefManager.setAlternativeUrl(url) }
         verify { mockSharedPrefManager.setProcessedAlternativeUrl(url) }
         verify { mockSharedPrefManager.setIsAlternativeUrl(true) }
+    }
+
+    @Test
+    fun testSaveAlternativeUrl_HttpsDefaultPort() {
+        val url = "https://demo.ole.org"
+        val password = "testPassword"
+
+        val result = ServerConfigUtils.saveAlternativeUrl(url, password, mockSharedPrefManager)
+
+        val expectedDbUrl = "https://satellite:testPassword@demo.ole.org:443"
+        assertEquals(expectedDbUrl, result)
+
+        verify { mockSharedPrefManager.setUrlScheme("https") }
+        verify { mockSharedPrefManager.setProcessedAlternativeUrl(expectedDbUrl) }
+    }
+
+    @Test
+    fun testSaveAlternativeUrl_WithExplicitPort() {
+        val url = "http://demo.ole.org:5984"
+        val password = "testPassword"
+
+        val result = ServerConfigUtils.saveAlternativeUrl(url, password, mockSharedPrefManager)
+
+        val expectedDbUrl = "http://satellite:testPassword@demo.ole.org:5984"
+        assertEquals(expectedDbUrl, result)
+
+        verify { mockSharedPrefManager.setUrlHost("demo.ole.org") }
+        verify { mockSharedPrefManager.setProcessedAlternativeUrl(expectedDbUrl) }
+    }
+
+    @Test
+    fun testSaveAlternativeUrl_MalformedUrlWithEmptyUserInfo() {
+        val url = "http://@demo.ole.org"
+        val password = "testPassword"
+
+        val result = ServerConfigUtils.saveAlternativeUrl(url, password, mockSharedPrefManager)
+
+        assertEquals(url, result)
+
+        verify { mockSharedPrefManager.setUrlUser("") }
+        verify { mockSharedPrefManager.setUrlPwd("") }
+    }
+
+    @Test
+    fun testSaveAlternativeUrl_MissingSchemeAndHost() {
+        val url = "demo.ole.org"
+        val password = "testPassword"
+
+        val result = ServerConfigUtils.saveAlternativeUrl(url, password, mockSharedPrefManager)
+
+        verify { mockSharedPrefManager.setUrlScheme("") }
+        verify { mockSharedPrefManager.setUrlHost("") }
     }
 }
