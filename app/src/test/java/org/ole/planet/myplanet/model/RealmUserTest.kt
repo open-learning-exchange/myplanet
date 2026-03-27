@@ -2,13 +2,10 @@ package org.ole.planet.myplanet.model
 
 import android.content.ContentResolver
 import android.content.Context
-import android.net.Uri
 import android.util.Base64
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -20,8 +17,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.InputStream
-import java.io.FileInputStream
 import java.io.FileOutputStream
 
 @RunWith(AndroidJUnit4::class)
@@ -65,13 +60,9 @@ class RealmUserTest {
         val inputStream = ByteArrayInputStream(testBytes)
 
         val uriString = "content://media/external/images/media/1"
-        val uri = mockk<Uri>()
-        mockkStatic(Uri::class)
-        every { Uri.parse(uriString) } returns uri
         every { mockContentResolver.openInputStream(any()) } returns inputStream
 
         val expected = Base64.encodeToString(testBytes, Base64.NO_WRAP)
-
         val result = realmUser.encodeImageToBase64(uriString)
 
         assertEquals(expected, result)
@@ -83,23 +74,21 @@ class RealmUserTest {
         val testBytes = testString.toByteArray()
 
         val tempFile = File.createTempFile("test_image", ".jpg")
-        FileOutputStream(tempFile).use { it.write(testBytes) }
+        try {
+            FileOutputStream(tempFile).use { it.write(testBytes) }
 
-        val expected = Base64.encodeToString(testBytes, Base64.NO_WRAP)
+            val expected = Base64.encodeToString(testBytes, Base64.NO_WRAP)
+            val result = realmUser.encodeImageToBase64(tempFile.absolutePath)
 
-        val result = realmUser.encodeImageToBase64(tempFile.absolutePath)
-
-        assertEquals(expected, result)
-
-        tempFile.delete()
+            assertEquals(expected, result)
+        } finally {
+            tempFile.delete()
+        }
     }
 
     @Test
     fun testEncodeImageToBase64_Exception() {
         val uriString = "content://media/external/images/media/1"
-        val uri = mockk<Uri>()
-        mockkStatic(Uri::class)
-        every { Uri.parse(uriString) } returns uri
         every { mockContentResolver.openInputStream(any()) } throws RuntimeException("Test Exception")
 
         assertNull(realmUser.encodeImageToBase64(uriString))
