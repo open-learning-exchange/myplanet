@@ -22,10 +22,11 @@ class RealmUserTest {
     @MockK
     lateinit var mockContext: Context
 
+    private var originalContext: Context? = null
+
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        mockkObject(Utilities)
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkStatic(Utilities::class)
@@ -52,12 +53,9 @@ class RealmUserTest {
             val transaction = arg<Realm.Transaction>(0)
             val successCallback = arg<Realm.Transaction.OnSuccess>(1)
 
-            // Execute the transaction body (just to cover it, though in mock it does nothing without real DB)
-            try {
-                transaction.execute(mockRealm)
-            } catch (e: Exception) {
-                // Ignore for mock purposes
-            }
+            // Execute the transaction body. We must ensure no exception is thrown
+            // here to avoid false positives, so do not try-catch it silently.
+            transaction.execute(mockRealm)
 
             successCallback.onSuccess()
             mockk()
