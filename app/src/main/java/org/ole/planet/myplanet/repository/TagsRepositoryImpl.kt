@@ -21,18 +21,14 @@ class TagsRepositoryImpl @Inject constructor(
 
     override suspend fun buildChildMap(): HashMap<String, List<RealmTag>> {
         val allTags = queryList(RealmTag::class.java)
-        val childMap = HashMap<String, MutableSet<RealmTag>>()
+        val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t ->
-            t.attachedTo?.forEach { parent ->
-                childMap.getOrPut(parent) { mutableSetOf() }.add(t)
+            t.attachedTo?.distinct()?.forEach { parent ->
+                val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
+                list.add(t)
             }
         }
-
-        val result = HashMap<String, List<RealmTag>>()
-        childMap.forEach { (key, value) ->
-            result[key] = value.toList()
-        }
-        return result
+        return childMap
     }
 
     override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
