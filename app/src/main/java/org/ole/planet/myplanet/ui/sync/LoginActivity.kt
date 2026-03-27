@@ -130,7 +130,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
-            HomeCommunityDialogFragment().show(supportFragmentManager, "")
         } else {
             binding.openCommunity.visibility = View.GONE
         }
