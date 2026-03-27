@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 interface ConfigurationsRepository {
     fun checkHealth(listener: OnSuccessListener)

@@ -22,7 +22,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.RealmResults
 import javax.inject.Inject
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch

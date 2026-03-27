@@ -7,8 +7,6 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ActivitiesRepositoryImpl
-import org.ole.planet.myplanet.repository.DownloadRepository
-import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -17,6 +15,8 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
+import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.EventsRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -47,7 +47,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
-
 import org.ole.planet.myplanet.repository.retry.RetryRepository
 import org.ole.planet.myplanet.repository.retry.RetryRepositoryImpl
 

@@ -19,6 +19,7 @@ interface UserRepository {
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun findUserByName(name: String): RealmUser?
     suspend fun getSyncedUsers(): List<RealmUser>
+    suspend fun getUsersForHealthSync(): List<RealmUser>
     suspend fun getSyncedUserByName(name: String): RealmUser?
     suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
@@ -29,6 +30,7 @@ interface UserRepository {
         startMillis: Long,
         endMillis: Long,
     ): Map<Int, Int>
+    fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser?
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
     suspend fun updateSecurityData(
@@ -82,7 +84,7 @@ interface UserRepository {
     suspend fun getActiveUserIdSuspending(): String
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
-    fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
     suspend fun initializeAchievement(achievementId: String): RealmAchievement?
@@ -93,11 +95,15 @@ interface UserRepository {
         purpose: String,
         sendToNation: String,
         achievements: JsonArray,
-        references: JsonArray
+        references: JsonArray,
+        createdOn: String,
+        username: String,
+        parentCode: String
     )
     suspend fun markUserUploaded(userId: String, id: String, rev: String)
     suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)
     suspend fun markUserRevUpdated(userId: String, rev: String?)
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getAchievementsForUpload(): List<JsonObject>
+    suspend fun markAchievementUploaded(id: String, rev: String?)
 }

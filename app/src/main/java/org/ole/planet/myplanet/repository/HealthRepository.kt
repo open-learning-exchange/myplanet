@@ -12,4 +12,5 @@ interface HealthRepository {
     suspend fun getUpdatedHealthExaminations(): List<RealmHealthExamination>
     suspend fun getUpdatedHealthForUser(userId: String): List<RealmHealthExamination>
     suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>)
+    suspend fun updateExaminationUserId(id: String, userId: String)
 }

@@ -10,7 +10,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
@@ -19,7 +18,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val realmService: DatabaseService,
     private val sharedPrefManager: SharedPrefManager,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
