@@ -3,10 +3,8 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
 import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
@@ -28,21 +26,9 @@ object ThemeManager {
             ThemeMode.DARK -> 1
             else -> 2
         }
-        val singleChoiceAdapter = object : ArrayAdapter<String>(
-            context,
-            android.R.layout.simple_list_item_single_choice,
-            options
-        ) {
-            override fun getView(position: Int, convertView: android.view.View?, parent: ViewGroup): android.view.View {
-                val view = super.getView(position, convertView, parent)
-                val text = view.findViewById<TextView>(android.R.id.text1)
-                text.setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
-                return view
-            }
-        }
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
             .setTitle(context.getString(R.string.select_theme_mode))
-            .setSingleChoiceItems(singleChoiceAdapter, checkedItem) { dialog, which ->
+            .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
                 val selectedMode = when (which) {
                     0 -> ThemeMode.LIGHT
                     1 -> ThemeMode.DARK
