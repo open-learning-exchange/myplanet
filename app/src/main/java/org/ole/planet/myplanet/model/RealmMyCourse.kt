@@ -131,8 +131,9 @@ open class RealmMyCourse : RealmObject() {
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
+            val existingSet = existingConcatenatedLinks.toHashSet()
             for (link in linksToProcess) {
-                if (!existingConcatenatedLinks.contains(link)) {
+                if (existingSet.add(link)) {
                     existingConcatenatedLinks.add(link)
                 }
             }
