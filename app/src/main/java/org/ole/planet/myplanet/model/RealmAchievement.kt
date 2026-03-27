@@ -39,12 +39,17 @@ open class RealmAchievement : RealmObject() {
             return array
         }
 
+    @io.realm.annotations.Ignore
+    private var cachedReferencesArray: JsonArray? = null
+
     fun getReferencesArray(): JsonArray {
+        cachedReferencesArray?.let { return it }
         val array = JsonArray()
         for (s in references ?: emptyList()) {
             val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
             array.add(ob)
         }
+        cachedReferencesArray = array
         return array
     }
 
@@ -97,6 +102,7 @@ open class RealmAchievement : RealmObject() {
     }
 
     fun setReferences(of: JsonArray?) {
+        cachedReferencesArray = null
         references = RealmList()
         if (of == null) return
         for (el in of) {
