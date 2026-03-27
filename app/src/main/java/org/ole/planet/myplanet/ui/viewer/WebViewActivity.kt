@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
 import java.io.File
 import org.ole.planet.myplanet.BuildConfig
@@ -31,6 +32,7 @@ class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
     private lateinit var link: String
+    private var assetLoader: WebViewAssetLoader? = null
     private val trustedHosts by lazy {
         listOfNotNull(
             BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
@@ -74,9 +76,13 @@ class WebViewActivity : AppCompatActivity() {
             val directory = File(getExternalFilesDir(null), "ole/$resourceId")
             val indexFile = File(directory, "index.html")
 
+            assetLoader = WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", WebViewAssetLoader.InternalStoragePathHandler(this, directory))
+                .build()
+
             if (indexFile.exists()) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                activityWebViewBinding.contentWebView.wv.loadUrl("file://${indexFile.absolutePath}")
+                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
             }
         } else {
             activityWebViewBinding.contentWebView.wv.loadUrl(link)
@@ -94,7 +100,7 @@ class WebViewActivity : AppCompatActivity() {
             javaScriptCanOpenWindowsAutomatically = false
             
             // File access settings - only allow for local resources
-            allowFileAccess = isLocalResource
+            allowFileAccess = false
             allowContentAccess = false
             
             // Safe settings
@@ -153,10 +159,11 @@ class WebViewActivity : AppCompatActivity() {
                     return
                 }
                 
-                if (!url.startsWith("file://") && url.endsWith("/eng/")) {
+                val isFile = url.startsWith("file://") || url.startsWith("https://appassets.androidplatform.net/assets/")
+                if (!isFile && url.endsWith("/eng/")) {
                     finish()
                 }
-                if (url.startsWith("file://")) {
+                if (isFile) {
                     activityWebViewBinding.contentWebView.webSource.text = getString(R.string.local_resource)
                 } else {
                     val i = url.toUri()
@@ -217,6 +224,9 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                assetLoader?.shouldInterceptRequest(request.url)?.let {
+                    return it
+                }
                 return super.shouldInterceptRequest(view, request)
             }
         }
@@ -238,7 +248,8 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
                 activityWebViewBinding.contentWebView.pBar.progress = newProgress
-                if (view.url?.startsWith("file://") == false && view.url?.endsWith("/eng/") == true) {
+                val isFile = view.url?.startsWith("file://") == true || view.url?.startsWith("https://appassets.androidplatform.net/assets/") == true
+                if (!isFile && view.url?.endsWith("/eng/") == true) {
                     finish()
                 }
                 activityWebViewBinding.contentWebView.pBar.incrementProgressBy(newProgress)
