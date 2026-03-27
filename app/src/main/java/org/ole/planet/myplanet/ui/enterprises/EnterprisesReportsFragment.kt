@@ -122,40 +122,32 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     }
 
     private fun isValidReport(dialogAddReportBinding: DialogAddReportBinding): Boolean {
-        var isValid = true
         if (dialogAddReportBinding.startDate.text == "Start Date") {
             dialogAddReportBinding.startDate.error = "start date is required"
-            isValid = false
-        }
-        if (dialogAddReportBinding.endDate.text == "End Date") {
-            dialogAddReportBinding.endDate.error = "start date is required"
-            isValid = false
-        }
-        if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
+            return false
+        } else if (dialogAddReportBinding.endDate.text == "End Date") {
+            dialogAddReportBinding.endDate.error = "end date is required"
+            return false
+        } else if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
             dialogAddReportBinding.summary.error = "summary is required"
-            isValid = false
-        }
-        if (TextUtils.isEmpty("${dialogAddReportBinding.beginningBalance.text}")) {
+            return false
+        } else if (TextUtils.isEmpty("${dialogAddReportBinding.beginningBalance.text}")) {
             dialogAddReportBinding.beginningBalance.error = "beginning balance is required"
-            isValid = false
-        }
-        if (TextUtils.isEmpty("${dialogAddReportBinding.sales.text}")) {
+            return false
+        } else if (TextUtils.isEmpty("${dialogAddReportBinding.sales.text}")) {
             dialogAddReportBinding.sales.error = "sales is required"
-            isValid = false
-        }
-        if (TextUtils.isEmpty("${dialogAddReportBinding.otherIncome.text}")) {
+            return false
+        } else if (TextUtils.isEmpty("${dialogAddReportBinding.otherIncome.text}")) {
             dialogAddReportBinding.otherIncome.error = "other income is required"
-            isValid = false
-        }
-        if (TextUtils.isEmpty("${dialogAddReportBinding.personnel.text}")) {
+            return false
+        } else if (TextUtils.isEmpty("${dialogAddReportBinding.personnel.text}")) {
             dialogAddReportBinding.personnel.error = "personnel is required"
-            isValid = false
-        }
-        if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
+            return false
+        } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
             dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
-            isValid = false
+            return false
         }
-        return isValid
+        return true
     }
 
     private fun setupDatePickers(dialogAddReportBinding: DialogAddReportBinding, calendar: Calendar, isAddReport: Boolean = false) {
@@ -227,33 +219,32 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         submit.setOnClickListener {
             if (!isValidReport(dialogAddReportBinding)) return@setOnClickListener
-            else {
-                val doc = JsonObject().apply {
-                    addProperty("_id", UUID.randomUUID().toString())
-                    addProperty("createdDate", System.currentTimeMillis())
-                    addProperty("description", "${dialogAddReportBinding.summary.text}")
-                    addProperty("beginningBalance", dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0)
-                    addProperty("sales", dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0)
-                    addProperty("otherIncome", dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0)
-                    addProperty("wages", dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0)
-                    addProperty("otherExpenses", dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0)
-                    addProperty("startDate", startTimeStamp?.toLongOrNull() ?: 0L)
-                    addProperty("endDate", endTimeStamp?.toLongOrNull() ?: 0L)
-                    addProperty("updatedDate", System.currentTimeMillis())
-                    addProperty("teamId", teamId)
-                    addProperty("teamType", team?.teamType)
-                    addProperty("teamPlanetCode", team?.teamPlanetCode)
-                    addProperty("docType", "report")
-                    addProperty("updated", true)
-                }
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        viewModel.addReport(doc)
-                        dialog.dismiss()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        Utilities.toast(requireContext(), "Failed to add report. Please try again.")
-                    }
+
+            val doc = JsonObject().apply {
+                addProperty("_id", UUID.randomUUID().toString())
+                addProperty("createdDate", System.currentTimeMillis())
+                addProperty("description", "${dialogAddReportBinding.summary.text}")
+                addProperty("beginningBalance", dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0)
+                addProperty("sales", dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0)
+                addProperty("otherIncome", dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0)
+                addProperty("wages", dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0)
+                addProperty("otherExpenses", dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0)
+                addProperty("startDate", startTimeStamp?.toLongOrNull() ?: 0L)
+                addProperty("endDate", endTimeStamp?.toLongOrNull() ?: 0L)
+                addProperty("updatedDate", System.currentTimeMillis())
+                addProperty("teamId", teamId)
+                addProperty("teamType", team?.teamType)
+                addProperty("teamPlanetCode", team?.teamPlanetCode)
+                addProperty("docType", "report")
+                addProperty("updated", true)
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    viewModel.addReport(doc)
+                    dialog.dismiss()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    Utilities.toast(requireContext(), "Failed to add report. Please try again.")
                 }
             }
         }
@@ -293,60 +284,59 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         submit.setOnClickListener {
             if (!isValidReport(dialogAddReportBinding)) return@setOnClickListener
-            else {
-                val reportId = currentReport._id
-                if (reportId.isNullOrBlank()) {
+
+            val reportId = currentReport._id
+            if (reportId.isNullOrBlank()) {
+                Snackbar.make(
+                    binding.root,
+                    "Failed to update report. Please try again.",
+                    Snackbar.LENGTH_LONG,
+                ).show()
+                return@setOnClickListener
+            }
+            val doc = JsonObject().apply {
+                addProperty("description", dialogAddReportBinding.summary.text.toString())
+                addProperty(
+                    "beginningBalance",
+                    dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull()
+                         ?: currentReport.beginningBalance,
+                )
+                addProperty(
+                    "sales",
+                    dialogAddReportBinding.sales.text.toString().toIntOrNull()
+                         ?: currentReport.sales,
+                )
+                addProperty(
+                    "otherIncome",
+                    dialogAddReportBinding.otherIncome.text.toString().toIntOrNull()
+                         ?: currentReport.otherIncome,
+                )
+                addProperty(
+                    "wages",
+                    dialogAddReportBinding.personnel.text.toString().toIntOrNull()
+                         ?: currentReport.wages,
+                )
+                addProperty(
+                    "otherExpenses",
+                    dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull()
+                         ?: currentReport.otherExpenses,
+                )
+                addProperty("startDate", startTimeStamp?.toLongOrNull() ?: currentReport.startDate)
+                addProperty("endDate", endTimeStamp?.toLongOrNull() ?: currentReport.endDate)
+                addProperty("updatedDate", System.currentTimeMillis())
+                addProperty("updated", true)
+            }
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    viewModel.updateReport(reportId, doc)
+                    dialog.dismiss()
+                } catch (e: Exception) {
                     Snackbar.make(
                         binding.root,
                         "Failed to update report. Please try again.",
-                        Snackbar.LENGTH_LONG,
+                        Snackbar.LENGTH_LONG
                     ).show()
-                    return@setOnClickListener
-                }
-                val doc = JsonObject().apply {
-                    addProperty("description", dialogAddReportBinding.summary.text.toString())
-                    addProperty(
-                        "beginningBalance",
-                        dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull()
-                             ?: currentReport.beginningBalance,
-                    )
-                    addProperty(
-                        "sales",
-                        dialogAddReportBinding.sales.text.toString().toIntOrNull()
-                             ?: currentReport.sales,
-                    )
-                    addProperty(
-                        "otherIncome",
-                        dialogAddReportBinding.otherIncome.text.toString().toIntOrNull()
-                             ?: currentReport.otherIncome,
-                    )
-                    addProperty(
-                        "wages",
-                        dialogAddReportBinding.personnel.text.toString().toIntOrNull()
-                             ?: currentReport.wages,
-                    )
-                    addProperty(
-                        "otherExpenses",
-                        dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull()
-                             ?: currentReport.otherExpenses,
-                    )
-                    addProperty("startDate", startTimeStamp?.toLongOrNull() ?: currentReport.startDate)
-                    addProperty("endDate", endTimeStamp?.toLongOrNull() ?: currentReport.endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
-                    addProperty("updated", true)
-                }
-
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        viewModel.updateReport(reportId, doc)
-                        dialog.dismiss()
-                    } catch (e: Exception) {
-                        Snackbar.make(
-                            binding.root,
-                            "Failed to update report. Please try again.",
-                            Snackbar.LENGTH_LONG
-                        ).show()
-                    }
                 }
             }
         }
