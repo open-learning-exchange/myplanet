@@ -294,33 +294,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return sub && lev && lan && med
     }
 
-    override fun onDestroy() {
-        cleanupRealm()
-        super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                requireRealmInstance().removeAllChangeListeners()
-
-                if (requireRealmInstance().isInTransaction) {
-                    try {
-                        requireRealmInstance().commitTransaction()
-                    } catch (_: Exception) {
-                        requireRealmInstance().cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!requireRealmInstance().isClosed) {
-                    requireRealmInstance().close()
-                }
-            }
-        }
-    }
-
     override fun onDetach() {
         super.onDetach()
         cleanupReferences()
