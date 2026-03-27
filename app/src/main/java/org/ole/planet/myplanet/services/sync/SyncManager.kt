@@ -666,8 +666,8 @@ class SyncManager @Inject constructor(
                     val batchDocuments = JsonArray()
                     val validDocuments = mutableListOf<Pair<JsonObject, String>>()
 
-                    for (i in 0 until rows.size()) {
-                        val rowObj = rows[i].asJsonObject
+                    for (rowElement in rows) {
+                        val rowObj = rowElement.asJsonObject
                         if (rowObj.has("doc")) {
                             val doc = getJsonObject("doc", rowObj)
                             val id = getString("_id", doc)
