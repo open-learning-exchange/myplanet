@@ -85,7 +85,9 @@ open class RealmMyCourse : RealmObject() {
             val baseUrl = UrlUtils.getUrl()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
+                synchronized(concatenatedLinks) {
+                    concatenatedLinks.add(concatenatedLink)
+                }
             }
             myMyCoursesDB?.method = JsonUtils.getString("method", myCoursesDoc)
             myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCoursesDoc)
@@ -106,7 +108,9 @@ open class RealmMyCourse : RealmObject() {
                 val stepLinks = extractLinks(stepDescription)
                 for (stepLink in stepLinks) {
                     val concatenatedLink = "$baseUrl/$stepLink"
-                    concatenatedLinks.add(concatenatedLink)
+                    synchronized(concatenatedLinks) {
+                        concatenatedLinks.add(concatenatedLink)
+                    }
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm, spm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
