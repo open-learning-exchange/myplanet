@@ -64,7 +64,7 @@ open class RealmMyCourse : RealmObject() {
     }
 
     companion object {
-        private val concatenatedLinks = ArrayList<String>()
+        private val concatenatedLinks = HashSet<String>()
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
