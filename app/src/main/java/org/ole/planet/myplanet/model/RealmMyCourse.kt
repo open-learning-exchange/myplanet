@@ -123,21 +123,16 @@ open class RealmMyCourse : RealmObject() {
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableSet()
             } else {
-                mutableListOf()
+                mutableSetOf()
             }
             val linksToProcess: List<String>
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
-            val existingSet = existingConcatenatedLinks.toHashSet()
-            for (link in linksToProcess) {
-                if (existingSet.add(link)) {
-                    existingConcatenatedLinks.add(link)
-                }
-            }
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
+            existingConcatenatedLinks.addAll(linksToProcess)
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks.toList())
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
