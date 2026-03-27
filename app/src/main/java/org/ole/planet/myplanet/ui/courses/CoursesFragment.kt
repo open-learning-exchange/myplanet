@@ -23,6 +23,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -173,7 +174,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
 
     private fun loadDataAsync() {
-        if (!isAdded || requireActivity().isFinishing) return
+        val hostActivity = activity ?: return
+        if (hostActivity.isFinishing) return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 // Run independent queries in parallel
@@ -199,7 +201,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 recyclerView.adapter = null
 
                 adapterCourses = CoursesAdapter(
-                    requireActivity(),
+                    hostActivity,
                     map,
                     userModel?.isGuest() ?: true,
                     { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
@@ -212,6 +214,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 recyclerView.adapter = adapterCourses
 
                 viewModel.processCourses(isMyCourseLib, userModel?.id, validCourses, myCourses, map, progressMap)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -219,6 +223,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+        val hostActivity = activity ?: throw CancellationException("Fragment detached")
+
         if (userModel == null) {
             userModel = userSessionManager.getUserModel()
         }
@@ -239,7 +245,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         adapterCourses = CoursesAdapter(
-            requireActivity(),
+            hostActivity,
             map,
             userModel?.isGuest() ?: true,
             { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
