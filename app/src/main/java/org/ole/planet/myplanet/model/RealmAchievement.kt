@@ -10,6 +10,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
+import io.realm.annotations.Ignore
 
 open class RealmAchievement : RealmObject() {
     var achievements: RealmList<String>? = null
@@ -29,14 +30,20 @@ open class RealmAchievement : RealmObject() {
     var parentCode: String? = null
     var isUpdated: Boolean = false
 
+    @Ignore
+    private var cachedAchievementsArray: JsonArray? = null
+
     val achievementsArray: JsonArray
         get() {
-            val array = JsonArray()
-            for (s in achievements ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                array.add(ob)
+            if (cachedAchievementsArray == null) {
+                val array = JsonArray()
+                for (s in achievements ?: emptyList()) {
+                    val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                    array.add(ob)
+                }
+                cachedAchievementsArray = array
             }
-            return array
+            return cachedAchievementsArray!!
         }
 
     fun getReferencesArray(): JsonArray {
@@ -94,6 +101,7 @@ open class RealmAchievement : RealmObject() {
                 achievements?.add(achievement)
             }
         }
+        cachedAchievementsArray = null
     }
 
     fun setReferences(of: JsonArray?) {
