@@ -8,10 +8,16 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmAchievement : RealmObject() {
+    @Ignore
+    private var _cachedOtherInfoArray: JsonArray? = null
+    @Ignore
+    private var _cachedOtherInfoList: List<String>? = null
+
     var achievements: RealmList<String>? = null
     var references: RealmList<String>? = null
     var links: RealmList<String>? = null
@@ -60,12 +66,17 @@ open class RealmAchievement : RealmObject() {
 
     val otherInfoArray: JsonArray
         get() {
-            val array = JsonArray()
-            for (s in otherInfo ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                array.add(ob)
+            val currentList = otherInfo?.toList()
+            if (_cachedOtherInfoArray == null || _cachedOtherInfoList != currentList) {
+                val array = JsonArray()
+                for (s in currentList ?: emptyList()) {
+                    val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                    array.add(ob)
+                }
+                _cachedOtherInfoArray = array
+                _cachedOtherInfoList = currentList
             }
-            return array
+            return _cachedOtherInfoArray!!
         }
 
     fun setLinks(la: JsonArray?) {
