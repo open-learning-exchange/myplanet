@@ -1,12 +1,9 @@
 package org.ole.planet.myplanet.services
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
-import android.os.Build
-import android.os.Environment
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -19,7 +16,6 @@ import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import java.io.File
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
