@@ -464,16 +464,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private suspend fun onSyncFailed(msg: String?) {
-        if (isProgressDialogShowing) {
-            customProgressDialog.dismiss()
-        }
-        if (::syncIconDrawable.isInitialized) {
-            syncIconDrawable = syncIcon.drawable as AnimationDrawable
-            syncIconDrawable.stop()
-            syncIconDrawable.selectDrawable(0)
-            syncIcon.invalidateDrawable(syncIconDrawable)
-        }
-        runOnUiThread {
+        withContext(Dispatchers.Main) {
+            if (isProgressDialogShowing) {
+                customProgressDialog.dismiss()
+            }
+            if (::syncIconDrawable.isInitialized) {
+                syncIconDrawable = syncIcon.drawable as AnimationDrawable
+                syncIconDrawable.stop()
+                syncIconDrawable.selectDrawable(0)
+                syncIcon.invalidateDrawable(syncIconDrawable)
+            }
             showAlert(this@SyncActivity, getString(R.string.sync_failed), msg)
             showWifiSettingDialog(this@SyncActivity)
         }
