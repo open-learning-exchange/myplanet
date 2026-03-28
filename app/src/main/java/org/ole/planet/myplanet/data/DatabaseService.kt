@@ -8,7 +8,6 @@ import io.realm.RealmQuery
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
