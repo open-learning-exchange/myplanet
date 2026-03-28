@@ -116,6 +116,10 @@ class SyncManager @Inject constructor(
         data class Error(val message: String) : SyncStatus()
     }
 
+    fun resetSyncStatus() {
+        _syncStatus.value = SyncStatus.Idle
+    }
+
     private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
@@ -128,8 +132,26 @@ class SyncManager @Inject constructor(
                     SyncMode.Standard
                 }
                 createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                manager.start(listener, syncMode, syncTables)
+                val wrappedListener = object : OnSyncListener {
+                    override fun onSyncStarted() {
+                        listener?.onSyncStarted()
+                    }
+                    override fun onSyncComplete() {
+                        isSyncing.set(false)
+                        listener?.onSyncComplete()
+                        this@SyncManager.listener = null
+                        _syncStatus.value = SyncStatus.Success("Sync completed")
+                    }
+                    override fun onSyncFailed(msg: String?) {
+                        isSyncing.set(false)
+                        listener?.onSyncFailed(msg)
+                        this@SyncManager.listener = null
+                        _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
+                    }
+                }
+                manager.start(wrappedListener, syncMode, syncTables)
             } catch (e: Exception) {
+                isSyncing.set(false)
                 listener?.onSyncFailed(e.message)
                 _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
             }
@@ -1005,9 +1027,9 @@ class SyncManager @Inject constructor(
                                 chunk.forEach { doc ->
                                     try {
                                         when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx)
+                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx)
+                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
                                             "teams" -> insertMyTeams(doc, realmTx)
                                         }
                                         processedCount++

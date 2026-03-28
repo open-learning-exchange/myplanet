@@ -2,17 +2,20 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 
 class HealthRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), HealthRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
         val userCopy = findByField(RealmUser::class.java, "id", userId)
         val pojoCopy = findByField(RealmHealthExamination::class.java, "_id", userId)
@@ -71,6 +74,15 @@ class HealthRepositoryImpl @Inject constructor(
             user?.let { realm.copyToRealmOrUpdate(it) }
             pojo?.let { realm.copyToRealmOrUpdate(it) }
             examination?.let { realm.copyToRealmOrUpdate(it) }
+        }
+    }
+
+    override suspend fun updateExaminationUserId(id: String, userId: String) {
+        databaseService.executeTransactionAsync { realm ->
+            val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findAll()
+            for (p in list) {
+                p.userId = userId
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
@@ -18,7 +19,10 @@ import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
 
-open class RealmRepository(protected val databaseService: DatabaseService) {
+open class RealmRepository(
+    protected val databaseService: DatabaseService,
+    protected val realmDispatcher: CoroutineDispatcher = Dispatchers.Main
+) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -130,7 +134,7 @@ open class RealmRepository(protected val databaseService: DatabaseService) {
             safeCloseRealm()
             throw e
         }
-    }.flowOn(Dispatchers.Main)
+    }.flowOn(realmDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
