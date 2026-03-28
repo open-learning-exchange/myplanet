@@ -6,10 +6,10 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -57,7 +57,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
         val libraries: MutableList<RealmMyCourse> = ArrayList()
         for (item in libs) {
-            item.isMyCourse = item.userId?.contains(userId)!!
+            item.isMyCourse = item.userId?.contains(userId) == true
             libraries.add(item)
         }
         return libraries
@@ -70,7 +70,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
         val libraries: MutableList<RealmMyCourse> = ArrayList()
         for (item in libs) {
-            if (!item.userId?.contains(userId)!!) {
+            if (item.userId?.contains(userId) != true) {
                 libraries.add(item)
             }
         }
