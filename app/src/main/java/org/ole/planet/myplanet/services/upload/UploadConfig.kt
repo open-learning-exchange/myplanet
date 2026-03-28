@@ -46,7 +46,7 @@ sealed class UploadSerializer<T : RealmObject> {
     ) : UploadSerializer<T>()
 
     data class Full<T : RealmObject>(
-        val serialize: (Realm, T, Context) -> JsonObject
+        val serialize: (Realm, T, Context, org.ole.planet.myplanet.services.SharedPrefManager) -> JsonObject
     ) : UploadSerializer<T>()
 }
 

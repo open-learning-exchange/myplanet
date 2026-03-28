@@ -13,14 +13,14 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -562,7 +562,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                             wrapper.add("doc", doc)
                             chunkDocuments.add(wrapper)
                         }
-                        savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx))
+                    savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx, sharedPrefManager))
                     }
                 }
                 savedIds
@@ -578,7 +578,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                             val wrapper = JsonObject()
                             wrapper.add("doc", doc)
                             singleDocArray.add(wrapper)
-                            savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx))
+                        savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx, sharedPrefManager))
                         }
                     } catch (e2: Exception) {
                         e2.printStackTrace()

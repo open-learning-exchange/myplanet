@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -22,6 +23,7 @@ sealed class ProfileUpdateState {
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _userModel = MutableStateFlow<RealmUser?>(null)
@@ -32,7 +34,7 @@ class UserProfileViewModel @Inject constructor(
 
     fun loadUserProfile(userId: String?) {
         if (userId.isNullOrBlank()) return
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             _userModel.value = userRepository.getUserByAnyId(userId)
         }
     }
@@ -58,7 +60,7 @@ class UserProfileViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             runCatching {
                 userRepository.updateUserDetails(
                     userId = userId,
@@ -89,7 +91,7 @@ class UserProfileViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             runCatching { userRepository.updateUserImage(userId, imagePath) }
                 .onSuccess { updatedUser ->
                     updatedUser?.let { _userModel.value = it }
@@ -120,7 +122,7 @@ class UserProfileViewModel @Inject constructor(
     val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             _maxOpenedResource.value = userSessionManager.maxOpenedResource()
             _lastVisit.value = userSessionManager.getGlobalLastVisit()
             _numberOfResourceOpen.value = userSessionManager.getNumberOfResourceOpen()
@@ -128,7 +130,7 @@ class UserProfileViewModel @Inject constructor(
     }
 
     fun getOfflineVisits() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val user = userSessionManager.getUserModel()
             _offlineVisits.value = userSessionManager.getOfflineVisits(user)
         }

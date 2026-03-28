@@ -52,6 +52,7 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -218,6 +219,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun performDeferredInitialization() {
+        applicationScope.launch(Dispatchers.IO) {
+            SecurePrefs.warmUp(this@MainApplication)
+        }
         applicationScope.launch {
             initApp()
             loadAndApplyTheme()
