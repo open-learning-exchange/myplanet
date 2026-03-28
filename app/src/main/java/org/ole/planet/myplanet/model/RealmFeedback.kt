@@ -5,7 +5,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
-import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.io.StringReader
