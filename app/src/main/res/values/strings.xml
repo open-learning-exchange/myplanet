@@ -983,7 +983,9 @@
     <string name="dark_mode">dark mode</string>
     <string name="dark_mode_off">off</string>
     <string name="dark_mode_on">on</string>
-    <string name="dark_mode_follow_system">follow system</string>
+    <string name="dark_mode_follow_system">Follow System</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>

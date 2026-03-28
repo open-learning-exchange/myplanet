@@ -984,6 +984,8 @@
     <string name="dark_mode_off">Desactivado</string>
     <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>
+    <string name="theme_mode_light">Claro</string>
+    <string name="theme_mode_dark">Oscuro</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">¿Estás seguro de que deseas archivar estos cursos?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
     <string name="manual">manual</string>

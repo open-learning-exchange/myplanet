@@ -122,9 +122,9 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>) {
-        val arr = ar?.let { ArrayList(it) }
+        val arr = ar?.let { ArrayList(it) } ?: return
         listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
-        listView.adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr!!)
+        listView.adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr)
         for (i in arr.indices) {
                 listView.setItemChecked(i, set.contains(arr[i]))
             }

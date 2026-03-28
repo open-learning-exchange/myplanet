@@ -11,19 +11,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmList
-import io.realm.RealmModel
 import io.realm.RealmObject
-import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -290,33 +285,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val lan = languages.isEmpty() || languages.contains(l.language)
         val med = mediums.isEmpty() || mediums.contains(l.mediaType)
         return sub && lev && lan && med
-    }
-
-    override fun onDestroy() {
-        cleanupRealm()
-        super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                requireRealmInstance().removeAllChangeListeners()
-
-                if (requireRealmInstance().isInTransaction) {
-                    try {
-                        requireRealmInstance().commitTransaction()
-                    } catch (_: Exception) {
-                        requireRealmInstance().cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!requireRealmInstance().isClosed) {
-                    requireRealmInstance().close()
-                }
-            }
-        }
     }
 
     override fun onDetach() {

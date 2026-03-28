@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -28,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -45,7 +43,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ReportsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
