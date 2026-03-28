@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import com.google.gson.JsonArray
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
