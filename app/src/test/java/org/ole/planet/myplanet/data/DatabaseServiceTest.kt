@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data
 
-import android.content.Context
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
