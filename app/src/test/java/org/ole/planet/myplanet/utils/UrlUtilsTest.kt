@@ -1,20 +1,46 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
+import android.net.Uri
+import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], application = android.app.Application::class)
 class UrlUtilsTest {
+
+    private lateinit var mockSpm: SharedPrefManager
+    private lateinit var mockEntryPoint: AutoSyncEntryPoint
     private lateinit var sharedPrefManager: SharedPrefManager
 
     @Before
-    fun setup() {
+    fun setUp() {
+        mockSpm = mockk(relaxed = true)
+        mockEntryPoint = mockk()
+        every { mockEntryPoint.sharedPrefManager() } returns mockSpm
+
+        mockkStatic(EntryPointAccessors::class)
+        every { EntryPointAccessors.fromApplication(any(), AutoSyncEntryPoint::class.java) } returns mockEntryPoint
+
+        mockkObject(MainApplication.Companion)
+        val mockContext = mockk<Context>()
+        every { MainApplication.context } returns mockContext
+
         mockkObject(UrlUtils)
         sharedPrefManager = mockk(relaxed = true)
         every { sharedPrefManager.isAlternativeUrl() } returns false
@@ -25,6 +51,57 @@ class UrlUtilsTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `hostUrl fallback behavior when toUri throws Exception`() {
+        every { mockSpm.getUrlScheme() } returns "http"
+        every { mockSpm.getUrlHost() } returns "fallback.org"
+        every { mockSpm.isAlternativeUrl() } returns true
+        every { mockSpm.getProcessedAlternativeUrl() } returns "invalid://url"
+
+        mockkStatic(Uri::class)
+        every { Uri.parse("invalid://url") } throws RuntimeException("Simulated URI Exception")
+
+        val result = UrlUtils.hostUrl
+
+        assertEquals("http://fallback.org/ml/", result)
+    }
+
+    @Test
+    fun `hostUrl successfully returns alternative URL`() {
+        every { mockSpm.getUrlScheme() } returns "http"
+        every { mockSpm.getUrlHost() } returns "fallback.org"
+        every { mockSpm.isAlternativeUrl() } returns true
+        every { mockSpm.getProcessedAlternativeUrl() } returns "https://newhost.com"
+
+        val result = UrlUtils.hostUrl
+
+        assertEquals("https://newhost.com:5000/", result)
+    }
+
+    @Test
+    fun `hostUrl successfully returns standard URL`() {
+        every { mockSpm.getUrlScheme() } returns "http"
+        every { mockSpm.getUrlHost() } returns "standard.org"
+        every { mockSpm.isAlternativeUrl() } returns false
+        every { mockSpm.getProcessedAlternativeUrl() } returns ""
+
+        val result = UrlUtils.hostUrl
+
+        assertEquals("http://standard.org/ml/", result)
+    }
+
+    @Test
+    fun `hostUrl successfully returns URL when alternativeUrl is true but value is empty`() {
+        every { mockSpm.getUrlScheme() } returns "http"
+        every { mockSpm.getUrlHost() } returns "fallback.org"
+        every { mockSpm.isAlternativeUrl() } returns true
+        every { mockSpm.getProcessedAlternativeUrl() } returns ""
+
+        val result = UrlUtils.hostUrl
+
+        assertEquals("http://fallback.org/ml/", result)
     }
 
     @Test
@@ -141,46 +218,46 @@ class UrlUtilsTest {
 
     @Test
     fun `getApkVersionUrl uses alternative url`() {
-        val mockSpm = mockk<SharedPrefManager>()
-        every { mockSpm.isAlternativeUrl() } returns true
-        every { mockSpm.getProcessedAlternativeUrl() } returns "http://192.168.1.2:5000"
-        val result = UrlUtils.getApkVersionUrl(mockSpm)
+        val spm = mockk<SharedPrefManager>()
+        every { spm.isAlternativeUrl() } returns true
+        every { spm.getProcessedAlternativeUrl() } returns "http://192.168.1.2:5000"
+        val result = UrlUtils.getApkVersionUrl(spm)
         assertEquals("http://192.168.1.2:5000/apkversion", result)
     }
 
     @Test
     fun `getApkVersionUrl removes suffix db and appends apkversion`() {
-        val mockSpm = mockk<SharedPrefManager>()
-        every { mockSpm.isAlternativeUrl() } returns false
-        every { mockSpm.getCouchdbUrl() } returns "http://192.168.1.1:5000/db"
-        val result = UrlUtils.getApkVersionUrl(mockSpm)
+        val spm = mockk<SharedPrefManager>()
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://192.168.1.1:5000/db"
+        val result = UrlUtils.getApkVersionUrl(spm)
         assertEquals("http://192.168.1.1:5000/apkversion", result)
     }
 
     @Test
     fun `getApkVersionUrl appends apkversion`() {
-        val mockSpm = mockk<SharedPrefManager>()
-        every { mockSpm.isAlternativeUrl() } returns false
-        every { mockSpm.getCouchdbUrl() } returns "http://192.168.1.1:5000"
-        val result = UrlUtils.getApkVersionUrl(mockSpm)
+        val spm = mockk<SharedPrefManager>()
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://192.168.1.1:5000"
+        val result = UrlUtils.getApkVersionUrl(spm)
         assertEquals("http://192.168.1.1:5000/apkversion", result)
     }
 
     @Test
     fun `getApkVersionUrl with empty couchdb url returns apkversion`() {
-        val mockSpm = mockk<SharedPrefManager>()
-        every { mockSpm.isAlternativeUrl() } returns false
-        every { mockSpm.getCouchdbUrl() } returns ""
-        val result = UrlUtils.getApkVersionUrl(mockSpm)
+        val spm = mockk<SharedPrefManager>()
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns ""
+        val result = UrlUtils.getApkVersionUrl(spm)
         assertEquals("/apkversion", result)
     }
 
     @Test
     fun `getApkVersionUrl with alternative url empty returns apkversion`() {
-        val mockSpm = mockk<SharedPrefManager>()
-        every { mockSpm.isAlternativeUrl() } returns true
-        every { mockSpm.getProcessedAlternativeUrl() } returns ""
-        val result = UrlUtils.getApkVersionUrl(mockSpm)
+        val spm = mockk<SharedPrefManager>()
+        every { spm.isAlternativeUrl() } returns true
+        every { spm.getProcessedAlternativeUrl() } returns ""
+        val result = UrlUtils.getApkVersionUrl(spm)
         assertEquals("/apkversion", result)
     }
 
