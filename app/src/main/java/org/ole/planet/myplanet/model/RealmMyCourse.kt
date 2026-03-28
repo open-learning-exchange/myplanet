@@ -41,7 +41,7 @@ open class RealmMyCourse : RealmObject() {
         if (this.userId == null) {
             this.userId = RealmList()
         }
-        if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
+        if (this.userId?.contains(userId) != true && !TextUtils.isEmpty(userId)) {
             this.userId?.add(userId)
         }
     }
