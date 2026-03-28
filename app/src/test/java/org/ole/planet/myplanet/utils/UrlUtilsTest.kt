@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.net.Uri
 import dagger.hilt.android.EntryPointAccessors
-import org.mockito.ArgumentMatchers.any
-
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -15,6 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.ArgumentMatchers.any
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
