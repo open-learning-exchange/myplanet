@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import java.io.IOException
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.data.api.ApiInterface
