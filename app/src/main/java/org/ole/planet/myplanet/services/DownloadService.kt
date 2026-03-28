@@ -70,7 +70,6 @@ class DownloadService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         DownloadUtils.createChannels(this)
@@ -81,6 +80,7 @@ class DownloadService : Service() {
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
 
         downloadScope.launch {
+            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             processDownloadQueue()
         }
 
