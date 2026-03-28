@@ -15,6 +15,8 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import java.time.Instant
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,8 +41,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
-import java.time.Instant
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
