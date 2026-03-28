@@ -8,6 +8,7 @@ import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -25,9 +26,8 @@ class RatingsFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var viewModel: RatingsViewModel
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    private val viewModel: RatingsViewModel by viewModels()
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
