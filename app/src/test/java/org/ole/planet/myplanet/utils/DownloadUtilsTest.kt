@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utils
 import android.app.ActivityManager
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
@@ -19,7 +18,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.DownloadService
 import org.robolectric.annotation.Config
 

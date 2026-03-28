@@ -10,11 +10,7 @@ import io.realm.RealmObject
 import io.realm.annotations.Ignore
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
