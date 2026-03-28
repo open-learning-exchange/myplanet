@@ -170,12 +170,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         }
 
                         is SyncManager.SyncStatus.Success -> {
+                            syncManager.resetSyncStatus()
                             withContext(Dispatchers.Main) {
                                 onSyncComplete()
                             }
                         }
 
                         is SyncManager.SyncStatus.Error -> {
+                            syncManager.resetSyncStatus()
                             withContext(Dispatchers.Main) {
                                 onSyncFailed(status.message)
                             }

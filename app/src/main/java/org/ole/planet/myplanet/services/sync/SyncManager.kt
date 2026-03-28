@@ -116,6 +116,10 @@ class SyncManager @Inject constructor(
         data class Error(val message: String) : SyncStatus()
     }
 
+    fun resetSyncStatus() {
+        _syncStatus.value = SyncStatus.Idle
+    }
+
     private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
