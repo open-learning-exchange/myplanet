@@ -6,8 +6,8 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
