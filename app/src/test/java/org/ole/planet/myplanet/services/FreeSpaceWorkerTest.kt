@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
-import androidx.work.workDataOf
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
