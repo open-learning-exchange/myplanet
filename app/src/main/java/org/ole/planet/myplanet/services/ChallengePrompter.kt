@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.services
 
 import androidx.fragment.app.FragmentManager
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.dashboard.ChallengeDialogData
