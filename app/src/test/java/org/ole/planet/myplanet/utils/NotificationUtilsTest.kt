@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import android.app.Notification
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
