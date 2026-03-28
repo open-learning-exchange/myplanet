@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.ui.user
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -15,8 +17,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.CoroutineDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserProfileViewModelTest {

@@ -16,8 +16,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
