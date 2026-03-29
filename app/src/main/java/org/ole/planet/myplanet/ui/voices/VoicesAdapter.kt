@@ -16,8 +16,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
-import androidx.lifecycle.findViewTreeLifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -29,13 +27,7 @@ import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
 import javax.inject.Inject
-import kotlin.coroutines.cancellation.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -490,7 +482,7 @@ class VoicesAdapter(
         isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
 
     private fun canShare(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
+        isLoggedInAndMember() && news?.isCommunityNews != true && !isGuestUser()
 
     private fun View.setVisibility(condition: Boolean) {
         visibility = if (condition) View.VISIBLE else View.GONE
