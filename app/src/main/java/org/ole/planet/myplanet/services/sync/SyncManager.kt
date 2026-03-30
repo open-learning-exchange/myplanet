@@ -116,6 +116,10 @@ class SyncManager @Inject constructor(
         data class Error(val message: String) : SyncStatus()
     }
 
+    fun resetSyncStatus() {
+        _syncStatus.value = SyncStatus.Idle
+    }
+
     private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
@@ -666,8 +670,8 @@ class SyncManager @Inject constructor(
                     val batchDocuments = JsonArray()
                     val validDocuments = mutableListOf<Pair<JsonObject, String>>()
 
-                    for (i in 0 until rows.size()) {
-                        val rowObj = rows[i].asJsonObject
+                    for (rowElement in rows) {
+                        val rowObj = rowElement.asJsonObject
                         if (rowObj.has("doc")) {
                             val doc = getJsonObject("doc", rowObj)
                             val id = getString("_id", doc)

@@ -287,7 +287,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             examination?.profileId = health?.userKey
             examination?.creatorId = health?.userKey
             examination?.gender = user?.gender
-            examination?.age = user?.dob?.let { getAge(it) }!!
+            examination?.age = user?.dob?.let { getAge(it) } ?: 0
             examination?.isSelfExamination = currentUser?._id == pojo?._id
             examination?.date = Date().time
             examination?.planetCode = user?.planetCode

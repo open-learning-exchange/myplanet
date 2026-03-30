@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.R
 
 class ChatShareTargetAdapter(private val context: Context, private val expandableTitleList: List<String>, private val expandableDetailList: HashMap<String, List<String>>) : BaseExpandableListAdapter() {
     override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
-        return expandableDetailList[expandableTitleList[lstPosn]]!![expandedListPosition]
+        return expandableDetailList[expandableTitleList[lstPosn]]?.get(expandedListPosition) ?: ""
     }
 
     override fun getChildId(listPosition: Int, expandedListPosition: Int): Long {
@@ -35,7 +35,7 @@ class ChatShareTargetAdapter(private val context: Context, private val expandabl
     }
 
     override fun getChildrenCount(listPosition: Int): Int {
-        return expandableDetailList[expandableTitleList[listPosition]]!!.size
+        return expandableDetailList[expandableTitleList[listPosition]]?.size ?: 0
     }
 
     override fun getGroup(listPosition: Int): Any {
