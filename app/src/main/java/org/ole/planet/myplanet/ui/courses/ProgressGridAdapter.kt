@@ -33,13 +33,13 @@ class ProgressGridAdapter(private val context: Context) :
             if (item["completed"].asBoolean) {
                 holder.itemView.setBackgroundColor(
                     ContextCompat.getColor(
-                        context, R.color.md_green_500
+                        context, com.mikepenz.materialize.R.color.md_green_500
                     )
                 )
             } else {
                 holder.itemView.setBackgroundColor(
                     ContextCompat.getColor(
-                        context, R.color.md_yellow_500
+                        context, com.mikepenz.materialize.R.color.md_yellow_500
                     )
                 )
             }

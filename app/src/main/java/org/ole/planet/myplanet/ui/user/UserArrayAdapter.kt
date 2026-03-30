@@ -52,7 +52,7 @@ class UserArrayAdapter(
         }
 
         if (position == selectedPosition) {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_grey_300))
         } else {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
         }
