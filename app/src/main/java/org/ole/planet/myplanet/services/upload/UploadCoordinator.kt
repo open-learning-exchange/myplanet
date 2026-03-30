@@ -10,7 +10,6 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
-import kotlin.reflect.KClass
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -25,7 +24,8 @@ class UploadCoordinator @Inject constructor(
     private val databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
-    private val retryQueue: RetryQueue
+    private val retryQueue: RetryQueue,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) {
 
     companion object {
@@ -104,7 +104,7 @@ class UploadCoordinator @Inject constructor(
                     is UploadSerializer.Simple -> serializer.serialize(copiedItem)
                     is UploadSerializer.WithRealm -> serializer.serialize(realm, copiedItem)
                     is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
-                    is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context)
+                    is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context, sharedPrefManager)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
@@ -154,8 +154,8 @@ class UploadCoordinator @Inject constructor(
                     apiInterface.putDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 }
 
-                if (response.isSuccessful && response.body() != null) {
-                    val responseBody = response.body()!!
+                val responseBody = response.body()
+                if (response.isSuccessful && responseBody != null) {
                     val (idField, revField) = when (config.responseHandler) {
                         is ResponseHandler.Standard -> "id" to "rev"
                         is ResponseHandler.Custom -> config.responseHandler.idField to config.responseHandler.revField
@@ -177,8 +177,8 @@ class UploadCoordinator @Inject constructor(
                             UrlUtils.header,
                             "${UrlUtils.getUrl()}/${config.endpoint}/$docId"
                         )
-                        if (getResponse.isSuccessful && getResponse.body() != null) {
-                            val existingDoc = getResponse.body()!!
+                        val existingDoc = getResponse.body()
+                        if (getResponse.isSuccessful && existingDoc != null) {
                             val uploadedItem = UploadedItem(
                                 localId = preparedItem.localId,
                                 remoteId = getString("_id", existingDoc),
@@ -234,11 +234,13 @@ class UploadCoordinator @Inject constructor(
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
 
             val itemsById = mutableMapOf<String, T>()
-            localIds.chunked(1000).forEach { chunk ->
-                val results = realm.where(config.modelClass.java)
-                    .`in`(idFieldName, chunk.toTypedArray())
-                    .findAll()
-
+            if (localIds.isNotEmpty()) {
+                val query = realm.where(config.modelClass.java)
+                localIds.chunked(1000).forEachIndexed { index, chunk ->
+                    if (index > 0) query.or()
+                    query.`in`(idFieldName, chunk.toTypedArray())
+                }
+                val results = query.findAll()
                 results.forEach { item ->
                     val localId = config.idExtractor(item) ?: ""
                     itemsById[localId] = item

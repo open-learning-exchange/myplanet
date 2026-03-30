@@ -1,14 +1,17 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.queryList
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUser
 
 class EventsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-) : RealmRepository(databaseService), EventsRepository {
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+) : RealmRepository(databaseService, realmDispatcher), EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup> {
         return queryList(RealmMeetup::class.java) {

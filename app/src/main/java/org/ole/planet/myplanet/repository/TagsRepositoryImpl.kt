@@ -1,12 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmTag
 
 class TagsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), TagsRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), TagsRepository {
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
         return queryList(RealmTag::class.java) {
@@ -21,11 +24,10 @@ class TagsRepositoryImpl @Inject constructor(
         val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t ->
             t.attachedTo?.forEach { parent ->
-                val list = childMap[parent]?.toMutableList() ?: mutableListOf()
+                val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
                 if (!list.contains(t)) {
                     list.add(t)
                 }
-                childMap[parent] = list
             }
         }
         return childMap

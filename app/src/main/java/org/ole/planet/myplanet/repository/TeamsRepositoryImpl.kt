@@ -4,14 +4,13 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlin.OptIn
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -22,6 +21,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -41,6 +42,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
@@ -49,7 +51,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val apiInterface: ApiInterface,
-) : RealmRepository(databaseService), TeamsRepository {
+) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")
@@ -1047,6 +1049,20 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamType(teamId: String): String? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
+    }
+
+    override suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
+        val teamMembers = getJoinedMembers(teamId)
+        val userList = teamMembers.map {
+            User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+        }
+
+        val existingUsers = sharedPrefManager.getSavedUsers().toMutableList()
+        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+        val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+        sharedPrefManager.setSavedUsers(updatedUserList)
+
+        teamMembers
     }
 
     override suspend fun getJoinedMembers(teamId: String): List<RealmUser> {

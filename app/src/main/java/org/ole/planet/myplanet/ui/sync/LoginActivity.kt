@@ -21,7 +21,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -130,7 +129,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
-            HomeCommunityDialogFragment().show(supportFragmentManager, "")
         } else {
             binding.openCommunity.visibility = View.GONE
         }
@@ -504,24 +502,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         lifecycleScope.launch {
             selectedTeamId = prefData.getSelectedTeamId().toString()
             if (selectedTeamId?.isNotEmpty() == true) {
-                users = fetchAndSaveTeamMembers(selectedTeamId!!)
+                users = teamsRepository.getJoinedMembersAndSave(selectedTeamId!!)
             }
             setupAndPopulateRecyclerView()
         }
-    }
-
-    private suspend fun fetchAndSaveTeamMembers(teamId: String) = withContext(Dispatchers.IO) {
-        val teamMembers = teamsRepository.getJoinedMembers(teamId)
-        val userList = teamMembers.map {
-            User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-        }
-
-        val existingUsers = prefData.getSavedUsers().toMutableList()
-        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-        val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-        prefData.setSavedUsers(updatedUserList)
-
-        teamMembers
     }
 
     private suspend fun setupAndPopulateRecyclerView() {

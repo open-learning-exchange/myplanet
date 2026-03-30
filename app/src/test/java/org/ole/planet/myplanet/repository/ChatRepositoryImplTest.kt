@@ -8,7 +8,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -35,7 +34,7 @@ class ChatRepositoryImplTest {
 
     @Before
     fun setup() {
-        chatRepository = spyk(ChatRepositoryImpl(databaseService), recordPrivateCalls = true)
+        chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher()), recordPrivateCalls = true)
         mockkObject(RealmChatHistory.Companion)
         every { RealmChatHistory.insert(any(), any()) } just Runs
         every { RealmChatHistory.addConversationToChatHistory(any(), any(), any(), any(), any()) } just Runs

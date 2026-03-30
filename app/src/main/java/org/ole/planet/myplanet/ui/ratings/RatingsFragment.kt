@@ -8,6 +8,7 @@ import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -25,9 +26,8 @@ class RatingsFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var viewModel: RatingsViewModel
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    private val viewModel: RatingsViewModel by viewModels()
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
@@ -135,8 +135,10 @@ class RatingsFragment : DialogFragment() {
     
     private fun loadRatingData() {
         val userId = sharedPrefManager.getUserId()
-        if (type != null && id != null && userId.isNotEmpty()) {
-            viewModel.loadRatingData(type!!, id!!, userId)
+        val t = type ?: return
+        val i = id ?: return
+        if (userId.isNotEmpty()) {
+            viewModel.loadRatingData(t, i, userId)
         }
     }
 
@@ -150,11 +152,14 @@ class RatingsFragment : DialogFragment() {
         val rating = binding.ratingBar.rating
         val userId = sharedPrefManager.getUserId()
 
-        if (type != null && id != null && title != null && userId.isNotEmpty()) {
+        val t = type ?: return
+        val i = id ?: return
+        val ttl = title ?: return
+        if (userId.isNotEmpty()) {
             viewModel.submitRating(
-                type = type!!,
-                itemId = id!!,
-                title = title!!,
+                type = t,
+                itemId = i,
+                title = ttl,
                 userId = userId,
                 rating = rating,
                 comment = comment
