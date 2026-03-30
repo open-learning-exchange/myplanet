@@ -984,6 +984,8 @@
     <string name="dark_mode_off">Dami</string>
     <string name="dark_mode_on">Shidi</string>
     <string name="dark_mode_follow_system">Raac Nidaamka</string>
+    <string name="theme_mode_light">Iftiin</string>
+    <string name="theme_mode_dark">Madow</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Ma hubtaa inaad rabto inaad kaydiso koorsooyinkan?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
     <string name="manual">buug</string>
