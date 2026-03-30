@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.repository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.spyk
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmList

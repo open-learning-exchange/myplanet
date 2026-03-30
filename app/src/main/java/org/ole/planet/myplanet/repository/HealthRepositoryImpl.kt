@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
