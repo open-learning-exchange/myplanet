@@ -4,14 +4,13 @@ import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlin.OptIn
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -20,10 +19,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -1005,7 +1003,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getResourceIds(teamId: String): List<String> {
+    override suspend fun getResourceIds(teamId: String): List<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
             beginGroup()
@@ -1017,6 +1015,35 @@ class TeamsRepositoryImpl @Inject constructor(
             isNotNull("resourceId")
             isNotEmpty("resourceId")
         }.mapNotNull { it.resourceId }
+    }
+
+    override suspend fun getResourceIdsByUser(userId: String?): List<String> {
+        if (userId.isNullOrBlank()) return emptyList()
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }
+
+        if (teamIds.isEmpty()) return emptyList()
+
+        return queryList(RealmMyTeam::class.java) {
+            `in`("teamId", teamIds.toTypedArray())
+            equalTo("docType", "resourceLink")
+        }.mapNotNull { it.resourceId }
+    }
+
+    override suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam> {
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }
+
+        if (teamIds.isEmpty()) return emptyList()
+
+        return queryList(RealmMyTeam::class.java) {
+            `in`("_id", teamIds.toTypedArray())
+            notEqualTo("status", "archived")
+        }
     }
 
     override suspend fun getTeamType(teamId: String): String? {
