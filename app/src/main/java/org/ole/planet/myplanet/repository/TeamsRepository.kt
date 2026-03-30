@@ -45,9 +45,9 @@ interface TeamsRepository {
     suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam>
     suspend fun getResourceIds(teamId: String): List<String>
     suspend fun getResourceIdsByUser(userId: String?): List<String>
-    suspend fun getTeamSummaries(): List<TeamSummary>
+    suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
-    suspend fun getShareableEnterpriseSummaries(): List<TeamSummary>
+    suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
