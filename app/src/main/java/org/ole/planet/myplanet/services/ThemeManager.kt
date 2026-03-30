@@ -16,8 +16,8 @@ object ThemeManager {
 
     fun showThemeDialog(context: Context) {
         val options = arrayOf(
-            context.getString(R.string.dark_mode_off),
-            context.getString(R.string.dark_mode_on),
+            context.getString(R.string.theme_mode_light),
+            context.getString(R.string.theme_mode_dark),
             context.getString(R.string.dark_mode_follow_system)
         )
         val currentMode = getCurrentThemeMode(context)

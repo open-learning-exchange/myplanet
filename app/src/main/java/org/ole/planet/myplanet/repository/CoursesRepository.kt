@@ -12,6 +12,9 @@ import org.ole.planet.myplanet.model.RealmTag
 interface CoursesRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
     suspend fun getAllCourses(orderBy: String, sort: io.realm.Sort): List<RealmMyCourse>
+    fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse>
+    fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse>
+    fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse>
     fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse>
     suspend fun getMyCourses(userId: String): List<RealmMyCourse>
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
@@ -24,6 +27,7 @@ interface CoursesRepository {
     suspend fun getCourseSteps(courseId: String): List<RealmCourseStep>
     suspend fun getCourseStepIds(courseId: String): List<String?>
     suspend fun markCourseAdded(courseId: String, userId: String?): Result<Boolean>
+    suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean>
     suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>
     suspend fun isMyCourse(userId: String?, courseId: String?): Boolean

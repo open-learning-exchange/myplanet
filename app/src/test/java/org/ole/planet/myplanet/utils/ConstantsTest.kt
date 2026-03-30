@@ -97,11 +97,26 @@ class ConstantsTest {
     }
 
     @Test
-    fun testShowBetaFeature() {
-        assertFalse(Constants.showBetaFeature("", context))
+    fun testShowBetaFeature_betaFunctionFalse_returnsFalse() {
+        sharedPreferences.edit().putBoolean("beta_function", false).commit()
+        assertFalse(Constants.showBetaFeature("any_string", context))
+    }
 
+    @Test
+    fun testShowBetaFeature_betaFunctionTrue_returnsTrue() {
         sharedPreferences.edit().putBoolean("beta_function", true).commit()
-        assertTrue(Constants.showBetaFeature("", context))
+        assertTrue(Constants.showBetaFeature("any_string", context))
+    }
+
+    @Test
+    fun testShowBetaFeature_ignoresParameterS() {
+        sharedPreferences.edit().putBoolean("some_feature", true).commit()
+        sharedPreferences.edit().putBoolean("beta_function", false).commit()
+        assertFalse(Constants.showBetaFeature("some_feature", context))
+
+        sharedPreferences.edit().putBoolean("some_feature", false).commit()
+        sharedPreferences.edit().putBoolean("beta_function", true).commit()
+        assertTrue(Constants.showBetaFeature("some_feature", context))
     }
 
     @Test
@@ -124,5 +139,10 @@ class ConstantsTest {
 
         sharedPreferences.edit().putBoolean("some_key", true).commit()
         assertTrue(Constants.autoSynFeature("some_key", context))
+
+        sharedPreferences.edit().putBoolean("some_key", false).commit()
+        assertFalse(Constants.autoSynFeature("some_key", context))
+
+        assertFalse(Constants.autoSynFeature(null, context))
     }
 }

@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -122,12 +121,13 @@ class ChatHistoryAdapter(
         val containsQuery = mutableListOf<RealmChatHistory>()
 
         for (chat in chatHistory) {
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                for (i in 0 until chat.conversations!!.size) {
+            val conversations = chat.conversations
+            if (!conversations.isNullOrEmpty()) {
+                for (i in 0 until conversations.size) {
                     conversation = if (isQuestion) {
-                        chat.conversations?.get(i)?.query?.let { normalizeText(it) }
+                        conversations[i]?.query?.let { normalizeText(it) }
                     } else {
-                        chat.conversations?.get(i)?.response?.let { normalizeText(it) }
+                        conversations[i]?.response?.let { normalizeText(it) }
                     }
                     if (conversation == null) continue
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {

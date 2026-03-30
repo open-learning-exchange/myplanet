@@ -3,15 +3,18 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val apiInterface: ApiInterface
-) : RealmRepository(databaseService), CommunityRepository {
+) : RealmRepository(databaseService, realmDispatcher), CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
         executeTransaction { realm ->

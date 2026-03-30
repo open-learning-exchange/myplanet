@@ -271,7 +271,7 @@ class CoursesAdapter(
                     if (position != RecyclerView.NO_POSITION && position < itemCount) {
                         val course = getItem(position)
                         if (progressMap?.containsKey(course.courseId) == true) {
-                            val ob = progressMap!![course.courseId]
+                            val ob = progressMap?.get(course.courseId)
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
                                 openCourse(course, seekBar.progress)
