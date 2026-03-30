@@ -22,7 +22,6 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.robolectric.annotation.Config
 
-class RealmUserTest {
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33], manifest = Config.NONE, application = android.app.Application::class)
 class RealmUserTest {
