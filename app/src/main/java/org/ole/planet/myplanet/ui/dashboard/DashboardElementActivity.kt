@@ -4,8 +4,11 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.PorterDuff
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.WifiManager
+import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -175,16 +178,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val capabilities = connManager.getNetworkCapabilities(activeNetwork)
         val isWifiConnected = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val intent = Intent(Settings.Panel.ACTION_WIFI)
-            startActivity(intent)
-            return
-        }
-
-        val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
-        startActivity(intent)
         if (isWifiConnected) {
-            wifi.isWifiEnabled = false
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                @Suppress("DEPRECATION")
+                wifi.isWifiEnabled = false
+            } else {
+                startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+            }
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.green))
@@ -192,7 +192,12 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             goOnline.icon = resIcon
             Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show()
         } else {
-            wifi.isWifiEnabled = true
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                @Suppress("DEPRECATION")
+                wifi.isWifiEnabled = true
+            } else {
+                startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+            }
             Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show()
             lifecycleScope.launch {
                 delay(5000)
@@ -207,20 +212,50 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     private fun connectToWifi() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return
-        val id = prefData.getLastWifiId()
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val netId: Int
-        for (tmp in wifiManager.configuredNetworks) {
-            if (tmp.networkId > -1 && tmp.networkId == id) {
-                netId = tmp.networkId
-                wifiManager.enableNetwork(netId, true)
-                Toast.makeText(this, getString(R.string.you_are_now_connected) + netId, Toast.LENGTH_SHORT).show()
-                lifecycleScope.launch {
-                    broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            val id = prefData.getLastWifiId()
+            val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+            @Suppress("DEPRECATION")
+            val configuredNetworks = wifiManager.configuredNetworks
+            if (configuredNetworks != null) {
+                for (tmp in configuredNetworks) {
+                    if (tmp.networkId > -1 && tmp.networkId == id) {
+                        val netId = tmp.networkId
+                        @Suppress("DEPRECATION")
+                        wifiManager.enableNetwork(netId, true)
+                        Toast.makeText(this, getString(R.string.you_are_now_connected) + netId, Toast.LENGTH_SHORT).show()
+                        lifecycleScope.launch {
+                            broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+                        }
+                        break
+                    }
                 }
-                break
             }
+        } else {
+            val ssid = prefData.getLastWifiSsid() ?: return
+            val specifier = WifiNetworkSpecifier.Builder()
+                .setSsid(ssid)
+                .build()
+
+            val request = NetworkRequest.Builder()
+                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                .setNetworkSpecifier(specifier)
+                .build()
+
+            val connManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            val networkCallback = object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    super.onAvailable(network)
+                    connManager.bindProcessToNetwork(network)
+                    runOnUiThread {
+                        Toast.makeText(this@DashboardElementActivity, getString(R.string.you_are_now_connected) + ssid, Toast.LENGTH_SHORT).show()
+                    }
+                    lifecycleScope.launch {
+                        broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
+                    }
+                }
+            }
+            connManager.requestNetwork(request, networkCallback)
         }
     }
 
