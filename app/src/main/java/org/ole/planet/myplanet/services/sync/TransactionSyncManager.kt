@@ -103,7 +103,7 @@ class TransactionSyncManager @Inject constructor(
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
                         userModel.id?.let {
-                            userRepository.markUserKeyIvSaved(it, key ?: "", iv)
+                            userRepository.markUserKeyIvSaved(it, key, iv)
                         }
                     }
                 }
