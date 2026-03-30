@@ -32,11 +32,19 @@ class RealmUserTest {
         mockkStatic(Utilities::class)
         every { Utilities.toast(any(), any()) } returns Unit
         every { Utilities.toast(any(), any(), any()) } returns Unit
+        try {
+            originalContext = MainApplication.context
+        } catch (e: Exception) {
+            // UninitializedPropertyAccessException if context was never set
+        }
         MainApplication.context = mockContext
     }
 
     @After
     fun tearDown() {
+        if (originalContext != null) {
+            MainApplication.context = originalContext!!
+        }
         Dispatchers.resetMain()
         unmockkAll()
     }
@@ -66,8 +74,20 @@ class RealmUserTest {
         every { mockRealm.where(RealmUser::class.java) } returns mockQuery
         every { mockQuery.equalTo("id", userId) } returns mockQuery
 
-        val mockRealmUser = mockk<RealmUser>(relaxed = true)
+        val mockRealmUser = mockk<RealmUser>(relaxed = false)
         every { mockQuery.findFirst() } returns mockRealmUser
+
+        // Mock the property setters explicitly to enforce verification
+        every { mockRealmUser.firstName = "John" } just Runs
+        every { mockRealmUser.lastName = "Doe" } just Runs
+        every { mockRealmUser.middleName = "" } just Runs
+        every { mockRealmUser.email = "john@example.com" } just Runs
+        every { mockRealmUser.phoneNumber = "1234567890" } just Runs
+        every { mockRealmUser.level = "1" } just Runs
+        every { mockRealmUser.language = "en" } just Runs
+        every { mockRealmUser.gender = "Male" } just Runs
+        every { mockRealmUser.dob = "2000-01-01" } just Runs
+        every { mockRealmUser.isUpdated = true } just Runs
 
         val onSuccessMock = mockk<() -> Unit>(relaxed = true)
 
