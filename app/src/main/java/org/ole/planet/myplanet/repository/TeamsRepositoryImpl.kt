@@ -160,17 +160,27 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getShareableTeams(): List<RealmMyTeam> {
+    private suspend fun getMemberTeamIds(userId: String): Set<String> {
         return queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId }.toHashSet()
+    }
+
+    private suspend fun getShareableTeams(userId: String?): List<RealmMyTeam> {
+        val all = queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
             notEqualTo("status", "archived")
             equalTo("type", "team")
         }
+        if (userId.isNullOrBlank()) return all
+        val memberIds = getMemberTeamIds(userId)
+        return all.filter { it._id != null && it._id in memberIds }
     }
 
-    override suspend fun getTeamSummaries(): List<TeamSummary> {
+    override suspend fun getTeamSummaries(userId: String?): List<TeamSummary> {
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
-        return getShareableTeams().mapNotNull { team ->
+        return getShareableTeams(userId).mapNotNull { team ->
             val id = team._id ?: return@mapNotNull null
             TeamSummary(
                 _id = id,
@@ -196,9 +206,16 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getShareableEnterpriseSummaries(): List<TeamSummary> {
+    override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {
+        val all = getShareableEnterprises()
+        val filtered = if (userId.isNullOrBlank()) {
+            all
+        } else {
+            val memberIds = getMemberTeamIds(userId)
+            all.filter { it._id != null && it._id in memberIds }
+        }
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
-        return getShareableEnterprises().mapNotNull { team ->
+        return filtered.mapNotNull { team ->
             val id = team._id ?: return@mapNotNull null
             TeamSummary(
                 _id = id,
