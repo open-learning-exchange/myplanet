@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplate
 import com.google.crypto.tink.aead.AeadConfig
@@ -59,15 +57,15 @@ object SecurePrefs {
     @Suppress("DEPRECATION")
     private fun getLegacyEncryptedPrefs(context: Context): SharedPreferences? {
         return try {
-            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            val masterKey = androidx.security.crypto.MasterKey.Builder(context, androidx.security.crypto.MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
                 .build()
-            EncryptedSharedPreferences.create(
+            androidx.security.crypto.EncryptedSharedPreferences.create(
                 context,
                 LEGACY_FILE_NAME,
                 masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
             // If creation fails, maybe file is corrupted or key is lost.
