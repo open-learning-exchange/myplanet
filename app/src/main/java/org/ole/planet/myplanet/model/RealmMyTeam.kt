@@ -195,46 +195,35 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
+        @Deprecated("Use TeamsRepository instead")
         @JvmStatic
         fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
-            val ids = mutableListOf<String>()
-            for (team in teams) {
-                if (!team.resourceId.isNullOrBlank()) {
-                    ids.add(team.resourceId!!)
-                }
-            }
-            return ids
+            return teams.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }.toMutableList()
         }
 
+        @Deprecated("Use TeamsRepository instead")
         @JvmStatic
         fun getResourceIdsByUser(userId: String?, realm: Realm): MutableList<String> {
-            val list = realm.where(RealmMyTeam::class.java)
+            val teamIds = realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
                 .findAll()
-            val teamIds = mutableListOf<String>()
-            for (team in list) {
-                if (!team.teamId.isNullOrBlank()) {
-                    teamIds.add(team.teamId!!)
-                }
-            }
+                .mapNotNull { it.teamId?.takeIf { id -> id.isNotBlank() } }
+
             if (teamIds.isEmpty()) {
                 return mutableListOf()
             }
-            val l2 = realm.where(RealmMyTeam::class.java)
+
+            return realm.where(RealmMyTeam::class.java)
                 .`in`("teamId", teamIds.toTypedArray())
                 .equalTo("docType", "resourceLink")
                 .findAll()
-            val ids = mutableListOf<String>()
-            for (team in l2) {
-                if (!team.resourceId.isNullOrBlank()) {
-                    ids.add(team.resourceId!!)
-                }
-            }
-            return ids
+                .mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }
+                .toMutableList()
         }
 
+        @Deprecated("Use TeamsRepository instead")
         @JvmStatic
         fun getTeamCreator(teamId: String?, realm: Realm?): String {
             val teams = realm?.where(RealmMyTeam::class.java)?.equalTo("teamId", teamId)?.findFirst()
@@ -246,6 +235,7 @@ open class RealmMyTeam : RealmObject() {
             insertMyTeams(doc, mRealm)
         }
 
+        @Deprecated("Use TeamsRepository instead")
         @JvmStatic
         fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
@@ -348,6 +338,7 @@ open class RealmMyTeam : RealmObject() {
             return `object`
         }
 
+        @Deprecated("Use TeamsRepository instead")
         fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {
             val userId = settings?.getString("userId", "--") ?: "--"
             val list = mRealm.where(RealmMyTeam::class.java)

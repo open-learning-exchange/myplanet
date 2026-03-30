@@ -31,11 +31,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -105,7 +105,7 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         lateinit var retryQueue: RetryQueue
         @Inject
-        lateinit var databaseService: DatabaseService
+        lateinit var configurationsRepository: ConfigurationsRepository
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -271,7 +271,7 @@ class SettingsActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             lifecycleScope.launch(Dispatchers.IO) {
-                                databaseService.clearAll()
+                                configurationsRepository.clearAllData()
                                 clearSharedPref()
                                 withContext(Dispatchers.Main) {
                                     restartApp()
@@ -345,19 +345,19 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun setAutoSyncToggleOn() {
-            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server")
-            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync")
-            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync")
+            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server") ?: return
+            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync") ?: return
+            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync") ?: return
             val lastSyncDate = findPreference<Preference>("lastSyncDate")
-            autoSync!!.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoSync.isChecked) {
-                    if (autoForceWeeklySync!!.isChecked) {
-                        autoForceMonthlySync!!.isChecked = false
-                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync!!.isChecked
+                    if (autoForceWeeklySync.isChecked) {
+                        autoForceMonthlySync.isChecked = false
+                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync.isChecked
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
+            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
             val lastSynced = sharedPrefManager.getLastSync()
             if (lastSynced == 0L) {

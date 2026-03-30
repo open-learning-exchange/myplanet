@@ -9,8 +9,10 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -27,8 +29,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>
-) : RealmRepository(databaseService), SubmissionsRepository {
+) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
@@ -663,6 +666,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     sub._rev = rev
                     sub._id = id
                 }
+        }
+    }
+
+    override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
+        if (ids.isEmpty()) return emptyList()
+        return databaseService.withRealm { realm ->
+            val results = realm.where(RealmSubmitPhotos::class.java)
+                .`in`("id", ids)
+                .findAll()
+            realm.copyFromRealm(results)
         }
     }
 

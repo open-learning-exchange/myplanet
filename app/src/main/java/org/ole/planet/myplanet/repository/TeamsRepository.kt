@@ -42,6 +42,9 @@ interface TeamsRepository {
     suspend fun markTeamUploaded(teamId: String?, rev: String)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
+    suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam>
+    suspend fun getResourceIds(teamId: String): List<String>
+    suspend fun getResourceIdsByUser(userId: String?): List<String>
     suspend fun getTeamSummaries(): List<TeamSummary>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getShareableEnterpriseSummaries(): List<TeamSummary>
@@ -107,6 +110,7 @@ interface TeamsRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
     suspend fun getJoinedMembers(teamId: String): List<RealmUser>
+    suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
     suspend fun getAssignee(userId: String): RealmUser?

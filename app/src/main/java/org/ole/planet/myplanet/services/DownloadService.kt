@@ -17,22 +17,23 @@ import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -40,10 +41,6 @@ import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils.header
-import org.ole.planet.myplanet.model.DownloadResult
-import org.ole.planet.myplanet.repository.DownloadRepository
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class DownloadService : Service() {
@@ -73,7 +70,6 @@ class DownloadService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         DownloadUtils.createChannels(this)
@@ -84,6 +80,7 @@ class DownloadService : Service() {
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
 
         downloadScope.launch {
+            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             processDownloadQueue()
         }
 

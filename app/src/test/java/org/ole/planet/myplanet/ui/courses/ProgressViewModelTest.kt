@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.courses
 import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,22 +16,29 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import io.mockk.every
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModelTest {
 
+    private val testDispatcher = StandardTestDispatcher()
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(StandardTestDispatcher())
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var viewModel: ProgressViewModel
     private val progressRepository: ProgressRepository = mockk()
     private val userSessionManager: UserSessionManager = mockk()
+    private val dispatcherProvider = object : DispatcherProvider {
+        override val main: CoroutineDispatcher = testDispatcher
+        override val io: CoroutineDispatcher = testDispatcher
+        override val default: CoroutineDispatcher = testDispatcher
+        override val unconfined: CoroutineDispatcher = testDispatcher
+    }
 
     @Before
     fun setUp() {
-        viewModel = ProgressViewModel(progressRepository, userSessionManager)
+        viewModel = ProgressViewModel(progressRepository, userSessionManager, dispatcherProvider)
     }
 
     @Test

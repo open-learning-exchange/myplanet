@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
@@ -62,6 +61,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
     private fun timePicker() {
+        val dl = deadline ?: Calendar.getInstance()
         val timePickerDialog = TimePickerDialog(activity, { _: TimePicker?, hourOfDay: Int, minute: Int ->
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
@@ -70,7 +70,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     TimeUtils.getFormattedDateWithTime(it)
                 }
             }
-        }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
+        }, dl[Calendar.HOUR_OF_DAY], dl[Calendar.MINUTE], true)
         timePickerDialog.show()
     }
 

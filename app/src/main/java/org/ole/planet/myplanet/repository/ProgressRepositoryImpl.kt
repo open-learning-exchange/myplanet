@@ -5,10 +5,11 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -16,12 +17,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService), ProgressRepository {
+) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
@@ -78,15 +81,22 @@ class ProgressRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("courseId", courseId)
         }
-        val completedSteps = progresses.map { it.stepNum }.toSet()
-        var i = 0
-        while (i < (steps?.size ?: 0)) {
-            if (!completedSteps.contains(i + 1)) {
-                break
+        val stepsSize = steps?.size ?: 0
+        val completed = BooleanArray(stepsSize + 1)
+        progresses.forEach { progress ->
+            val stepNum = progress.stepNum
+            if (stepNum in 1..stepsSize) {
+                completed[stepNum] = true
             }
+        }
+
+        var i = 1
+        // Loop looks for the first missing step from 1 to stepsSize.
+        // It returns the number of consecutive completed steps from the start.
+        while (i <= stepsSize && completed[i]) {
             i++
         }
-        i
+        i - 1
     }
 
     private suspend fun getCourseProgressMap(

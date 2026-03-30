@@ -1,10 +1,15 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
+import android.net.wifi.WifiManager
+import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -25,6 +30,21 @@ class NetworkUtilsTest {
     @Before
     fun init() {
         hiltRule.inject()
+        // Initialize MainApplication.context which is required by NetworkUtils to avoid UninitializedPropertyAccessException
+        // It is needed here because NetworkUtils gets system service from it directly
+        org.ole.planet.myplanet.MainApplication.context = ApplicationProvider.getApplicationContext()
+    }
+
+    @Test
+    fun testIsWifiEnabled() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+        wifiManager.isWifiEnabled = true
+        assertTrue(NetworkUtils.isWifiEnabled())
+
+        wifiManager.isWifiEnabled = false
+        assertFalse(NetworkUtils.isWifiEnabled())
     }
 
     @Test
