@@ -7,18 +7,22 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import io.realm.RealmList
+import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.FileOutputStream
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.robolectric.annotation.Config
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.FileOutputStream
 
+class RealmUserTest {
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33], manifest = Config.NONE, application = android.app.Application::class)
 class RealmUserTest {
@@ -92,5 +96,49 @@ class RealmUserTest {
         every { mockContentResolver.openInputStream(any()) } throws RuntimeException("Test Exception")
 
         assertNull(realmUser.encodeImageToBase64(uriString))
+    }
+
+    @Test
+    fun testIsManagerWithManagerRole() {
+        val user = RealmUser()
+        val roles = RealmList<String?>()
+        roles.add("manager")
+        user.rolesList = roles
+        user.userAdmin = false
+        assertTrue(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerWithUserAdminTrue() {
+        val user = RealmUser()
+        user.rolesList = RealmList<String?>()
+        user.userAdmin = true
+        assertTrue(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerFalse() {
+        val user = RealmUser()
+        user.rolesList = RealmList<String?>()
+        user.userAdmin = false
+        assertFalse(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerNullRolesAndAdmin() {
+        val user = RealmUser()
+        user.rolesList = null
+        user.userAdmin = null
+        assertFalse(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerCaseInsensitive() {
+        val user = RealmUser()
+        val roles = RealmList<String?>()
+        roles.add("MaNaGeR")
+        user.rolesList = roles
+        user.userAdmin = false
+        assertTrue(user.isManager())
     }
 }

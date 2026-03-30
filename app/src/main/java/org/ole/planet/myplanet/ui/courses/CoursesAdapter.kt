@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
+import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
@@ -57,7 +58,11 @@ class CoursesAdapter(
                     old.numberOfSteps == new.numberOfSteps
         }
     )
-) {
+), OnDiffRefreshListener {
+    override fun refreshWithDiff() {
+        submitList(currentList.toList())
+    }
+
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -271,7 +276,7 @@ class CoursesAdapter(
                     if (position != RecyclerView.NO_POSITION && position < itemCount) {
                         val course = getItem(position)
                         if (progressMap?.containsKey(course.courseId) == true) {
-                            val ob = progressMap!![course.courseId]
+                            val ob = progressMap?.get(course.courseId)
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
                                 openCourse(course, seekBar.progress)

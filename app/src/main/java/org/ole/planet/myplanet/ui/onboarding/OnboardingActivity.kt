@@ -55,6 +55,7 @@ class OnboardingActivity : AppCompatActivity() {
         if (prefData.getFirstLaunch()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
+            return
         }
 
         loadData()
@@ -65,7 +66,7 @@ class OnboardingActivity : AppCompatActivity() {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                for (i in 0 until dotsCount) {
+                for (i in 0..dotsCount) {
                     dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.non_selected_item_dot))
                 }
                 dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.selected_item_dot))
@@ -115,9 +116,7 @@ class OnboardingActivity : AppCompatActivity() {
 
         val items = imageIds.zip(headers).mapIndexed { index, (imageRes, headerRes) ->
             val descResourceArray = descriptionResourceLists.getOrNull(index).orEmpty()
-            val description = descResourceArray
-                .map { getString(it) }
-                .joinToString(separator = "\n")
+            val description = descResourceArray.joinToString(separator = "\n") { getString(it) }
                 .let { if (it.isEmpty()) it else "$it\n" }
 
             OnboardingItem().apply {
@@ -135,7 +134,7 @@ class OnboardingActivity : AppCompatActivity() {
         dotsCount = mAdapter.count
         dots = arrayOfNulls(dotsCount)
 
-        for (i in 0 until dotsCount) {
+        for (i in 0..dotsCount) {
             dots[i] = ImageView(this)
             dots[i]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot))
 
