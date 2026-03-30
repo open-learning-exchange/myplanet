@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -79,10 +79,8 @@ class HealthRepositoryImpl @Inject constructor(
 
     override suspend fun updateExaminationUserId(id: String, userId: String) {
         databaseService.executeTransactionAsync { realm ->
-            val list: List<RealmHealthExamination> = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findAll()
-            for (p in list) {
-                p.userId = userId
-            }
+            val examination = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()
+            examination?.userId = userId
         }
     }
 }
