@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< fix-route-database-clear-through-configurations-repository-10842117669802629258
         versionCode = 5129
         versionName = "0.51.29"
+=======
+        versionCode = 5128
+        versionName = "0.51.28"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }

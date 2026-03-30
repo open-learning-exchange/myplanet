@@ -8,16 +8,19 @@ import io.realm.Sort
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class FeedbackRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val gson: Gson
-) : RealmRepository(databaseService), FeedbackRepository {
+) : RealmRepository(databaseService, realmDispatcher), FeedbackRepository {
 
     override fun createFeedback(
         user: String?,

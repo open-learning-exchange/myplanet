@@ -6,9 +6,11 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -28,12 +30,13 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository
-) : RealmRepository(databaseService), CoursesRepository {
+) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java) {
@@ -49,6 +52,29 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findAll()
             realm.copyFromRealm(results)
         }
+    }
+
+    override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
+        val libraries: MutableList<RealmMyCourse> = ArrayList()
+        for (item in libs) {
+            item.isMyCourse = item.userId?.contains(userId) == true
+            libraries.add(item)
+        }
+        return libraries
+    }
+
+    override fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
+        return libs?.filter { it.userId?.contains(userId) == true } ?: emptyList()
+    }
+
+    override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
+        val libraries: MutableList<RealmMyCourse> = ArrayList()
+        for (item in libs) {
+            if (item.userId?.contains(userId) != true) {
+                libraries.add(item)
+            }
+        }
+        return libraries
     }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
@@ -142,29 +168,47 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCourseAdded(courseId: String, userId: String?): Result<Boolean> {
+        if (courseId.isBlank()) {
+            return Result.success(false)
+        }
+        return markCoursesAdded(listOf(courseId), userId)
+    }
+
+    override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
         return withContext(databaseService.ioDispatcher) {
             runCatching {
-                if (courseId.isBlank()) {
+                if (courseIds.isEmpty()) {
                     return@runCatching false
                 }
 
                 var courseFound = false
                 executeTransaction { realm ->
-                    realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
-                        ?.let { course ->
-                            course.setUserId(userId)
-                            if (!userId.isNullOrBlank()) {
+                    val validCourseIds = courseIds.filter { it.isNotBlank() }
+                    if (validCourseIds.isEmpty()) return@executeTransaction
+
+                    val chunkSize = 1000
+                    validCourseIds.chunked(chunkSize).forEach { chunk ->
+                        val courses = realm.where(RealmMyCourse::class.java)
+                            .`in`("courseId", chunk.toTypedArray())
+                            .findAll()
+
+                        if (courses.isNotEmpty()) {
+                            courses.forEach { course ->
+                                course.setUserId(userId)
+                            }
+
+                            val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
+                            if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
                                 realm.where(RealmRemovedLog::class.java)
                                     .equalTo("type", "courses")
                                     .equalTo("userId", userId)
-                                    .equalTo("docId", course.courseId)
+                                    .`in`("docId", foundCourseIds)
                                     .findAll()
                                     .deleteAllFromRealm()
                             }
                             courseFound = true
                         }
+                    }
                 }
 
                 courseFound
@@ -349,24 +393,23 @@ class CoursesRepositoryImpl @Inject constructor(
             val stepIds = stepsList.mapNotNull { it.id }
             val allExams = mutableListOf<RealmStepExam>()
             if (stepIds.isNotEmpty()) {
-                stepIds.chunked(1000).forEach { chunk ->
-                    val chunkExams = realm.where(RealmStepExam::class.java)
-                        .`in`("stepId", chunk.toTypedArray())
-                        .findAll()
-                    allExams.addAll(chunkExams)
+                val query = realm.where(RealmStepExam::class.java)
+                stepIds.chunked(1000).forEachIndexed { index, chunk ->
+                    if (index > 0) query.or()
+                    query.`in`("stepId", chunk.toTypedArray())
                 }
+                allExams.addAll(query.findAll())
             }
             val examsByStepId = allExams.groupBy { it.stepId }
 
             val examIds = allExams.mapNotNull { it.id }
             val questionsByExamId = if (examIds.isNotEmpty()) {
-                val allQuestions = mutableListOf<RealmExamQuestion>()
-                examIds.chunked(1000).forEach { chunk ->
-                    val chunkQuestions = realm.where(RealmExamQuestion::class.java)
-                        .`in`("examId", chunk.toTypedArray())
-                        .findAll()
-                    allQuestions.addAll(chunkQuestions)
+                val query = realm.where(RealmExamQuestion::class.java)
+                examIds.chunked(1000).forEachIndexed { index, chunk ->
+                    if (index > 0) query.or()
+                    query.`in`("examId", chunk.toTypedArray())
                 }
+                val allQuestions = query.findAll()
                 allQuestions.groupBy { it.examId ?: "" }
                     .filterKeys { it.isNotEmpty() }
             } else {
@@ -395,14 +438,13 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val submissionIds = relevantSubmissions.mapNotNull { it.id }
             val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                val allAnswers = mutableListOf<RealmAnswer>()
                 // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
-                submissionIds.chunked(1000).forEach { chunk ->
-                    val chunkAnswers = realm.where(RealmAnswer::class.java)
-                        .`in`("submissionId", chunk.toTypedArray())
-                        .findAll()
-                    allAnswers.addAll(chunkAnswers)
+                val query = realm.where(RealmAnswer::class.java)
+                submissionIds.chunked(1000).forEachIndexed { index, chunk ->
+                    if (index > 0) query.or()
+                    query.`in`("submissionId", chunk.toTypedArray())
                 }
+                val allAnswers = query.findAll()
                 allAnswers.groupBy { it.submissionId ?: "" }
                     .filterKeys { it.isNotEmpty() }
             } else {
@@ -509,9 +551,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 .findAll()
 
             val ids = JsonArray()
-            for (course in myCourses) {
-                ids.add(course.courseId)
-            }
+            myCourses.asSequence().mapNotNull { it.courseId }.forEach { ids.add(it) }
             ids
         }
     }
@@ -598,7 +638,7 @@ class CoursesRepositoryImpl @Inject constructor(
             list = if (isMyCourseLib) {
                 getMyCourses(userId, list)
             } else {
-                RealmMyCourse.getAllCourses(userId, list)
+                getAllCourses(userId, list)
             }
 
             if (tags.isEmpty()) {

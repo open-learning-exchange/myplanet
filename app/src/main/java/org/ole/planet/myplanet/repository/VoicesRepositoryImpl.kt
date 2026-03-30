@@ -11,12 +11,14 @@ import java.util.Calendar
 import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.findCopyByField
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -28,9 +30,10 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService), VoicesRepository {
+) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(serializeNews: (RealmNews) -> JsonObject): List<NewsUploadData> {
@@ -191,7 +194,7 @@ class VoicesRepositoryImpl @Inject constructor(
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+        .flowOn(realmDispatcher) // Realm async queries require a Looper thread.
 
         return allNewsFlow.map { allNews ->
             // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
@@ -296,7 +299,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
 
                     if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
-                        deleteRepliesOf(news.id!!, transactionRealm)
+                        news.id?.let { id -> deleteRepliesOf(id, transactionRealm) }
                         news.deleteFromRealm()
                     } else {
                         val filtered = JsonArray().apply {
@@ -360,7 +363,8 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun deleteRepliesOf(newsId: String, realm: io.realm.Realm) {
         val replies = realm.where(RealmNews::class.java).equalTo("replyTo", newsId).findAll()
         replies.forEach { reply ->
-            deleteRepliesOf(reply.id!!, realm)
+            val replyId = reply.id ?: return@forEach
+            deleteRepliesOf(replyId, realm)
             reply.deleteFromRealm()
         }
     }

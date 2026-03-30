@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -13,7 +12,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -221,25 +219,24 @@ open class RealmMyLibrary : RealmObject() {
             }
         }
 
-        private fun insertResources(doc: JsonObject, mRealm: Realm) {
-            insertMyLibrary("", doc, mRealm)
+        private fun insertResources(doc: JsonObject, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+            insertMyLibrary("", doc, mRealm, spm)
         }
 
         @JvmStatic
-        fun createStepResource(mRealm: Realm, res: JsonObject, myCoursesID: String?, stepId: String?) {
-            insertMyLibrary("", stepId, myCoursesID, res, mRealm)
+        fun createStepResource(mRealm: Realm, res: JsonObject, myCoursesID: String?, stepId: String?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+            insertMyLibrary("", stepId, myCoursesID, res, mRealm, spm)
         }
 
         @JvmStatic
-        fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm) {
-            insertMyLibrary(userId, "", "", doc, mRealm)
+        fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+            insertMyLibrary(userId, "", "", doc, mRealm, spm)
         }
 
         @JvmStatic
-        fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
+        fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
-            val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             val wasPrivate = resource?.isPrivate == true
             val hadPrivateFor = resource?.privateFor
@@ -327,14 +324,14 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun save(allDocs: JsonArray, mRealm: Realm): List<String> {
+        fun save(allDocs: JsonArray, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager): List<String> {
             val list: MutableList<String> = ArrayList()
             allDocs.forEach { doc ->
                 val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)
                 val id = JsonUtils.getString("_id", document)
                 if (!id.startsWith("_design")) {
                     list.add(id)
-                    insertResources(document, mRealm)
+                    insertResources(document, mRealm, spm)
                 }
             }
             return list
