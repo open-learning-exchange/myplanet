@@ -6,10 +6,10 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -57,7 +57,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
         val libraries: MutableList<RealmMyCourse> = ArrayList()
         for (item in libs) {
-            item.isMyCourse = item.userId?.contains(userId)!!
+            item.isMyCourse = item.userId?.contains(userId) == true
             libraries.add(item)
         }
         return libraries
@@ -70,7 +70,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
         val libraries: MutableList<RealmMyCourse> = ArrayList()
         for (item in libs) {
-            if (!item.userId?.contains(userId)!!) {
+            if (item.userId?.contains(userId) != true) {
                 libraries.add(item)
             }
         }
@@ -168,29 +168,47 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCourseAdded(courseId: String, userId: String?): Result<Boolean> {
+        if (courseId.isBlank()) {
+            return Result.success(false)
+        }
+        return markCoursesAdded(listOf(courseId), userId)
+    }
+
+    override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
         return withContext(databaseService.ioDispatcher) {
             runCatching {
-                if (courseId.isBlank()) {
+                if (courseIds.isEmpty()) {
                     return@runCatching false
                 }
 
                 var courseFound = false
                 executeTransaction { realm ->
-                    realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
-                        ?.let { course ->
-                            course.setUserId(userId)
-                            if (!userId.isNullOrBlank()) {
+                    val validCourseIds = courseIds.filter { it.isNotBlank() }
+                    if (validCourseIds.isEmpty()) return@executeTransaction
+
+                    val chunkSize = 1000
+                    validCourseIds.chunked(chunkSize).forEach { chunk ->
+                        val courses = realm.where(RealmMyCourse::class.java)
+                            .`in`("courseId", chunk.toTypedArray())
+                            .findAll()
+
+                        if (courses.isNotEmpty()) {
+                            courses.forEach { course ->
+                                course.setUserId(userId)
+                            }
+
+                            val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
+                            if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
                                 realm.where(RealmRemovedLog::class.java)
                                     .equalTo("type", "courses")
                                     .equalTo("userId", userId)
-                                    .equalTo("docId", course.courseId)
+                                    .`in`("docId", foundCourseIds)
                                     .findAll()
                                     .deleteAllFromRealm()
                             }
                             courseFound = true
                         }
+                    }
                 }
 
                 courseFound

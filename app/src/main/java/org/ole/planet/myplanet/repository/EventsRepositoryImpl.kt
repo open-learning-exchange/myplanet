@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.queryList
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUser
 
