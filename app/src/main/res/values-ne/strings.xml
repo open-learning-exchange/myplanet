@@ -984,6 +984,8 @@
     <string name="dark_mode_off">बन्द</string>
     <string name="dark_mode_on">खुला</string>
     <string name="dark_mode_follow_system">प्रणालीको पालना गर्नुहोस्</string>
+    <string name="theme_mode_light">उज्यालो</string>
+    <string name="theme_mode_dark">अँध्यारो</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">के तपाइँ यी पाठ्यक्रमहरू संग्रह गर्न निश्चित हुनुहुन्छ?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
     <string name="manual">हस्तपुस्तिका</string>
