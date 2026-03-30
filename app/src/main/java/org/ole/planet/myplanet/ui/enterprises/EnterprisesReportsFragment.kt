@@ -145,58 +145,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         dialogAddReportBinding.startDate.text = firstDayOfMonth
         dialogAddReportBinding.endDate.text = lastDayOfMonth
 
-        dialogAddReportBinding.ltStartDate.setOnClickListener {
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-            val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                dialogAddReportBinding.startDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
-                calendar.set(Calendar.YEAR, selectedYear)
-                calendar.set(Calendar.MONTH, selectedMonth)
-                calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-
-                startTimeStamp = "${calendar.timeInMillis}"
-            }, year, month, day)
-
-            dpd.show()
-        }
-
-        dialogAddReportBinding.ltEndDate.setOnClickListener {
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-            val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                dialogAddReportBinding.endDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
-                calendar.set(Calendar.YEAR, selectedYear)
-                calendar.set(Calendar.MONTH, selectedMonth)
-                calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-
-                endTimeStamp = "${calendar.timeInMillis}"
-            }, year, month, day)
-
-            dpd.show()
-        }
+        setupDatePickers(dialogAddReportBinding, calendar, true)
 
         submit.setOnClickListener {
-            if (dialogAddReportBinding.startDate.text == "Start Date"){
-                dialogAddReportBinding.startDate.error = "start date is required"
-            } else if (dialogAddReportBinding.endDate.text == "End Date"){
-                dialogAddReportBinding.endDate.error = "start date is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
-                dialogAddReportBinding.summary.error = "summary is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.beginningBalance.text}")) {
-                dialogAddReportBinding.beginningBalance.error = "beginning balance is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.sales.text}")) {
-                dialogAddReportBinding.sales.error = "sales is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.otherIncome.text}")) {
-                dialogAddReportBinding.otherIncome.error = "other income is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.personnel.text}")) {
-                dialogAddReportBinding.personnel.error = "personnel is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
-                dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
-            } else {
+            if (isValidReportForm(dialogAddReportBinding)) {
                 val doc = JsonObject().apply {
                     addProperty("_id", UUID.randomUUID().toString())
                     addProperty("createdDate", System.currentTimeMillis())
@@ -258,58 +210,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         dialogAddReportBinding.personnel.setText(getString(R.string.number_placeholder, currentReport.wages))
         dialogAddReportBinding.nonPersonnel.setText(getString(R.string.number_placeholder, currentReport.otherExpenses))
 
-        dialogAddReportBinding.ltStartDate.setOnClickListener {
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-            val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                dialogAddReportBinding.startDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
-                calendar.set(Calendar.YEAR, selectedYear)
-                calendar.set(Calendar.MONTH, selectedMonth)
-                calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-
-                startTimeStamp = getString(R.string.number_placeholder, calendar.timeInMillis)
-            }, year, month, day)
-
-            dpd.show()
-        }
-
-        dialogAddReportBinding.ltEndDate.setOnClickListener {
-            val year = calendar.get(Calendar.YEAR)
-            val month = calendar.get(Calendar.MONTH)
-            val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-            val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                dialogAddReportBinding.endDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
-                calendar.set(Calendar.YEAR, selectedYear)
-                calendar.set(Calendar.MONTH, selectedMonth)
-                calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
-
-                endTimeStamp = "${calendar.timeInMillis}"
-            }, year, month, day)
-
-            dpd.show()
-        }
+        setupDatePickers(dialogAddReportBinding, calendar, false)
 
         submit.setOnClickListener {
-            if (dialogAddReportBinding.startDate.text == "Start Date"){
-                dialogAddReportBinding.startDate.error = "start date is required"
-            } else if (dialogAddReportBinding.endDate.text == "End Date"){
-                dialogAddReportBinding.endDate.error = "start date is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
-                dialogAddReportBinding.summary.error = "summary is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.beginningBalance.text}")) {
-                dialogAddReportBinding.beginningBalance.error = "beginning balance is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.sales.text}")) {
-                dialogAddReportBinding.sales.error = "sales is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.otherIncome.text}")) {
-                dialogAddReportBinding.otherIncome.error = "other income is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.personnel.text}")) {
-                dialogAddReportBinding.personnel.error = "personnel is required"
-            } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
-                dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
-            } else {
+            if (isValidReportForm(dialogAddReportBinding)) {
                 val reportId = currentReport._id
                 if (reportId.isNullOrBlank()) {
                     Snackbar.make(
@@ -388,6 +292,74 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
+        }
+    }
+
+    private fun setupDatePickers(dialogAddReportBinding: DialogAddReportBinding, calendar: Calendar, isAdd: Boolean) {
+        dialogAddReportBinding.ltStartDate.setOnClickListener {
+            showDatePickerDialog(calendar) { timeInMillis, formattedDate ->
+                dialogAddReportBinding.startDate.text = formattedDate
+                startTimeStamp = if (isAdd) "$timeInMillis" else getString(R.string.number_placeholder, timeInMillis)
+            }
+        }
+
+        dialogAddReportBinding.ltEndDate.setOnClickListener {
+            showDatePickerDialog(calendar) { timeInMillis, formattedDate ->
+                dialogAddReportBinding.endDate.text = formattedDate
+                endTimeStamp = "$timeInMillis"
+            }
+        }
+    }
+
+    private fun showDatePickerDialog(calendar: Calendar, onDateSelected: (Long, String) -> Unit) {
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
+            calendar.set(Calendar.YEAR, selectedYear)
+            calendar.set(Calendar.MONTH, selectedMonth)
+            calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
+            val formattedDate = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
+            onDateSelected(calendar.timeInMillis, formattedDate)
+        }, year, month, day).show()
+    }
+
+    private fun isValidReportForm(binding: DialogAddReportBinding): Boolean {
+        return when {
+            binding.startDate.text == "Start Date" -> {
+                binding.startDate.error = "start date is required"
+                false
+            }
+            binding.endDate.text == "End Date" -> {
+                binding.endDate.error = "end date is required"
+                false
+            }
+            TextUtils.isEmpty("${binding.summary.text}") -> {
+                binding.summary.error = "summary is required"
+                false
+            }
+            TextUtils.isEmpty("${binding.beginningBalance.text}") -> {
+                binding.beginningBalance.error = "beginning balance is required"
+                false
+            }
+            TextUtils.isEmpty("${binding.sales.text}") -> {
+                binding.sales.error = "sales is required"
+                false
+            }
+            TextUtils.isEmpty("${binding.otherIncome.text}") -> {
+                binding.otherIncome.error = "other income is required"
+                false
+            }
+            TextUtils.isEmpty("${binding.personnel.text}") -> {
+                binding.personnel.error = "personnel is required"
+                false
+            }
+            TextUtils.isEmpty("${binding.nonPersonnel.text}") -> {
+                binding.nonPersonnel.error = "non-personnel is required"
+                false
+            }
+            else -> true
         }
     }
 
