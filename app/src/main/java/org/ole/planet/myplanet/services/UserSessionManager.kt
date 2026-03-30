@@ -34,10 +34,12 @@ class UserSessionManager @Inject constructor(
     }
 
     @Deprecated("Use getUserModel() suspend function instead")
+    @get:Suppress("DEPRECATION")
     val userModel: RealmUser? get() = userRepository.getUserModel()
 
     @Deprecated("Use getUserModel() suspend function instead")
     fun getUserModelCopy(): RealmUser? {
+        @Suppress("DEPRECATION")
         return userRepository.getUserModel()
     }
 

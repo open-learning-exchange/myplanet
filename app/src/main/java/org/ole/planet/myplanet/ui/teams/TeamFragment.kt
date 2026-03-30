@@ -281,7 +281,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                     teamList
                 } else {
                     teamList.filter {
-                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
+                        it.name.contains(charSequence.toString(), ignoreCase = true) == true
                     }
                 }
                 viewModel.prepareTeamData(filteredList, user?.id)

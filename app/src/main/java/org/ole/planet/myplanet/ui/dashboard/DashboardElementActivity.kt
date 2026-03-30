@@ -166,6 +166,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
+    @Suppress("DEPRECATION")
     @SuppressLint("RestrictedApi")
     fun wifiStatusSwitch() {
         val resIcon = ContextCompat.getDrawable(this, R.drawable.goonline)
@@ -206,6 +207,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun connectToWifi() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return
         val id = prefData.getLastWifiId()

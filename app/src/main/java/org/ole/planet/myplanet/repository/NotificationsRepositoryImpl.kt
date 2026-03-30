@@ -40,7 +40,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     .equalTo("id", notificationId)
                     .findFirst()
                 notification?.isRead = true
-                notification?.needsSync = notification?.isFromServer == true
+                notification?.let { it.needsSync = it.isFromServer }
             }
         }
     }

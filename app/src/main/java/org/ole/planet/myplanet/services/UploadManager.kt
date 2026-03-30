@@ -351,7 +351,7 @@ class UploadManager @Inject constructor(
                                 try {
                                     val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
 
-                                    val libMap = libraries?.associateBy { it.id } ?: emptyMap()
+                                    val libMap = libraries.associateBy { it.id }
 
                                     successfulUpdates.forEach { (resourceData, `object`) ->
                                         val rev = getString("rev", `object`)

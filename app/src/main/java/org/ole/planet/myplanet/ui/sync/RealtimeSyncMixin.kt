@@ -21,7 +21,8 @@ interface RealtimeSyncMixin {
     fun shouldAutoRefresh(table: String): Boolean = true
 }
 
-class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
+
+ @OptIn(kotlinx.coroutines.FlowPreview::class) class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
 
     fun setupRealtimeSync() {
@@ -47,7 +48,8 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
 
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
-            val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
+
+ @Suppress("UNCHECKED_CAST") val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when (adapter) {
                 is OnDiffRefreshListener -> adapter.refreshWithDiff()
                 is ListAdapter<*, *> -> {
