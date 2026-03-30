@@ -10,11 +10,7 @@ import io.realm.RealmObject
 import io.realm.annotations.Ignore
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
@@ -195,7 +191,7 @@ open class RealmSubmission : RealmObject() {
             val user = mRealm.where(RealmUser::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
             if (sub.parentId?.contains("@") == true) {
-                examId = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                examId = sub.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
             }
             val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
             if (!TextUtils.isEmpty(sub._id)) {
@@ -247,7 +243,7 @@ open class RealmSubmission : RealmObject() {
             try {
                 var examId = submission.parentId
                 if (submission.parentId?.contains("@") == true) {
-                    examId = submission.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                    examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
                 }
                 val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
 
