@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import dagger.Module
 import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.junit.Assert.assertTrue
 import org.junit.Test
