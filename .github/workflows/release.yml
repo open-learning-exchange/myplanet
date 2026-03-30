@@ -36,6 +36,11 @@ jobs:
         run: echo ANDROID_VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle) >> $GITHUB_ENV
 
       - name: build release APK and AAB
+        env:
+          GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
+          GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
+          GRADLE_BUILD_CACHE_PASS: ${{ secrets.GRADLE_BUILD_CACHE_PASS }}
+          GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') }}
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
