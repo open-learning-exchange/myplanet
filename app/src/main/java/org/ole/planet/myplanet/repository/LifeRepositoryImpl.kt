@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import java.util.UUID
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLife
 

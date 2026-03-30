@@ -5,6 +5,7 @@ import android.widget.EditText
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -33,18 +34,23 @@ open class RealmAchievement : RealmObject() {
         get() {
             val array = JsonArray()
             for (s in achievements ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                val ob = JsonParser.parseString(s)
                 array.add(ob)
             }
             return array
         }
 
+    @io.realm.annotations.Ignore
+    private var cachedReferencesArray: JsonArray? = null
+
     fun getReferencesArray(): JsonArray {
+        cachedReferencesArray?.let { return it }
         val array = JsonArray()
         for (s in references ?: emptyList()) {
-            val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+            val ob = JsonParser.parseString(s)
             array.add(ob)
         }
+        cachedReferencesArray = array
         return array
     }
 
@@ -52,7 +58,7 @@ open class RealmAchievement : RealmObject() {
         get() {
             val array = JsonArray()
             for (s in links ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                val ob = JsonParser.parseString(s)
                 array.add(ob)
             }
             return array
@@ -62,7 +68,7 @@ open class RealmAchievement : RealmObject() {
         get() {
             val array = JsonArray()
             for (s in otherInfo ?: emptyList()) {
-                val ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
+                val ob = JsonParser.parseString(s)
                 array.add(ob)
             }
             return array
@@ -97,6 +103,7 @@ open class RealmAchievement : RealmObject() {
     }
 
     fun setReferences(of: JsonArray?) {
+        cachedReferencesArray = null
         references = RealmList()
         if (of == null) return
         for (el in of) {

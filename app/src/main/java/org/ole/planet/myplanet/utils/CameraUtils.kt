@@ -24,6 +24,7 @@ import java.io.FileOutputStream
 import java.util.Date
 import java.util.concurrent.Executor
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -42,9 +43,9 @@ object CameraUtils {
     private var backgroundThread: HandlerThread? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
     private var cameraJob = SupervisorJob()
-    private var cameraScope = CoroutineScope(Dispatchers.Default + cameraJob)
+    private var cameraScope: CoroutineScope? = null
 
-    private fun startBackgroundThread() {
+    private fun startBackgroundThread(dispatcher: CoroutineDispatcher) {
         if (backgroundThread == null || backgroundThread?.isAlive == false) {
             backgroundThread = HandlerThread("CameraBackground").apply {
                 start()
@@ -53,7 +54,9 @@ object CameraUtils {
         }
         if (cameraJob.isCancelled) {
             cameraJob = SupervisorJob()
-            cameraScope = CoroutineScope(Dispatchers.Default + cameraJob)
+            cameraScope = CoroutineScope(dispatcher + cameraJob)
+        } else if (cameraScope == null) {
+            cameraScope = CoroutineScope(dispatcher + cameraJob)
         }
     }
 
@@ -65,6 +68,7 @@ object CameraUtils {
             backgroundThread = null
             backgroundHandler = null
         } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
             e.printStackTrace()
         }
     }
@@ -73,15 +77,15 @@ object CameraUtils {
     fun release() {
         closeCamera()
         stopBackgroundThread()
-        cameraScope.cancel()
+        cameraScope?.cancel()
     }
 
     @JvmStatic
-    fun capturePhoto(callback: ImageCaptureCallback) {
+    fun capturePhoto(dispatcher: CoroutineDispatcher, callback: ImageCaptureCallback) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        startBackgroundThread()
+        startBackgroundThread(dispatcher)
         openCamera(context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
@@ -91,7 +95,7 @@ object CameraUtils {
                 val bytes = ByteArray(buffer.capacity())
                 buffer.get(bytes)
                 image.close()
-                cameraScope.launch {
+                cameraScope!!.launch {
                     savePicture(bytes, callback)
                 }
             }
