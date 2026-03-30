@@ -238,6 +238,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
     override fun onPageSelected(position: Int) {
+        if (!this::steps.isInitialized) return
         if (position > 0) {
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
@@ -251,8 +252,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun changeNextButtonState(position: Int) {
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+            val stepId = steps.getOrNull(position - 1)?.id
             lifecycleScope.launch {
-                if (coursesRepository.isStepCompleted(steps[position - 1]?.id, userModel?.id)) {
+                if (coursesRepository.isStepCompleted(stepId, userModel?.id)) {
                     binding.nextStep.isClickable = true
                     binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 } else {
