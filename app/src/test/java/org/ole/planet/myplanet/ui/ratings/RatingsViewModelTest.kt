@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import kotlinx.coroutines.Dispatchers
 
 @ExperimentalCoroutinesApi
 class RatingsViewModelTest {
@@ -31,7 +33,13 @@ class RatingsViewModelTest {
     fun setup() {
         ratingsRepository = mockk()
         userRepository = mockk()
-        viewModel = RatingsViewModel(ratingsRepository, userRepository)
+        val testDispatcherProvider = object : DispatcherProvider {
+            override val main = Dispatchers.Unconfined
+            override val io = Dispatchers.Unconfined
+            override val default = Dispatchers.Unconfined
+            override val unconfined = Dispatchers.Unconfined
+        }
+        viewModel = RatingsViewModel(ratingsRepository, userRepository, testDispatcherProvider)
     }
 
     @Test

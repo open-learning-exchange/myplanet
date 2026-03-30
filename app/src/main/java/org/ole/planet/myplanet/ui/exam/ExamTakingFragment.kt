@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
@@ -47,6 +48,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var surveysRepository: SurveysRepository
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     data class AnswerData(
         var singleAnswer: String = "",
@@ -541,7 +544,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private fun capturePhoto() {
         try {
             if (isCertified && !isMySurvey) {
-                capturePhoto(this)
+                capturePhoto(dispatcherProvider.default, this)
             }
         } catch (e: Exception) {
             e.printStackTrace()

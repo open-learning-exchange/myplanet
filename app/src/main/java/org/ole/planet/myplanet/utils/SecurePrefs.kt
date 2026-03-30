@@ -20,6 +20,8 @@ object SecurePrefs {
     private const val PREF_FILE_NAME = "master_key_preference"
     private const val MASTER_KEY_URI = "android-keystore://master_key"
 
+    @Volatile private var cachedAead: Aead? = null
+
     init {
         try {
             AeadConfig.register()
@@ -30,7 +32,7 @@ object SecurePrefs {
 
     @Suppress("DEPRECATION")
     // Tink 1.20.0 deprecates getPrimitive(Class), but Registry.getPrimitiveWrapper seems unavailable in this environment.
-    private fun getAead(context: Context): Aead {
+    private fun buildAead(context: Context): Aead {
         return AndroidKeysetManager.Builder()
             .withSharedPref(context, KEYSET_NAME, PREF_FILE_NAME)
             .withKeyTemplate(KeyTemplate.createFrom(PredefinedAeadParameters.AES256_GCM))
@@ -38,6 +40,16 @@ object SecurePrefs {
             .build()
             .keysetHandle
             .getPrimitive(Aead::class.java)
+    }
+
+    private fun getAead(context: Context): Aead {
+        return cachedAead ?: synchronized(this) {
+            cachedAead ?: buildAead(context.applicationContext).also { cachedAead = it }
+        }
+    }
+    
+    fun warmUp(context: Context) {
+        if (cachedAead == null) getAead(context)
     }
 
     private fun getSecureStore(context: Context): SharedPreferences {
