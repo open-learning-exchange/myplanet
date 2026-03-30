@@ -162,6 +162,7 @@ repositories {
     maven { url = uri("https://jitpack.io") }
     maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
     maven { url = uri("https://maven.google.com") }
+    maven { url = uri("$rootDir/local_repo") }
 }
 dependencies {
     testImplementation(libs.test.junit)
@@ -178,7 +179,8 @@ dependencies {
     kspTest(libs.hilt.android.compiler)
 }
 dependencies {
-    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation 'eu.fiskur.chipcloud:chipcloud:3.0.5'
+    implementation 'com.google.android.flexbox:flexbox:1.0.0'
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
     implementation(libs.appcompat)
