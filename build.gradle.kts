@@ -1,19 +1,14 @@
-import org.gradle.api.tasks.Delete
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath(libs.android.gradle.plugin)
-        classpath(libs.realm.gradle.plugin)
-        classpath(libs.hilt.android.gradle.plugin)
-        classpath(libs.kotlin.gradle.plugin)
-        classpath(libs.kotlin.serialization)
-        classpath(libs.ksp.symbol.processing.gradle.plugin)
-    }
+plugins {
+    alias(libs.plugins.application) apply false
+    alias(libs.plugins.legacy.kapt) apply false
+    alias(libs.plugins.realm.android) apply false
+    alias(libs.plugins.dagger.hilt.android) apply false
+    alias(libs.plugins.ksp) apply false
+    kotlin("android") version libs.versions.kotlin apply false
+    kotlin("plugin.serialization") version libs.versions.kotlin apply false
 }
+
+import org.gradle.api.tasks.Delete
 
 allprojects {
     repositories {
