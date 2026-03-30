@@ -325,12 +325,12 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
                 }
                 type == "enterprise" -> {
                     conditionApplied = true
-                    teamList = teamsRepository.getShareableEnterpriseSummaries()
+                    teamList = teamsRepository.getShareableEnterpriseSummaries(null)
                     setTeamList()
                 }
                 else -> {
                     conditionApplied = false
-                    teamList = teamsRepository.getTeamSummaries()
+                    teamList = teamsRepository.getTeamSummaries(null)
                     setTeamList()
                 }
             }
