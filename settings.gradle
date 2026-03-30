@@ -4,6 +4,13 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "realm-android") {
+                useModule("io.realm:realm-gradle-plugin:${requested.version}")
+            }
+        }
+    }
 }
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
