@@ -4,7 +4,10 @@ import android.content.Context
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.realm.Realm
+import io.realm.RealmList
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -154,5 +157,49 @@ class RealmUserTest {
         // Assert
         verify(exactly = 0) { onSuccessMock.invoke() }
         verify { Utilities.toast(mockContext, "User details update failed") }
+    }
+
+    @Test
+    fun testIsManagerWithManagerRole() {
+        val user = RealmUser()
+        val roles = RealmList<String?>()
+        roles.add("manager")
+        user.rolesList = roles
+        user.userAdmin = false
+        assertTrue(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerWithUserAdminTrue() {
+        val user = RealmUser()
+        user.rolesList = RealmList<String?>()
+        user.userAdmin = true
+        assertTrue(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerFalse() {
+        val user = RealmUser()
+        user.rolesList = RealmList<String?>()
+        user.userAdmin = false
+        assertFalse(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerNullRolesAndAdmin() {
+        val user = RealmUser()
+        user.rolesList = null
+        user.userAdmin = null
+        assertFalse(user.isManager())
+    }
+
+    @Test
+    fun testIsManagerCaseInsensitive() {
+        val user = RealmUser()
+        val roles = RealmList<String?>()
+        roles.add("MaNaGeR")
+        user.rolesList = roles
+        user.userAdmin = false
+        assertTrue(user.isManager())
     }
 }

@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
@@ -62,6 +61,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
     private fun timePicker() {
+        val dl = deadline ?: Calendar.getInstance()
         val timePickerDialog = TimePickerDialog(activity, { _: TimePicker?, hourOfDay: Int, minute: Int ->
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
@@ -70,7 +70,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     TimeUtils.getFormattedDateWithTime(it)
                 }
             }
-        }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
+        }, dl[Calendar.HOUR_OF_DAY], dl[Calendar.MINUTE], true)
         timePickerDialog.show()
     }
 
@@ -102,11 +102,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
-                        val displayName = assigneeUser.getFullName().ifBlank {
-                            assigneeUser.name ?: getString(R.string.no_assignee)
-                        }
-                        alertTaskBinding.tvAssignMember.text = displayName
-                        alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+                        updateAssigneeUI(alertTaskBinding, assigneeUser)
                     }
                 }
             }
@@ -130,35 +126,10 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     return@launch
                 }
 
-                var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
-
-                val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-                val adapter = UserArrayAdapter { selectedUser ->
-                    dialogSelectedItem = selectedUser
+                showMemberSelectionDialog(filteredUserList) { user ->
+                    selectedAssignee = user
+                    updateAssigneeUI(alertTaskBinding, user)
                 }
-                alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
-                alertUsersSpinnerBinding.rvUser.adapter = adapter
-                adapter.submitList(filteredUserList)
-
-                AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                    .setTitle(R.string.select_member)
-                    .setView(alertUsersSpinnerBinding.root)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val user = dialogSelectedItem
-                        if (user != null) {
-                            selectedAssignee = user
-                            val displayName = user.getFullName().ifBlank {
-                                user.name ?: getString(R.string.no_assignee)
-                            }
-                            alertTaskBinding.tvAssignMember.text = displayName
-                            alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
-                        }
-                    }
-                    .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
-                        dialog.dismiss()
-                    }
-                    .show()
             }
         }
 
@@ -190,6 +161,41 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             }
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+    }
+
+    private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
+        var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
+
+        val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
+        val adapter = UserArrayAdapter { selectedUser ->
+            dialogSelectedItem = selectedUser
+        }
+        alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
+        alertUsersSpinnerBinding.rvUser.adapter = adapter
+        adapter.submitList(filteredUserList)
+
+        AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(R.string.select_member)
+            .setView(alertUsersSpinnerBinding.root)
+            .setCancelable(false)
+            .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                val user = dialogSelectedItem
+                if (user != null) {
+                    onAssigneeSelected(user)
+                }
+            }
+            .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun updateAssigneeUI(alertTaskBinding: AlertTaskBinding, user: RealmUser) {
+        val displayName = user.getFullName().ifBlank {
+            user.name ?: getString(R.string.no_assignee)
+        }
+        alertTaskBinding.tvAssignMember.text = displayName
+        alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
     }
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
