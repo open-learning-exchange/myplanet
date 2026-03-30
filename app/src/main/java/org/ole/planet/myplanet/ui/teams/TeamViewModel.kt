@@ -4,14 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
@@ -96,16 +94,20 @@ class TeamViewModel @Inject constructor(
 
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
         viewModelScope.launch {
-            teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            teamsRepository.syncTeamActivities()
+            withContext(dispatcherProvider.io) {
+                teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                teamsRepository.syncTeamActivities()
+            }
             prepareTeamData(currentTeams, userId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
-            teamsRepository.leaveTeam(teamId, userId)
-            teamsRepository.syncTeamActivities()
+            withContext(dispatcherProvider.io) {
+                teamsRepository.leaveTeam(teamId, userId)
+                teamsRepository.syncTeamActivities()
+            }
             prepareTeamData(currentTeams, userId)
         }
     }

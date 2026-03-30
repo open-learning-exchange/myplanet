@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.repository
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.spyk
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmList
@@ -34,7 +32,7 @@ class TagsRepositoryImplTest {
             val operation = firstArg<(Realm) -> List<RealmTag>>()
             operation(mockRealm)
         }
-        repository = TagsRepositoryImpl(databaseService)
+        repository = TagsRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
     }
 
     private fun mockQueryResults(vararg results: List<RealmTag>): RealmQuery<RealmTag> {

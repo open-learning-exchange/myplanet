@@ -11,8 +11,8 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
@@ -42,6 +43,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
@@ -50,7 +52,7 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService), UserRepository {
+) : RealmRepository(databaseService, realmDispatcher), UserRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
@@ -77,6 +79,18 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUser::class.java) {
             isNotEmpty("_id")
             not().beginsWith("id", "guest")
+        }
+    }
+
+    override suspend fun getUsersForHealthSync(): List<RealmUser> {
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { managedUser ->
+                RealmUser().apply {
+                    this.id = managedUser.id
+                    this.name = managedUser.name
+                    this.planetCode = managedUser.planetCode
+                }
+            }
         }
     }
 
@@ -122,6 +136,10 @@ class UserRepositoryImpl @Inject constructor(
                 .sort(sortField, sortOrder).findAll()
             realm.copyFromRealm(results)
         }
+    }
+
+    override fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser? {
+        return RealmUser.populateUsersTable(jsonDoc, mRealm, settings)
     }
 
     override suspend fun getMonthlyLoginCounts(

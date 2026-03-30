@@ -20,8 +20,8 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
             }
             else -> {
                 val results = coursesRepository.getAllCourses()
-                val myLibItems = RealmMyCourse.getMyCourseByUserId(model?.id, results)
-                val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
+                val myLibItems = coursesRepository.getMyCourseByUserId(model?.id, results)
+                val ourCourseItems = coursesRepository.getOurCourse(model?.id, results)
 
                 when (c) {
                     RealmMyCourse::class.java -> {
@@ -61,7 +61,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 } else {
                     coursesRepository.getAllCourses()
                 }
-                RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
+                coursesRepository.getOurCourse(model?.id, results) as List<LI>
             }
         }
     }
@@ -75,7 +75,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 } else {
                     coursesRepository.getAllCourses()
                 }
-                RealmMyCourse.getMyCourseByUserId(model?.id, results) as List<LI>
+                coursesRepository.getMyCourseByUserId(model?.id, results) as List<LI>
             }
             else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
         }
