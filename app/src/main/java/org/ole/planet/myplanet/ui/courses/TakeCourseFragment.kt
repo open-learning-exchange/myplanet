@@ -24,10 +24,7 @@ import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
@@ -241,6 +238,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
     override fun onPageSelected(position: Int) {
+        if (!this::steps.isInitialized) return
         if (position > 0) {
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
@@ -254,8 +252,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun changeNextButtonState(position: Int) {
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
+            val stepId = steps.getOrNull(position - 1)?.id
             lifecycleScope.launch {
-                if (coursesRepository.isStepCompleted(steps[position - 1]?.id, userModel?.id)) {
+                if (coursesRepository.isStepCompleted(stepId, userModel?.id)) {
                     binding.nextStep.isClickable = true
                     binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 } else {
@@ -398,7 +397,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         super.onDestroyView()
     }
 
-    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem < binding.viewPager2.adapter?.itemCount!!
+    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem < (binding.viewPager2.adapter?.itemCount ?: 0)
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
