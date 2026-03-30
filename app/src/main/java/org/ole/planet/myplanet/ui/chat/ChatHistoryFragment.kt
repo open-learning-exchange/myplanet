@@ -257,7 +257,8 @@ class ChatHistoryFragment : Fragment() {
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
             val targets = cachedTargets ?: loadShareTargets(
                 sharedPrefManager.getParentCode(),
-                sharedPrefManager.getCommunityName()
+                sharedPrefManager.getCommunityName(),
+                currentUser?._id
             )
 
             user = currentUser
@@ -322,9 +323,9 @@ class ChatHistoryFragment : Fragment() {
         return userRepository.getUserById(userId)
     }
 
-    private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamsRepository.getTeamSummaries()
-        val enterprises = teamsRepository.getShareableEnterpriseSummaries()
+    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
+        val teams = teamsRepository.getTeamSummaries(userId)
+        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
