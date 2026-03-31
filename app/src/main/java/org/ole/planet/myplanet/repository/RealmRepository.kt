@@ -203,4 +203,31 @@ open class RealmRepository(
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)
     }
+
+    open fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray, table: String) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            try {
+                val methods = org.ole.planet.myplanet.utils.Constants.classList[table]?.methods
+                methods?.let {
+                    for (m in it) {
+                        if ("insert" == m.name) {
+                            m.invoke(null, realm, jsonDoc)
+                            break
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 }

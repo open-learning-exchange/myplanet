@@ -45,4 +45,16 @@ class ChatRepositoryImpl @Inject constructor(
             addConversationToChatHistory(realm, id, query, response, rev)
         }
     }
+
+    override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val chatHistoryList = mutableListOf<JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            chatHistoryList.add(jsonDoc)
+        }
+        chatHistoryList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmChatHistory.insert(realm, jsonDoc)
+        }
+    }
 }
