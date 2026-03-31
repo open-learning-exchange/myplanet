@@ -2,11 +2,15 @@ package org.ole.planet.myplanet.services.sync
 
 import io.realm.Realm
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import org.ole.planet.myplanet.di.RealmDispatcher
 
 class StandardSyncStrategy @Inject constructor(
-    private val transactionSyncManager: TransactionSyncManager
+    private val transactionSyncManager: TransactionSyncManager,
+    @RealmDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : SyncStrategy {
     
     override suspend fun syncTable(
@@ -43,7 +47,7 @@ class StandardSyncStrategy @Inject constructor(
                 )
             )
         }
-    }
+    }.flowOn(ioDispatcher)
     
     override fun getStrategyName(): String = "standard"
 
