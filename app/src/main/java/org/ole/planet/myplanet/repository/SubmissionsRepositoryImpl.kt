@@ -507,18 +507,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun saveExamAnswer(
-        submission: RealmSubmission?,
-        question: RealmExamQuestion,
-        ans: String,
-        listAns: Map<String, String>?,
-        otherText: String?,
-        otherVisible: Boolean,
-        type: String,
-        index: Int,
-        total: Int,
-        isExplicitSubmission: Boolean
-    ): Boolean {
+    override suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean {
+        val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission) = answerData
         val submissionId = submission?.id
         val questionId = question.id
 
