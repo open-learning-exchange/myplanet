@@ -60,6 +60,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utils.ThemeMode
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
