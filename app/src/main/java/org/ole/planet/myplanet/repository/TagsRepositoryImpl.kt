@@ -23,9 +23,13 @@ class TagsRepositoryImpl @Inject constructor(
         val allTags = queryList(RealmTag::class.java)
         val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t ->
-            t.attachedTo?.distinct()?.forEach { parent ->
-                val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
-                list.add(t)
+            t.attachedTo?.forEach { parent ->
+                if (parent != null) {
+                    val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
+                    if (list.isEmpty() || list.last() !== t) {
+                        list.add(t)
+                    }
+                }
             }
         }
         return childMap
