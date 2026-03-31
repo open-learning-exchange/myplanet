@@ -8,19 +8,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginSyncManagerTest {
+
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     @MockK
     private lateinit var context: Context
@@ -30,17 +35,15 @@ class LoginSyncManagerTest {
     private lateinit var userRepository: UserRepository
     @MockK
     private lateinit var apiInterface: ApiInterface
-    @MockK
+    @MockK(relaxed = true)
     private lateinit var listener: OnSyncListener
 
-    private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
     private lateinit var loginSyncManager: LoginSyncManager
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         MockKAnnotations.init(this, relaxed = true)
 
         loginSyncManager = LoginSyncManager(
@@ -52,36 +55,39 @@ class LoginSyncManagerTest {
         )
     }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
-    }
-
     @Test
-    fun testLogin_emptyUsername_callsOnSyncFailed() = runTest {
+    fun testLogin_emptyUsername_callsOnSyncFailed() = testScope.runTest {
         loginSyncManager.login("", "password", listener)
 
-        verify(timeout = 1000) { listener.onSyncFailed("Username and password are required.") }
+        advanceUntilIdle()
+
+        verify { listener.onSyncFailed("Username and password are required.") }
     }
 
     @Test
-    fun testLogin_nullUsername_callsOnSyncFailed() = runTest {
+    fun testLogin_nullUsername_callsOnSyncFailed() = testScope.runTest {
         loginSyncManager.login(null, "password", listener)
 
-        verify(timeout = 1000) { listener.onSyncFailed("Username and password are required.") }
+        advanceUntilIdle()
+
+        verify { listener.onSyncFailed("Username and password are required.") }
     }
 
     @Test
-    fun testLogin_emptyPassword_callsOnSyncFailed() = runTest {
+    fun testLogin_emptyPassword_callsOnSyncFailed() = testScope.runTest {
         loginSyncManager.login("username", "", listener)
 
-        verify(timeout = 1000) { listener.onSyncFailed("Username and password are required.") }
+        advanceUntilIdle()
+
+        verify { listener.onSyncFailed("Username and password are required.") }
     }
 
     @Test
-    fun testLogin_nullPassword_callsOnSyncFailed() = runTest {
+    fun testLogin_nullPassword_callsOnSyncFailed() = testScope.runTest {
         loginSyncManager.login("username", null, listener)
 
-        verify(timeout = 1000) { listener.onSyncFailed("Username and password are required.") }
+        advanceUntilIdle()
+
+        verify { listener.onSyncFailed("Username and password are required.") }
     }
 }
