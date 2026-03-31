@@ -134,6 +134,12 @@ class ConstantsTest {
     }
 
     @Test
+    fun testProtocolConstants() {
+        assertEquals("http://", Constants.HTTP_PROTOCOL)
+        assertEquals("https://", Constants.HTTPS_PROTOCOL)
+    }
+
+    @Test
     fun testAutoSynFeature() {
         assertFalse(Constants.autoSynFeature("some_key", context))
 
