@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
@@ -86,6 +87,7 @@ class UploadManagerTest {
                 teamsRepository,
                 apiInterface,
                 activitiesRepository,
+                TestDispatcherProvider(testDispatcher),
                 testScope
             )
         )
