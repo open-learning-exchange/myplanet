@@ -19,7 +19,10 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
+import io.realm.RealmList
+import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -271,7 +274,24 @@ class TransactionSyncManager @Inject constructor(
             chatHistoryList.add(jsonDoc)
         }
         chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
+            val chatHistoryId = JsonUtils.getString("_id", jsonDoc)
+            val existingChatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
+            existingChatHistory?.deleteFromRealm()
+            val chatHistory = mRealm.createObject(RealmChatHistory::class.java, chatHistoryId)
+            chatHistory._rev = JsonUtils.getString("_rev", jsonDoc)
+            chatHistory.title = JsonUtils.getString("title", jsonDoc)
+            chatHistory.createdDate = "${JsonUtils.getLong("createdDate", jsonDoc)}"
+            chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", jsonDoc)}"
+            chatHistory.user = JsonUtils.getString("user", jsonDoc)
+            chatHistory.aiProvider = JsonUtils.getString("aiProvider", jsonDoc)
+
+            val jsonArray = JsonUtils.getJsonArray("conversations", jsonDoc)
+            val conversations = RealmList<RealmConversation>()
+            val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
+            conversations.addAll(mRealm.copyToRealm(unmanagedConversations))
+            chatHistory.conversations = conversations
+
+            chatHistory.lastUsed = System.currentTimeMillis()
         }
     }
 

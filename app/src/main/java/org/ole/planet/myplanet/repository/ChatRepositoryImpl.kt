@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -36,13 +38,43 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun saveNewChat(chat: JsonObject) {
         executeTransaction { realm ->
-            RealmChatHistory.insert(realm, chat)
+            val chatHistoryId = JsonUtils.getString("_id", chat)
+            val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
+            existingChatHistory?.deleteFromRealm()
+            val chatHistory = realm.createObject(RealmChatHistory::class.java, chatHistoryId)
+            chatHistory._rev = JsonUtils.getString("_rev", chat)
+            chatHistory.title = JsonUtils.getString("title", chat)
+            chatHistory.createdDate = "${JsonUtils.getLong("createdDate", chat)}"
+            chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", chat)}"
+            chatHistory.user = JsonUtils.getString("user", chat)
+            chatHistory.aiProvider = JsonUtils.getString("aiProvider", chat)
+
+            val jsonArray = JsonUtils.getJsonArray("conversations", chat)
+            val conversations = RealmList<RealmConversation>()
+            val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
+            conversations.addAll(realm.copyToRealm(unmanagedConversations))
+            chatHistory.conversations = conversations
+
+            chatHistory.lastUsed = System.currentTimeMillis()
         }
     }
 
     override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
-        executeTransaction { realm ->
-            addConversationToChatHistory(realm, id, query, response, rev)
+        update(RealmChatHistory::class.java, "_id", id) { chatHistory ->
+            if (chatHistory.conversations == null) {
+                chatHistory.conversations = RealmList()
+            }
+
+            val conversation = RealmConversation()
+            conversation.query = query
+            conversation.response = response
+
+            chatHistory.conversations?.add(conversation)
+            chatHistory.updatedDate = "${System.currentTimeMillis()}"
+            chatHistory.lastUsed = System.currentTimeMillis()
+            if (rev.isNotEmpty()) {
+                chatHistory._rev = rev
+            }
         }
     }
 }
