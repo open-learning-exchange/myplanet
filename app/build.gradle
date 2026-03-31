@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.application)
-    alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
     alias(libs.plugins.realm.android)
@@ -148,9 +147,6 @@ android {
 }
 realm {
     syncEnabled = true
-}
-kapt {
-    correctErrorTypes = true
 }
 kotlin {
     compilerOptions {

@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.application) apply false
-    alias(libs.plugins.legacy.kapt) apply false
     alias(libs.plugins.realm.android) apply false
     alias(libs.plugins.dagger.hilt.android) apply false
     alias(libs.plugins.ksp) apply false
