@@ -1,0 +1,257 @@
+package org.ole.planet.myplanet.services.sync
+
+import android.content.Context
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.verify
+import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.data.DatabaseService
+import java.util.concurrent.atomic.AtomicBoolean
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RealmConnectionPoolTest {
+
+    private lateinit var context: Context
+    private lateinit var databaseService: DatabaseService
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        context = mockk()
+        databaseService = mockk()
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `useRealm acquires and releases connection correctly`() = runTest {
+        val mockRealm = mockk<Realm>()
+        every { mockRealm.isClosed } returns false
+        every { mockRealm.isInTransaction } returns false
+        every { mockRealm.close() } just Runs
+        every { databaseService.createManagedRealmInstance() } returns mockRealm
+
+        val config = RealmPoolConfig(maxConnections = 2)
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        var usedRealm: Realm? = null
+        pool.useRealm { realm ->
+            usedRealm = realm
+        }
+
+        assertEquals(mockRealm, usedRealm)
+        verify(exactly = 1) { databaseService.createManagedRealmInstance() }
+    }
+
+    @Test
+    fun `useRealm reuses existing connection on same thread`() = runTest {
+        val mockRealm = mockk<Realm>()
+        every { mockRealm.isClosed } returns false
+        every { mockRealm.isInTransaction } returns false
+        every { mockRealm.close() } just Runs
+        every { databaseService.createManagedRealmInstance() } returns mockRealm
+
+        val config = RealmPoolConfig(maxConnections = 2)
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        pool.useRealm { realm1 ->
+            pool.useRealm { realm2 ->
+                assertEquals(realm1, realm2)
+            }
+        }
+
+        // Ensure it's only created once
+        verify(exactly = 1) { databaseService.createManagedRealmInstance() }
+    }
+
+    @Test
+    fun `pool creates multiple connections up to maxConnections`() = runTest {
+        val mockRealm1 = mockk<Realm>()
+        every { mockRealm1.isClosed } returns false
+        every { mockRealm1.isInTransaction } returns false
+        every { mockRealm1.close() } just Runs
+
+        val mockRealm2 = mockk<Realm>()
+        every { mockRealm2.isClosed } returns false
+        every { mockRealm2.isInTransaction } returns false
+        every { mockRealm2.close() } just Runs
+
+        var calls = 0
+        every { databaseService.createManagedRealmInstance() } answers {
+            if (calls++ == 0) mockRealm1 else mockRealm2
+        }
+
+        val config = RealmPoolConfig(maxConnections = 2)
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        val job1 = async(Dispatchers.Default) {
+            pool.useRealm {
+                delay(100)
+            }
+        }
+        val job2 = async(Dispatchers.Default) {
+            pool.useRealm {
+                delay(100)
+            }
+        }
+
+        awaitAll(job1, job2)
+
+        verify(exactly = 2) { databaseService.createManagedRealmInstance() }
+    }
+
+    @Test
+    fun `pool validates connections and removes invalid ones`() = runTest {
+        val mockRealmClosed = mockk<Realm>()
+        every { mockRealmClosed.isClosed } returns true
+        every { mockRealmClosed.isInTransaction } returns false
+        every { mockRealmClosed.close() } just Runs
+
+        val mockRealmOpen = mockk<Realm>()
+        every { mockRealmOpen.isClosed } returns false
+        every { mockRealmOpen.isInTransaction } returns false
+        every { mockRealmOpen.close() } just Runs
+
+        var callCount = 0
+        every { databaseService.createManagedRealmInstance() } answers {
+            if (callCount++ == 0) mockRealmClosed else mockRealmOpen
+        }
+
+        val config = RealmPoolConfig(maxConnections = 2, enableConnectionValidation = true)
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        pool.useRealm { }
+
+        var usedRealm: Realm? = null
+        pool.useRealm { realm ->
+            usedRealm = realm
+        }
+
+        assertEquals(mockRealmOpen, usedRealm)
+        verify(exactly = 2) { databaseService.createManagedRealmInstance() }
+    }
+
+    @Test
+    fun `pool exhausts connections and suspends`() = runTest {
+        val mockRealm = mockk<Realm>()
+        every { mockRealm.isClosed } returns false
+        every { mockRealm.isInTransaction } returns false
+        every { mockRealm.close() } just Runs
+        every { databaseService.createManagedRealmInstance() } returns mockRealm
+
+        val config = RealmPoolConfig(maxConnections = 1)
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        val secondTaskCompleted = AtomicBoolean(false)
+
+        // This will take the only permit
+        val job1 = async(Dispatchers.Default) {
+            pool.useRealm {
+                delay(100)
+            }
+        }
+
+        // This should suspend until job1 finishes
+        val job2 = async(Dispatchers.Default) {
+            pool.useRealm {
+                secondTaskCompleted.set(true)
+            }
+        }
+
+        // At this point job1 has the permit, job2 is suspended
+        delay(50)
+        assertTrue(!secondTaskCompleted.get())
+
+        awaitAll(job1, job2)
+        assertTrue(secondTaskCompleted.get())
+        verify(exactly = 1) { databaseService.createManagedRealmInstance() }
+    }
+
+    @Test
+    fun `pool cleans up expired connections during validation`() = runTest {
+        var calls = 0
+        every { databaseService.createManagedRealmInstance() } answers {
+            calls++
+            mockk<Realm> {
+                every { isClosed } returns false
+                every { isInTransaction } returns false
+                every { close() } just Runs
+            }
+        }
+
+        // Set idle timeout very low to expire connections immediately
+        val config = RealmPoolConfig(
+            maxConnections = 2,
+            idleTimeoutMs = 1,
+            validationIntervalMs = 10,
+            enableConnectionValidation = true
+        )
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        // Create connection, put it in pool
+        pool.useRealm { }
+
+        assertEquals(1, calls)
+
+        // Wait longer than idle timeout + validation interval
+        delay(20)
+
+        // Next use should trigger validation, see connection is expired, close it, and create new one
+        pool.useRealm { }
+
+        // Should have created 2 connections total (1st expired, 2nd created)
+        assertEquals(2, calls)
+    }
+
+    @Test
+    fun `isConnectionValid returns false if realm is in transaction`() = runTest {
+        val mockRealm = mockk<Realm>()
+        // Valid for first request
+        every { mockRealm.isClosed } returns false
+        // In transaction for second request
+        every { mockRealm.isInTransaction } returnsMany listOf(false, true)
+        every { mockRealm.close() } just Runs
+
+        var calls = 0
+        every { databaseService.createManagedRealmInstance() } answers {
+            calls++
+            if (calls == 1) mockRealm else {
+                mockk {
+                    every { isClosed } returns false
+                    every { isInTransaction } returns false
+                    every { close() } just Runs
+                }
+            }
+        }
+
+        val config = RealmPoolConfig(maxConnections = 2, enableConnectionValidation = true)
+        val pool = RealmConnectionPool(context, databaseService, config)
+
+        pool.useRealm { }
+
+        // Should create a new one because the first one is "in transaction" and thus invalid
+        pool.useRealm { }
+
+        assertEquals(2, calls)
+    }
+}
