@@ -96,6 +96,10 @@ class WebViewActivity : AppCompatActivity() {
             // File access settings - only allow for local resources
             allowFileAccess = isLocalResource
             allowContentAccess = false
+            @Suppress("DEPRECATION")
+            allowFileAccessFromFileURLs = false
+            @Suppress("DEPRECATION")
+            allowUniversalAccessFromFileURLs = false
             
             // Safe settings
             domStorageEnabled = true
