@@ -10,7 +10,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -42,7 +41,7 @@ open class RealmMyCourse : RealmObject() {
         if (this.userId == null) {
             this.userId = RealmList()
         }
-        if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
+        if (this.userId?.contains(userId) != true && !TextUtils.isEmpty(userId)) {
             this.userId?.add(userId)
         }
     }
@@ -64,7 +63,7 @@ open class RealmMyCourse : RealmObject() {
     }
 
     companion object {
-        private val concatenatedLinks = ArrayList<String>()
+        private val concatenatedLinks = HashSet<String>()
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
@@ -79,34 +78,38 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCoursesDoc)
             myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", myCoursesDoc)
             myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", myCoursesDoc)
-            myMyCoursesDB?.description = JsonUtils.getString("description", myCoursesDoc)
             val description = JsonUtils.getString("description", myCoursesDoc)
+            myMyCoursesDB?.description = description
             val links = extractLinks(description)
             val baseUrl = UrlUtils.getUrl()
-            for (link in links) {
-                val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
+            synchronized(concatenatedLinks) {
+                for (link in links) {
+                    concatenatedLinks.add("$baseUrl/$link")
+                }
             }
             myMyCoursesDB?.method = JsonUtils.getString("method", myCoursesDoc)
             myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCoursesDoc)
             myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCoursesDoc)
             myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", myCoursesDoc)
-            myMyCoursesDB?.setNumberOfSteps(JsonUtils.getJsonArray("steps", myCoursesDoc).size())
             val courseStepsJsonArray = JsonUtils.getJsonArray("steps", myCoursesDoc)
+            val stepsSize = courseStepsJsonArray.size()
+            myMyCoursesDB?.setNumberOfSteps(stepsSize)
             val courseStepsList = mutableListOf<RealmCourseStep>()
 
-            for (i in 0 until courseStepsJsonArray.size()) {
-                val stepId = Base64.encodeToString(courseStepsJsonArray[i].toString().toByteArray(), Base64.NO_WRAP)
-                val stepJson = courseStepsJsonArray[i].asJsonObject
+            for (i in 0 until stepsSize) {
+                val stepElement = courseStepsJsonArray[i]
+                val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+                val stepJson = stepElement.asJsonObject
                 val step = RealmCourseStep()
                 step.id = stepId
                 step.stepTitle = JsonUtils.getString("stepTitle", stepJson)
-                step.description = JsonUtils.getString("description", stepJson)
                 val stepDescription = JsonUtils.getString("description", stepJson)
+                step.description = stepDescription
                 val stepLinks = extractLinks(stepDescription)
-                for (stepLink in stepLinks) {
-                    val concatenatedLink = "$baseUrl/$stepLink"
-                    concatenatedLinks.add(concatenatedLink)
+                synchronized(concatenatedLinks) {
+                    for (stepLink in stepLinks) {
+                        concatenatedLinks.add("$baseUrl/$stepLink")
+                    }
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm, spm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
@@ -123,20 +126,19 @@ open class RealmMyCourse : RealmObject() {
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableSet()
             } else {
-                mutableListOf()
+                mutableSetOf()
             }
             val linksToProcess: List<String>
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
+            val existingSet = existingConcatenatedLinks.toHashSet()
             for (link in linksToProcess) {
-                if (!existingConcatenatedLinks.contains(link)) {
-                    existingConcatenatedLinks.add(link)
-                }
+                existingSet.add(link)
             }
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingSet.toList())
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 

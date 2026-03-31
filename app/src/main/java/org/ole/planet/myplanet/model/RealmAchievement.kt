@@ -5,6 +5,7 @@ import android.widget.EditText
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -32,6 +33,9 @@ open class RealmAchievement : RealmObject() {
 
     val achievementsArray: JsonArray
         get() = parseStringListToJsonArray(achievements)
+
+    @io.realm.annotations.Ignore
+    private var cachedReferencesArray: JsonArray? = null
 
     fun getReferencesArray(): JsonArray {
         return parseStringListToJsonArray(references)
@@ -72,6 +76,7 @@ open class RealmAchievement : RealmObject() {
     }
 
     fun setReferences(of: JsonArray?) {
+        cachedReferencesArray = null
         references = RealmList()
         if (of == null) return
         for (el in of) {

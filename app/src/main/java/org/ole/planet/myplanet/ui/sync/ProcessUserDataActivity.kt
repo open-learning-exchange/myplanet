@@ -192,27 +192,36 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
-        if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            userName?.let { name ->
-                                fetchAndLogUserSecurityData(name, securityCallback)
-                            } ?: run {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
-                        }
-                    })
-                }
-            })
-            return
-        } else if (source == "login") {
-            applicationScope.launch(Dispatchers.IO) {
-                uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
-            }
-            return
+        when (source) {
+            "becomeMember" -> uploadMemberData(userName, securityCallback)
+            "login" -> uploadLoginData()
+            else -> uploadBulkData()
         }
+    }
+
+    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+        uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
+            override fun onSuccess(success: String?) {
+                uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
+                    override fun onSuccess(success: String?) {
+                        userName?.let { name ->
+                            fetchAndLogUserSecurityData(name, securityCallback)
+                        } ?: run {
+                            securityCallback?.onSecurityDataUpdated()
+                        }
+                    }
+                })
+            }
+        })
+    }
+
+    private fun uploadLoginData() {
+        applicationScope.launch(Dispatchers.IO) {
+            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+        }
+    }
+
+    private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
