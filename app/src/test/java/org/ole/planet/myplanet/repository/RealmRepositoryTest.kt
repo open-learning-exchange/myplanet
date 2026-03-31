@@ -14,6 +14,7 @@ import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -26,7 +27,10 @@ import org.ole.planet.myplanet.data.DatabaseService
 
 class TestRealmObject : RealmObject()
 
-class TestRealmRepository(databaseService: DatabaseService) : RealmRepository(databaseService) {
+class TestRealmRepository(
+    databaseService: DatabaseService,
+    realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher) {
     suspend fun queryFlow() = queryListFlow(TestRealmObject::class.java)
 }
 
@@ -47,7 +51,7 @@ class RealmRepositoryTest {
         every { databaseService.ioDispatcher } returns testDispatcher
         every { databaseService.createManagedRealmInstance() } returns realm
 
-        repository = TestRealmRepository(databaseService)
+        repository = TestRealmRepository(databaseService, testDispatcher)
     }
 
     @After
