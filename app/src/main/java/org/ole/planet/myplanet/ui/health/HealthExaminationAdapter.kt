@@ -62,10 +62,10 @@ class HealthExaminationAdapter(
                 model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             }
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_grey_50))
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {
             binding.txtDate.text = context.getString(R.string.self_examination, binding.txtDate.text)
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, com.mikepenz.materialize.R.color.md_green_50))
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
         }
 
         binding.txtPulse.text = item.let { checkEmptyInt(it.pulse) }
