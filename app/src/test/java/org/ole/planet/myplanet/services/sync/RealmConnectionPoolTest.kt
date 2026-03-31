@@ -110,20 +110,28 @@ class RealmConnectionPoolTest {
         val config = RealmPoolConfig(maxConnections = 2)
         val pool = RealmConnectionPool(context, databaseService, config)
 
-        val job1 = async(Dispatchers.Default) {
-            pool.useRealm {
-                delay(200)
-            }
-        }
-        val job2 = async(Dispatchers.Default) {
-            pool.useRealm {
-                delay(200)
-            }
-        }
+        val dispatcher1 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val dispatcher2 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-        awaitAll(job1, job2)
+        try {
+            val job1 = async(dispatcher1) {
+                pool.useRealm {
+                    delay(200)
+                }
+            }
+            val job2 = async(dispatcher2) {
+                pool.useRealm {
+                    delay(200)
+                }
+            }
 
-        verify(exactly = 2) { databaseService.createManagedRealmInstance() }
+            awaitAll(job1, job2)
+
+            verify(exactly = 2) { databaseService.createManagedRealmInstance() }
+        } finally {
+            dispatcher1.close()
+            dispatcher2.close()
+        }
     }
 
     @Test
