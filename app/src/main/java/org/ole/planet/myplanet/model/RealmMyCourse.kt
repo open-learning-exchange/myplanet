@@ -134,10 +134,11 @@ open class RealmMyCourse : RealmObject() {
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
+            val existingSet = existingConcatenatedLinks.toHashSet()
             for (link in linksToProcess) {
-                existingConcatenatedLinks.add(link)
+                existingSet.add(link)
             }
-            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingSet.toList())
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
