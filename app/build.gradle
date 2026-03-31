@@ -157,12 +157,6 @@ kotlin {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
-repositories {
-    mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    maven { url = uri("https://maven.google.com") }
-}
 dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)
