@@ -45,14 +45,11 @@
 
 # Realm Keep Rules
 -keep class io.realm.** { *; }
--keep class * extends io.realm.RealmObject
--keep class * extends io.realm.RealmModel
--keep @io.realm.annotations.RealmClass class *
-
-# Hilt Keep Rules
--keep class dagger.hilt.** { *; }
--keep @dagger.hilt.android.AndroidEntryPoint class *
--keep @dagger.hilt.android.lifecycle.HiltViewModel class *
+-keep class * extends io.realm.RealmObject { *; }
+-keep class * extends io.realm.RealmModel { *; }
 
 # Retrofit / Gson Keep Rules
 -keep class org.ole.planet.myplanet.model.** { *; }
+-keepclasseswithmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
