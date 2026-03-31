@@ -14,13 +14,15 @@ import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import java.security.GeneralSecurityException
 
 object SecurePrefs {
-    private const val PREFS_FILE_NAME = "secure_store"
+    private const val ENCRYPTED_PREFS_FILE_NAME = "secure_store_v2"
+    private const val PLAIN_PREFS_FILE_NAME = "secure_store"
     private const val LEGACY_FILE_NAME = "secure_prefs"
     private const val KEYSET_NAME = "master_keyset"
     private const val PREF_FILE_NAME = "master_key_preference"
     private const val MASTER_KEY_URI = "android-keystore://master_key"
 
     @Volatile private var cachedAead: Aead? = null
+    @Volatile private var cachedSecureStore: SharedPreferences? = null
 
     init {
         try {
@@ -52,8 +54,50 @@ object SecurePrefs {
         if (cachedAead == null) getAead(context)
     }
 
+    @Suppress("DEPRECATION")
+    private fun buildSecureStore(context: Context): SharedPreferences {
+        return try {
+            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            val encryptedPrefs = EncryptedSharedPreferences.create(
+                context,
+                ENCRYPTED_PREFS_FILE_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+
+            val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+            if (plainPrefs.all.isNotEmpty()) {
+                encryptedPrefs.edit(commit = true) {
+                    plainPrefs.all.forEach { (key, value) ->
+                        when (value) {
+                            is String -> putString(key, value)
+                            is Boolean -> putBoolean(key, value)
+                            is Int -> putInt(key, value)
+                            is Long -> putLong(key, value)
+                            is Float -> putFloat(key, value)
+                            is Set<*> -> {
+                                @Suppress("UNCHECKED_CAST")
+                                putStringSet(key, value as Set<String>)
+                            }
+                        }
+                    }
+                }
+                plainPrefs.edit(commit = true) { clear() }
+            }
+            encryptedPrefs
+        } catch (e: Exception) {
+            e.printStackTrace()
+            context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+        }
+    }
+
     private fun getSecureStore(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
+        return cachedSecureStore ?: synchronized(this) {
+            cachedSecureStore ?: buildSecureStore(context.applicationContext).also { cachedSecureStore = it }
+        }
     }
 
     @Suppress("DEPRECATION")
