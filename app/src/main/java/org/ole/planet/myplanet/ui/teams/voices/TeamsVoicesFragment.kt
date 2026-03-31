@@ -259,9 +259,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        if (isRealmInitialized()) {
-            requireRealmInstance().close()
-        }
+
         _binding = null
         super.onDestroyView()
     }

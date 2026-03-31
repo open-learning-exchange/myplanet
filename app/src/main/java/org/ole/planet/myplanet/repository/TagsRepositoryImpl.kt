@@ -43,6 +43,14 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
+    override suspend fun getLinkedCourseIds(db: String, tagIds: Array<String>): Set<String> {
+        val links = queryList(RealmTag::class.java) {
+            equalTo("db", db)
+            `in`("tagId", tagIds)
+        }
+        return links.mapNotNull { it.linkId }.toSet()
+    }
+
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
