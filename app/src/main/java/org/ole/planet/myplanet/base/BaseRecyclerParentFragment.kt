@@ -26,7 +26,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 when (c) {
                     RealmMyCourse::class.java -> {
                         val combinedList = mutableListOf<RealmMyCourse>()
-                        (myLibItems as List<RealmMyCourse>).forEach { course ->
+                        myLibItems.forEach { course ->
                             course.isMyCourse = true
                             combinedList.add(course)
                         }

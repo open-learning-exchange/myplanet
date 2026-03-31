@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.DatabaseService
 import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmTag
 
@@ -23,11 +23,9 @@ class TagsRepositoryImpl @Inject constructor(
         val allTags = queryList(RealmTag::class.java)
         val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t ->
-            t.attachedTo?.forEach { parent ->
+            t.attachedTo?.distinct()?.forEach { parent ->
                 val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
-                if (!list.contains(t)) {
-                    list.add(t)
-                }
+                list.add(t)
             }
         }
         return childMap
