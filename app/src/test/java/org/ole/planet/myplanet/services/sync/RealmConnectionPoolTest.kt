@@ -110,21 +110,34 @@ class RealmConnectionPoolTest {
         val config = RealmPoolConfig(maxConnections = 2)
         val pool = RealmConnectionPool(context, databaseService, config)
 
+        val releaseJobs = CompletableDeferred<Unit>()
+        val job1Acquired = CompletableDeferred<Unit>()
+        val job2Acquired = CompletableDeferred<Unit>()
+
+        // Explicit threads are used here to bypass `ThreadLocal` connection caching, forcing the
+        // connection pool to generate distinct connections up to its maximum concurrent limit.
         val dispatcher1 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
         val dispatcher2 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
         try {
             val job1 = async(dispatcher1) {
                 pool.useRealm {
-                    delay(200)
+                    job1Acquired.complete(Unit)
+                    releaseJobs.await()
                 }
             }
             val job2 = async(dispatcher2) {
                 pool.useRealm {
-                    delay(200)
+                    job2Acquired.complete(Unit)
+                    releaseJobs.await()
                 }
             }
 
+            // Wait for both connections to be checked out simultaneously
+            awaitAll(job1Acquired, job2Acquired)
+
+            // Allow both coroutines to complete
+            releaseJobs.complete(Unit)
             awaitAll(job1, job2)
 
             verify(exactly = 2) { databaseService.createManagedRealmInstance() }
@@ -136,10 +149,12 @@ class RealmConnectionPoolTest {
 
     @Test
     fun `pool validates connections and removes invalid ones`() = runTest {
-        val mockRealmClosed = mockk<Realm>()
-        every { mockRealmClosed.isClosed } returns true
-        every { mockRealmClosed.isInTransaction } returns false
-        every { mockRealmClosed.close() } just Runs
+        val mockRealmInvalid = mockk<Realm>()
+        // Return false for isClosed so the pool attempts to close it,
+        // but true for isInTransaction so isConnectionValid() returns false
+        every { mockRealmInvalid.isClosed } returns false
+        every { mockRealmInvalid.isInTransaction } returns true
+        every { mockRealmInvalid.close() } just Runs
 
         val mockRealmOpen = mockk<Realm>()
         every { mockRealmOpen.isClosed } returns false
@@ -148,7 +163,7 @@ class RealmConnectionPoolTest {
 
         var callCount = 0
         every { databaseService.createManagedRealmInstance() } answers {
-            if (callCount++ == 0) mockRealmClosed else mockRealmOpen
+            if (callCount++ == 0) mockRealmInvalid else mockRealmOpen
         }
 
         val config = RealmPoolConfig(maxConnections = 2, enableConnectionValidation = true)
@@ -163,6 +178,7 @@ class RealmConnectionPoolTest {
 
         assertEquals(mockRealmOpen, usedRealm)
         verify(exactly = 2) { databaseService.createManagedRealmInstance() }
+        verify(exactly = 1) { mockRealmInvalid.close() }
     }
 
     @Test
@@ -177,45 +193,45 @@ class RealmConnectionPoolTest {
         val pool = RealmConnectionPool(context, databaseService, config)
 
         val secondTaskCompleted = AtomicBoolean(false)
-        val job1Started = CompletableDeferred<Unit>()
+        val job1Acquired = CompletableDeferred<Unit>()
         val releaseJob1 = CompletableDeferred<Unit>()
 
+        // We use explicit SingleThreadExecutors to ensure job1 and job2 run on distinct physical threads.
+        // This purposefully bypasses the `ThreadLocal` fast-path in `RealmConnectionPool.useRealm`
+        // so we can test the actual semaphore locking mechanism when maxConnections is reached.
         val dispatcher1 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
         val dispatcher2 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
         try {
-            // Launch on different thread to avoid ThreadLocal caching
             val job1 = async(dispatcher1) {
                 pool.useRealm {
-                    job1Started.complete(Unit)
-                    // suspend here until we tell it to finish
+                    job1Acquired.complete(Unit)
                     releaseJob1.await()
                 }
             }
 
-            // Wait until job1 has definitively acquired the Realm connection
-            job1Started.await()
+            // Wait until job1 has definitively acquired the only connection
+            job1Acquired.await()
 
-            // This should suspend inside pool.useRealm since the single connection is checked out by another thread
+            // This should suspend inside pool.useRealm since the single connection is checked out
             val job2 = async(dispatcher2) {
                 pool.useRealm {
                     secondTaskCompleted.set(true)
                 }
             }
 
-            // Yield to let job2 start and block on the permit.
+            // Yield to ensure job2 starts and hits the semaphore suspension point
             delay(50)
 
-            // job2 should be suspended, not completed
+            // Structurally, job2 cannot proceed until job1 releases the permit.
             assertTrue(!secondTaskCompleted.get())
 
-            // Release job1
+            // Release job1 so job2 can acquire the permit and finish
             releaseJob1.complete(Unit)
 
-            // Wait for both to finish completely
             awaitAll(job1, job2)
 
-            // Now job2 should have gotten the permit and completed
+            // job2 should have gotten the permit and completed
             assertTrue(secondTaskCompleted.get())
             verify(exactly = 1) { databaseService.createManagedRealmInstance() }
         } finally {
