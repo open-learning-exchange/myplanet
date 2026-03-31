@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.voices
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -122,7 +123,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                                 val result = voicesRepository.getReplyCount(newsId)
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Utilities.logException(e, "ReplyActivity")
                             }
                         }
                         return@VoicesAdapter { job.cancel() }
@@ -242,7 +243,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         try {
             showSelectedImages()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ReplyActivity")
         }
     }
 

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.NotificationManager
@@ -200,7 +201,7 @@ class DownloadService : Service() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "DownloadService")
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
         }
     }
@@ -408,7 +409,7 @@ class DownloadService : Service() {
                     try {
                         ContextCompat.startForegroundService(context, intent)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "DownloadService")
                         handleForegroundServiceError(context, urlsKey, fromSync)
                     }
                 } else {
@@ -418,7 +419,7 @@ class DownloadService : Service() {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "DownloadService")
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
             }
@@ -438,7 +439,7 @@ class DownloadService : Service() {
                 }
                 context.startService(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DownloadService")
                 startDownloadWork(context, urlsKey, fromSync)
             }
         }

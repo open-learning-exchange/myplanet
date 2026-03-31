@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -45,7 +46,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
@@ -439,7 +439,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TeamDetailFragment")
         }
     }
 

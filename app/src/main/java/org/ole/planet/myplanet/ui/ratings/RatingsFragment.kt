@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.ratings
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class RatingsFragment : DialogFragment() {

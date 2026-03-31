@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import com.google.gson.JsonArray
 import io.realm.Sort
 import javax.inject.Inject
@@ -59,7 +60,7 @@ class CommunityRepositoryImpl @Inject constructor(
                 false
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "CommunityRepositoryImpl")
             false
         }
     }

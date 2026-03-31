@@ -43,7 +43,7 @@ object FileUtils {
                     throw IOException("Failed to create directory: ${fullDir.absolutePath}")
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
+                Utilities.logException(e, "FileUtils")
                 throw RuntimeException("Failed to create directory: ${fullDir.absolutePath}", e)
             }
 
@@ -55,7 +55,7 @@ object FileUtils {
                     throw IOException("Failed to create directory: ${baseDirectory.absolutePath}")
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
+                Utilities.logException(e, "FileUtils")
                 throw RuntimeException("Failed to create directory: ${baseDirectory.absolutePath}", e)
             }
             return File(baseDirectory, filename)
@@ -87,7 +87,7 @@ object FileUtils {
                 URLDecoder.decode(it, StandardCharsets.UTF_8.name())
             } ?: ""
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "FileUtils")
             ""
         }
     }
@@ -100,7 +100,7 @@ object FileUtils {
                 if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
             } ?: ""
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "FileUtils")
             ""
         }
     }
@@ -128,7 +128,7 @@ object FileUtils {
             session.commit(intentSender)
             session.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "FileUtils")
         }
     }
 
@@ -233,7 +233,7 @@ object FileUtils {
             }
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "FileUtils")
             null
         }
     }
@@ -325,7 +325,7 @@ object FileUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "FileUtils")
             android.widget.Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
         }
     }

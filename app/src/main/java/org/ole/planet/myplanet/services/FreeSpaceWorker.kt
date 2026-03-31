@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -39,7 +40,7 @@ class FreeSpaceWorker @AssistedInject constructor(
 
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "FreeSpaceWorker")
             Result.failure()
         }
     }

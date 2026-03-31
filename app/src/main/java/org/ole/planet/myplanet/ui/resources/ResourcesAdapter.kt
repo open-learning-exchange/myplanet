@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -25,7 +26,6 @@ import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
     private val context: Context,

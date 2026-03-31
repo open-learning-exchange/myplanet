@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -111,7 +112,7 @@ open class RealmNews : RealmObject() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "RealmNews")
         }
         return time
     }
@@ -145,7 +146,7 @@ open class RealmNews : RealmObject() {
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "RealmNews")
             }
 
             news.userId = user?.id
@@ -184,14 +185,14 @@ open class RealmNews : RealmObject() {
                                     news.conversations = JsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
-                                e.printStackTrace()
+                                Utilities.logException(e, "RealmNews")
                             }
                         }
                     }
                     news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "RealmNews")
                 }
             }
 

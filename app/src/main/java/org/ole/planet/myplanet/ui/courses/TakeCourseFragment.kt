@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -28,7 +29,6 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
@@ -217,7 +217,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "TakeCourseFragment")
             }
 
             binding.courseProgress.max = stepsSize
@@ -347,7 +347,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 Utilities.toast(activity, "course $statusMessage ${getString(R.string.my_courses)}")
                 setCourseData()
             }.onFailure { e ->
-                e.printStackTrace()
+                Utilities.logException(e, "TakeCourseFragment")
                 Utilities.toast(activity, "Failed to update course: ${e.message}")
             }
         }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
@@ -64,7 +65,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {

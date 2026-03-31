@@ -238,7 +238,7 @@ object NotificationUtils {
             val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)
             daysUntilDeadline <= 2
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "NotificationUtils")
             false
         }
     }
@@ -326,7 +326,7 @@ object NotificationUtils {
                 markNotificationAsShown(config.id)
                 true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "NotificationUtils")
                 false
             }
         }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
@@ -26,7 +27,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @HiltWorker
 class AutoSyncWorker @AssistedInject constructor(

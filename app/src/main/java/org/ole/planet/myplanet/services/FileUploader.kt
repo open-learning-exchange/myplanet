@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
@@ -60,7 +61,7 @@ open class FileUploader(
                     listener.onSuccess("Unable to upload resource")
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
+                Utilities.logException(e, "FileUploader")
                 listener.onSuccess("Unable to upload resource")
             }
         }

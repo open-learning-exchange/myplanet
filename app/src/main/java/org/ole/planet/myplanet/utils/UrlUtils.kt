@@ -34,7 +34,7 @@ object UrlUtils {
                     hostIp = uri.host ?: hostIp
                     scheme = uri.scheme ?: scheme
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UrlUtils")
                 }
             }
 

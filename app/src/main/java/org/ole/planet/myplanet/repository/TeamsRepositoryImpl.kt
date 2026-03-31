@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.SharedPreferences
 import androidx.core.net.toUri
 import com.google.gson.Gson
@@ -1016,7 +1017,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 uploadManager.uploadTeamActivities(apiInterface)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TeamsRepositoryImpl")
         }
     }
 

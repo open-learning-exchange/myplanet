@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class ChatMessage(
     val message: String,
     val viewType: Int,

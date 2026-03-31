@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
@@ -38,7 +39,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @Singleton
 class UploadToShelfService @Inject constructor(
@@ -75,7 +75,7 @@ class UploadToShelfService @Inject constructor(
                             updateExistingUser(apiInterface, header, model)
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadToShelfService")
                     }
                 }
 
@@ -111,7 +111,7 @@ class UploadToShelfService @Inject constructor(
                             updateExistingUser(apiInterface, header, userModel)
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadToShelfService")
                     }
                 }
                 uploadSingleUserToShelf(userName, listener)
@@ -129,7 +129,7 @@ class UploadToShelfService @Inject constructor(
             val exists = res.body() != null
             return exists
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UploadToShelfService")
             return false
         }
     }
@@ -151,7 +151,7 @@ class UploadToShelfService @Inject constructor(
                 processUserAfterCreation(apiInterface, model, obj)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UploadToShelfService")
         }
     }
 
@@ -171,7 +171,7 @@ class UploadToShelfService @Inject constructor(
                 healthRepository.updateExaminationUserId(model.id ?: "", model._id ?: "")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UploadToShelfService")
         }
     }
 
@@ -198,7 +198,7 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UploadToShelfService")
         }
     }
 
@@ -277,7 +277,7 @@ class UploadToShelfService @Inject constructor(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UploadToShelfService")
                 }
             }
 
@@ -310,7 +310,7 @@ class UploadToShelfService @Inject constructor(
                             }
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadToShelfService")
                     }
                 }
 
@@ -356,14 +356,14 @@ class UploadToShelfService @Inject constructor(
                             shelfData
                         )
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadToShelfService")
                     }
                 }
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UploadToShelfService")
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
                 }
@@ -394,7 +394,7 @@ class UploadToShelfService @Inject constructor(
                     listener.onSuccess("Single user shelf sync completed successfully")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UploadToShelfService")
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Unable to update document: ${e.localizedMessage}")
                 }
@@ -448,7 +448,7 @@ class UploadToShelfService @Inject constructor(
                     apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UploadToShelfService")
             }
         }
     }

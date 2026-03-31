@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
@@ -44,7 +45,6 @@ import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
@@ -56,7 +57,7 @@ class SurveysRepositoryImpl @Inject constructor(
                         put("isFromNation", exam.isFromNation)
                     }.toString()
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "SurveysRepositoryImpl")
                     "{}"
                 }
 
@@ -79,7 +80,7 @@ class SurveysRepositoryImpl @Inject constructor(
                         }
                     }.toString()
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "SurveysRepositoryImpl")
                     "{}"
                 }
 

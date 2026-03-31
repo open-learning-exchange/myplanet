@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.graphics.pdf.PdfRenderer
 import android.media.MediaMetadataRetriever
@@ -23,7 +24,6 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
     private val onResourceClick: (RealmMyLibrary) -> Unit
@@ -152,7 +152,7 @@ class InlineResourceAdapter(
             binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
             binding.ivResourcePreview.setImageBitmap(bitmap)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "InlineResourceAdapter")
         }
     }
 
@@ -194,7 +194,7 @@ class InlineResourceAdapter(
                 binding.tvTextPreview.text = preview.toString().trimEnd()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "InlineResourceAdapter")
         }
     }
 
@@ -207,7 +207,7 @@ class InlineResourceAdapter(
                 binding.tvTextPreview.text = lines.joinToString("\n")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "InlineResourceAdapter")
         }
     }
 

@@ -18,7 +18,7 @@ class Sha256Utils {
             val hash = digest.digest()
             hash.joinToString(separator = "") { "%02x".format(it) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "Sha256Utils")
             ""
         }
     }

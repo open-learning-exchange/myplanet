@@ -26,7 +26,7 @@ object RetryUtils {
                 kotlinx.coroutines.delay(delayMs)
             }
         }
-        lastException?.printStackTrace()
+        lastException?.let { Utilities.logException(it, "RetryUtils") }
         return result
     }
 }

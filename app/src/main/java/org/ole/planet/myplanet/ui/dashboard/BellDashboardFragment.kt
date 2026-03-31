@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -131,7 +132,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val reachable = isServerReachable(mapping)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "BellDashboardFragment")
             setNetworkIndicatorColor(R.color.md_yellow_600)
         }
     }

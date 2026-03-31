@@ -69,7 +69,7 @@ object CameraUtils {
             backgroundHandler = null
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
-            e.printStackTrace()
+            Utilities.logException(e, "CameraUtils")
         }
     }
 
@@ -150,7 +150,7 @@ object CameraUtils {
                 callback.onImageCapture(mainPicture.absolutePath)
             }
         } catch (error: Exception) {
-            error.printStackTrace()
+            Utilities.logException(error, "CameraUtils")
         }
     }
 
@@ -176,7 +176,7 @@ object CameraUtils {
                 }
             }, null)
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            Utilities.logException(e, "CameraUtils")
         }
     }
 
@@ -197,7 +197,7 @@ object CameraUtils {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "CameraUtils")
                         }
                     }
 
@@ -217,7 +217,7 @@ object CameraUtils {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "CameraUtils")
                         }
                     }
 
@@ -226,7 +226,7 @@ object CameraUtils {
                 )
             }
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            Utilities.logException(e, "CameraUtils")
         }
     }
 

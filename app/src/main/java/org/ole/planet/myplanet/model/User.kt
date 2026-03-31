@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class User(
     val fullName: String? = null,
     val name: String? = null,

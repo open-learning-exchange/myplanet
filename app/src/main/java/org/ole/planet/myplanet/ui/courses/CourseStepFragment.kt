@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
@@ -262,7 +263,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "CourseStepFragment")
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -82,7 +83,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "NotificationActionReceiver")
         }
 
         withContext(dispatcherProvider.main) {
@@ -98,7 +99,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 val broadcastService = getBroadcastService(context)
                 broadcastService.sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "NotificationActionReceiver")
             }
 
             try {
@@ -108,7 +109,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(dashboardIntent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "NotificationActionReceiver")
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -50,7 +51,6 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -479,7 +479,7 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "BaseResourceFragment")
             } finally {
                 if (!mRealm.isClosed) {
                     mRealm.close()

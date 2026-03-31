@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -41,7 +42,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {

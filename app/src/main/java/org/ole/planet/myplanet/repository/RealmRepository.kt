@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
@@ -73,7 +74,7 @@ open class RealmRepository(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "RealmRepository")
                 }
                 try {
                     realm?.let { r ->
@@ -82,7 +83,7 @@ open class RealmRepository(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "RealmRepository")
                 }
             }
         }
@@ -98,7 +99,7 @@ open class RealmRepository(
                         send(copiedList)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "RealmRepository")
                 }
             }
         }
@@ -119,7 +120,7 @@ open class RealmRepository(
                         val frozenResults = changedResults.freeze()
                         channel.trySend(frozenResults)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "RealmRepository")
                     }
                 }
             }

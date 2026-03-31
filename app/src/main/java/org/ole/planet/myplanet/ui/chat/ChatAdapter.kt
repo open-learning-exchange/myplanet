@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -14,7 +15,6 @@ import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 class ChatAdapter(
     val context: Context,

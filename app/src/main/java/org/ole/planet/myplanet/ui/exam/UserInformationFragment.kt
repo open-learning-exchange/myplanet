@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
@@ -37,7 +38,6 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -287,7 +287,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UserInformationFragment")
                 Log.e("UserInformationFragment", "Error in saveSubmission", e)
                 withContext(Dispatchers.Main) {
                     Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
@@ -389,7 +389,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             uploadManager.uploadSubmissions(capturedSyncStartTime)
         } catch (e: Exception) {
             Log.e("UserInformationFragment", "Error during upload", e)
-            e.printStackTrace()
+            Utilities.logException(e, "UserInformationFragment")
         }
     }
 

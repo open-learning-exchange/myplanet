@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.AchievementFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.Utilities
 
 open class DashboardPluginFragment : BaseContainerFragment() {
 

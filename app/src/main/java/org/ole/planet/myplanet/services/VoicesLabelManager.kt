@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.view.View
 import fisk.chipcloud.ChipCloud
@@ -14,7 +15,6 @@ import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Utilities
 
 class VoicesLabelManager(
     private val context: Context,
@@ -53,7 +53,7 @@ class VoicesLabelManager(
                                 showChips(binding, voice, canManageLabels)
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "VoicesLabelManager")
                         }
                     }
                 }
@@ -91,7 +91,7 @@ class VoicesLabelManager(
                                     showChips(binding, voice, canManageLabels)
                                 }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Utilities.logException(e, "VoicesLabelManager")
                             }
                         }
                     }

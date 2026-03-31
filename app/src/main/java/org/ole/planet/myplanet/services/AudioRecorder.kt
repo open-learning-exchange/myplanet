@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -23,7 +24,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
-import org.ole.planet.myplanet.utils.Utilities
 
 class AudioRecorder {
     private var outputFile: String? = null

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -170,7 +171,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "BaseVoicesFragment")
         }
     }
 

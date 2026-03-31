@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.data.api
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -40,7 +41,7 @@ class ChatApiService @Inject constructor(
                 object : TypeToken<Map<String, Boolean>>() {}.type
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ChatApiService")
             null
         }
     }

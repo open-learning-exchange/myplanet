@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.Manifest
 import android.app.Dialog
 import android.content.ContentValues
@@ -45,7 +46,6 @@ import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddResourceFragment : BottomSheetDialogFragment() {

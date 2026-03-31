@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
@@ -82,7 +83,6 @@ import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
@@ -273,7 +273,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         delay(500)
                         restartApp()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "SyncActivity")
                         customProgressDialog.dismiss()
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
                         dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
@@ -340,7 +340,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 return true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncActivity")
         }
 
         syncFailed = true
@@ -405,7 +405,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncActivity")
             false
         }
     }
@@ -561,7 +561,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncActivity")
         }
     }
 
@@ -642,7 +642,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         profileDbHandler.onLoginAsync(
             callback = {},
             onError = { error ->
-                error.printStackTrace()
+                Utilities.logException(error, "SyncActivity")
             }
         )
 
@@ -808,7 +808,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncActivity")
         }
     }
 

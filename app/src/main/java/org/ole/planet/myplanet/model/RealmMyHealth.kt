@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 class RealmMyHealth {
     var profile: RealmMyHealthProfile? = null
     var userKey: String? = null

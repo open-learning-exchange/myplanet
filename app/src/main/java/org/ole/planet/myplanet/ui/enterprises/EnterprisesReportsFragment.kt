@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
@@ -36,7 +37,6 @@ import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class EnterprisesReportsFragment : BaseTeamFragment() {
@@ -82,7 +82,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                             }
                             Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
                         } catch (e: IOException) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "EnterprisesReportsFragment")
                             Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
                     }
@@ -172,7 +172,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                         viewModel.addReport(doc)
                         dialog.dismiss()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "EnterprisesReportsFragment")
                         Utilities.toast(requireContext(), "Failed to add report. Please try again.")
                     }
                 }

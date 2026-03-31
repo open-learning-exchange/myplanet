@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dictionary
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
@@ -64,7 +64,7 @@ class DictionaryActivity : BaseActivity() {
                 }
                 JsonUtils.gson.fromJson(data, JsonArray::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DictionaryActivity")
                 null
             }
             json?.let { jsonArray ->

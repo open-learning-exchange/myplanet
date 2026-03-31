@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -28,7 +29,6 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,

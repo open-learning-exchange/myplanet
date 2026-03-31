@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
@@ -28,7 +29,6 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.NotificationUtils.create
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
@@ -98,7 +98,7 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
                 pdfRenderer.close()
                 fileDescriptor.close()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "PDFReaderActivity")
                 Toast.makeText(applicationContext, getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show()
             }
         } else {

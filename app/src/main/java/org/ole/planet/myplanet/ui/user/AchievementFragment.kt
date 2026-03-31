@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
@@ -155,7 +156,7 @@ class AchievementFragment : BaseContainerFragment() {
                 achievementData = loadAchievementDataAsync()
                 updateAchievementUI()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "AchievementFragment")
             }
         }
     }

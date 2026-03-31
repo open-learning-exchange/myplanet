@@ -90,11 +90,11 @@ object Utilities {
     }
 
     @JvmStatic
-    fun logException(e: Throwable) {
+    fun logException(e: Throwable, tag: String = "Exception") {
         if (BuildConfig.DEBUG) {
             e.printStackTrace()
         } else {
-            Log.e("Exception", e.message ?: e.toString())
+            Log.e(tag, e.javaClass.simpleName)
         }
     }
 }

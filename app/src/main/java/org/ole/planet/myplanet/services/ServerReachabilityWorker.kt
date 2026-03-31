@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -83,7 +84,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
             Result.retry()
         }
     }
@@ -117,7 +118,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
         }
     }
 
@@ -148,7 +149,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
         try {
             notificationManager.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
         }
     }
 
@@ -178,7 +179,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
             uploadSubmissions()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
             uploadSubmissions()
         }
     }
@@ -195,7 +196,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
         }
     }
 
@@ -212,7 +213,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
             uploadManager.uploadExamResult(successListener)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
         }
     }
 
@@ -238,7 +239,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 planetString
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerReachabilityWorker")
             "Server"
         }
     }

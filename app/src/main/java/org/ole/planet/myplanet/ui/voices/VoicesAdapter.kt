@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.voices
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.makeExpandable
 
 class VoicesAdapter(
@@ -517,7 +517,7 @@ class VoicesAdapter(
                 replyCountCache[newsId] = replyCount
                 applyReplyCount(viewHolder.binding, replyCount, position)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "VoicesAdapter")
             }
         }
     }

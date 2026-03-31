@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 class DocumentResponse {
     private var totalRows: String? = null
     private var offset: String? = null

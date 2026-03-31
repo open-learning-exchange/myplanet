@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.Spannable
 import android.text.SpannableStringBuilder
@@ -81,7 +82,7 @@ class CSVViewerActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "CSVViewerActivity")
                 withContext(Dispatchers.Main) {
                     binding.csvFileContent.text = "Error reading file: ${e.message}"
                 }

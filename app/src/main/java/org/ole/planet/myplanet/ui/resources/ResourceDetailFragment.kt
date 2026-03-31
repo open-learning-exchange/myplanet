@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -23,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
@@ -69,7 +69,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     library = updatedLibrary
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ResourceDetailFragment")
             }
             binding.btnDownload.setImageResource(R.drawable.ic_play)
             val currentUserId = profileDbHandler.getUserModel()?.id
@@ -144,12 +144,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             try {
                 profileDbHandler.setResourceOpenCount(library)
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Utilities.logException(ex, "ResourceDetailFragment")
             }
             try {
                 onRatingChanged()
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Utilities.logException(ex, "ResourceDetailFragment")
             }
             setupDownloadButton()
             setClickListeners()
@@ -229,7 +229,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         null
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "ResourceDetailFragment")
                     null
                 }
                 try {
@@ -237,7 +237,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         library = updatedLibrary
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "ResourceDetailFragment")
                 }
                 Utilities.toast(activity, getString(R.string.resources) + " " +
                         if (isAdd) getString(R.string.added_to_my_library)
@@ -268,7 +268,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     setRatings(rating)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ResourceDetailFragment")
             }
         }
     }

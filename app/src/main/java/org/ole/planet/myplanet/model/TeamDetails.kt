@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class TeamStatus(
     val isMember: Boolean,
     val isLeader: Boolean,

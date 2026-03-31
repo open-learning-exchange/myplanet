@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.Manifest
 import android.app.AppOpsManager
 import android.content.ActivityNotFoundException
@@ -18,7 +19,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     fun checkPermission(strPermission: String?): Boolean {
@@ -44,7 +44,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             }
             mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "BasePermissionActivity")
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {
@@ -111,7 +111,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             packageInfo.requestedPermissions?.contains(permission) == true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "BasePermissionActivity")
             false
         }
     }
@@ -344,7 +344,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Utilities.logException(e, "BasePermissionActivity")
         }
     }
 
@@ -356,7 +356,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Utilities.logException(e, "BasePermissionActivity")
         }
     }
 

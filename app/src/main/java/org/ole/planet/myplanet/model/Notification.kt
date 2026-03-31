@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class Notification(
     val id: String,
     val formattedText: CharSequence,

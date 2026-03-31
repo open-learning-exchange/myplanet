@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import io.realm.Realm
 import org.ole.planet.myplanet.data.DatabaseService
 
@@ -25,7 +26,7 @@ object ThreadSafeRealmManager {
                 operation(realm)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ThreadSafeRealmManager")
             null
         }
     }

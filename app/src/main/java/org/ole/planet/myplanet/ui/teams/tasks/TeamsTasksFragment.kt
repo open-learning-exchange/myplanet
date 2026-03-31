@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams.tasks
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
@@ -37,7 +38,6 @@ import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {

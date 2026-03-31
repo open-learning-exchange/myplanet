@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.personals
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -24,7 +25,6 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class PersonalsFragment : Fragment(), OnPersonalSelectedListener {

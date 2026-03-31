@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.health
 
+import org.ole.planet.myplanet.utils.Utilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -35,7 +36,7 @@ class AddExaminationViewModel @Inject constructor(
                 healthRepository.saveExamination(examination, pojo, user)
                 _saveResult.emit(true)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "AddExaminationViewModel")
                 _saveResult.emit(false)
             } finally {
                 _isSaving.value = false

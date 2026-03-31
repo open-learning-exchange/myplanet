@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -54,7 +55,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
                 try {
                     teamsRepository.getTeamById(teamId)
                 } catch (e: IllegalArgumentException) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "BaseTeamFragment")
                     null
                 }
             } else {

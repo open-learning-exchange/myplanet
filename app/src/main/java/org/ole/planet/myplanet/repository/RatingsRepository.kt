@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+
+
 interface RatingsRepository {
     suspend fun getRatings(type: String?, userId: String?): HashMap<String?, com.google.gson.JsonObject>
     suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): com.google.gson.JsonObject?

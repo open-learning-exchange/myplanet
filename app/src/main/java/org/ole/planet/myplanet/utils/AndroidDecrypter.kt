@@ -79,7 +79,7 @@ class AndroidDecrypter {
                 val original = cipher.doFinal(actualEncryptedBytes)
                 return String(original)
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Utilities.logException(ex, "AndroidDecrypter")
             }
             return null
         }
@@ -93,7 +93,7 @@ class AndroidDecrypter {
                 return dbPwdKeyValue.equals(BinTools.bin2hex(dk).lowercase(Locale.ROOT), ignoreCase = true)
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "AndroidDecrypter")
             }
             return false
         }
@@ -106,7 +106,7 @@ class AndroidDecrypter {
                 random.nextBytes(iv)
                 return bytesToHex(iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "AndroidDecrypter")
             }
             return ""
         }
@@ -122,7 +122,7 @@ class AndroidDecrypter {
                 val binary = secretKey.encoded
                 return bytesToHex(binary)
             } catch (e: NoSuchAlgorithmException) {
-                e.printStackTrace()
+                Utilities.logException(e, "AndroidDecrypter")
             }
             return null
         }

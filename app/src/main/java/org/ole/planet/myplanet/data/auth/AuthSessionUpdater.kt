@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.data.auth
 
+import org.ole.planet.myplanet.utils.Utilities
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -79,7 +80,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             }
         } catch (e: Exception) {
             callback.onError(e.message.orEmpty())
-            e.printStackTrace()
+            Utilities.logException(e, "AuthSessionUpdater")
         }
     }
 
@@ -90,7 +91,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             jsonParam.put("password", sharedPrefManager.getUrlPwd())
             jsonParam
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "AuthSessionUpdater")
             null
         }
     }
@@ -102,7 +103,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             val serverUrl = URL(urlString)
             serverUrl
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "AuthSessionUpdater")
             null
         }
     }

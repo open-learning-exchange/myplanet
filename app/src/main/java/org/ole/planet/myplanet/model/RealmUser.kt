@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
@@ -23,7 +24,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
 @RealmClass(name = "RealmUserModel")
@@ -95,7 +95,7 @@ open class RealmUser : RealmObject() {
         try {
             jsonObject.addProperty("iterations", iterations?.takeIf { it.isNotBlank() }?.toInt() ?: 10)
         } catch (e: NumberFormatException) {
-            e.printStackTrace()
+            Utilities.logException(e, "RealmUser")
             jsonObject.addProperty("iterations", 10)
         }
         jsonObject.addProperty("parentCode", parentCode)
@@ -133,7 +133,7 @@ open class RealmUser : RealmObject() {
                 Base64.encodeToString(bytes, Base64.NO_WRAP)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "RealmUser")
             null
         }
     }
@@ -296,7 +296,7 @@ open class RealmUser : RealmObject() {
                 }
                 return user
             } catch (err: Exception) {
-                err.printStackTrace()
+                Utilities.logException(err, "RealmUser")
             }
             return null
         }
@@ -456,7 +456,7 @@ open class RealmUser : RealmObject() {
                     leadersList.add(user)
                 }
             } catch (e: JSONException) {
-                e.printStackTrace()
+                Utilities.logException(e, "RealmUser")
             }
             return leadersList
         }

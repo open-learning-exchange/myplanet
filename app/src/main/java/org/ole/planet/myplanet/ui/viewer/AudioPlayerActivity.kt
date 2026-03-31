@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 class AudioPlayerActivity : AppCompatActivity() {
 

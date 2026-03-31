@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
@@ -35,7 +36,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -59,7 +59,7 @@ class TransactionSyncManager @Inject constructor(
             val code = response.code()
             return code == 200
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TransactionSyncManager")
         }
         return false
     }
@@ -109,7 +109,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TransactionSyncManager")
         }
     }
 
@@ -257,7 +257,7 @@ class TransactionSyncManager @Inject constructor(
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TransactionSyncManager")
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
         }
@@ -318,7 +318,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TransactionSyncManager")
         }
     }
 
@@ -358,7 +358,7 @@ class TransactionSyncManager @Inject constructor(
                         Pair(notification.id, newRev)
                     } else null
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "TransactionSyncManager")
                     null
                 }
             }

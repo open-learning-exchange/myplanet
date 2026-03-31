@@ -29,7 +29,7 @@ object JsonUtils {
                 ""
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             ""
         }
     }
@@ -40,7 +40,7 @@ object JsonUtils {
             val el: JsonElement = array.get(index)
             if (el is JsonNull) "" else el.asString
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             ""
         }
     }
@@ -68,7 +68,7 @@ object JsonUtils {
                 false
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             false
         }
     }
@@ -108,7 +108,7 @@ object JsonUtils {
                 0
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             0
         }
     }
@@ -123,7 +123,7 @@ object JsonUtils {
                 getInt(fieldName, jsonObject).toFloat()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             0f
         }
     }
@@ -136,7 +136,7 @@ object JsonUtils {
             }
             if (array is JsonNull || array !is JsonArray) JsonArray() else array.asJsonArray
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             JsonArray()
         }
     }
@@ -149,7 +149,7 @@ object JsonUtils {
             }
             if (el is JsonObject) el else JsonObject()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             JsonObject()
         }
     }
@@ -164,7 +164,7 @@ object JsonUtils {
                 jsonElement
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             JsonObject()
         }
     }
@@ -179,7 +179,7 @@ object JsonUtils {
                 0L
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "JsonUtils")
             0L
         }
     }

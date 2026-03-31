@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -35,7 +36,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
@@ -100,7 +100,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 examIdValue ?: id ?: "", examCourseIdValue, userIdValue
                             )
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "ExamTakingFragment")
                         }
 
                         withContext(Dispatchers.Main) {
@@ -522,7 +522,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
                 saveCurrentAnswer()
                 if (!isQuestionAnswered()) {
-                    toast(activity, getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
+                    Utilities.toast(activity, getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
@@ -547,7 +547,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 capturePhoto(dispatcherProvider.default, this)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ExamTakingFragment")
         }
     }
 

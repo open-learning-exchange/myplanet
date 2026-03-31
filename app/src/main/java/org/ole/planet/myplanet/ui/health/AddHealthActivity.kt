@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.health
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.MenuItem
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddHealthActivity : AppCompatActivity() {

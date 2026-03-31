@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.health
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -43,7 +44,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -120,7 +120,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 try {
                     health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "AddExaminationActivity")
                 }
             }
             if (health == null) {
@@ -320,14 +320,14 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 val iv = user?.iv ?: generateIv().also { user?.iv = it }
                 examination?.data = encrypt(JsonUtils.gson.toJson(sign), key, iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "AddExaminationActivity")
             }
 
             // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user)
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "AddExaminationActivity")
             Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
@@ -424,7 +424,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 pojo?.data = encrypt(JsonUtils.gson.toJson(health), userKey, userIv)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "AddExaminationActivity")
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
         }
     }

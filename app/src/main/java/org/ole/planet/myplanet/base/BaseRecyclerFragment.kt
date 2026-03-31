@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -175,13 +175,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             showNoData(tvMessage, newAdapter.itemCount, "")
 
             errorOccurred?.let {
-                it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
+                Utilities.logException(it, "BaseRecyclerFragment")
+                Utilities.toast(activity, "An error occurred: ${it.message}")
                 return@launch
             }
 
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+            if (libraryAdded) Utilities.toast(activity, getString(R.string.added_to_my_library))
+            if (courseAdded) Utilities.toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 

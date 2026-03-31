@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.surveys
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -17,7 +18,6 @@ import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {

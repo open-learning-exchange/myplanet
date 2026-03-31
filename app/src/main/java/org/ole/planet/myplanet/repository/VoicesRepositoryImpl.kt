@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -131,7 +132,7 @@ class VoicesRepositoryImpl @Inject constructor(
             }
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "VoicesRepositoryImpl")
             false
         }
     }
@@ -158,7 +159,7 @@ class VoicesRepositoryImpl @Inject constructor(
                             }
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "VoicesRepositoryImpl")
                     }
                 }
             }
@@ -470,7 +471,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "VoicesRepositoryImpl")
             }
         }
         return false

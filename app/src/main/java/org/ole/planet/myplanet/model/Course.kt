@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class Course(
     val courseId: String,
     val courseTitle: String,

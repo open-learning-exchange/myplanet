@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
@@ -76,7 +77,7 @@ class UserSessionManager @Inject constructor(
                 val model = getUserModel()
                 activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UserSessionManager")
             }
         }
     }
@@ -124,7 +125,7 @@ class UserSessionManager @Inject constructor(
                 )
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UserSessionManager")
             }
         }
     }

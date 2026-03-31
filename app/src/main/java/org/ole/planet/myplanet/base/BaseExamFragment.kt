@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
@@ -39,7 +40,6 @@ import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {

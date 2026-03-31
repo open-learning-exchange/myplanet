@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class TeamSummary(
     val _id: String,
     val name: String,

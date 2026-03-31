@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxListView
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
-import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
@@ -146,7 +146,7 @@ class AddResourceActivity : AppCompatActivity() {
             } else {
                 getString(R.string.added_to_my_library)
             }
-            toast(this@AddResourceActivity, message)
+            Utilities.toast(this@AddResourceActivity, message)
             finish()
         }
     }
@@ -186,11 +186,11 @@ class AddResourceActivity : AppCompatActivity() {
             return false
         }
         if (levels?.isEmpty() == true) {
-            toast(this, getString(R.string.level_is_required))
+            Utilities.toast(this, getString(R.string.level_is_required))
             return false
         }
         if (subjects?.isEmpty() == true) {
-            toast(this, getString(R.string.subject_is_required))
+            Utilities.toast(this, getString(R.string.subject_is_required))
             return false
         }
         return true

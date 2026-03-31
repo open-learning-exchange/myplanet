@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -57,7 +58,7 @@ class MarkdownViewerActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "MarkdownViewerActivity")
             }
         }
     }

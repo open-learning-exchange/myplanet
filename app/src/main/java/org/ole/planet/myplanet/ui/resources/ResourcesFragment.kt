@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -47,7 +48,6 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelectedListener,
@@ -198,7 +198,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 showNoData(tvMessage, filteredLibraryList.size, "resources")
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ResourcesFragment")
             }
         }
     }

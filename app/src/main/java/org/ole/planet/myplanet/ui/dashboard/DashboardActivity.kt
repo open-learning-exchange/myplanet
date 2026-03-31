@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -84,7 +85,6 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
-import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
@@ -408,7 +408,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
+                            Utilities.toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
                             lifecycleScope.launch {
                                 delay(2000)
                                 doubleBackToExitPressedOnce = false
@@ -657,7 +657,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun checkUser() {
         if (user == null) {
-            toast(this, getString(R.string.session_expired))
+            Utilities.toast(this, getString(R.string.session_expired))
             logout()
             return
         }

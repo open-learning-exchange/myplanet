@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -54,7 +55,6 @@ import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
-import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
@@ -136,7 +136,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             if (getUrl() != "/db") {
                 FeedbackFragment().show(supportFragmentManager, "")
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                Utilities.toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -164,7 +164,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
                     finish()
                 } else {
-                    toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
+                    Utilities.toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
                     backPressedTime = System.currentTimeMillis()
                 }
             }
@@ -222,7 +222,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     }
                 }
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                Utilities.toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -232,7 +232,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 binding.inputName.setText(R.string.empty_text)
                 becomeAMember()
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                Utilities.toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -247,7 +247,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 binding.inputName.setText(R.string.empty_text)
                 showGuestLoginDialog(userRepository)
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                Utilities.toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -277,7 +277,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 currentDialog = dialog
                 checkMinApk(url, serverPin, "LoginActivity")
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                Utilities.toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -301,7 +301,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     communityRepository.syncCommunityDocs()
                 }
                 val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
-                toast(this@LoginActivity, message)
+                Utilities.toast(this@LoginActivity, message)
             }
         }
         nameWatcher2 = object : TextWatcher {
@@ -536,7 +536,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 lifecycleScope.launch {
                     val model = userRepository.createGuestUser(user.name ?: "", settings)
                     if (model == null) {
-                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                        Utilities.toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
                         saveUserInfoPref(settings, "", model)
                         onLogin()
@@ -547,7 +547,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 val decrypted = if (password.isNullOrEmpty()) null else SecurePrefs.decryptString(this, password)
 
                 if (decrypted == null && password?.let { it.length > 30 } == true) {
-                    toast(this, getString(R.string.err_msg_login))
+                    Utilities.toast(this, getString(R.string.err_msg_login))
                     binding.inputName.setText(user.name)
                     binding.inputPassword.requestFocus()
                 } else {
@@ -578,7 +578,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 lifecycleScope.launch {
                     val model = userRepository.createGuestUser(username, settings)
                     if (model == null) {
-                        toast(this@LoginActivity, getString(R.string.unable_to_login))
+                        Utilities.toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
                         saveUserInfoPref(settings, "", model)
@@ -657,7 +657,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (getUrl().isNotEmpty()) {
             startActivity(Intent(this, BecomeMemberActivity::class.java))
         } else {
-            toast(this, getString(R.string.please_enter_server_url_first))
+            Utilities.toast(this, getString(R.string.please_enter_server_url_first))
             settingDialog()
         }
     }

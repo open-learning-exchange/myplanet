@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.util.Base64
 import com.google.gson.JsonObject
@@ -43,7 +44,7 @@ class LoginSyncManager @Inject constructor(
                 val authHeader = try {
                     "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "LoginSyncManager")
                     withContext(Dispatchers.Main) { listener.onSyncFailed("Authentication encoding failed.") }
                     return@launch
                 }
@@ -51,7 +52,7 @@ class LoginSyncManager @Inject constructor(
                 val userUrl = try {
                     String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "LoginSyncManager")
                     withContext(Dispatchers.Main) { listener.onSyncFailed("Invalid server URL.") }
                     return@launch
                 }
@@ -93,7 +94,7 @@ class LoginSyncManager @Inject constructor(
                                 }
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "LoginSyncManager")
                             withContext(Dispatchers.Main) {
                                 listener.onSyncFailed("Authentication processing failed.")
                             }
@@ -103,7 +104,7 @@ class LoginSyncManager @Inject constructor(
                     }
                 } catch (t: Exception) {
                     try {
-                        t.printStackTrace()
+                        Utilities.logException(t, "LoginSyncManager")
                         val errorMsg = when (t) {
                             is java.net.UnknownHostException -> "Server not reachable. Check your internet connection."
                             is java.net.SocketTimeoutException -> "Connection timeout. Please try again."
@@ -112,12 +113,12 @@ class LoginSyncManager @Inject constructor(
                         }
                         withContext(Dispatchers.Main) { listener.onSyncFailed(errorMsg) }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "LoginSyncManager")
                         withContext(Dispatchers.Main) { listener.onSyncFailed("Network error occurred.") }
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "LoginSyncManager")
                 withContext(Dispatchers.Main) { listener.onSyncFailed("Login initialization failed.") }
             }
         }
@@ -139,7 +140,7 @@ class LoginSyncManager @Inject constructor(
                 val url = try {
                     UrlUtils.getUrl() + "/_users/_find"
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "LoginSyncManager")
                     return@launch
                 }
 
@@ -154,15 +155,15 @@ class LoginSyncManager @Inject constructor(
                             try {
                                 sharedPrefManager.setRawString("user_admin", JsonUtils.gson.toJson(array[0]))
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Utilities.logException(e, "LoginSyncManager")
                             }
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "LoginSyncManager")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "LoginSyncManager")
             }
         }
     }

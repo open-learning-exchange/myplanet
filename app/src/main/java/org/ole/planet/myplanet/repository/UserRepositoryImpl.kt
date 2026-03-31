@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
@@ -392,7 +393,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UserRepositoryImpl")
                 Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
@@ -413,7 +414,7 @@ class UserRepositoryImpl @Inject constructor(
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
             apiInterface.putDoc(null, "application/json", url, JsonObject())
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UserRepositoryImpl")
         }
     }
 
@@ -443,7 +444,7 @@ class UserRepositoryImpl @Inject constructor(
                 Result.failure(Exception("Failed to save user or user model was null"))
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UserRepositoryImpl")
             Result.failure(e)
         }
     }
@@ -470,7 +471,7 @@ class UserRepositoryImpl @Inject constructor(
             try {
                 JsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UserRepositoryImpl")
                 null
             }
         }
@@ -508,7 +509,7 @@ class UserRepositoryImpl @Inject constructor(
                     val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
                     return@withRealm JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UserRepositoryImpl")
                 }
             }
             null
@@ -542,7 +543,7 @@ class UserRepositoryImpl @Inject constructor(
                     val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
                     myHealth = JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UserRepositoryImpl")
                 }
             }
 
@@ -581,7 +582,7 @@ class UserRepositoryImpl @Inject constructor(
                 val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
                 healthPojo.data = AndroidDecrypter.encrypt(JsonUtils.gson.toJson(myHealth), key, iv)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UserRepositoryImpl")
             }
         }
     }
@@ -653,7 +654,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         } catch (err: Exception) {
-            err.printStackTrace()
+            Utilities.logException(err, "UserRepositoryImpl")
             return null
         }
         return null

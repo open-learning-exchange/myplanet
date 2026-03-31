@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.health
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -23,7 +24,6 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(
     private val context: Context,

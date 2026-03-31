@@ -23,7 +23,7 @@ object MapTileUtils {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "MapTileUtils")
         }
     }
 

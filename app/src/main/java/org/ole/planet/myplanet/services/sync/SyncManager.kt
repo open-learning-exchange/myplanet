@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -348,7 +349,7 @@ class SyncManager @Inject constructor(
             Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
             Log.d("SyncPerf", "Error: ${err.message}")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            err.printStackTrace()
+            Utilities.logException(err, "SyncManager")
             handleException(err.message)
         } finally {
             destroy()
@@ -558,7 +559,7 @@ class SyncManager @Inject constructor(
 
             logger.stopLogging()
         } catch (err: Exception) {
-            err.printStackTrace()
+            Utilities.logException(err, "SyncManager")
             handleException(err.message)
         } finally {
             destroy()
@@ -716,7 +717,7 @@ class SyncManager @Inject constructor(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "SyncManager")
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     skip += batchSize
                 }
@@ -735,7 +736,7 @@ class SyncManager @Inject constructor(
                     logger.logRealmOperation("delete_cleanup", "resources", cleanupDuration, newIds.size - validNewIds.size)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "SyncManager")
                 logger.logDetail("resource_sync", "Cleanup failed: ${e.message}")
             }
             logger.endProcess("resource_sync_main", processedItems)
@@ -746,7 +747,7 @@ class SyncManager @Inject constructor(
             val seconds = (resourceSyncTime % 60000) / 1000
             Log.d("SyncPerf", "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncManager")
             logger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = System.currentTimeMillis()
             Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
@@ -906,7 +907,7 @@ class SyncManager @Inject constructor(
             val totalDuration = System.currentTimeMillis() - librarySyncStartTime
             Log.d("SyncPerf", "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncManager")
             logger.endProcess("library_sync_main", processedItems)
             val failDuration = System.currentTimeMillis() - librarySyncStartTime
             Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
@@ -948,7 +949,7 @@ class SyncManager @Inject constructor(
                 processedItems = dataJobs.awaitAll().sum()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncManager")
         }
 
         return processedItems
@@ -1034,7 +1035,7 @@ class SyncManager @Inject constructor(
                                         }
                                         processedCount++
                                     } catch (e: Exception) {
-                                        e.printStackTrace()
+                                        Utilities.logException(e, "SyncManager")
                                     }
                                 }
                             }
@@ -1051,7 +1052,7 @@ class SyncManager @Inject constructor(
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SyncManager")
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount

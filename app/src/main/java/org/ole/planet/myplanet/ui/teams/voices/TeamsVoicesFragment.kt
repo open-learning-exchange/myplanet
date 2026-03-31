@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams.voices
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -202,7 +203,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                                 val result = voicesRepository.getReplyCount(newsId)
                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Utilities.logException(e, "TeamsVoicesFragment")
                             }
                         }
                         return@VoicesAdapter { job.cancel() }

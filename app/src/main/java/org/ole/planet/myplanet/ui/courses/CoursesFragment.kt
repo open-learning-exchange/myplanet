@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -216,7 +217,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "CoursesFragment")
             }
         }
     }

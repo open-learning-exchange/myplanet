@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -88,7 +89,7 @@ open class RealmMeetup : RealmObject() {
                 map["Meetup Date"] = TimeUtils.getFormattedDate(meetups.startDate) +
                         " - " + TimeUtils.getFormattedDate(meetups.endDate)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "RealmMeetup")
             }
             map["Meetup Time"] = checkNull(meetups.startTime) + " - " + checkNull(meetups.endTime)
             map["Recurring"] = checkNull(meetups.recurring)
@@ -99,7 +100,7 @@ open class RealmMeetup : RealmObject() {
                     recurringDays.append(ar[i].toString()).append(", ")
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "RealmMeetup")
             }
             map["Recurring Days"] = checkNull(recurringDays.toString())
             map["Location"] = checkNull(meetups.meetupLocation)

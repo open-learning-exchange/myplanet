@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -11,7 +12,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AuthUtils
-import org.ole.planet.myplanet.utils.Utilities.toast
 
 fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
     val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
@@ -62,7 +62,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                 } else {
                     val model = userRepository.createGuestUser(username, settings)
                     if (model == null) {
-                        toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
+                        Utilities.toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                     } else {
                         saveUsers(username, "", "guest")
                         saveUserInfoPref(settings, "", model)

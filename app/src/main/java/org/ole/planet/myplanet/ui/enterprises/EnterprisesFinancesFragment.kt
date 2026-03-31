@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -23,7 +24,6 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
-import org.ole.planet.myplanet.utils.Utilities
 
 class EnterprisesFinancesFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
@@ -191,9 +191,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             observeTransactions()
 
         } catch (e: ParseException) {
-            e.printStackTrace()
+            Utilities.logException(e, "EnterprisesFinancesFragment")
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Utilities.logException(e, "EnterprisesFinancesFragment")
         }
     }
 

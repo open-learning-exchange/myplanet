@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
@@ -568,7 +569,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 savedIds
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ResourcesRepositoryImpl")
             withRealm { realm ->
                 val savedIds = mutableListOf<String>()
                 documents.forEach { doc ->
@@ -581,7 +582,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                         savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx, sharedPrefManager))
                         }
                     } catch (e2: Exception) {
-                        e2.printStackTrace()
+                        Utilities.logException(e2, "ResourcesRepositoryImpl")
                     }
                 }
                 savedIds

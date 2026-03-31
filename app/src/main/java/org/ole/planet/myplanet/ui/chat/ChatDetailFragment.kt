@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.graphics.Typeface
 import android.os.Bundle
@@ -234,7 +235,7 @@ class ChatDetailFragment : Fragment() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ChatDetailFragment")
             } finally {
                 customProgressDialog.dismiss()
             }
@@ -517,7 +518,7 @@ class ChatDetailFragment : Fragment() {
         return try {
             chatRepository.getLatestRev(id)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ChatDetailFragment")
             null
         }
     }

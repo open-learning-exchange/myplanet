@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.settings
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -54,7 +55,6 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {

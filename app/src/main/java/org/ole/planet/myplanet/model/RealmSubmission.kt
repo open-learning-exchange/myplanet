@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
@@ -80,7 +81,7 @@ open class RealmSubmission : RealmObject() {
                     mRealm.commitTransaction()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "RealmSubmission")
                 if (transactionStarted && mRealm.isInTransaction) {
                     mRealm.cancelTransaction()
                 }
@@ -283,7 +284,7 @@ open class RealmSubmission : RealmObject() {
                     jsonObject.add("user", userJson)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "RealmSubmission")
             }
             return jsonObject
         }

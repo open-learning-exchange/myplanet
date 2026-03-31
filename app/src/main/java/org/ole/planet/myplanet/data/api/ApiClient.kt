@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.data.api
 
+import org.ole.planet.myplanet.utils.Utilities
 import java.io.IOException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.delay
@@ -50,7 +51,7 @@ object ApiClient {
             )
         } catch (e: Exception) {
             // Don't let logging errors affect the API call
-            e.printStackTrace()
+            Utilities.logException(e, "ApiClient")
         }
 
         return result

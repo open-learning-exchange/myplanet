@@ -14,7 +14,7 @@ object KeyboardUtils {
             val inputMethodManager = activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
             inputMethodManager.hideSoftInputFromWindow(activity.currentFocus?.windowToken, 0)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "KeyboardUtils")
         }
     }
 

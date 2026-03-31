@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -24,7 +25,6 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint

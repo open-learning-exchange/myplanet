@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.voices
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Trace
@@ -229,7 +230,7 @@ class VoicesFragment : BaseVoicesFragment() {
                             val result = voicesRepository.getReplyCount(newsId)
                             withContext(Dispatchers.Main) { onResult(result) }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "VoicesFragment")
                         }
                     }
                     return@VoicesAdapter { job.cancel() }
@@ -413,7 +414,7 @@ class VoicesFragment : BaseVoicesFragment() {
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "VoicesFragment")
                 }
             }
 
@@ -460,7 +461,7 @@ class VoicesFragment : BaseVoicesFragment() {
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "VoicesFragment")
             }
         }
         return ""

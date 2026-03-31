@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -60,7 +61,7 @@ class DownloadWorker @AssistedInject constructor(
                     showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "DownloadWorker")
                     results.add(false)
                     completedCount++
                 }
@@ -69,7 +70,7 @@ class DownloadWorker @AssistedInject constructor(
             showCompletionNotification(completedCount, urls.size, results.any { !it })
             Result.success()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "DownloadWorker")
             Result.failure()
         }
     }
@@ -86,7 +87,7 @@ class DownloadWorker @AssistedInject constructor(
                 false
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "DownloadWorker")
             false
         }
     }

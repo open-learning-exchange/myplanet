@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -46,7 +47,7 @@ class TextFileViewerActivity : AppCompatActivity() {
                     binding.textFileContent.text = text
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "TextFileViewerActivity")
             }
         }
     }

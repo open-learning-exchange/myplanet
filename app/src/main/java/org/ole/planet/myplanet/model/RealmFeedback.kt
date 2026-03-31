@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -99,7 +100,7 @@ open class RealmFeedback : RealmObject() {
             try {
                 `object`.add("messages", JsonParser.parseString(feedback.messages))
             } catch (err: Exception) {
-                err.printStackTrace()
+                Utilities.logException(err, "RealmFeedback")
             }
             return `object`
         }

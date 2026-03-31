@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
@@ -466,7 +467,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     }.toString()
                     managedSub.parent = parentJsonString
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "SubmissionsRepositoryImpl")
                 }
 
                 managedSub.userId = userId
@@ -498,7 +499,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         userJson.add("membershipDoc", membershipJson)
                         managedSub.user = userJson.toString()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "SubmissionsRepositoryImpl")
                     }
                 }
                 detachedSub = r.copyFromRealm(managedSub)

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.feedback
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,7 +19,6 @@ import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {

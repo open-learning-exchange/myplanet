@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
@@ -94,7 +94,7 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
                 try {
                     DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "VideoViewerActivity")
                 }
             }
         }
@@ -120,7 +120,7 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
                         try {
                             DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "VideoViewerActivity")
                         }
                     }
                 }
@@ -155,7 +155,7 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
                 player.clearMediaItems()
                 player.release()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "VideoViewerActivity")
             } finally {
                 exoPlayer = null
             }
@@ -236,7 +236,7 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
                 }
             }
         } catch (e: FileDataSource.FileDataSourceException) {
-            e.printStackTrace()
+            Utilities.logException(e, "VideoViewerActivity")
         }
     }
 

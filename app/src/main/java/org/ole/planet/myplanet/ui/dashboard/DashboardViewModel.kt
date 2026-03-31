@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -239,13 +240,13 @@ class DashboardViewModel @Inject constructor(
                     return@launch
                 } catch (e: Exception) {
                     lastException = e
-                    e.printStackTrace()
+                    Utilities.logException(e, "DashboardViewModel")
                     if (attempt < maxRetries - 1) {
                         kotlinx.coroutines.delay(300)
                     }
                 }
             }
-            lastException?.printStackTrace()
+            lastException?.let { Utilities.logException(it, "DashboardViewModel") }
         }
     }
 
@@ -256,7 +257,7 @@ class DashboardViewModel @Inject constructor(
                     notificationsRepository.markNotificationAsRead(notificationId, userId)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DashboardViewModel")
             }
         }
     }
@@ -271,7 +272,7 @@ class DashboardViewModel @Inject constructor(
                 }
                 setUnreadNotifications(unreadCount)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DashboardViewModel")
             }
         }
     }
@@ -332,7 +333,7 @@ class DashboardViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DashboardViewModel")
             }
         }
     }
@@ -369,7 +370,7 @@ class DashboardViewModel @Inject constructor(
             }
             _uiState.update { it.copy(unreadNotifications = unreadCount) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "DashboardViewModel")
         }
     }
 

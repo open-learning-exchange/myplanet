@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -60,7 +61,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utils.ThemeMode
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp

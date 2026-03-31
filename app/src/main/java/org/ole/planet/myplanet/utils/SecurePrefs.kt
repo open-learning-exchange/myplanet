@@ -26,7 +26,7 @@ object SecurePrefs {
         try {
             AeadConfig.register()
         } catch (e: GeneralSecurityException) {
-            e.printStackTrace()
+            Utilities.logException(e, "SecurePrefs")
         }
     }
 
@@ -96,7 +96,7 @@ object SecurePrefs {
             val decrypted = aead.decrypt(bytes, null)
             String(decrypted, Charsets.UTF_8)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SecurePrefs")
             null
         }
     }
@@ -123,7 +123,7 @@ object SecurePrefs {
                 remove("loginUserPassword")
              }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SecurePrefs")
         }
 
         plainPrefs.edit {
@@ -152,7 +152,7 @@ object SecurePrefs {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SecurePrefs")
         }
 
         if (name.isNullOrEmpty()) {
@@ -164,7 +164,7 @@ object SecurePrefs {
                      store.edit { putString("loginUserName", encrypt(aead, name)) }
                      plainPrefs.edit { remove("loginUserName") }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "SecurePrefs")
                 }
             }
         }
@@ -191,7 +191,7 @@ object SecurePrefs {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "SecurePrefs")
         }
 
         if (pwd.isNullOrEmpty()) {
@@ -203,7 +203,7 @@ object SecurePrefs {
                      store.edit { putString("loginUserPassword", encrypt(aead, pwd)) }
                      plainPrefs.edit { remove("loginUserPassword") }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "SecurePrefs")
                 }
             }
         }
@@ -222,7 +222,7 @@ object SecurePrefs {
                 remove("loginUserPassword")
             }
         } catch (e: Exception) {
-             e.printStackTrace()
+             Utilities.logException(e, "SecurePrefs")
         }
     }
 }

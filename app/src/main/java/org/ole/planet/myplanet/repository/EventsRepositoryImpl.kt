@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
@@ -70,7 +71,7 @@ class EventsRepositoryImpl @Inject constructor(
             }
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "EventsRepositoryImpl")
             false
         }
     }

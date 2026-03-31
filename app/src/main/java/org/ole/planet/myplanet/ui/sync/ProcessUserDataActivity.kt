@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -114,7 +115,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+                Utilities.logException(e, "ProcessUserDataActivity")
             }
         }
     }
@@ -376,7 +377,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "ProcessUserDataActivity")
                     securityCallback?.onSecurityDataUpdated()
                 }
             }
@@ -400,7 +401,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) {
-                e.printStackTrace()
+                Utilities.logException(e, "ProcessUserDataActivity")
                 securityCallback?.onSecurityDataUpdated()
             }
         }

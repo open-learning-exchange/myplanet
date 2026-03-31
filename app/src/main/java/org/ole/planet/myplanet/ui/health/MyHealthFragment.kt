@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.health
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
@@ -49,7 +50,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
@@ -163,7 +163,7 @@ class MyHealthFragment : Fragment() {
                 }
                 getHealthRecords(userId)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "MyHealthFragment")
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.life
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -21,7 +22,6 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.utils.ItemReorderHelper
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {

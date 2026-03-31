@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -42,7 +43,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
@@ -148,9 +148,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 prgDialog.dismiss()
             }
         } catch (e: UninitializedPropertyAccessException) {
-            e.printStackTrace()
+            Utilities.logException(e, "BaseContainerFragment")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "BaseContainerFragment")
         }
     }
     fun openResource(items: RealmMyLibrary) {

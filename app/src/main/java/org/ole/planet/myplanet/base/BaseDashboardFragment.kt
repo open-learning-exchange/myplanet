@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionListener,

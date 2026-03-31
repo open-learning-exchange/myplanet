@@ -194,7 +194,7 @@ object DownloadUtils {
             try {
                 DownloadService.startService(context, urlsKey, fromSync)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DownloadUtils")
                 handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
             }
         } else {
@@ -280,7 +280,7 @@ object DownloadUtils {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "DownloadUtils")
             }
         }
     }

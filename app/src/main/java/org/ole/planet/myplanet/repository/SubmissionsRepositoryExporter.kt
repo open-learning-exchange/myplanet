@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -106,7 +107,7 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
 
                 file
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "SubmissionsRepositoryExporter")
                 null
             }
     }
@@ -215,7 +216,7 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
 
                 file
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "SubmissionsRepositoryExporter")
                 null
             }
     }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
@@ -73,7 +74,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         }
                     }
                 } catch (t: Exception) {
-                    t.printStackTrace()
+                    Utilities.logException(t, "ConfigurationsRepositoryImpl")
                     val errorMsg = when (t) {
                         is java.net.UnknownHostException -> "Server not reachable"
                         is java.net.SocketTimeoutException -> "Connection timeout"
@@ -84,7 +85,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     withContext(dispatcherProvider.main) { listener.onSuccess(errorMsg) }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ConfigurationsRepositoryImpl")
                 withContext(dispatcherProvider.main) { listener.onSuccess("Health access initialization failed") }
             }
         }
@@ -114,7 +115,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "ConfigurationsRepositoryImpl")
                     }
                 }
             }
@@ -160,7 +161,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ConfigurationsRepositoryImpl")
                 withContext(dispatcherProvider.main) {
                     callback.onError(context.getString(R.string.connection_failed), true)
                 }
@@ -246,7 +247,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             false
         } catch (e: IOException) {
-            e.printStackTrace()
+            Utilities.logException(e, "ConfigurationsRepositoryImpl")
             false
         }
     }
@@ -266,7 +267,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "ConfigurationsRepositoryImpl")
                 UrlCheckResult.Failure(url)
             }
 
@@ -285,7 +286,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ConfigurationsRepositoryImpl")
             ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
@@ -313,10 +314,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Utilities.logException(e, "ConfigurationsRepositoryImpl")
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ConfigurationsRepositoryImpl")
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -342,10 +343,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Utilities.logException(e, "ConfigurationsRepositoryImpl")
             null
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ConfigurationsRepositoryImpl")
             null
         }
     }

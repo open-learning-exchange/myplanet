@@ -55,7 +55,7 @@ object TimeUtils {
             val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
             defaultDateFormatter.format(instant)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             "N/A"
         }
 
@@ -64,7 +64,7 @@ object TimeUtils {
             val instant = Instant.ofEpochMilli(date)
             dateTimeFormatter.format(instant)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             "N/A"
         }
 
@@ -73,7 +73,7 @@ object TimeUtils {
             val instant = Instant.ofEpochMilli(data)
             tzFormatter.format(instant)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             ""
         }
 
@@ -81,7 +81,7 @@ object TimeUtils {
         try {
             csvDateFormatter.format(Instant.ofEpochMilli(date))
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             ""
         }
 
@@ -100,7 +100,7 @@ object TimeUtils {
             val today = LocalDate.now()
             Period.between(dob, today).years
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             0
         }
     }
@@ -120,7 +120,7 @@ object TimeUtils {
             }
             getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             "N/A"
         }
     }
@@ -129,7 +129,7 @@ object TimeUtils {
         try {
             dateOnlyFormatter.format(Instant.ofEpochMilli(date))
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             ""
         }
 
@@ -141,7 +141,7 @@ object TimeUtils {
             val formatter = DateTimeFormatter.ofPattern(format ?: "", defaultLocale).withZone(ZoneId.systemDefault())
             formatter.format(Instant.ofEpochMilli(date))
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             ""
         }
 
@@ -154,7 +154,7 @@ object TimeUtils {
             }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             null
         }
 
@@ -166,7 +166,7 @@ object TimeUtils {
                 Instant.parse("${dateString}T00:00:00.000Z")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             null
         }
 
@@ -210,7 +210,7 @@ object TimeUtils {
             val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", defaultLocale)
             localDate.format(formatter)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             dateString ?: ""
         }
     }
@@ -223,7 +223,7 @@ object TimeUtils {
             val isoDate = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
             convertToISO8601(isoDate)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "TimeUtils")
             dateString ?: ""
         }
     }

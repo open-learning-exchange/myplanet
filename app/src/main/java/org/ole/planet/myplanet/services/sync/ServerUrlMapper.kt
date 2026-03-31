@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.SharedPreferences
 import android.net.Uri
 import androidx.core.net.toUri
@@ -27,7 +28,7 @@ class ServerUrlMapper @Inject constructor() {
             val baseUrl = "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
             baseUrl
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "ServerUrlMapper")
             null
         }
     }

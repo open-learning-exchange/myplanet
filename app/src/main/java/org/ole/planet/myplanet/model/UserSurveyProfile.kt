@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model
 
+
+
 data class UserSurveyProfile(
     val fname: String,
     val lname: String,

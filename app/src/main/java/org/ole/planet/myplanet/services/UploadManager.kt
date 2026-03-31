@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.text.TextUtils
 import android.util.Log
@@ -103,7 +104,7 @@ class UploadManager @Inject constructor(
                         MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
                     )
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UploadManager")
                 }
 
                 val response = try {
@@ -141,7 +142,7 @@ class UploadManager @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UploadManager")
                 withContext(Dispatchers.Main) {
                     listener?.onSuccess("Failed to upload activities: ${e.message}")
                 }
@@ -166,7 +167,7 @@ class UploadManager @Inject constructor(
                     listener.onSuccess(message)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UploadManager")
                 withContext(Dispatchers.Main) {
                     listener.onSuccess("Error during result sync: ${e.message}")
                 }
@@ -206,7 +207,7 @@ class UploadManager @Inject constructor(
                         userRepository.markAchievementUploaded(id, rev)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UploadManager")
                 }
             }
         }
@@ -260,7 +261,7 @@ class UploadManager @Inject constructor(
                             }
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadManager")
                     }
                 }
 
@@ -308,7 +309,7 @@ class UploadManager @Inject constructor(
                                 successfulUpdates.add(Pair(resourceData, `object`))
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Utilities.logException(e, "UploadManager")
                         }
                     }
 
@@ -343,7 +344,7 @@ class UploadManager @Inject constructor(
                             // We catch it here to prevent crashing the batch loop and prevent
                             // `isTransactionSuccessful` from being set to true, so we don't upload
                             // attachments for failed DB writes.
-                            e.printStackTrace()
+                            Utilities.logException(e, "UploadManager")
                         }
 
                         if (isTransactionSuccessful) {
@@ -364,7 +365,7 @@ class UploadManager @Inject constructor(
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Utilities.logException(e, "UploadManager")
                                 }
                             }
                         }
@@ -372,7 +373,7 @@ class UploadManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UploadManager")
             listener?.onSuccess("Resource upload failed: ${e.message}")
         }
     }
@@ -404,7 +405,7 @@ class UploadManager @Inject constructor(
                         "Failed to upload personal resource: No response"
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e, "UploadManager")
                     "Unable to upload resource: ${e.message}"
                 }
             }
@@ -468,7 +469,7 @@ class UploadManager @Inject constructor(
                             teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
                         }
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadManager")
                     }
                 }
             }
@@ -507,7 +508,7 @@ class UploadManager @Inject constructor(
 
                         successfulUpdates[activityData.id] = `object`
                     } catch (e: java.io.IOException) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadManager")
                     }
                 }
 
@@ -523,7 +524,7 @@ class UploadManager @Inject constructor(
                 listener.onSuccess("User activities sync completed successfully")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Utilities.logException(e, "UploadManager")
             withContext(Dispatchers.Main) {
                 listener.onSuccess("Failed to upload user activities: ${e.message}")
             }
@@ -552,7 +553,7 @@ class UploadManager @Inject constructor(
                     successfulUploads.add(org.ole.planet.myplanet.repository.TeamLogUploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e, "UploadManager")
             }
         }
 
@@ -656,7 +657,7 @@ class UploadManager @Inject constructor(
                             ))
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Utilities.logException(e, "UploadManager")
                     }
                 }
 

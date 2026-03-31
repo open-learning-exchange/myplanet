@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.teams.courses
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
@@ -21,7 +22,6 @@ import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.CheckboxListView
-import org.ole.planet.myplanet.utils.Utilities
 
 class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
     private var _binding: FragmentTeamCourseBinding? = null

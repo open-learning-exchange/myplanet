@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.utils.Utilities
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -32,7 +33,7 @@ abstract class BaseActivity : SyncActivity() {
                 setTitle(label)
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            e.printStackTrace()
+            Utilities.logException(e, "BaseActivity")
         }
     }
 
