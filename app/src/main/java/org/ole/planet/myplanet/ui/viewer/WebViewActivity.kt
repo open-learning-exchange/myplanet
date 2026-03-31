@@ -70,20 +70,20 @@ class WebViewActivity : AppCompatActivity() {
         setupWebView()
         setListeners()
 
+        activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
+        setWebClient()
+
         if (resourceId != null) {
             val directory = File(getExternalFilesDir(null), "ole/$resourceId")
             val indexFile = File(directory, "index.html")
 
             if (indexFile.exists()) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                activityWebViewBinding.contentWebView.wv.loadUrl("file://${indexFile.absolutePath}")
+                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
             }
         } else {
             activityWebViewBinding.contentWebView.wv.loadUrl(link)
         }
-
-        activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
-        setWebClient()
     }
 
     private fun setupWebView() {
@@ -93,13 +93,9 @@ class WebViewActivity : AppCompatActivity() {
             javaScriptEnabled = isLocalResource
             javaScriptCanOpenWindowsAutomatically = false
             
-            // File access settings - only allow for local resources
-            allowFileAccess = isLocalResource
+            // File access settings - securely disable file access, use WebViewAssetLoader instead
+            allowFileAccess = false
             allowContentAccess = false
-            @Suppress("DEPRECATION")
-            allowFileAccessFromFileURLs = false
-            @Suppress("DEPRECATION")
-            allowUniversalAccessFromFileURLs = false
             
             // Safe settings
             domStorageEnabled = true
@@ -146,6 +142,28 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun setWebClient() {
+        val resourceId = intent.getStringExtra("RESOURCE_ID")
+        var assetLoader: androidx.webkit.WebViewAssetLoader? = null
+        if (resourceId != null) {
+            val directory = File(getExternalFilesDir(null), "ole/$resourceId")
+            val externalPathHandler = androidx.webkit.WebViewAssetLoader.PathHandler { path ->
+                try {
+                    val file = File(directory, path)
+                    if (file.exists() && file.canonicalPath.startsWith(directory.canonicalPath)) {
+                        val mimeType = java.net.URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
+                        return@PathHandler WebResourceResponse(mimeType, "utf-8", java.io.FileInputStream(file))
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                null
+            }
+
+            assetLoader = androidx.webkit.WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", externalPathHandler)
+                .build()
+        }
+
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
@@ -160,7 +178,7 @@ class WebViewActivity : AppCompatActivity() {
                 if (!url.startsWith("file://") && url.endsWith("/eng/")) {
                     finish()
                 }
-                if (url.startsWith("file://")) {
+                if (url.startsWith("file://") || url.startsWith("https://appassets.androidplatform.net/")) {
                     activityWebViewBinding.contentWebView.webSource.text = getString(R.string.local_resource)
                 } else {
                     val i = url.toUri()
@@ -221,6 +239,12 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                if (assetLoader != null) {
+                    val response = assetLoader.shouldInterceptRequest(request.url)
+                    if (response != null) {
+                        return response
+                    }
+                }
                 return super.shouldInterceptRequest(view, request)
             }
         }
