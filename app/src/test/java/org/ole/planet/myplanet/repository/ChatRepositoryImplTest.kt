@@ -24,7 +24,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 
 class ChatRepositoryImplTest {
 
@@ -35,9 +34,6 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher()), recordPrivateCalls = true)
-        mockkObject(RealmChatHistory.Companion)
-        every { RealmChatHistory.insert(any(), any()) } just Runs
-        every { RealmChatHistory.addConversationToChatHistory(any(), any(), any(), any(), any()) } just Runs
     }
 
     @After
@@ -114,11 +110,12 @@ class ChatRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
             transactionSlot.captured.invoke(mockRealm)
         }
+        every { chatRepository.insertChatHistory(any(), any()) } just Runs
 
         chatRepository.saveNewChat(chatObj)
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-        verify(exactly = 1) { RealmChatHistory.insert(mockRealm, chatObj) }
+        verify(exactly = 1) { chatRepository.insertChatHistory(mockRealm, chatObj) }
     }
 
     @Test
@@ -133,10 +130,11 @@ class ChatRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
             transactionSlot.captured.invoke(mockRealm)
         }
+        every { chatRepository.addConversation(any(), any(), any(), any(), any()) } just Runs
 
         chatRepository.continueConversation(id, query, response, rev)
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-        verify(exactly = 1) { RealmChatHistory.addConversationToChatHistory(mockRealm, id, query, response, rev) }
+        verify(exactly = 1) { chatRepository.addConversation(mockRealm, id, query, response, rev) }
     }
 }
