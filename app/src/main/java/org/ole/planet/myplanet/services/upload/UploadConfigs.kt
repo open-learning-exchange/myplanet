@@ -21,7 +21,8 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -170,7 +171,7 @@ class UploadConfigs @Inject constructor(
                 .isNull("_id").or().isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full(RealmSubmission::serializeExamResult),
+        serializer = UploadSerializer.Full(submissionsRepository::serializeExamResult),
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         filterGuests = true,
