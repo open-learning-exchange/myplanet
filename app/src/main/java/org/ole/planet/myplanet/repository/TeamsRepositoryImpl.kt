@@ -1000,8 +1000,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (!primaryAvailable && alternativeAvailable) {
             mapping.alternativeUrl.let { alternativeUrl ->
                 val uri = updateUrl.toUri()
-                val editor = preferences.edit()
-                serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
+                serverUrlMapper.updateUrlPreferences(uri, alternativeUrl, mapping.primaryUrl)
             }
         }
 

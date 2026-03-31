@@ -371,8 +371,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 if (!primaryAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
-                        val editor = sharedPrefManager.rawPreferences.edit()
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
+                        serverUrlMapper.updateUrlPreferences(uri, alternativeUrl, mapping.primaryUrl)
                     }
                 }
                 uploadSubmissionsWithTiming(capturedSyncStartTime)
