@@ -90,7 +90,7 @@ class RatingsViewModel @Inject constructor(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
+                    userId = userRepository.getValidUserId(user, userId),
                     rating = rating,
                     comment = comment
                 )
