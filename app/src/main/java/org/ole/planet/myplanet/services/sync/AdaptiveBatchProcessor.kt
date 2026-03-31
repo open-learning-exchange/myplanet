@@ -113,9 +113,10 @@ class AdaptiveBatchProcessor(private val context: Context) {
     }
     
     private fun getCourseSyncConfig(capabilities: SystemCapabilities): SyncConfig {
-        return getResourceSyncConfig(capabilities).copy(
-            batchSize = getResourceSyncConfig(capabilities).batchSize / 2,
-            concurrencyLevel = max(1, getResourceSyncConfig(capabilities).concurrencyLevel - 1)
+        val resourceConfig = getResourceSyncConfig(capabilities)
+        return resourceConfig.copy(
+            batchSize = resourceConfig.batchSize / 2,
+            concurrencyLevel = max(1, resourceConfig.concurrencyLevel - 1)
         )
     }
     
