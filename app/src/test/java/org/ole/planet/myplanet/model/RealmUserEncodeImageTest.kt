@@ -42,6 +42,7 @@ class RealmUserEncodeImageTest {
 
         mockkStatic(Base64::class)
         // Mock toUri extension function
+        mockkStatic(Uri::class)
         mockkStatic("androidx.core.net.UriKt")
 
         realmUser = RealmUser()
