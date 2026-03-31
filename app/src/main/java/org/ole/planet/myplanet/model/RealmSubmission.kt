@@ -186,7 +186,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context, spm: org.ole.planet.myplanet.services.SharedPrefManager): JsonObject {
+        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUser::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
@@ -219,8 +219,8 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             `object`.addProperty("sender", sub.sender)
-            `object`.addProperty("source", spm.getPlanetCode())
-            `object`.addProperty("parentCode", spm.getParentCode())
+            `object`.addProperty("source", source)
+            `object`.addProperty("parentCode", parentCode)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: RealmList()))
             if (exam != null) {
                 `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
@@ -237,7 +237,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context, spm: org.ole.planet.myplanet.services.SharedPrefManager): JsonObject {
+        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject {
             val jsonObject = JsonObject()
 
             try {
@@ -264,8 +264,8 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
                 jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 jsonObject.addProperty("sender", submission.sender)
-                jsonObject.addProperty("source", spm.getPlanetCode())
-                jsonObject.addProperty("parentCode", spm.getParentCode())
+                jsonObject.addProperty("source", source)
+                jsonObject.addProperty("parentCode", parentCode)
                 jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
                 if (exam != null) {
                     jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
