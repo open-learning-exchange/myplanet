@@ -157,7 +157,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping) { url ->
             isServerReachable(url)
         }
     }

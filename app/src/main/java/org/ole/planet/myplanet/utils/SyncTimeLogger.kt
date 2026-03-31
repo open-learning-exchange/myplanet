@@ -88,15 +88,11 @@ object SyncTimeLogger {
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val prefs = spm.rawPreferences
-                    val editor = prefs.edit()
 
                     serverUrlMapper.updateUrlPreferences(
-                        editor,
                         uri,
                         alternativeUrl,
-                        mapping.primaryUrl,
-                        prefs
+                        mapping.primaryUrl
                     )
                 }
             }

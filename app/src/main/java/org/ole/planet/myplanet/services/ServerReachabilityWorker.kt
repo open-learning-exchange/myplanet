@@ -98,7 +98,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
 
                 if (alternativeReachable) {
-                    serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                    serverUrlMapper.updateServerIfNecessary(mapping) { url ->
                         isServerReachable(url)
                     }
 
@@ -172,8 +172,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = sharedPrefManager.rawPreferences.edit()
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
+                    serverUrlMapper.updateUrlPreferences(uri, alternativeUrl, mapping.primaryUrl)
                 }
             }
             uploadSubmissions()

@@ -145,7 +145,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping) { url ->
             isServerReachable(url)
         }
     }

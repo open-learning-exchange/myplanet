@@ -185,14 +185,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = sharedPrefManager.rawPreferences.edit()
 
                     serverUrlMapper.updateUrlPreferences(
-                        editor,
                         uri,
                         alternativeUrl,
-                        mapping.primaryUrl,
-                        sharedPrefManager.rawPreferences
+                        mapping.primaryUrl
                     )
                 }
             }

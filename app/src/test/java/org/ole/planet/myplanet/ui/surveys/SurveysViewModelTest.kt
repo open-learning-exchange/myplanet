@@ -219,7 +219,7 @@ class SurveysViewModelTest {
         stubLoadSurveys(emptyList())
 
         // Mock serverUrlMapper.updateServerIfNecessary
-        coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers {
+        coEvery { serverUrlMapper.updateServerIfNecessary(any(), any()) } answers {
             // execute callback directly if we want
         }
 

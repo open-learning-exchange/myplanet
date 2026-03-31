@@ -158,7 +158,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping) { url ->
             isServerReachable(url)
         }
     }

@@ -142,7 +142,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefData.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping) { url ->
             isServerReachable(url)
         }
     }
