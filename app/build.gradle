@@ -12,8 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5139
-        versionName = "0.51.39"
+        versionCode = 5149
+        versionName = "0.51.49"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -156,12 +156,6 @@ kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
-}
-repositories {
-    mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    maven { url = uri("https://maven.google.com") }
 }
 dependencies {
     testImplementation(libs.test.junit)
