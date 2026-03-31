@@ -63,7 +63,7 @@ open class RealmMyCourse : RealmObject() {
     }
 
     companion object {
-        private val concatenatedLinks = ArrayList<String>()
+        private val concatenatedLinks = HashSet<String>()
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
@@ -82,8 +82,10 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.description = description
             val links = extractLinks(description)
             val baseUrl = UrlUtils.getUrl()
-            for (link in links) {
-                concatenatedLinks.add("$baseUrl/$link")
+            synchronized(concatenatedLinks) {
+                for (link in links) {
+                    concatenatedLinks.add("$baseUrl/$link")
+                }
             }
             myMyCoursesDB?.method = JsonUtils.getString("method", myCoursesDoc)
             myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCoursesDoc)
@@ -104,8 +106,10 @@ open class RealmMyCourse : RealmObject() {
                 val stepDescription = JsonUtils.getString("description", stepJson)
                 step.description = stepDescription
                 val stepLinks = extractLinks(stepDescription)
-                for (stepLink in stepLinks) {
-                    concatenatedLinks.add("$baseUrl/$stepLink")
+                synchronized(concatenatedLinks) {
+                    for (stepLink in stepLinks) {
+                        concatenatedLinks.add("$baseUrl/$stepLink")
+                    }
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm, spm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
@@ -122,18 +126,16 @@ open class RealmMyCourse : RealmObject() {
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+                JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableSet()
             } else {
-                mutableListOf()
+                mutableSetOf()
             }
             val linksToProcess: List<String>
             synchronized(concatenatedLinks) {
                 linksToProcess = concatenatedLinks.toList()
             }
             for (link in linksToProcess) {
-                if (!existingConcatenatedLinks.contains(link)) {
-                    existingConcatenatedLinks.add(link)
-                }
+                existingConcatenatedLinks.add(link)
             }
             val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
