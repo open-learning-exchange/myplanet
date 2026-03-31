@@ -21,10 +21,14 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService, @
         executeTransaction { realm ->
             val ids = list.mapNotNull { it._id }.toTypedArray()
             if (ids.isEmpty()) return@executeTransaction
+            val idToIndexMap = list.mapIndexedNotNull { index, life ->
+                life._id?.let { it to index }
+            }.toMap()
+
             val managedLives = realm.where(RealmMyLife::class.java).`in`("_id", ids).findAll()
             managedLives.forEach { managedLife ->
-                val index = list.indexOfFirst { it._id == managedLife._id }
-                if (index != -1) {
+                val index = idToIndexMap[managedLife._id]
+                if (index != null) {
                     managedLife.weight = index
                 }
             }
