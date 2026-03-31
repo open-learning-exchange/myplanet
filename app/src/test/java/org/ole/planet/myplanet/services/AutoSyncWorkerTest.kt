@@ -13,7 +13,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.mockkObject
-import io.mockk.mockkConstructor
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -41,6 +40,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.TestScope
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -57,7 +57,13 @@ class AutoSyncWorkerTest {
     private lateinit var configurationsRepository: ConfigurationsRepository
 
     private val testDispatcher = StandardTestDispatcher()
-    private val testScope = TestScope(testDispatcher + Job())
+    private lateinit var testScope: TestScope
+
+    // Save original states
+    private var originalSyncRunning = false
+    private var originalSyncFailedCount = 0
+    private var originalScope: CoroutineScope? = null
+    private var originalContext: Context? = null
 
     @Before
     fun setup() {
@@ -75,9 +81,21 @@ class AutoSyncWorkerTest {
         mockkStatic(Utilities::class)
         every { Utilities.toast(any(), any()) } returns Unit
 
-        mockkConstructor(Intent::class)
-        every { anyConstructed<Intent>().putExtra(any<String>(), any<Boolean>()) } returns mockk<Intent>(relaxed = true)
-        every { anyConstructed<Intent>().setFlags(any()) } returns mockk<Intent>(relaxed = true)
+        testScope = TestScope(testDispatcher + Job())
+
+        // Save state
+        originalSyncRunning = MainApplication.isSyncRunning
+        originalSyncFailedCount = MainApplication.syncFailedCount
+        try {
+            originalScope = MainApplication.applicationScope
+        } catch (e: Exception) {
+            // Ignored, might be uninitialized
+        }
+        try {
+            originalContext = MainApplication.context
+        } catch (e: Exception) {
+            // Ignored, might be uninitialized
+        }
 
         MainApplication.applicationScope = testScope
         MainApplication.isSyncRunning = false
@@ -92,6 +110,17 @@ class AutoSyncWorkerTest {
 
     @After
     fun tearDown() {
+        // Restore state
+        MainApplication.isSyncRunning = originalSyncRunning
+        MainApplication.syncFailedCount = originalSyncFailedCount
+        if (originalScope != null) {
+            MainApplication.applicationScope = originalScope!!
+        }
+        if (originalContext != null) {
+            MainApplication.context = originalContext!!
+        }
+
+        testScope.cancel()
         unmockkAll()
     }
 
@@ -137,8 +166,23 @@ class AutoSyncWorkerTest {
     }
 
     @Test
+    fun `onSyncFailed does not start LoginActivity when syncFailedCount is 3 or less`() {
+        MainApplication.syncFailedCount = 3
+
+        every { context.startActivity(any()) } returns Unit
+
+        worker.onSyncFailed("error")
+
+        verify(exactly = 0) { context.startActivity(any()) }
+    }
+
+    @Test
     fun `onSyncFailed starts LoginActivity when syncFailedCount greater than 3`() {
         MainApplication.syncFailedCount = 4
+
+        io.mockk.mockkConstructor(Intent::class)
+        every { anyConstructed<Intent>().putExtra(any<String>(), any<Boolean>()) } returns io.mockk.mockk<Intent>(relaxed = true)
+        every { anyConstructed<Intent>().setFlags(any()) } returns io.mockk.mockk<Intent>(relaxed = true)
 
         every { context.startActivity(any()) } returns Unit
 
@@ -165,25 +209,44 @@ class AutoSyncWorkerTest {
 
     @Test
     fun `onError with blockSync false triggers upload operations`() = runTest(testDispatcher) {
-        // Since we changed the runTest to use testDispatcher directly,
-        // it executes the coroutine in the TestScope we provided to MainApplication
+        // Setup configurationsRepository.checkHealth to invoke callback
+        val checkHealthSlot = slot<org.ole.planet.myplanet.callback.OnSuccessListener>()
+        every { configurationsRepository.checkHealth(capture(checkHealthSlot)) } answers {
+            checkHealthSlot.captured.onSuccess("success")
+        }
 
-        // Setup uploadToShelfService.uploadUserData with a callback invocation
-        every { uploadToShelfService.uploadUserData(any()) } answers {
-            // we don't need to actually call the callback for this test to pass
-            // because the MainApplication.applicationScope.launch block is not inside the callback
+        // Setup uploadToShelfService.uploadUserData to invoke callback
+        val uploadUserDataSlot = slot<org.ole.planet.myplanet.callback.OnSuccessListener>()
+        every { uploadToShelfService.uploadUserData(capture(uploadUserDataSlot)) } answers {
+            uploadUserDataSlot.captured.onSuccess("success")
         }
 
         worker.onError("error", false)
 
         verify { syncManager.start(worker, "upload") }
         verify { uploadToShelfService.uploadUserData(any()) }
+        verify { configurationsRepository.checkHealth(any()) }
+        verify { uploadToShelfService.uploadHealth() }
 
         advanceUntilIdle() // Process coroutines in testScope
 
         coVerify { uploadManager.uploadExamResult(worker) }
         coVerify { uploadManager.uploadFeedback() }
+        coVerify { uploadManager.uploadAchievement() }
+        coVerify { uploadManager.uploadResourceActivities("") }
+        coVerify { uploadManager.uploadUserActivities(worker) }
+        coVerify { uploadManager.uploadCourseActivities() }
+        coVerify { uploadManager.uploadSearchActivity() }
+        coVerify { uploadManager.uploadRating() }
         coVerify { uploadManager.uploadResource(worker) }
+        coVerify { uploadManager.uploadNews() }
+        coVerify { uploadManager.uploadTeams() }
+        coVerify { uploadManager.uploadTeamTask() }
+        coVerify { uploadManager.uploadMeetups() }
+        coVerify { uploadManager.uploadAdoptedSurveys() }
+        coVerify { uploadManager.uploadCrashLog() }
+        coVerify { uploadManager.uploadSubmissions() }
+        coVerify { uploadManager.uploadActivities(null) }
     }
 
     @Test
