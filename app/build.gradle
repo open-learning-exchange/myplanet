@@ -170,6 +170,15 @@ dependencies {
     testImplementation(libs.test.arch)
     testImplementation(libs.test.hilt)
     kspTest(libs.hilt.android.compiler)
+    androidTestImplementation(libs.test.junit)
+    androidTestImplementation(libs.test.ext)
+    androidTestImplementation(libs.test.runner)
+    androidTestImplementation(libs.test.core)
+    androidTestImplementation(libs.test.coroutines)
+    androidTestImplementation(libs.test.rxjava)
+    androidTestImplementation(libs.test.arch)
+    androidTestImplementation(libs.test.hilt)
+    kspAndroidTest(libs.hilt.android.compiler)
 }
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
