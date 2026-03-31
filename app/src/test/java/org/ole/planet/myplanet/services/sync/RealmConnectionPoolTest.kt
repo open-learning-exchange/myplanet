@@ -15,6 +15,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.runBlocking
+import java.util.concurrent.Executors
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -23,6 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealmConnectionPoolTest {
@@ -85,7 +91,7 @@ class RealmConnectionPoolTest {
     }
 
     @Test
-    fun `pool creates multiple connections up to maxConnections`() = runTest {
+    fun `pool creates multiple connections up to maxConnections`() = runBlocking {
         val mockRealm1 = mockk<Realm>()
         every { mockRealm1.isClosed } returns false
         every { mockRealm1.isInTransaction } returns false
@@ -96,9 +102,9 @@ class RealmConnectionPoolTest {
         every { mockRealm2.isInTransaction } returns false
         every { mockRealm2.close() } just Runs
 
-        var calls = 0
+        val callCounter = AtomicInteger(0)
         every { databaseService.createManagedRealmInstance() } answers {
-            if (calls++ == 0) mockRealm1 else mockRealm2
+            if (callCounter.getAndIncrement() == 0) mockRealm1 else mockRealm2
         }
 
         val config = RealmPoolConfig(maxConnections = 2)
@@ -106,12 +112,12 @@ class RealmConnectionPoolTest {
 
         val job1 = async(Dispatchers.Default) {
             pool.useRealm {
-                delay(100)
+                delay(200)
             }
         }
         val job2 = async(Dispatchers.Default) {
             pool.useRealm {
-                delay(100)
+                delay(200)
             }
         }
 
@@ -152,7 +158,7 @@ class RealmConnectionPoolTest {
     }
 
     @Test
-    fun `pool exhausts connections and suspends`() = runTest {
+    fun `pool exhausts connections and suspends`() = runBlocking {
         val mockRealm = mockk<Realm>()
         every { mockRealm.isClosed } returns false
         every { mockRealm.isInTransaction } returns false
@@ -163,28 +169,51 @@ class RealmConnectionPoolTest {
         val pool = RealmConnectionPool(context, databaseService, config)
 
         val secondTaskCompleted = AtomicBoolean(false)
+        val job1Started = CompletableDeferred<Unit>()
+        val releaseJob1 = CompletableDeferred<Unit>()
 
-        // This will take the only permit
-        val job1 = async(Dispatchers.Default) {
-            pool.useRealm {
-                delay(100)
+        val dispatcher1 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+        val dispatcher2 = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+
+        try {
+            // Launch on different thread to avoid ThreadLocal caching
+            val job1 = async(dispatcher1) {
+                pool.useRealm {
+                    job1Started.complete(Unit)
+                    // suspend here until we tell it to finish
+                    releaseJob1.await()
+                }
             }
-        }
 
-        // This should suspend until job1 finishes
-        val job2 = async(Dispatchers.Default) {
-            pool.useRealm {
-                secondTaskCompleted.set(true)
+            // Wait until job1 has definitively acquired the Realm connection
+            job1Started.await()
+
+            // This should suspend inside pool.useRealm since the single connection is checked out by another thread
+            val job2 = async(dispatcher2) {
+                pool.useRealm {
+                    secondTaskCompleted.set(true)
+                }
             }
+
+            // Yield to let job2 start and block on the permit.
+            delay(50)
+
+            // job2 should be suspended, not completed
+            assertTrue(!secondTaskCompleted.get())
+
+            // Release job1
+            releaseJob1.complete(Unit)
+
+            // Wait for both to finish completely
+            awaitAll(job1, job2)
+
+            // Now job2 should have gotten the permit and completed
+            assertTrue(secondTaskCompleted.get())
+            verify(exactly = 1) { databaseService.createManagedRealmInstance() }
+        } finally {
+            dispatcher1.close()
+            dispatcher2.close()
         }
-
-        // At this point job1 has the permit, job2 is suspended
-        delay(50)
-        assertTrue(!secondTaskCompleted.get())
-
-        awaitAll(job1, job2)
-        assertTrue(secondTaskCompleted.get())
-        verify(exactly = 1) { databaseService.createManagedRealmInstance() }
     }
 
     @Test
@@ -214,7 +243,8 @@ class RealmConnectionPoolTest {
         assertEquals(1, calls)
 
         // Wait longer than idle timeout + validation interval
-        delay(20)
+        // Use Thread.sleep because RealmConnectionPool uses System.currentTimeMillis() internally
+        Thread.sleep(50)
 
         // Next use should trigger validation, see connection is expired, close it, and create new one
         pool.useRealm { }
