@@ -149,33 +149,24 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         submit.setOnClickListener {
             if (isValidReportForm(dialogAddReportBinding)) {
-                val doc = JsonObject().apply {
-                    addProperty("_id", UUID.randomUUID().toString())
-                    addProperty("createdDate", System.currentTimeMillis())
-                    addProperty("description", "${dialogAddReportBinding.summary.text}")
-                    addProperty("beginningBalance", dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0)
-                    addProperty("sales", dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0)
-                    addProperty("otherIncome", dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0)
-                    addProperty("wages", dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0)
-                    addProperty("otherExpenses", dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0)
-                    addProperty("startDate", startTimeStamp?.toLongOrNull() ?: 0L)
-                    addProperty("endDate", endTimeStamp?.toLongOrNull() ?: 0L)
-                    addProperty("updatedDate", System.currentTimeMillis())
-                    addProperty("teamId", teamId)
-                    addProperty("teamType", team?.teamType)
-                    addProperty("teamPlanetCode", team?.teamPlanetCode)
-                    addProperty("docType", "report")
-                    addProperty("updated", true)
-                }
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        viewModel.addReport(doc)
-                        dialog.dismiss()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                viewModel.addReport(
+                    description = dialogAddReportBinding.summary.text.toString(),
+                    beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0,
+                    sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0,
+                    otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0,
+                    wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0,
+                    otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0,
+                    startDate = startTimeStamp?.toLongOrNull() ?: 0L,
+                    endDate = endTimeStamp?.toLongOrNull() ?: 0L,
+                    teamId = teamId,
+                    teamType = team?.teamType,
+                    teamPlanetCode = team?.teamPlanetCode,
+                    onSuccess = { dialog.dismiss() },
+                    onError = {
+                        it.printStackTrace()
                         Utilities.toast(requireContext(), "Failed to add report. Please try again.")
                     }
-                }
+                )
             }
         }
 
@@ -223,51 +214,26 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     ).show()
                     return@setOnClickListener
                 }
-                val doc = JsonObject().apply {
-                    addProperty("description", dialogAddReportBinding.summary.text.toString())
-                    addProperty(
-                        "beginningBalance",
-                        dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull()
-                             ?: currentReport.beginningBalance,
-                    )
-                    addProperty(
-                        "sales",
-                        dialogAddReportBinding.sales.text.toString().toIntOrNull()
-                             ?: currentReport.sales,
-                    )
-                    addProperty(
-                        "otherIncome",
-                        dialogAddReportBinding.otherIncome.text.toString().toIntOrNull()
-                             ?: currentReport.otherIncome,
-                    )
-                    addProperty(
-                        "wages",
-                        dialogAddReportBinding.personnel.text.toString().toIntOrNull()
-                             ?: currentReport.wages,
-                    )
-                    addProperty(
-                        "otherExpenses",
-                        dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull()
-                             ?: currentReport.otherExpenses,
-                    )
-                    addProperty("startDate", startTimeStamp?.toLongOrNull() ?: currentReport.startDate)
-                    addProperty("endDate", endTimeStamp?.toLongOrNull() ?: currentReport.endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
-                    addProperty("updated", true)
-                }
 
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        viewModel.updateReport(reportId, doc)
-                        dialog.dismiss()
-                    } catch (e: Exception) {
+                viewModel.updateReport(
+                    reportId = reportId,
+                    description = dialogAddReportBinding.summary.text.toString(),
+                    beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance,
+                    sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales,
+                    otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: currentReport.otherIncome,
+                    wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages,
+                    otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses,
+                    startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate,
+                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate,
+                    onSuccess = { dialog.dismiss() },
+                    onError = {
                         Snackbar.make(
                             binding.root,
                             "Failed to update report. Please try again.",
                             Snackbar.LENGTH_LONG
                         ).show()
                     }
-                }
+                )
             }
         }
 
@@ -280,15 +246,15 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             builder.setTitle(getString(R.string.delete_report))
                 .setMessage(R.string.delete_record)
                 .setPositiveButton(R.string.ok) { _, _ ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        try {
-                            viewModel.archiveReport(reportId)
-                        } catch (e: Exception) {
+                    viewModel.archiveReport(
+                        reportId = reportId,
+                        onSuccess = { },
+                        onError = {
                             binding.root.let { view ->
                                 Snackbar.make(view, getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()
                             }
                         }
-                    }
+                    )
                 }
                 .setNegativeButton("Cancel", null)
                 .show()

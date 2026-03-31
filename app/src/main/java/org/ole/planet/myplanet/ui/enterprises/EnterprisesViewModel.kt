@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
 
@@ -13,16 +16,93 @@ class EnterprisesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository
 ) : ViewModel() {
 
-    suspend fun addReport(doc: JsonObject) {
-        teamsRepository.addReport(doc)
+    fun addReport(
+        description: String,
+        beginningBalance: Int,
+        sales: Int,
+        otherIncome: Int,
+        wages: Int,
+        otherExpenses: Int,
+        startDate: Long,
+        endDate: Long,
+        teamId: String,
+        teamType: String?,
+        teamPlanetCode: String?,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val doc = JsonObject().apply {
+                    addProperty("_id", UUID.randomUUID().toString())
+                    addProperty("createdDate", System.currentTimeMillis())
+                    addProperty("description", description)
+                    addProperty("beginningBalance", beginningBalance)
+                    addProperty("sales", sales)
+                    addProperty("otherIncome", otherIncome)
+                    addProperty("wages", wages)
+                    addProperty("otherExpenses", otherExpenses)
+                    addProperty("startDate", startDate)
+                    addProperty("endDate", endDate)
+                    addProperty("updatedDate", System.currentTimeMillis())
+                    addProperty("teamId", teamId)
+                    addProperty("teamType", teamType)
+                    addProperty("teamPlanetCode", teamPlanetCode)
+                    addProperty("docType", "report")
+                    addProperty("updated", true)
+                }
+                teamsRepository.addReport(doc)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
     }
 
-    suspend fun updateReport(reportId: String, doc: JsonObject) {
-        teamsRepository.updateReport(reportId, doc)
+    fun updateReport(
+        reportId: String,
+        description: String,
+        beginningBalance: Int,
+        sales: Int,
+        otherIncome: Int,
+        wages: Int,
+        otherExpenses: Int,
+        startDate: Long,
+        endDate: Long,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val doc = JsonObject().apply {
+                    addProperty("description", description)
+                    addProperty("beginningBalance", beginningBalance)
+                    addProperty("sales", sales)
+                    addProperty("otherIncome", otherIncome)
+                    addProperty("wages", wages)
+                    addProperty("otherExpenses", otherExpenses)
+                    addProperty("startDate", startDate)
+                    addProperty("endDate", endDate)
+                    addProperty("updatedDate", System.currentTimeMillis())
+                    addProperty("updated", true)
+                }
+                teamsRepository.updateReport(reportId, doc)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
     }
 
-    suspend fun archiveReport(reportId: String) {
-        teamsRepository.archiveReport(reportId)
+    fun archiveReport(reportId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+        viewModelScope.launch {
+            try {
+                teamsRepository.archiveReport(reportId)
+                onSuccess()
+            } catch (e: Exception) {
+                onError(e)
+            }
+        }
     }
 
     suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
