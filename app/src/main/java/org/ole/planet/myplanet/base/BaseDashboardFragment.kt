@@ -23,6 +23,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -110,14 +111,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
-                if (urls.isNotEmpty()) {
-                    Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
-                    DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
-                } else {
-                    Utilities.toast(activity, getString(R.string.no_images_to_download))
-                }
-            }
+            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis)
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
@@ -167,6 +161,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                     .collect { (fullName, offlineLogins) ->
                         view?.findViewById<TextView>(R.id.txtFullName)?.text =
                             getString(R.string.user_name, fullName, offlineLogins)
+                    }
+            }
+            launch {
+                newsViewModel.privateImageUrls
+                    .drop(1)
+                    .collect { urls ->
+                        if (urls.isNotEmpty()) {
+                            Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
+                            DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
+                        } else {
+                            Utilities.toast(activity, getString(R.string.no_images_to_download))
+                        }
                     }
             }
         }
