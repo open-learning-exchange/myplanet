@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.util.Log
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -14,6 +15,7 @@ import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 
 object Utilities {
@@ -50,7 +52,7 @@ object Utilities {
                 try {
                     Toast.makeText(visualContext, message, duration).show()
                 } catch (e: IllegalAccessException) {
-                    e.printStackTrace()
+                    logException(e)
                 }
             }
         }
@@ -85,5 +87,14 @@ object Utilities {
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    }
+
+    @JvmStatic
+    fun logException(e: Throwable) {
+        if (BuildConfig.DEBUG) {
+            e.printStackTrace()
+        } else {
+            Log.e("Exception", e.message ?: e.toString())
+        }
     }
 }

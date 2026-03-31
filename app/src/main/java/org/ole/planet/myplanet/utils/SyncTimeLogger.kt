@@ -103,7 +103,7 @@ object SyncTimeLogger {
             try {
                 uploadManager?.uploadCrashLog()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e)
             }
         }
     }

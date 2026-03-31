@@ -107,7 +107,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e)
             }
             return "0"
         }
@@ -135,11 +135,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         log.version = getVersionName(context)
                         log.type = type
                         if (error.isNotEmpty()) {
-                            log.error = error
+                            log.error = if (error.length > 2000) error.substring(0, 2000) else error
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Utilities.logException(e)
                 }
             }
         }
@@ -186,13 +186,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e)
                 false
             }
         }
 
         fun handleUncaughtException(e: Throwable) {
-            e.printStackTrace()
+            Utilities.logException(e)
             createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
 
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
@@ -313,7 +313,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Utilities.logException(e)
             }
         }
         RetryQueueWorker.schedule(this)
