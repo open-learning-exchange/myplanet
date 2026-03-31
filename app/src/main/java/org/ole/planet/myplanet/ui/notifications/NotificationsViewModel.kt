@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -36,8 +36,8 @@ class NotificationsViewModel @Inject constructor(
     fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
         viewModelScope.launch(dispatcherProvider.io) {
-            val realmNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
-            _notifications.value = realmNotifications.map { formatNotification(it) }
+            val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
+            _notifications.value = payloadNotifications.map { formatNotification(it) }
             _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
         }
     }
@@ -75,7 +75,7 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun formatNotification(notification: RealmNotification): Notification {
+    private suspend fun formatNotification(notification: NotificationPayload): Notification {
         val formattedText = when (notification.type.lowercase()) {
             "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
             "task" -> {

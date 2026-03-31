@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 interface NotificationsRepository {
     suspend fun refresh()
     suspend fun markNotificationAsRead(notificationId: String, userId: String?)
-    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<org.ole.planet.myplanet.model.RealmNotification>
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<org.ole.planet.myplanet.model.NotificationPayload>
     suspend fun getUnreadCount(userId: String?, isAdmin: Boolean = false): Int
     suspend fun updateResourceNotification(userId: String?, resourceCount: Int)
     suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String>
