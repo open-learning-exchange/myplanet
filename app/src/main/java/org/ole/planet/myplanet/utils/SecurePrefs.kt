@@ -52,6 +52,7 @@ object SecurePrefs {
     
     fun warmUp(context: Context) {
         if (cachedAead == null) getAead(context)
+        if (cachedSecureStore == null) getSecureStore(context)
     }
 
     @Suppress("DEPRECATION")
@@ -86,10 +87,13 @@ object SecurePrefs {
                     }
                 }
                 plainPrefs.edit(commit = true) { clear() }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                }
             }
             encryptedPrefs
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, falling back to plain text", e)
             context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
         }
     }
