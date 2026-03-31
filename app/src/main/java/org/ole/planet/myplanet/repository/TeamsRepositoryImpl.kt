@@ -1306,4 +1306,50 @@ class TeamsRepositoryImpl @Inject constructor(
                 .count()
         } ?: 0
     }
+
+    override fun insertTeamLog(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
+        var tag = realm.where(RealmTeamLog::class.java)
+            .equalTo("id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)).findFirst()
+        if (tag == null) {
+            tag = realm.createObject(RealmTeamLog::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json))
+        }
+        if (tag != null) {
+            tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", json)
+            tag._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
+            tag.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", json)
+            tag.user = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
+            tag.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", json)
+            tag.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", json)
+            tag.time = org.ole.planet.myplanet.utils.JsonUtils.getLong("time", json)
+            tag.teamId = org.ole.planet.myplanet.utils.JsonUtils.getString("teamId", json)
+            tag.teamType = org.ole.planet.myplanet.utils.JsonUtils.getString("teamType", json)
+        }
+    }
+
+    override fun getLastVisit(realm: io.realm.Realm, userName: String?, teamId: String?): Long? {
+        return realm.where(RealmTeamLog::class.java)
+            .equalTo("type", "teamVisit")
+            .equalTo("user", userName)
+            .equalTo("teamId", teamId)
+            .max("time")?.toLong()
+    }
+
+    override fun serializeTeamActivities(log: org.ole.planet.myplanet.model.RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject {
+        val ob = com.google.gson.JsonObject()
+        ob.addProperty("user", log.user)
+        ob.addProperty("type", log.type)
+        ob.addProperty("createdOn", log.createdOn)
+        ob.addProperty("parentCode", log.parentCode)
+        ob.addProperty("teamType", log.teamType)
+        ob.addProperty("time", log.time)
+        ob.addProperty("teamId", log.teamId)
+        ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+        ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+        ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+        if (!android.text.TextUtils.isEmpty(log._rev)) {
+            ob.addProperty("_rev", log._rev)
+            ob.addProperty("_id", log._id)
+        }
+        return ob
+    }
 }

@@ -125,4 +125,7 @@ interface TeamsRepository {
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
+    fun insertTeamLog(realm: io.realm.Realm, json: com.google.gson.JsonObject)
+    fun getLastVisit(realm: io.realm.Realm, userName: String?, teamId: String?): Long?
+    fun serializeTeamActivities(log: org.ole.planet.myplanet.model.RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject
 }

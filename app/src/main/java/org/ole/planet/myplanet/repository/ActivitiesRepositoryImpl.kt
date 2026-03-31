@@ -15,12 +15,15 @@ import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
+import dagger.Lazy
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val teamsRepository: Lazy<TeamsRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -204,7 +207,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                     time = log.time,
                     user = log.user,
                     type = log.type,
-                    serialized = RealmTeamLog.serializeTeamActivities(log, context)
+                    serialized = teamsRepository.get().serializeTeamActivities(log, context)
                 )
             }
         }
