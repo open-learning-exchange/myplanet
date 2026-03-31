@@ -47,6 +47,7 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -298,6 +299,9 @@ class TransactionSyncManager @Inject constructor(
             }
             "tablet_users" -> {
                 userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+            }
+            "login_activities" -> {
+                activitiesRepository.insertActivity(mRealm, jsonDoc)
             }
             else -> {
                 callMethod(mRealm, jsonDoc, table)
