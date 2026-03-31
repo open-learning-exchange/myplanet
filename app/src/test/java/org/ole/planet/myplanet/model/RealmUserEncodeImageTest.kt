@@ -5,14 +5,8 @@ import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
-import io.mockk.MockKAnnotations
 import io.mockk.*
-import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
-import io.mockk.verify
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.InputStream
@@ -47,8 +41,7 @@ class RealmUserEncodeImageTest {
         every { mockContext.contentResolver } returns mockContentResolver
 
         mockkStatic(Base64::class)
-        // Mock toUri extension function and android.net.Uri
-        mockkStatic(Uri::class)
+        // Mock toUri extension function
         mockkStatic("androidx.core.net.UriKt")
 
         realmUser = RealmUser()
@@ -56,10 +49,14 @@ class RealmUserEncodeImageTest {
 
     @After
     fun tearDown() {
-        if (originalContext != null) {
-            MainApplication.context = originalContext!!
+        try {
+            if (originalContext != null) {
+                MainApplication.context = originalContext!!
+            }
+        } finally {
+            originalContext = null
+            unmockkAll()
         }
-        unmockkAll()
     }
 
     @Test
@@ -74,7 +71,6 @@ class RealmUserEncodeImageTest {
         val mockUri = mockk<Uri>()
         val mockInputStream = ByteArrayInputStream("test image data".toByteArray())
 
-        every { Uri.parse(imagePath) } returns mockUri
         every { imagePath.toUri() } returns mockUri
         every { mockContentResolver.openInputStream(mockUri) } returns mockInputStream
         every { Base64.encodeToString(any(), Base64.NO_WRAP) } returns "encoded_base64_string"
@@ -111,7 +107,6 @@ class RealmUserEncodeImageTest {
         val imagePath = "content://media/external/images/media/1"
         val mockUri = mockk<Uri>()
 
-        every { Uri.parse(imagePath) } returns mockUri
         every { imagePath.toUri() } returns mockUri
         every { mockContentResolver.openInputStream(mockUri) } throws RuntimeException("Test Exception")
 
