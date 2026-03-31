@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.content.SharedPreferences
+import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.UUID
@@ -16,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -276,5 +279,36 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 managedLog?._rev = upload._rev
             }
         }
+    }
+
+    override suspend fun recordSyncActivity(settings: SharedPreferences) {
+        executeTransaction { realm ->
+            val user = realm.where(RealmUser::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
+            if (user == null || user.id?.startsWith("guest") == true) {
+                return@executeTransaction
+            }
+            val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
+            activities.user = user.name
+            activities._rev = null
+            activities._id = null
+            activities.parentCode = user.parentCode
+            activities.createdOn = user.planetCode
+            activities.type = "sync"
+            activities.time = Date().time
+        }
+    }
+
+    override fun serializeResourceActivities(activity: RealmResourceActivity): JsonObject {
+        val ob = JsonObject()
+        ob.addProperty("user", activity.user)
+        ob.addProperty("resourceId", activity.resourceId)
+        ob.addProperty("type", activity.type)
+        ob.addProperty("title", activity.title)
+        ob.addProperty("time", activity.time)
+        ob.addProperty("createdOn", activity.createdOn)
+        ob.addProperty("parentCode", activity.parentCode)
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
+        return ob
     }
 }
