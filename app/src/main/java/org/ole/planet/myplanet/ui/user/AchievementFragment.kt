@@ -218,9 +218,10 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
-        binding.tvGoals.text = a.goals
-        binding.tvPurpose.text = a.purpose
-        binding.tvAchievementHeader.text = a.achievementsHeader
+        binding.tvGoals.text = a.goals.ifBlank { getString(R.string.no_goal_added) }
+        binding.tvPurpose.text = a.purpose.ifBlank { getString(R.string.no_purpose_added) }
+        binding.tvAchievementHeader.text =
+            a.achievementsHeader.ifBlank { getString(R.string.no_achievement_added) }
     }
 
     private fun populateAchievements(data: AchievementData) {

@@ -1206,5 +1206,8 @@
     <string name="select_media">मिडिया</string>
     <string name="select_resource_type">स्रोत प्रकार</string>
     <string name="no_results_for_filter">तपाईंको हालको फिल्टरसँग कुनै परिणाम मेल खाँदैन</string>
+    <string name="no_purpose_added">कुनै उद्देश्य थपिएको छैन</string>
+    <string name="no_goal_added">अहिलेसम्म कुनै लक्ष्य तय गरिएको छैन</string>
+    <string name="no_achievement_added">उपलब्धिहरूको सारांश</string>
 
 </resources>

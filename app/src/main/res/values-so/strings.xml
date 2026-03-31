@@ -1206,5 +1206,8 @@
     <string name="select_media">Warbaahinta</string>
     <string name="select_resource_type">Nooca Kheyraadka</string>
     <string name="no_results_for_filter">Natiijooyin ma jiraan oo la jaanqaadaya shaandhadaada hadda</string>
+    <string name="no_purpose_added">Ujeeddo lama darin</string>
+    <string name="no_goal_added">Weli hadaf lama dejin</string>
+    <string name="no_achievement_added">Soo koobidda guulaha</string>
 
 </resources>

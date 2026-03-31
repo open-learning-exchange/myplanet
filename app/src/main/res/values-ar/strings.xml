@@ -1222,5 +1222,8 @@
     <string name="select_media">وسائط</string>
     <string name="select_resource_type">نوع المورد</string>
     <string name="no_results_for_filter">لا توجد نتائج تطابق الفلتر الحالي</string>
+    <string name="no_purpose_added">لم تتم إضافة غرض</string>
+    <string name="no_goal_added">لم يتم تحديد أي أهداف بعد</string>
+    <string name="no_achievement_added">ملخص الإنجازات</string>
 
 </resources>
