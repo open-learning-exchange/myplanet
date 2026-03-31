@@ -584,6 +584,10 @@ class CoursesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForCourse(courseId)
     }
 
+    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>> {
+        return tagsRepository.getTagsForCourses(courseIds)
+    }
+
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
     }
