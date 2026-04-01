@@ -66,7 +66,7 @@ class SurveysRepositoryImpl @Inject constructor(
                             put("_id", userModel?.id)
                             put("name", userModel?.name)
                             put("userId", userModel?.id ?: "")
-                            put("teamPlanetCode", planetCode ?: "")
+                            put("teamPlanetCode", planetCode)
                             put("status", "active")
                             put("type", "team")
                             put("createdBy", userModel?.id ?: "")
@@ -154,8 +154,8 @@ class SurveysRepositoryImpl @Inject constructor(
                         this.type = "survey"
                         this.status = ""
                         this.uploaded = false
-                        this.source = planetCode ?: ""
-                        this.parentCode = sParentCode ?: ""
+                        this.source = planetCode
+                        this.parentCode = sParentCode
                         this.startTime = System.currentTimeMillis()
                         this.lastUpdateTime = System.currentTimeMillis()
                         this.isUpdated = true

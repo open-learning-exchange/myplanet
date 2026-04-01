@@ -38,7 +38,7 @@ object UrlUtils {
                 }
             }
 
-            val finalUrl = if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+            val finalUrl = if (hostIp.endsWith(".org") || hostIp.endsWith(".gt")) {
                 "$scheme://$hostIp/ml/"
             } else {
                 "$scheme://$hostIp:5000/"
