@@ -1209,7 +1209,6 @@
     <string name="no_purpose_added">No purpose added</string>
     <string name="no_goal_added">No goals set yet</string>
     <string name="no_achievement_added">Summary of achievements</string>
-
-
+    <string name="no_references_added">No references added</string>
 
 </resources>

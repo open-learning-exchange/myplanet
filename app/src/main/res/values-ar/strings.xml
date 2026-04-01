@@ -1225,5 +1225,6 @@
     <string name="no_purpose_added">لم تتم إضافة غرض</string>
     <string name="no_goal_added">لم يتم تحديد أي أهداف بعد</string>
     <string name="no_achievement_added">ملخص الإنجازات</string>
+    <string name="no_references_added">لم تتم إضافة مراجع</string>
 
 </resources>

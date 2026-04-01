@@ -1213,5 +1213,6 @@
     <string name="no_purpose_added">Aucun objectif n\'a été ajouté</string>
     <string name="no_goal_added">Aucun objectif n\'a encore été défini</string>
     <string name="no_achievement_added">Résumé des réalisations</string>
+    <string name="no_references_added">Aucune référence ajoutée</string>
 
 </resources>

@@ -303,6 +303,10 @@ class AchievementFragment : BaseContainerFragment() {
 
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
+        val hasReferences = data.references.isNotEmpty()
+        binding.rvOtherInfo.visibility = if (hasReferences) View.VISIBLE else View.GONE
+        binding.tvReferencesHeader.visibility = if (hasReferences) View.GONE else View.VISIBLE
+
         if (binding.rvOtherInfo.adapter == null) {
             binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
         } else {
