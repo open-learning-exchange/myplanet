@@ -256,44 +256,24 @@ object NotificationUtils {
 
         private fun createNotificationChannels() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channels = listOf(
-                    NotificationChannel(CHANNEL_GENERAL, "General Notifications", IMPORTANCE_DEFAULT).apply {
-                        description = "General app notifications"
-                        enableLights(true)
-                        enableVibration(true)
-                    },
-
-                    NotificationChannel(CHANNEL_SURVEYS, "Survey Notifications", IMPORTANCE_HIGH).apply {
-                        description = "New surveys and survey reminders"
-                        enableLights(true)
-                        enableVibration(true)
-                        setShowBadge(true)
-                    },
-
-                    NotificationChannel(CHANNEL_TASKS, "Task Notifications", IMPORTANCE_HIGH).apply {
-                        description = "Task assignments and deadlines"
-                        enableLights(true)
-                        enableVibration(true)
-                        setShowBadge(true)
-                    },
-
-                    NotificationChannel(CHANNEL_SYSTEM, "System Notifications", IMPORTANCE_DEFAULT).apply {
-                        description = "Storage warnings and system updates"
-                        enableLights(true)
-                        enableVibration(false)
-                    },
-
-                    NotificationChannel(CHANNEL_TEAM, "Team Notifications", IMPORTANCE_DEFAULT).apply {
-                        description = "Team join requests and team updates"
-                        enableLights(true)
-                        enableVibration(true)
-                    }
-                )
-
                 val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                channels.forEach { channel ->
-                    systemNotificationManager.createNotificationChannel(channel)
-                }
+                listOfNotNull(
+                    createChannel(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true),
+                    createChannel(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true),
+                    createChannel(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true),
+                    createChannel(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false),
+                    createChannel(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true)
+                ).forEach { systemNotificationManager.createNotificationChannel(it) }
+            }
+        }
+
+        private fun createChannel(id: String, name: String, desc: String, importance: Int, vibrate: Boolean, badge: Boolean = false): NotificationChannel? {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
+            return NotificationChannel(id, name, importance).apply {
+                description = desc
+                enableLights(true)
+                enableVibration(vibrate)
+                if (badge) setShowBadge(true)
             }
         }
 
@@ -380,34 +360,8 @@ object NotificationUtils {
             builder.addAction(R.drawable.ole_logo, "Mark as Read", markAsReadPendingIntent)
 
             when (config.type) {
-                TYPE_SURVEY -> {
-                    val openIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-                        action = ACTION_OPEN_NOTIFICATION
-                        putExtra(EXTRA_NOTIFICATION_TYPE, config.type)
-                        putExtra(EXTRA_NOTIFICATION_ID, config.id)
-                        putExtra(EXTRA_RELATED_ID, config.relatedId)
-                    }
-                    val openPendingIntent = PendingIntent.getBroadcast(
-                        context, (config.id + "_open").hashCode(), openIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    builder.addAction(R.drawable.survey, "Take Survey", openPendingIntent)
-                }
-
-                TYPE_TASK -> {
-                    val openIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-                        action = ACTION_OPEN_NOTIFICATION
-                        putExtra(EXTRA_NOTIFICATION_TYPE, config.type)
-                        putExtra(EXTRA_NOTIFICATION_ID, config.id)
-                        putExtra(EXTRA_RELATED_ID, config.relatedId)
-                    }
-                    val openPendingIntent = PendingIntent.getBroadcast(
-                        context, (config.id + "_open").hashCode(), openIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    builder.addAction(R.drawable.team, "View Task", openPendingIntent)
-                }
-
+                TYPE_SURVEY -> builder.addAction(R.drawable.survey, "Take Survey", createOpenPendingIntent(config))
+                TYPE_TASK -> builder.addAction(R.drawable.team, "View Task", createOpenPendingIntent(config))
                 TYPE_STORAGE -> {
                     val storageIntent = Intent(context, NotificationActionReceiver::class.java).apply {
                         action = ACTION_STORAGE_SETTINGS
@@ -419,35 +373,22 @@ object NotificationUtils {
                     )
                     builder.addAction(R.drawable.ole_logo, "Storage Settings", storagePendingIntent)
                 }
-
-                TYPE_JOIN_REQUEST -> {
-                    val openIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-                        action = ACTION_OPEN_NOTIFICATION
-                        putExtra(EXTRA_NOTIFICATION_TYPE, config.type)
-                        putExtra(EXTRA_NOTIFICATION_ID, config.id)
-                        putExtra(EXTRA_RELATED_ID, config.relatedId)
-                    }
-                    val openPendingIntent = PendingIntent.getBroadcast(
-                        context, (config.id + "_open").hashCode(), openIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    builder.addAction(R.drawable.business, "Review", openPendingIntent)
-                }
-
-                TYPE_RESOURCE -> {
-                    val openIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-                        action = ACTION_OPEN_NOTIFICATION
-                        putExtra(EXTRA_NOTIFICATION_TYPE, config.type)
-                        putExtra(EXTRA_NOTIFICATION_ID, config.id)
-                        putExtra(EXTRA_RELATED_ID, config.relatedId)
-                    }
-                    val openPendingIntent = PendingIntent.getBroadcast(
-                        context, (config.id + "_open").hashCode(), openIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    builder.addAction(R.drawable.ourlibrary, "View Resource", openPendingIntent)
-                }
+                TYPE_JOIN_REQUEST -> builder.addAction(R.drawable.business, "Review", createOpenPendingIntent(config))
+                TYPE_RESOURCE -> builder.addAction(R.drawable.ourlibrary, "View Resource", createOpenPendingIntent(config))
             }
+        }
+
+        private fun createOpenPendingIntent(config: NotificationConfig): PendingIntent {
+            val openIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                action = ACTION_OPEN_NOTIFICATION
+                putExtra(EXTRA_NOTIFICATION_TYPE, config.type)
+                putExtra(EXTRA_NOTIFICATION_ID, config.id)
+                putExtra(EXTRA_RELATED_ID, config.relatedId)
+            }
+            return PendingIntent.getBroadcast(
+                context, (config.id + "_open").hashCode(), openIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
         }
 
         private fun createNotificationIntent(config: NotificationConfig): Intent {
@@ -464,49 +405,32 @@ object NotificationUtils {
         }
 
         private fun canShowNotification(type: String): Boolean {
-            val notificationsEnabled = notificationManager.areNotificationsEnabled()
-            
-            if (!notificationsEnabled) {
-                return false
-            }
-
-            val globalEnabled = preferences.getBoolean(KEY_ENABLED, true)
-            
-            if (!globalEnabled) {
-                return false
-            }
-
-            val typeEnabled = when (type) {
+            if (!notificationManager.areNotificationsEnabled() || !preferences.getBoolean(KEY_ENABLED, true)) return false
+            return when (type) {
                 TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)
                 TYPE_TASK -> preferences.getBoolean(KEY_TASK_ENABLED, true)
                 TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> preferences.getBoolean(KEY_SYSTEM_ENABLED, true)
                 TYPE_JOIN_REQUEST -> preferences.getBoolean(KEY_TEAM_ENABLED, true)
                 else -> true
             }
-            
-            return typeEnabled
         }
 
-        private fun getChannelForType(type: String): String {
-            return when (type) {
-                TYPE_SURVEY -> CHANNEL_SURVEYS
-                TYPE_TASK -> CHANNEL_TASKS
-                TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> CHANNEL_SYSTEM
-                TYPE_JOIN_REQUEST -> CHANNEL_TEAM
-                else -> CHANNEL_GENERAL
-            }
+        private fun getChannelForType(type: String): String = when (type) {
+            TYPE_SURVEY -> CHANNEL_SURVEYS
+            TYPE_TASK -> CHANNEL_TASKS
+            TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> CHANNEL_SYSTEM
+            TYPE_JOIN_REQUEST -> CHANNEL_TEAM
+            else -> CHANNEL_GENERAL
         }
 
-        private fun getIconForType(type: String): Int {
-            return when (type) {
-                TYPE_SURVEY -> R.drawable.survey
-                TYPE_TASK -> R.drawable.team
-                TYPE_STORAGE -> android.R.drawable.stat_sys_warning
-                TYPE_JOIN_REQUEST -> R.drawable.business
-                TYPE_RESOURCE -> R.drawable.ourlibrary
-                TYPE_COURSE -> R.drawable.ourcourses
-                else -> R.drawable.ic_home
-            }
+        private fun getIconForType(type: String): Int = when (type) {
+            TYPE_SURVEY -> R.drawable.survey
+            TYPE_TASK -> R.drawable.team
+            TYPE_STORAGE -> android.R.drawable.stat_sys_warning
+            TYPE_JOIN_REQUEST -> R.drawable.business
+            TYPE_RESOURCE -> R.drawable.ourlibrary
+            TYPE_COURSE -> R.drawable.ourcourses
+            else -> R.drawable.ic_home
         }
 
         private fun markNotificationAsShown(notificationId: String) {
