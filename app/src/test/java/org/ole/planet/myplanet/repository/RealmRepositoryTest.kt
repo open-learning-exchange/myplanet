@@ -11,16 +11,18 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import java.util.logging.Level
+import java.util.logging.Logger
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
@@ -44,6 +46,9 @@ class RealmRepositoryTest {
 
     @Before
     fun setup() {
+        // Suppress MockK warning for mocking RealmResults
+        Logger.getLogger("io.mockk.impl.log.JULLogger").level = Level.OFF
+
         Dispatchers.setMain(testDispatcher)
         databaseService = mockk()
         realm = mockk(relaxed = true)
