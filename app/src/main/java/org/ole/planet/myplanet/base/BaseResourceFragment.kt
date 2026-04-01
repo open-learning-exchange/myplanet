@@ -83,7 +83,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
-    private var stayOnlineDialog: AlertDialog? = null
 
     protected fun requireRealmInstance(): Realm {
         if (!isRealmInitialized()) {
@@ -128,37 +127,6 @@ abstract class BaseResourceFragment : Fragment() {
                     pendingResult.finish()
                 }
             }
-        }
-    }
-
-    private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val pendingResult = goAsync()
-            stayOnlineDialog?.dismiss()
-            stayOnlineDialog = AlertDialog.Builder(requireContext())
-                .setMessage(R.string.do_you_want_to_stay_online)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                    pendingResult.finish()
-                }
-                .setNegativeButton(R.string.no) { _, _ ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val panelIntent = Intent(Settings.Panel.ACTION_WIFI)
-                        try {
-                            startActivity(panelIntent)
-                        } catch (_: Exception) {
-                            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                        }
-                    } else {
-                        startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                    }
-                    pendingResult.finish()
-                }
-                .setCancelable(false)
-                .create()
-            stayOnlineDialog?.setOnDismissListener {
-                stayOnlineDialog = null
-            }
-            stayOnlineDialog?.show()
         }
     }
     private val pendingDownloadUrls = mutableSetOf<String>()
@@ -360,7 +328,6 @@ abstract class BaseResourceFragment : Fragment() {
                         when (intent.action) {
                             DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
                             "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
-                            "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
                             DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                         }
                     }
@@ -454,8 +421,6 @@ abstract class BaseResourceFragment : Fragment() {
         downloadSuggestionDialog = null
         pendingSurveyDialog?.dismiss()
         pendingSurveyDialog = null
-        stayOnlineDialog?.dismiss()
-        stayOnlineDialog = null
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null

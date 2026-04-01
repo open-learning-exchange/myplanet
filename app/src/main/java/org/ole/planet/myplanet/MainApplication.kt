@@ -47,7 +47,6 @@ import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.StayOnlineWorker
 import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
@@ -95,7 +94,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
-        private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
         var syncFailedCount = 0
@@ -296,7 +294,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             } else {
                 cancelAutoSyncWork()
             }
-            scheduleStayOnlineWork()
             scheduleTaskNotificationWork()
             startNetworkMonitoring()
             scheduleRetryQueueWork()
@@ -372,12 +369,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private fun cancelAutoSyncWork() {
         val workManager = WorkManager.getInstance(this)
         workManager.cancelUniqueWork(AUTO_SYNC_WORK_TAG)
-    }
-
-    private fun scheduleStayOnlineWork() {
-        val stayOnlineWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(StayOnlineWorker::class.java, 900, TimeUnit.SECONDS).build()
-        val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniquePeriodicWork(STAY_ONLINE_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, stayOnlineWork)
     }
 
     private fun scheduleTaskNotificationWork() {
