@@ -268,7 +268,7 @@ class UploadManager @Inject constructor(
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
                     val photos = submissionsRepository.getPhotosByIds(photoIds)
 
-                    photos?.forEach { photo ->
+                    photos.forEach { photo ->
                         val uploadInfo = successfulUploads.find { it.photoId == photo.id }
                         if (uploadInfo != null) {
                             uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
@@ -351,7 +351,7 @@ class UploadManager @Inject constructor(
                                 try {
                                     val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
 
-                                    val libMap = libraries?.associateBy { it.id } ?: emptyMap()
+                                    val libMap = libraries.associateBy { it.id }
 
                                     successfulUpdates.forEach { (resourceData, `object`) ->
                                         val rev = getString("rev", `object`)
