@@ -274,24 +274,8 @@ class TransactionSyncManager @Inject constructor(
             chatHistoryList.add(jsonDoc)
         }
         chatHistoryList.forEach { jsonDoc ->
-            val chatHistoryId = JsonUtils.getString("_id", jsonDoc)
-            val existingChatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-            existingChatHistory?.deleteFromRealm()
-            val chatHistory = mRealm.createObject(RealmChatHistory::class.java, chatHistoryId)
-            chatHistory._rev = JsonUtils.getString("_rev", jsonDoc)
-            chatHistory.title = JsonUtils.getString("title", jsonDoc)
-            chatHistory.createdDate = "${JsonUtils.getLong("createdDate", jsonDoc)}"
-            chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", jsonDoc)}"
-            chatHistory.user = JsonUtils.getString("user", jsonDoc)
-            chatHistory.aiProvider = JsonUtils.getString("aiProvider", jsonDoc)
-
-            val jsonArray = JsonUtils.getJsonArray("conversations", jsonDoc)
-            val conversations = RealmList<RealmConversation>()
-            val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
-            conversations.addAll(mRealm.copyToRealm(unmanagedConversations))
-            chatHistory.conversations = conversations
-
-            chatHistory.lastUsed = System.currentTimeMillis()
+            val chatHistory = RealmChatHistory.fromJson(jsonDoc)
+            mRealm.copyToRealmOrUpdate(chatHistory)
         }
     }
 

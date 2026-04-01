@@ -37,26 +37,7 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveNewChat(chat: JsonObject) {
-        executeTransaction { realm ->
-            val chatHistoryId = JsonUtils.getString("_id", chat)
-            val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-            existingChatHistory?.deleteFromRealm()
-            val chatHistory = realm.createObject(RealmChatHistory::class.java, chatHistoryId)
-            chatHistory._rev = JsonUtils.getString("_rev", chat)
-            chatHistory.title = JsonUtils.getString("title", chat)
-            chatHistory.createdDate = "${JsonUtils.getLong("createdDate", chat)}"
-            chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", chat)}"
-            chatHistory.user = JsonUtils.getString("user", chat)
-            chatHistory.aiProvider = JsonUtils.getString("aiProvider", chat)
-
-            val jsonArray = JsonUtils.getJsonArray("conversations", chat)
-            val conversations = RealmList<RealmConversation>()
-            val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
-            conversations.addAll(realm.copyToRealm(unmanagedConversations))
-            chatHistory.conversations = conversations
-
-            chatHistory.lastUsed = System.currentTimeMillis()
-        }
+        save(RealmChatHistory.fromJson(chat))
     }
 
     override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {

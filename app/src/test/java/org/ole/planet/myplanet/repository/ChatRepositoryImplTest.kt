@@ -105,12 +105,6 @@ class ChatRepositoryImplTest {
         chatObj.addProperty("_id", "test_id")
 
         val transactionSlot = slot<(Realm) -> Unit>()
-        val mockQuery: RealmQuery<RealmChatHistory> = mockk(relaxed = true)
-
-        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
-        every { mockQuery.equalTo("_id", "test_id") } returns mockQuery
-        every { mockQuery.findFirst() } returns null
-        every { mockRealm.createObject(RealmChatHistory::class.java, "test_id") } returns mockk<RealmChatHistory>(relaxed = true)
 
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
             transactionSlot.captured.invoke(mockRealm)
@@ -119,11 +113,11 @@ class ChatRepositoryImplTest {
         chatRepository.saveNewChat(chatObj)
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-        verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "test_id") }
+        verify(exactly = 1) { mockRealm.copyToRealmOrUpdate(any<RealmChatHistory>()) }
     }
 
     @Test
-    fun continueConversation_executesUpdate() = runTest {
+    fun continueConversation_executesTransaction() = runTest {
         val id = "123"
         val query = "hello"
         val response = "hi"
