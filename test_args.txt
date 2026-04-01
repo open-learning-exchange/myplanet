@@ -1,0 +1,8 @@
+Line 219 is: `news -> RealmNews.insert(realm, jsonDoc)`
+Wait, the error said: `219:67 Unresolved reference 'insert'`
+Line 224 is: `courses -> RealmMyCourse.insert(realm, jsonDoc)`
+Wait, the error said: `224:88 No value passed for parameter 'spm'` (which probably means SharedPrefManager).
+Line 226 is: `feedback -> RealmFeedback.insert(realm, jsonDoc)`
+Wait, the error said: `226:75 Unresolved reference 'insert'`
+
+Let's check `RealmNews`, `RealmMyCourse`, and `RealmFeedback`.

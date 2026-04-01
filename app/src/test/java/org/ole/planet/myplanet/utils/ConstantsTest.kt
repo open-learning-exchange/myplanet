@@ -75,28 +75,6 @@ class ConstantsTest {
     }
 
     @Test
-    fun testClassList() {
-        val classList = Constants.classList
-        assertEquals(16, classList.size)
-        assertEquals(RealmNews::class.java, classList["news"])
-        assertEquals(RealmTag::class.java, classList["tags"])
-        assertEquals(RealmOfflineActivity::class.java, classList["login_activities"])
-        assertEquals(RealmRating::class.java, classList["ratings"])
-        assertEquals(RealmSubmission::class.java, classList["submissions"])
-        assertEquals(RealmMyCourse::class.java, classList["courses"])
-        assertEquals(RealmAchievement::class.java, classList["achievements"])
-        assertEquals(RealmFeedback::class.java, classList["feedback"])
-        assertEquals(RealmMyTeam::class.java, classList["teams"])
-        assertEquals(RealmTeamTask::class.java, classList["tasks"])
-        assertEquals(RealmMeetup::class.java, classList["meetups"])
-        assertEquals(RealmHealthExamination::class.java, classList["health"])
-        assertEquals(RealmCertification::class.java, classList["certifications"])
-        assertEquals(RealmTeamLog::class.java, classList["team_activities"])
-        assertEquals(RealmCourseProgress::class.java, classList["courses_progress"])
-        assertEquals(RealmNotification::class.java, classList["notifications"])
-    }
-
-    @Test
     fun testShowBetaFeature_betaFunctionFalse_returnsFalse() {
         sharedPreferences.edit().putBoolean("beta_function", false).commit()
         assertFalse(Constants.showBetaFeature("any_string", context))

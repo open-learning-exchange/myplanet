@@ -1,0 +1,2 @@
+Wait, if I added `realmRepository` to `TransactionSyncManager`'s constructor, I must also update `ServiceModule.kt` where `TransactionSyncManager` is instantiated manually!
+Let's update `ServiceModule.kt` again.

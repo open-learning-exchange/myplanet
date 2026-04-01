@@ -47,6 +47,8 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+    private val realmRepository: org.ole.planet.myplanet.repository.RealmRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -225,10 +227,15 @@ class TransactionSyncManager @Inject constructor(
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                        if (table == "chat_history") {
-                            insertToChat(arr, mRealm)
+                        when (table) {
+                            "chat_history" -> chatRepository.insertChatHistoryBatch(mRealm, arr)
+                            "exams" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
+                            "tablet_users" -> userRepository.bulkInsertFromSync(mRealm, arr)
+                            else -> realmRepository.bulkInsertFromSync(mRealm, arr, table)
                         }
-                        insertDocs(arr, mRealm, table)
+                        if (table != "chat_history") {
+                            org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                        }
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
                             android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
@@ -260,65 +267,6 @@ class TransactionSyncManager @Inject constructor(
             e.printStackTrace()
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
-        }
-    }
-
-    private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-        val chatHistoryList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            chatHistoryList.add(jsonDoc)
-        }
-        chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
-        }
-    }
-
-    private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
-        val documentList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            val id = getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc)
-        }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
-    }
-
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        when (table) {
-            "exams" -> {
-                insertCourseStepsExams("", "", jsonDoc, mRealm)
-            }
-            "tablet_users" -> {
-                userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
-            }
-            else -> {
-                callMethod(mRealm, jsonDoc, table)
-            }
-        }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
-    }
-
-    private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
-        try {
-            val methods = Constants.classList[type]?.methods
-            methods?.let {
-                for (m in it) {
-                    if ("insert" == m.name) {
-                        m.invoke(null, mRealm, jsonDoc)
-                        break
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

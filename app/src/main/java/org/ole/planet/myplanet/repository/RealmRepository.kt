@@ -203,4 +203,33 @@ open class RealmRepository(
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)
     }
+
+    open fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray, table: String) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            when (table) {
+                "tags" -> org.ole.planet.myplanet.model.RealmTag.insert(realm, jsonDoc)
+                "login_activities" -> org.ole.planet.myplanet.model.RealmOfflineActivity.insert(realm, jsonDoc)
+                "ratings" -> org.ole.planet.myplanet.model.RealmRating.insert(realm, jsonDoc)
+                "submissions" -> org.ole.planet.myplanet.model.RealmSubmission.insert(realm, jsonDoc)
+                "achievements" -> org.ole.planet.myplanet.model.RealmAchievement.insert(realm, jsonDoc)
+                "teams" -> org.ole.planet.myplanet.model.RealmMyTeam.insert(realm, jsonDoc)
+                "tasks" -> org.ole.planet.myplanet.model.RealmTeamTask.insert(realm, jsonDoc)
+                "meetups" -> org.ole.planet.myplanet.model.RealmMeetup.insert(realm, jsonDoc)
+                "health" -> org.ole.planet.myplanet.model.RealmHealthExamination.insert(realm, jsonDoc)
+                "certifications" -> org.ole.planet.myplanet.model.RealmCertification.insert(realm, jsonDoc)
+                "team_activities" -> org.ole.planet.myplanet.model.RealmTeamLog.insert(realm, jsonDoc)
+                "courses_progress" -> org.ole.planet.myplanet.model.RealmCourseProgress.insert(realm, jsonDoc)
+                "notifications" -> org.ole.planet.myplanet.model.RealmNotification.insert(realm, jsonDoc)
+            }
+        }
+    }
 }
