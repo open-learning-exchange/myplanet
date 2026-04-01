@@ -1,9 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.text.TextUtils
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.Realm
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -38,6 +41,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -1307,26 +1311,26 @@ class TeamsRepositoryImpl @Inject constructor(
         } ?: 0
     }
 
-    override fun insertTeamLog(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
+    override fun insertTeamLog(realm: Realm, json: JsonObject) {
         var tag = realm.where(RealmTeamLog::class.java)
-            .equalTo("id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)).findFirst()
+            .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
         if (tag == null) {
-            tag = realm.createObject(RealmTeamLog::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json))
+            tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
         }
         if (tag != null) {
-            tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", json)
-            tag._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
-            tag.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", json)
-            tag.user = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
-            tag.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", json)
-            tag.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", json)
-            tag.time = org.ole.planet.myplanet.utils.JsonUtils.getLong("time", json)
-            tag.teamId = org.ole.planet.myplanet.utils.JsonUtils.getString("teamId", json)
-            tag.teamType = org.ole.planet.myplanet.utils.JsonUtils.getString("teamType", json)
+            tag._rev = JsonUtils.getString("_rev", json)
+            tag._id = JsonUtils.getString("_id", json)
+            tag.type = JsonUtils.getString("type", json)
+            tag.user = JsonUtils.getString("user", json)
+            tag.createdOn = JsonUtils.getString("createdOn", json)
+            tag.parentCode = JsonUtils.getString("parentCode", json)
+            tag.time = JsonUtils.getLong("time", json)
+            tag.teamId = JsonUtils.getString("teamId", json)
+            tag.teamType = JsonUtils.getString("teamType", json)
         }
     }
 
-    override fun getLastVisit(realm: io.realm.Realm, userName: String?, teamId: String?): Long? {
+    override fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long? {
         return realm.where(RealmTeamLog::class.java)
             .equalTo("type", "teamVisit")
             .equalTo("user", userName)
@@ -1334,8 +1338,8 @@ class TeamsRepositoryImpl @Inject constructor(
             .max("time")?.toLong()
     }
 
-    override fun serializeTeamActivities(log: org.ole.planet.myplanet.model.RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject {
-        val ob = com.google.gson.JsonObject()
+    override fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
+        val ob = JsonObject()
         ob.addProperty("user", log.user)
         ob.addProperty("type", log.type)
         ob.addProperty("createdOn", log.createdOn)
@@ -1343,10 +1347,10 @@ class TeamsRepositoryImpl @Inject constructor(
         ob.addProperty("teamType", log.teamType)
         ob.addProperty("time", log.time)
         ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
-        ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
-        if (!android.text.TextUtils.isEmpty(log._rev)) {
+        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
+        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+        if (!TextUtils.isEmpty(log._rev)) {
             ob.addProperty("_rev", log._rev)
             ob.addProperty("_id", log._id)
         }
