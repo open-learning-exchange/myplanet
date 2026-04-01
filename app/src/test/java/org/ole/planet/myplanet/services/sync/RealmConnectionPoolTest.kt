@@ -195,6 +195,7 @@ class RealmConnectionPoolTest {
         val secondTaskCompleted = AtomicBoolean(false)
         val job1Acquired = CompletableDeferred<Unit>()
         val releaseJob1 = CompletableDeferred<Unit>()
+        val job2AttemptingToAcquire = CompletableDeferred<Unit>()
 
         // We use explicit SingleThreadExecutors to ensure job1 and job2 run on distinct physical threads.
         // This purposefully bypasses the `ThreadLocal` fast-path in `RealmConnectionPool.useRealm`
@@ -215,13 +216,20 @@ class RealmConnectionPoolTest {
 
             // This should suspend inside pool.useRealm since the single connection is checked out
             val job2 = async(dispatcher2) {
+                job2AttemptingToAcquire.complete(Unit) // Handshake: job2 is running, about to ask for a connection
                 pool.useRealm {
                     secondTaskCompleted.set(true)
                 }
             }
 
-            // Yield to ensure job2 starts and hits the semaphore suspension point
-            delay(50)
+            // Wait structurally until job2 has started and is about to hit the suspension point
+            job2AttemptingToAcquire.await()
+
+            // Yield briefly to let the underlying semaphore coroutine machinery execute the suspension.
+            // (While technically a wall-clock delay, it's after the job has proven it started, eliminating the main race condition).
+            // A better structural proof is to ensure secondTaskCompleted remains false even when we actively wait.
+            // If the lock fails, it would race to true immediately.
+            delay(10)
 
             // Structurally, job2 cannot proceed until job1 releases the permit.
             assertTrue(!secondTaskCompleted.get())
