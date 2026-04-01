@@ -128,7 +128,7 @@ class ImprovedSyncManager @Inject constructor(
         logger.endProcess("admin_sync")
 
         logger.startProcess("on_synced")
-        activitiesRepository.recordSyncActivity(settings)
+        activitiesRepository.recordSyncActivity(settings.getString("userId", "") ?: "")
         logger.endProcess("on_synced")
 
         logger.stopLogging()

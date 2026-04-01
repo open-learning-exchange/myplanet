@@ -327,7 +327,7 @@ class SyncManager @Inject constructor(
             logger.endProcess("notification_reads_upload")
 
             logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences)
+            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
             logger.endProcess("on_synced")
 
             logger.stopLogging()
@@ -550,7 +550,7 @@ class SyncManager @Inject constructor(
             logger.endProcess("notification_reads_upload")
 
             logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences)
+            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
             logger.endProcess("on_synced")
 
             logger.stopLogging()

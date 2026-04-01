@@ -79,7 +79,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").notEqualTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(activitiesRepository::serializeResourceActivities),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it._id }
     )
 
@@ -89,7 +89,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").equalTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(activitiesRepository::serializeResourceActivities),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it._id }
     )
 
