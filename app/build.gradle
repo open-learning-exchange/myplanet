@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< feature-enable-remote-gradle-cache-5435951527556419728
         versionCode = 5171
         versionName = "0.51.71"
-=======
-        versionCode = 5170
-        versionName = "0.51.70"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
