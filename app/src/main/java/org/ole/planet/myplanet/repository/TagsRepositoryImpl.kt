@@ -75,7 +75,10 @@ class TagsRepositoryImpl @Inject constructor(
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
+                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
+                        if (list.none { it.id == parentTag.id }) {
+                            list.add(parentTag)
+                        }
                     }
                 }
             }
