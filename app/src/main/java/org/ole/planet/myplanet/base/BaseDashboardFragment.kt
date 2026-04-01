@@ -125,8 +125,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     override fun downloadDictionary() {
         val list = ArrayList<String>()
-        list.add(Constants.DICTIONARY_URL)
-        if (!FileUtils.checkFileExist(requireContext(), Constants.DICTIONARY_URL)) {
+        list.add(prefData.getDictionaryUrl())
+        if (!FileUtils.checkFileExist(requireContext(), prefData.getDictionaryUrl())) {
             Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
             DownloadUtils.openDownloadService(activity, list, false)
         } else {

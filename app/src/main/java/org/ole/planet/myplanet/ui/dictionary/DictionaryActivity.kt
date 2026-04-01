@@ -37,13 +37,13 @@ class DictionaryActivity : BaseActivity() {
             fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
         }
 
-        if (FileUtils.checkFileExist(this, Constants.DICTIONARY_URL)) {
+        if (FileUtils.checkFileExist(this, prefData.getDictionaryUrl())) {
             lifecycleScope.launch {
                 loadDictionaryIfNeeded()
             }
         } else {
             val list = ArrayList<String>()
-            list.add(Constants.DICTIONARY_URL)
+            list.add(prefData.getDictionaryUrl())
             Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
             DownloadUtils.openDownloadService(this, list, false)
         }
@@ -59,7 +59,7 @@ class DictionaryActivity : BaseActivity() {
             val json = try {
                 val data = withContext(Dispatchers.IO) {
                     FileUtils.getStringFromFile(
-                        FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
+                        FileUtils.getSDPathFromUrl(context, prefData.getDictionaryUrl())
                     )
                 }
                 JsonUtils.gson.fromJson(data, JsonArray::class.java)

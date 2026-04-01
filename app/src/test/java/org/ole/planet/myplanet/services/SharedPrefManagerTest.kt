@@ -179,4 +179,14 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("test_key", "new_val") }
         verify { mockEditor.apply() }
     }
+
+    @Test
+    fun testGetAndSetDictionaryUrl() {
+        every { mockSharedPreferences.getString("dictionaryUrl", any()) } returns "https://custom.url/output.json"
+        assertEquals("https://custom.url/output.json", sharedPrefManager.getDictionaryUrl())
+
+        sharedPrefManager.setDictionaryUrl("https://another.url/output.json")
+        verify { mockEditor.putString("dictionaryUrl", "https://another.url/output.json") }
+        verify { mockEditor.apply() }
+    }
 }

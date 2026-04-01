@@ -23,7 +23,7 @@ object Constants {
     const val HTTP_PROTOCOL = "http://"
     const val HTTPS_PROTOCOL = "https://"
     const val KEY_LOGIN = "isLoggedIn"
-    const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
+    const val DICTIONARY_URL = "https://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_MEETUPS = "key_meetup"

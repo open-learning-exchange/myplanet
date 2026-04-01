@@ -62,6 +62,7 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
+        private const val DICTIONARY_URL_KEY = "dictionaryUrl"
     }
 
     enum class SyncKey(val key: String) {
@@ -289,6 +290,9 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
 
     fun getConcatenatedLinks(): String? = pref.getString(CONCATENATED_LINKS, null)
     fun setConcatenatedLinks(json: String) = pref.edit { putString(CONCATENATED_LINKS, json) }
+
+    fun getDictionaryUrl(): String = pref.getString(DICTIONARY_URL_KEY, org.ole.planet.myplanet.utils.Constants.DICTIONARY_URL) ?: org.ole.planet.myplanet.utils.Constants.DICTIONARY_URL
+    fun setDictionaryUrl(url: String) = pref.edit { putString(DICTIONARY_URL_KEY, url) }
 
     fun getRawString(key: String, default: String = ""): String = pref.getString(key, default) ?: default
     fun setRawString(key: String, value: String) = pref.edit { putString(key, value) }

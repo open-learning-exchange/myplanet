@@ -126,6 +126,11 @@ class ConstantsTest {
     }
 
     @Test
+    fun testDictionaryUrl() {
+        assertEquals("https://157.245.241.39:8000/output.json", Constants.DICTIONARY_URL)
+    }
+
+    @Test
     fun testAutoSynFeature() {
         assertFalse(Constants.autoSynFeature("some_key", context))
 
