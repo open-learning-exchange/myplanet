@@ -60,10 +60,10 @@ open class RealmSubmission : RealmObject() {
 
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
                 val isNewSubmission = sub == null
-                val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+                val hadLocalChanges = !isNewSubmission && sub.isUpdated == true
                 val serverStatus = JsonUtils.getString("status", submission)
                 val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
-                    (sub?.status == "complete" || sub?.status == "requires grading")
+                    (sub.status == "complete" || sub.status == "requires grading")
                 val skipOverwrite = hadLocalChanges || isStatusDowngrade
 
                 if (sub == null) {
