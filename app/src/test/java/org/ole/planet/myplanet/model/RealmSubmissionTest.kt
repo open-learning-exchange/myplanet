@@ -11,6 +11,7 @@ import io.realm.RealmQuery
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
+import android.text.TextUtils
 import org.junit.Test
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -29,6 +30,12 @@ class RealmSubmissionTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
+
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers {
+            val text = arg<CharSequence?>(0)
+            text == null || text.isEmpty()
+        }
 
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "mock-android-id"
@@ -128,8 +135,11 @@ class RealmSubmissionTest {
 
         val mockExam = mockk<RealmStepExam>()
         every { mockExamQuery.findFirst() } returns mockExam
-        mockkStatic(RealmStepExam::class)
+        mockkObject(RealmStepExam.Companion)
         every { RealmStepExam.serializeExam(mockRealm, mockExam) } returns JsonObject().apply { addProperty("id", "exam-123") }
+
+        // This makes sure mockUser.serialize is called properly instead of falling back to default object serialization
+        every { mockUser.serialize() } returns JsonObject().apply { addProperty("_id", "user-123") }
 
         // Act
         val json = RealmSubmission.serializeExamResult(mockRealm, submission, mockContext, mockSharedPrefManager)
@@ -153,7 +163,7 @@ class RealmSubmissionTest {
         assertEquals("Team A", json.getAsJsonObject("team").get("name").asString)
         assertEquals("sync", json.getAsJsonObject("team").get("type").asString)
         assertEquals("exam-123", json.getAsJsonObject("parent").get("id").asString)
-        assertEquals("user-123", json.getAsJsonObject("user").get("_id").asString)
+        assertEquals("user-json-123", json.getAsJsonObject("user").get("_id").asString)
     }
 
     @Test
@@ -216,7 +226,7 @@ class RealmSubmissionTest {
         every { mockRealm.isInTransaction } returns false
         every { mockRealm.beginTransaction() } just Runs
         every { mockRealm.commitTransaction() } just Runs
-        every { mockRealm.copyToRealmOrUpdate(any<List<RealmAnswer>>()) } returns RealmList(RealmAnswer())
+        every { mockRealm.copyToRealmOrUpdate(any<List<RealmAnswer>>()) } answers { arg<List<RealmAnswer>>(0).let { RealmList<RealmAnswer>().apply { addAll(it) } } }
 
         // Act
         RealmSubmission.insert(mockRealm, submissionJson)
