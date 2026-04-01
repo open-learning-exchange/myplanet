@@ -142,11 +142,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             checkUser()
             updateAppTitle()
             if (handleGuestAccess()) return@launch
+        }
 
-            handleInitialFragment()
-            addBackPressCallback()
-            collectUiState()
+        handleInitialFragment()
+        addBackPressCallback()
+        collectUiState()
 
+        lifecycleScope.launch {
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
