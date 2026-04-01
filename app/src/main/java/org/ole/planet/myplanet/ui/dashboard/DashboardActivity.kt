@@ -78,7 +78,6 @@ import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
@@ -157,7 +156,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initializeDashboard() {
         setupNavigation()
         setupToolbarActions()
-        hideWifi()
         handleNotificationIntent(intent)
         setupDashboardDataObserver()
 
@@ -375,7 +373,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     guestDialog(this, userSessionManager)
                 }
             }
-            R.id.menu_goOnline -> wifiStatusSwitch()
             R.id.action_sync -> logSyncInSharedPrefs()
             R.id.action_feedback -> {
                 if (user?.id?.startsWith("guest") == false) {
@@ -650,11 +647,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun hideWifi() {
-        val navMenu = binding.appBarBell.bellToolbar.menu
-        navMenu.findItem(R.id.menu_goOnline).isVisible = isBetaWifiFeatureEnabled(this)
-    }
-
     private fun checkUser() {
         if (user == null) {
             toast(this, getString(R.string.session_expired))
@@ -739,11 +731,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         binding.appBarBell.bellToolbar.visibility = View.VISIBLE
         binding.myToolbar.visibility = View.GONE
         navigationView.visibility = View.GONE
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        updateGoOnlineVisibility()
-        return super.onPrepareOptionsMenu(menu)
     }
 
     private val accountHeader: AccountHeader
@@ -1000,7 +987,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
-        bindGoOnlineMenu(menu)
         return super.onCreateOptionsMenu(menu)
     }
 
