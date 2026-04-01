@@ -157,12 +157,6 @@ kotlin {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
 }
-repositories {
-    mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
-    maven { url = uri("https://maven.google.com") }
-}
 dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)
@@ -176,6 +170,15 @@ dependencies {
     testImplementation(libs.test.arch)
     testImplementation(libs.test.hilt)
     kspTest(libs.hilt.android.compiler)
+    androidTestImplementation(libs.test.junit)
+    androidTestImplementation(libs.test.ext)
+    androidTestImplementation(libs.test.runner)
+    androidTestImplementation(libs.test.core)
+    androidTestImplementation(libs.test.coroutines)
+    androidTestImplementation(libs.test.rxjava)
+    androidTestImplementation(libs.test.arch)
+    androidTestImplementation(libs.test.hilt)
+    kspAndroidTest(libs.hilt.android.compiler)
 }
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
