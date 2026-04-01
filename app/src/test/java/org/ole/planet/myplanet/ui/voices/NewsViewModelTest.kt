@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -43,11 +44,18 @@ class NewsViewModelTest {
         val expectedUrls = listOf("url1", "url2")
         coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
+        var capturedResult: List<String>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                capturedResult = urls
+            }
+        }
+
         viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
 
         advanceUntilIdle()
 
-        assertEquals(expectedUrls, viewModel.privateImageUrls.value)
+        assertEquals(expectedUrls, capturedResult)
     }
 
     @Test
@@ -56,10 +64,17 @@ class NewsViewModelTest {
         val expectedUrls = emptyList<String>()
         coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
+        var capturedResult: List<String>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                capturedResult = urls
+            }
+        }
+
         viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
 
         advanceUntilIdle()
 
-        assertEquals(expectedUrls, viewModel.privateImageUrls.value)
+        assertEquals(expectedUrls, capturedResult)
     }
 }

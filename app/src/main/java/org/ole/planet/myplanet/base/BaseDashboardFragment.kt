@@ -13,7 +13,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -23,7 +25,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -164,9 +165,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                     }
             }
             launch {
-                newsViewModel.privateImageUrls
-                    .drop(1)
-                    .collect { urls ->
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    newsViewModel.privateImageUrls.collect { urls ->
                         if (urls.isNotEmpty()) {
                             Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
                             DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
@@ -174,6 +174,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                             Utilities.toast(activity, getString(R.string.no_images_to_download))
                         }
                     }
+                }
             }
         }
     }
