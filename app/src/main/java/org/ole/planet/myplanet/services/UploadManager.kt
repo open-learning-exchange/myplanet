@@ -12,7 +12,6 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -68,6 +67,7 @@ class UploadManager @Inject constructor(
     private val teamsRepository: Lazy<TeamsRepository>,
     private val apiInterface: ApiInterface,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope
 ) : FileUploader(apiInterface, scope) {
 
@@ -80,14 +80,14 @@ class UploadManager @Inject constructor(
 
         scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Cannot upload activities: user model is null")
                 }
                 return@launch
             }
 
             if (model.isManager()) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Skipping activities upload for manager")
                 }
                 return@launch
@@ -131,17 +131,17 @@ class UploadManager @Inject constructor(
                         "${UrlUtils.getUrl()}/myplanet_activities",
                         `object`
                     )
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         listener?.onSuccess("My planet activities uploaded successfully")
                     }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         listener?.onSuccess("Failed to upload activities: ${e.message}")
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Failed to upload activities: ${e.message}")
                 }
             }
@@ -149,7 +149,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadExamResult(listener: OnSuccessListener) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 val result = uploadCoordinator.upload(uploadConfigs.ExamResults)
 
@@ -161,12 +161,12 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess(message)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during result sync: ${e.message}")
                 }
             }
@@ -194,7 +194,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadAchievement() {
         val list = userRepository.getAchievementsForUpload()
         if (list.isEmpty()) return
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             list.forEach { achievement ->
                 val id = achievement.get("_id")?.asString ?: return@forEach
                 val url = "${UrlUtils.getUrl()}/achievements/$id"
@@ -235,7 +235,7 @@ class UploadManager @Inject constructor(
             return
         }
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
 
             photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
@@ -267,7 +267,7 @@ class UploadManager @Inject constructor(
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
                     val photos = submissionsRepository.getPhotosByIds(photoIds)
 
-                    photos?.forEach { photo ->
+                    photos.forEach { photo ->
                         val uploadInfo = successfulUploads.find { it.photoId == photo.id }
                         if (uploadInfo != null) {
                             uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
@@ -292,7 +292,7 @@ class UploadManager @Inject constructor(
                 return
             }
 
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                     val successfulUpdates = mutableListOf<Pair<org.ole.planet.myplanet.repository.ResourceUploadData, com.google.gson.JsonObject>>()
 
@@ -350,7 +350,7 @@ class UploadManager @Inject constructor(
                                 try {
                                     val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
 
-                                    val libMap = libraries?.associateBy { it.id } ?: emptyMap()
+                                    val libMap = libraries.associateBy { it.id }
 
                                     successfulUpdates.forEach { (resourceData, `object`) ->
                                         val rev = getString("rev", `object`)
@@ -381,7 +381,7 @@ class UploadManager @Inject constructor(
         val apiInterface = client.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
-            return withContext(Dispatchers.IO) {
+            return withContext(dispatcherProvider.io) {
                 try {
                     val response = apiInterface.postDoc(
                         UrlUtils.header, "application/json",
@@ -451,7 +451,7 @@ class UploadManager @Inject constructor(
 
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
@@ -478,14 +478,14 @@ class UploadManager @Inject constructor(
         ApiClient.ensureInitialized()
         val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("Cannot upload user activities: user model is null")
             }
             return
         }
 
         if (model.isManager()) {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("Skipping user activities upload for manager")
             }
             return
@@ -518,12 +518,12 @@ class UploadManager @Inject constructor(
 
             uploadTeamActivitiesRefactored()
 
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("User activities sync completed successfully")
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSuccess("Failed to upload user activities: ${e.message}")
             }
         }
@@ -576,7 +576,7 @@ class UploadManager @Inject constructor(
 
         val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
                 batch.forEach { news ->
