@@ -24,6 +24,7 @@ interface RealtimeSyncMixin {
 class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun setupRealtimeSync() {
         fragment.lifecycleScope.launch {
             fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -51,6 +52,7 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
             when (adapter) {
                 is OnDiffRefreshListener -> adapter.refreshWithDiff()
                 is ListAdapter<*, *> -> {
+                    @Suppress("UNCHECKED_CAST")
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
                     }

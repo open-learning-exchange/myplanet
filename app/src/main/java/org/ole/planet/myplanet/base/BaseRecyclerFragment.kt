@@ -224,7 +224,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java) as List<RealmMyCourse>))
+            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>()))
         }
         var list = coursesRepository.search(s)
         list = if (isMyCourseLib) {
