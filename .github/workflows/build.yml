@@ -26,6 +26,8 @@ jobs:
           gradle-version: wrapper
 
       - name: build debug as test
+        env:
+          GRADLE_BUILD_CACHE_PUSH: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/claude/') || startsWith(github.ref, 'refs/heads/jules/') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/heads/copilot/') }}
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
