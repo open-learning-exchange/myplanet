@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet
 
 import android.content.Context
+import android.util.Log
 import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
@@ -29,6 +30,9 @@ class MainApplicationTest {
     fun setup() {
         mockContext = mockk(relaxed = true)
         MainApplication.context = mockContext
+
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
 
         mockEntryPoint = mockk(relaxed = true)
         mockServerUrlMapper = mockk(relaxed = true)
