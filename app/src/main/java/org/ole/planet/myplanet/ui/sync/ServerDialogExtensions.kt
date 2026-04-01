@@ -116,7 +116,7 @@ fun SyncActivity.refreshServerList() {
 
     val pinnedUrl = prefData.getServerUrl()
     val pinnedIndex = filteredList.indexOfFirst {
-        it.url.replace(Regex("^https?://"), "") == pinnedUrl?.replace(Regex("^https?://"), "")
+        it.url.replace(Regex("^https?://"), "") == pinnedUrl.replace(Regex("^https?://"), "")
     }
     if (pinnedIndex != -1) {
         serverAddressAdapter?.setSelectedPosition(pinnedIndex)

@@ -16,9 +16,11 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
@@ -28,7 +30,8 @@ class SurveysViewModel @Inject constructor(
     private val syncManager: SyncManager,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper
+    private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     enum class SortOption {
@@ -69,20 +72,24 @@ class SurveysViewModel @Inject constructor(
         _isTeamShareAllowed.value = isTeamShareAllowed
         viewModelScope.launch {
             try {
-                val currentSurveysList = when {
-                    isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
-                    else -> surveysRepository.getIndividualSurveys()
+                val currentSurveysList = withContext(dispatcherProvider.io) {
+                    when {
+                        isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                        else -> surveysRepository.getIndividualSurveys()
+                    }
                 }
 
-                val userModel = userSessionManager.getUserModel()
-                val surveyInfos = surveysRepository.getSurveyInfos(
-                    isTeam,
-                    teamId,
-                    userModel?.id,
-                    currentSurveysList
-                )
-                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
+                val userModel = withContext(dispatcherProvider.io) { userSessionManager.getUserModel() }
+                val surveyInfos = withContext(dispatcherProvider.io) {
+                    surveysRepository.getSurveyInfos(
+                        isTeam,
+                        teamId,
+                        userModel?.id,
+                        currentSurveysList
+                    )
+                }
+                val bindingData = withContext(dispatcherProvider.io) { surveysRepository.getSurveyFormState(currentSurveysList, teamId) }
 
                 _surveyInfos.value = surveyInfos
                 _bindingData.value = bindingData
@@ -178,8 +185,10 @@ class SurveysViewModel @Inject constructor(
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewModelScope.launch {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                MainApplication.isServerReachable(url)
+            withContext(dispatcherProvider.io) {
+                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                    MainApplication.isServerReachable(url)
+                }
             }
             startSyncManager()
         }
@@ -207,8 +216,10 @@ class SurveysViewModel @Inject constructor(
     fun adoptSurvey(surveyId: String) {
         viewModelScope.launch {
             try {
-                val userModel = userSessionManager.getUserModel()
-                surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
+                withContext(dispatcherProvider.io) {
+                    val userModel = userSessionManager.getUserModel()
+                    surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
+                }
                 _userMessage.value = "Survey adopted successfully"
                 _isTeamShareAllowed.value = false
                 loadSurveys(isTeam, teamId, false)
