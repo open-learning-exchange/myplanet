@@ -37,6 +37,9 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
+import dagger.Lazy
+import org.ole.planet.myplanet.repository.TeamsRepository
+
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
@@ -47,6 +50,7 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val teamsRepository: Lazy<TeamsRepository>,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -298,6 +302,9 @@ class TransactionSyncManager @Inject constructor(
             }
             "tablet_users" -> {
                 userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+            }
+            "team_activities" -> {
+                teamsRepository.get().insertTeamLog(mRealm, jsonDoc)
             }
             else -> {
                 callMethod(mRealm, jsonDoc, table)

@@ -17,11 +17,14 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import dagger.Lazy
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val teamsRepository: Lazy<TeamsRepository>
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -59,7 +62,9 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.WithContext(RealmTeamLog::serializeTeamActivities),
+        serializer = UploadSerializer.WithContext { log, context ->
+            teamsRepository.get().serializeTeamActivities(log, context)
+        },
         idExtractor = { it._id }
     )
 
