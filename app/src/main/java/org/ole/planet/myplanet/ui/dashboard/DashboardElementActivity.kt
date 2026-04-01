@@ -2,13 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.graphics.PorterDuff
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.Menu
@@ -38,7 +32,6 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.utils.Constants.isBetaWifiFeatureEnabled
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
@@ -64,11 +57,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 openCallFragment(CommunityTabFragment(), "community")
             }
         }
-    }
-
-    protected fun bindGoOnlineMenu(menu: Menu) {
-        goOnline = menu.findItem(R.id.menu_goOnline)
-        updateGoOnlineVisibility()
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
@@ -115,18 +103,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
         }
     }
-    protected fun updateGoOnlineVisibility() {
-        if (::goOnline.isInitialized) {
-            goOnline.isVisible = isBetaWifiFeatureEnabled(this)
-        }
-    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.menu_goOnline -> {
-                wifiStatusSwitch()
-                return true
-            }
             R.id.action_logout -> {
                 logout()
             }
@@ -163,64 +142,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
             createActionAsync(databaseService, "${userModel?.id}", null, "sync")
-        }
-    }
-
-    @SuppressLint("RestrictedApi")
-    fun wifiStatusSwitch() {
-        val resIcon = ContextCompat.getDrawable(this, R.drawable.goonline)
-        val connManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val wifi = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val activeNetwork = connManager.activeNetwork
-        val capabilities = connManager.getNetworkCapabilities(activeNetwork)
-        val isWifiConnected = capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val intent = Intent(Settings.Panel.ACTION_WIFI)
-            startActivity(intent)
-            return
-        }
-
-        val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
-        startActivity(intent)
-        if (isWifiConnected) {
-            wifi.isWifiEnabled = false
-            if (resIcon != null) {
-                DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
-                DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.green))
-            }
-            goOnline.icon = resIcon
-            Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show()
-        } else {
-            wifi.isWifiEnabled = true
-            Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show()
-            lifecycleScope.launch {
-                delay(5000)
-                connectToWifi()
-            }
-            if (resIcon != null) {
-                DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
-                DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.accent))
-            }
-            goOnline.icon = resIcon
-        }
-    }
-
-    private fun connectToWifi() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) return
-        val id = prefData.getLastWifiId()
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        val netId: Int
-        for (tmp in wifiManager.configuredNetworks) {
-            if (tmp.networkId > -1 && tmp.networkId == id) {
-                netId = tmp.networkId
-                wifiManager.enableNetwork(netId, true)
-                Toast.makeText(this, getString(R.string.you_are_now_connected) + netId, Toast.LENGTH_SHORT).show()
-                lifecycleScope.launch {
-                    broadcastService.sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
-                }
-                break
-            }
         }
     }
 
