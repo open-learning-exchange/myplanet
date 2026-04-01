@@ -86,19 +86,18 @@ object SyncTimeLogger {
                 mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
 
             if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl?.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val prefs = spm.rawPreferences
-                    val editor = prefs.edit()
+                val alternativeUrl = mapping.alternativeUrl!!
+                val uri = updateUrl.toUri()
+                val prefs = spm.rawPreferences
+                val editor = prefs.edit()
 
-                    serverUrlMapper.updateUrlPreferences(
-                        editor,
-                        uri,
-                        alternativeUrl,
-                        mapping.primaryUrl,
-                        prefs
-                    )
-                }
+                serverUrlMapper.updateUrlPreferences(
+                    editor,
+                    uri,
+                    alternativeUrl,
+                    mapping.primaryUrl,
+                    prefs
+                )
             }
             try {
                 uploadManager?.uploadCrashLog()
