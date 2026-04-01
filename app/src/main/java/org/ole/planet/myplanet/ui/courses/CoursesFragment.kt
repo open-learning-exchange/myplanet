@@ -181,9 +181,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
                 val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
 
-                if (!requireRealmInstance().isInTransaction) {
-                    requireRealmInstance().refresh()
-                }
+
 
                 val allCourses = coursesRepository.getAllCourses()
                 val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
