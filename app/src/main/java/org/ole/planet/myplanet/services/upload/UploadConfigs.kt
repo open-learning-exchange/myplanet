@@ -17,11 +17,13 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val activitiesRepository: ActivitiesRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -77,7 +79,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").notEqualTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it._id }
     )
 
@@ -87,7 +89,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").equalTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it._id }
     )
 
