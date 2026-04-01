@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration as WorkManagerConfiguration
@@ -93,6 +94,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             .build()
 
     companion object {
+        private const val TAG = "MainApplication"
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
@@ -105,7 +107,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to get ANDROID_ID", e)
             }
             return "0"
         }
@@ -137,7 +139,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to create log", e)
                 }
             }
         }
@@ -184,13 +186,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Server reachability check failed", e)
                 false
             }
         }
 
         fun handleUncaughtException(e: Throwable) {
-            e.printStackTrace()
+            Log.e(TAG, "Uncaught exception", e)
             createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
 
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
@@ -310,7 +312,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to recover stuck operations", e)
             }
         }
         RetryQueueWorker.schedule(this)
