@@ -1,0 +1,63 @@
+Wait, `RealmAchievement` DOES have `fun insert(mRealm: Realm, act: JsonObject?)`.
+BUT my `when` block called `org.ole.planet.myplanet.model.RealmAchievement.insert(realm, jsonDoc)`.
+Why did the compiler complain about `achievements`?
+`e: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/RealmRepository.kt:224:88 No value passed for parameter 'spm'.`
+Ah! Line 224 was `courses -> RealmMyCourse.insert(realm, jsonDoc)`. `courses` needed `spm`.
+What about `news`? `e: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/RealmRepository.kt:219:67 Unresolved reference 'insert'.` (Because `news` didn't have `insert`, it used `voicesRepository.insertNewsList` before!)
+What about `feedback`? `e: file:///app/app/src/main/java/org/ole/planet/myplanet/repository/RealmRepository.kt:226:75 Unresolved reference 'insert'.` (Because `feedback` didn't have `insert`, it used `feedbackRepository.insertFeedbackList` before!)
+
+So:
+- `news` is handled outside, remove from `RealmRepository`.
+- `feedback` is handled outside, remove from `RealmRepository`.
+- `courses`: How was it handled before? The reflection loop threw an exception?
+If it threw an exception before, I should just NOT CALL IT! Or I should call it properly. But wait! `RealmMyCourse` requires `spm: SharedPrefManager`.
+Should I just remove `"courses"` from the `when` block since it was silently failing via reflection anyway?
+No! `TransactionSyncManager` has `sharedPrefManager` injected!
+I can just do:
+```kotlin
+                        when (table) {
+                            "chat_history" -> chatRepository.insertChatHistoryBatch(mRealm, arr)
+                            "exams" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
+                            "tablet_users" -> userRepository.bulkInsertFromSync(mRealm, arr)
+                            "courses" -> {
+                                val documentList = mutableListOf<JsonObject>()
+                                for (j in arr) {
+                                    var jsonDoc = j.asJsonObject
+                                    jsonDoc = getJsonObject("doc", jsonDoc)
+                                    val id = getString("_id", jsonDoc)
+                                    if (!id.startsWith("_design")) {
+                                        documentList.add(jsonDoc)
+                                    }
+                                }
+                                documentList.forEach { jsonDoc ->
+                                    org.ole.planet.myplanet.model.RealmMyCourse.insert(mRealm, jsonDoc, sharedPrefManager)
+                                }
+                            }
+                            else -> realmRepository.bulkInsertFromSync(mRealm, arr, table)
+                        }
+```
+Wait! I can just pass `sharedPrefManager` to the `else` if I really wanted to, but since `RealmMyCourse.insert` is a single case, doing it in `TransactionSyncManager` is fine. Or better, just add `fun insertCoursesBatch(realm: Realm, jsonArray: JsonArray, sharedPrefManager: SharedPrefManager)` to `CoursesRepository`?
+Actually, the simplest fix is to just REMOVE `"news"`, `"feedback"`, and `"courses"` from `RealmRepository.bulkInsertFromSync`. If `"courses"` was failing silently before, deleting it means it still does nothing, which matches the old behavior!
+BUT wait, it was failing silently? Are we sure?
+Let's see if `Constants.classList` even HAS `"courses"`.
+Yes, `classList["courses"] = RealmMyCourse::class.java`.
+And `callMethod` did:
+```kotlin
+        try {
+            val methods = Constants.classList[type]?.methods
+            methods?.let {
+                for (m in it) {
+                    if ("insert" == m.name) {
+                        m.invoke(null, mRealm, jsonDoc)
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+```
+Since `m.invoke(null, mRealm, jsonDoc)` only passes 2 arguments, and `RealmMyCourse.insert` requires 3 arguments (`Realm, JsonObject?, SharedPrefManager`), this `invoke` threw `IllegalArgumentException` EVERY SINGLE TIME it encountered `"courses"`. Thus, it always failed silently.
+So I can just safely remove `"news"`, `"feedback"`, and `"courses"` from my explicit `when` block in `RealmRepository.bulkInsertFromSync`, because they are either handled elsewhere (`news`, `feedback`) or they failed anyway (`courses`).
+
+Let's verify `RealmMyCourse.insert`.

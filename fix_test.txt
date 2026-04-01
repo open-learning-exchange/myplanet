@@ -1,0 +1,2 @@
+e: file:///app/app/src/test/java/org/ole/planet/myplanet/utils/ConstantsTest.kt:79:35 Unresolved reference 'classList'.
+I need to modify the test file to remove the assertion for classList.

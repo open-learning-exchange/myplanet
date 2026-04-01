@@ -48,6 +48,7 @@ class TransactionSyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+    private val realmRepository: org.ole.planet.myplanet.repository.RealmRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -230,9 +231,11 @@ class TransactionSyncManager @Inject constructor(
                             "chat_history" -> chatRepository.insertChatHistoryBatch(mRealm, arr)
                             "exams" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
                             "tablet_users" -> userRepository.bulkInsertFromSync(mRealm, arr)
-                            else -> (userRepository as org.ole.planet.myplanet.repository.RealmRepository).bulkInsertFromSync(mRealm, arr, table)
+                            else -> realmRepository.bulkInsertFromSync(mRealm, arr, table)
                         }
-                        org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                        if (table != "chat_history") {
+                            org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                        }
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
                             android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")

@@ -96,6 +96,11 @@ object ServiceModule {
     }
 
     @Provides
+    fun provideRealmRepository(databaseService: DatabaseService): org.ole.planet.myplanet.repository.RealmRepository {
+        return org.ole.planet.myplanet.repository.RealmRepository(databaseService)
+    }
+
+    @Provides
     @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
@@ -107,8 +112,9 @@ object ServiceModule {
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        realmRepository: org.ole.planet.myplanet.repository.RealmRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, coursesRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, coursesRepository, realmRepository, scope)
     }
 }

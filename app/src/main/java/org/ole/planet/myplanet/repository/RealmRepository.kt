@@ -215,18 +215,20 @@ open class RealmRepository(
             }
         }
         documentList.forEach { jsonDoc ->
-            try {
-                val methods = org.ole.planet.myplanet.utils.Constants.classList[table]?.methods
-                methods?.let {
-                    for (m in it) {
-                        if ("insert" == m.name) {
-                            m.invoke(null, realm, jsonDoc)
-                            break
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            when (table) {
+                "tags" -> org.ole.planet.myplanet.model.RealmTag.insert(realm, jsonDoc)
+                "login_activities" -> org.ole.planet.myplanet.model.RealmOfflineActivity.insert(realm, jsonDoc)
+                "ratings" -> org.ole.planet.myplanet.model.RealmRating.insert(realm, jsonDoc)
+                "submissions" -> org.ole.planet.myplanet.model.RealmSubmission.insert(realm, jsonDoc)
+                "achievements" -> org.ole.planet.myplanet.model.RealmAchievement.insert(realm, jsonDoc)
+                "teams" -> org.ole.planet.myplanet.model.RealmMyTeam.insert(realm, jsonDoc)
+                "tasks" -> org.ole.planet.myplanet.model.RealmTeamTask.insert(realm, jsonDoc)
+                "meetups" -> org.ole.planet.myplanet.model.RealmMeetup.insert(realm, jsonDoc)
+                "health" -> org.ole.planet.myplanet.model.RealmHealthExamination.insert(realm, jsonDoc)
+                "certifications" -> org.ole.planet.myplanet.model.RealmCertification.insert(realm, jsonDoc)
+                "team_activities" -> org.ole.planet.myplanet.model.RealmTeamLog.insert(realm, jsonDoc)
+                "courses_progress" -> org.ole.planet.myplanet.model.RealmCourseProgress.insert(realm, jsonDoc)
+                "notifications" -> org.ole.planet.myplanet.model.RealmNotification.insert(realm, jsonDoc)
             }
         }
     }
