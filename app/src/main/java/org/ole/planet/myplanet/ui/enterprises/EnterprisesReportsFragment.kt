@@ -49,6 +49,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     lateinit var teamType: String
     private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
     private val viewModel: EnterprisesViewModel by viewModels()
+    private var activeDialog: AlertDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
@@ -116,6 +117,25 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                         updatedReportsList(reportList)
                     }
                 }
+                launch {
+                    viewModel.reportEvent.collectLatest { event ->
+                        when (event) {
+                            is ReportEvent.ReportAdded,
+                            is ReportEvent.ReportUpdated -> {
+                                activeDialog?.dismiss()
+                                activeDialog = null
+                            }
+                            is ReportEvent.ReportArchived -> {
+                                // archived successfully
+                            }
+                            is ReportEvent.Error -> {
+                                view?.let {
+                                    Snackbar.make(it, event.message, Snackbar.LENGTH_LONG).show()
+                                } ?: Utilities.toast(requireContext(), event.message)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -128,10 +148,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             .setView(v)
             .setPositiveButton("submit", null)
             .setNegativeButton("cancel", null)
-        val dialog = builder.create()
-        dialog.show()
-        val submit = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-        val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+        activeDialog = builder.create()
+        activeDialog?.show()
+        val submit = activeDialog?.getButton(AlertDialog.BUTTON_POSITIVE)
+        val cancel = activeDialog?.getButton(AlertDialog.BUTTON_NEGATIVE)
 
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.DAY_OF_MONTH, 1)
@@ -147,7 +167,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         setupDatePickers(dialogAddReportBinding, calendar, true)
 
-        submit.setOnClickListener {
+        submit?.setOnClickListener {
             if (isValidReportForm(dialogAddReportBinding)) {
                 viewModel.addReport(
                     description = dialogAddReportBinding.summary.text.toString(),
@@ -160,17 +180,14 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     endDate = endTimeStamp?.toLongOrNull() ?: 0L,
                     teamId = teamId,
                     teamType = team?.teamType,
-                    teamPlanetCode = team?.teamPlanetCode,
-                    onSuccess = { dialog.dismiss() },
-                    onError = {
-                        it.printStackTrace()
-                        Utilities.toast(requireContext(), "Failed to add report. Please try again.")
-                    }
+                    teamPlanetCode = team?.teamPlanetCode
                 )
             }
         }
 
-        cancel.setOnClickListener { dialog.dismiss() }
+        cancel?.setOnClickListener { activeDialog?.dismiss() }
+
+        activeDialog?.setOnDismissListener { activeDialog = null }
     }
 
     private fun showEditReportDialog(currentReport: RealmMyTeam) {
@@ -181,10 +198,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             .setView(v)
             .setPositiveButton("submit", null)
             .setNegativeButton("cancel", null)
-        val dialog = builder.create()
-        dialog.show()
-        val submit = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-        val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+        activeDialog = builder.create()
+        activeDialog?.show()
+        val submit = activeDialog?.getButton(AlertDialog.BUTTON_POSITIVE)
+        val cancel = activeDialog?.getButton(AlertDialog.BUTTON_NEGATIVE)
 
         val calendar = Calendar.getInstance()
         calendar.set(Calendar.DAY_OF_MONTH, 1)
@@ -203,7 +220,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         setupDatePickers(dialogAddReportBinding, calendar, false)
 
-        submit.setOnClickListener {
+        submit?.setOnClickListener {
             if (isValidReportForm(dialogAddReportBinding)) {
                 val reportId = currentReport._id
                 if (reportId.isNullOrBlank()) {
@@ -224,20 +241,14 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages,
                     otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses,
                     startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate,
-                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate,
-                    onSuccess = { dialog.dismiss() },
-                    onError = {
-                        Snackbar.make(
-                            binding.root,
-                            "Failed to update report. Please try again.",
-                            Snackbar.LENGTH_LONG
-                        ).show()
-                    }
+                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
                 )
             }
         }
 
-        cancel.setOnClickListener { dialog.dismiss() }
+        cancel?.setOnClickListener { activeDialog?.dismiss() }
+
+        activeDialog?.setOnDismissListener { activeDialog = null }
     }
 
     private fun showDeleteReportDialog(report: RealmMyTeam) {
@@ -246,15 +257,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             builder.setTitle(getString(R.string.delete_report))
                 .setMessage(R.string.delete_record)
                 .setPositiveButton(R.string.ok) { _, _ ->
-                    viewModel.archiveReport(
-                        reportId = reportId,
-                        onSuccess = { },
-                        onError = {
-                            binding.root.let { view ->
-                                Snackbar.make(view, getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()
-                            }
-                        }
-                    )
+                    viewModel.archiveReport(reportId = reportId)
                 }
                 .setNegativeButton("Cancel", null)
                 .show()

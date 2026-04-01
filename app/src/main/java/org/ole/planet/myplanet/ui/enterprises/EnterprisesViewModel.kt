@@ -7,14 +7,27 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
+
+sealed class ReportEvent {
+    object ReportAdded : ReportEvent()
+    object ReportUpdated : ReportEvent()
+    object ReportArchived : ReportEvent()
+    data class Error(val message: String) : ReportEvent()
+}
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository
 ) : ViewModel() {
+
+    private val _reportEvent = MutableSharedFlow<ReportEvent>()
+    val reportEvent: SharedFlow<ReportEvent> = _reportEvent.asSharedFlow()
 
     fun addReport(
         description: String,
@@ -27,9 +40,7 @@ class EnterprisesViewModel @Inject constructor(
         endDate: Long,
         teamId: String,
         teamType: String?,
-        teamPlanetCode: String?,
-        onSuccess: () -> Unit,
-        onError: (Exception) -> Unit
+        teamPlanetCode: String?
     ) {
         viewModelScope.launch {
             try {
@@ -52,9 +63,9 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("updated", true)
                 }
                 teamsRepository.addReport(doc)
-                onSuccess()
+                _reportEvent.emit(ReportEvent.ReportAdded)
             } catch (e: Exception) {
-                onError(e)
+                _reportEvent.emit(ReportEvent.Error("Failed to add report. Please try again."))
             }
         }
     }
@@ -68,9 +79,7 @@ class EnterprisesViewModel @Inject constructor(
         wages: Int,
         otherExpenses: Int,
         startDate: Long,
-        endDate: Long,
-        onSuccess: () -> Unit,
-        onError: (Exception) -> Unit
+        endDate: Long
     ) {
         viewModelScope.launch {
             try {
@@ -87,20 +96,20 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("updated", true)
                 }
                 teamsRepository.updateReport(reportId, doc)
-                onSuccess()
+                _reportEvent.emit(ReportEvent.ReportUpdated)
             } catch (e: Exception) {
-                onError(e)
+                _reportEvent.emit(ReportEvent.Error("Failed to update report. Please try again."))
             }
         }
     }
 
-    fun archiveReport(reportId: String, onSuccess: () -> Unit, onError: (Exception) -> Unit) {
+    fun archiveReport(reportId: String) {
         viewModelScope.launch {
             try {
                 teamsRepository.archiveReport(reportId)
-                onSuccess()
+                _reportEvent.emit(ReportEvent.ReportArchived)
             } catch (e: Exception) {
-                onError(e)
+                _reportEvent.emit(ReportEvent.Error("Failed to delete report."))
             }
         }
     }
