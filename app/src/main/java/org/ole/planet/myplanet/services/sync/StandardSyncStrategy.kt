@@ -15,20 +15,19 @@ class StandardSyncStrategy @Inject constructor(
     
     override suspend fun syncTable(
         table: String,
-        realm: Realm,
         config: SyncConfig
     ): Flow<SyncResult> = flow {
         val startTime = System.currentTimeMillis()
         
         try {
             // Use the existing TransactionSyncManager for standard sync
-            transactionSyncManager.syncDb(table)
+            val processedItems = transactionSyncManager.syncDb(table)
 
             val endTime = System.currentTimeMillis()
             emit(
                 SyncResult(
                     table = table,
-                    processedItems = -1, // TransactionSyncManager doesn't return count
+                    processedItems = processedItems,
                     success = true,
                     duration = endTime - startTime,
                     strategy = getStrategyName()
