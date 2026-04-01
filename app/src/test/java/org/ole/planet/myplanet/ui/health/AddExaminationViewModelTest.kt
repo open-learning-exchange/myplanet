@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddExaminationViewModelTest {
@@ -33,7 +34,10 @@ class AddExaminationViewModelTest {
     @Before
     fun setup() {
         healthRepository = mockk()
-        viewModel = AddExaminationViewModel(healthRepository)
+        viewModel = AddExaminationViewModel(
+            healthRepository,
+            TestDispatcherProvider(mainDispatcherRule.testDispatcher)
+        )
     }
 
     @Test

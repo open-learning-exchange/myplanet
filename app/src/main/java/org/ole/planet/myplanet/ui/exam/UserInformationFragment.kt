@@ -158,6 +158,31 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun submitForm() {
+        val profile = createUserProfile() ?: return
+        val user = profile.toJson()
+
+        val teamId = arguments?.getString("teamId")
+
+        if (!teamId.isNullOrEmpty()) {
+            saveSubmission(user)
+        } else if (TextUtils.isEmpty(id)) {
+            val userId = userModel?.id
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    userRepository.updateProfileFields(userId, user)
+                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                    if (isAdded) dialog?.dismiss()
+                } catch (_: Exception) {
+                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                    if (isAdded) dialog?.dismiss()
+                }
+            }
+        } else {
+            saveSubmission(user)
+        }
+    }
+
+    private fun createUserProfile(): org.ole.planet.myplanet.model.UserSurveyProfile? {
         var fname = ""
         var lname = ""
         var mName = ""
@@ -175,21 +200,21 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             if (yob.isEmpty()) {
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.year_of_birth_cannot_be_empty)
-                return
+                return null
             }
 
             val yobInt = yob.toIntOrNull()
             if (yobInt == null) {
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.please_enter_a_valid_year_of_birth)
-                return
+                return null
             }
 
             val currentYear = Calendar.getInstance().get(Calendar.YEAR)
             if (yobInt !in 1900..currentYear) {
                 fragmentUserInformationBinding.etYob.error =
                     getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
-                return
+                return null
             }
         }
 
@@ -222,7 +247,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        val profile = org.ole.planet.myplanet.model.UserSurveyProfile(
+        return org.ole.planet.myplanet.model.UserSurveyProfile(
             fname = fname,
             lname = lname,
             mName = mName,
@@ -234,28 +259,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             gender = gender,
             language = lang
         )
-
-        val user = profile.toJson()
-
-        val teamId = arguments?.getString("teamId")
-
-        if (!teamId.isNullOrEmpty()) {
-            saveSubmission(user)
-        } else if (TextUtils.isEmpty(id)) {
-            val userId = userModel?.id
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    userRepository.updateProfileFields(userId, user)
-                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
-                    if (isAdded) dialog?.dismiss()
-                } catch (_: Exception) {
-                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
-                    if (isAdded) dialog?.dismiss()
-                }
-            }
-        } else {
-            saveSubmission(user)
-        }
     }
 
     private fun saveSubmission(user: JsonObject) {
