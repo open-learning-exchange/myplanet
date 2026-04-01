@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -226,7 +227,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 settingDialog()
             }
         }
-        if (prefData.getServerProtocol().isEmpty()) prefData.setServerProtocol("http://")
+        if (prefData.getServerProtocol().isEmpty()) prefData.setServerProtocol(Constants.HTTP_PROTOCOL)
         binding.becomeMember.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
@@ -263,7 +264,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 val serverUrl = prefData.getServerUrl()
                 val serverPin = prefData.getServerPin()
 
-                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                val url = if (serverUrl.startsWith(Constants.HTTP_PROTOCOL) || serverUrl.startsWith(Constants.HTTPS_PROTOCOL)) {
                     serverUrl
                 } else {
                     "$protocol$serverUrl"
