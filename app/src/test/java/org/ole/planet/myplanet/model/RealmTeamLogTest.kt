@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import org.junit.After
@@ -16,6 +17,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class RealmTeamLogTest {
@@ -24,6 +26,7 @@ class RealmTeamLogTest {
     fun setup() {
         mockkObject(NetworkUtils)
         mockkStatic(TextUtils::class)
+        mockkStatic(JsonUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
             val str = arg<CharSequence?>(0)
             str == null || str.length == 0
@@ -141,19 +144,18 @@ class RealmTeamLogTest {
     fun testInsert_existingLog() {
         val mockRealm = mockk<Realm>()
         val mockQuery = mockk<RealmQuery<RealmTeamLog>>()
-        val existingLog = RealmTeamLog()
+        val existingLog = mockk<RealmTeamLog>(relaxed = true)
+        val jsonObject = mockk<JsonObject>()
 
-        val jsonObject = JsonObject().apply {
-            addProperty("_id", "id123")
-            addProperty("_rev", "rev123")
-            addProperty("type", "teamVisit")
-            addProperty("user", "testUser")
-            addProperty("createdOn", "2023-01-01")
-            addProperty("parentCode", "parent123")
-            addProperty("time", 123456789L)
-            addProperty("teamId", "testTeam")
-            addProperty("teamType", "testType")
-        }
+        every { JsonUtils.getString("_id", jsonObject) } returns "id123"
+        every { JsonUtils.getString("_rev", jsonObject) } returns "rev123"
+        every { JsonUtils.getString("type", jsonObject) } returns "teamVisit"
+        every { JsonUtils.getString("user", jsonObject) } returns "testUser"
+        every { JsonUtils.getString("createdOn", jsonObject) } returns "2023-01-01"
+        every { JsonUtils.getString("parentCode", jsonObject) } returns "parent123"
+        every { JsonUtils.getLong("time", jsonObject) } returns 123456789L
+        every { JsonUtils.getString("teamId", jsonObject) } returns "testTeam"
+        every { JsonUtils.getString("teamType", jsonObject) } returns "testType"
 
         every { mockRealm.where(RealmTeamLog::class.java) } returns mockQuery
         every { mockQuery.equalTo("id", "id123") } returns mockQuery
@@ -161,34 +163,34 @@ class RealmTeamLogTest {
 
         RealmTeamLog.insert(mockRealm, jsonObject)
 
-        assertEquals("rev123", existingLog._rev)
-        assertEquals("id123", existingLog._id)
-        assertEquals("teamVisit", existingLog.type)
-        assertEquals("testUser", existingLog.user)
-        assertEquals("2023-01-01", existingLog.createdOn)
-        assertEquals("parent123", existingLog.parentCode)
-        assertEquals(123456789L, existingLog.time)
-        assertEquals("testTeam", existingLog.teamId)
-        assertEquals("testType", existingLog.teamType)
+        verify { existingLog._rev = "rev123" }
+        verify { existingLog._id = "id123" }
+        verify { existingLog.type = "teamVisit" }
+        verify { existingLog.user = "testUser" }
+        verify { existingLog.createdOn = "2023-01-01" }
+        verify { existingLog.parentCode = "parent123" }
+        verify { existingLog.time = 123456789L }
+        verify { existingLog.teamId = "testTeam" }
+        verify { existingLog.teamType = "testType" }
+        verify(exactly = 0) { mockRealm.createObject(RealmTeamLog::class.java, any<String>()) }
     }
 
     @Test
     fun testInsert_newLog() {
         val mockRealm = mockk<Realm>()
         val mockQuery = mockk<RealmQuery<RealmTeamLog>>()
-        val newLog = RealmTeamLog()
+        val newLog = mockk<RealmTeamLog>(relaxed = true)
+        val jsonObject = mockk<JsonObject>()
 
-        val jsonObject = JsonObject().apply {
-            addProperty("_id", "id123")
-            addProperty("_rev", "rev123")
-            addProperty("type", "teamVisit")
-            addProperty("user", "testUser")
-            addProperty("createdOn", "2023-01-01")
-            addProperty("parentCode", "parent123")
-            addProperty("time", 123456789L)
-            addProperty("teamId", "testTeam")
-            addProperty("teamType", "testType")
-        }
+        every { JsonUtils.getString("_id", jsonObject) } returns "id123"
+        every { JsonUtils.getString("_rev", jsonObject) } returns "rev123"
+        every { JsonUtils.getString("type", jsonObject) } returns "teamVisit"
+        every { JsonUtils.getString("user", jsonObject) } returns "testUser"
+        every { JsonUtils.getString("createdOn", jsonObject) } returns "2023-01-01"
+        every { JsonUtils.getString("parentCode", jsonObject) } returns "parent123"
+        every { JsonUtils.getLong("time", jsonObject) } returns 123456789L
+        every { JsonUtils.getString("teamId", jsonObject) } returns "testTeam"
+        every { JsonUtils.getString("teamType", jsonObject) } returns "testType"
 
         every { mockRealm.where(RealmTeamLog::class.java) } returns mockQuery
         every { mockQuery.equalTo("id", "id123") } returns mockQuery
@@ -197,14 +199,14 @@ class RealmTeamLogTest {
 
         RealmTeamLog.insert(mockRealm, jsonObject)
 
-        assertEquals("rev123", newLog._rev)
-        assertEquals("id123", newLog._id)
-        assertEquals("teamVisit", newLog.type)
-        assertEquals("testUser", newLog.user)
-        assertEquals("2023-01-01", newLog.createdOn)
-        assertEquals("parent123", newLog.parentCode)
-        assertEquals(123456789L, newLog.time)
-        assertEquals("testTeam", newLog.teamId)
-        assertEquals("testType", newLog.teamType)
+        verify { newLog._rev = "rev123" }
+        verify { newLog._id = "id123" }
+        verify { newLog.type = "teamVisit" }
+        verify { newLog.user = "testUser" }
+        verify { newLog.createdOn = "2023-01-01" }
+        verify { newLog.parentCode = "parent123" }
+        verify { newLog.time = 123456789L }
+        verify { newLog.teamId = "testTeam" }
+        verify { newLog.teamType = "testType" }
     }
 }
