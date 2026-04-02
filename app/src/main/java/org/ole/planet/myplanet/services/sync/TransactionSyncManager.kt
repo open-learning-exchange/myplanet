@@ -19,7 +19,10 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
+import io.realm.RealmList
+import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -273,7 +276,8 @@ class TransactionSyncManager @Inject constructor(
             chatHistoryList.add(jsonDoc)
         }
         chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
+            val chatHistory = RealmChatHistory.fromJson(jsonDoc)
+            mRealm.copyToRealmOrUpdate(chatHistory)
         }
     }
 

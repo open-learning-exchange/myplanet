@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -35,14 +37,25 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveNewChat(chat: JsonObject) {
-        executeTransaction { realm ->
-            RealmChatHistory.insert(realm, chat)
-        }
+        save(RealmChatHistory.fromJson(chat))
     }
 
     override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
-        executeTransaction { realm ->
-            addConversationToChatHistory(realm, id, query, response, rev)
+        update(RealmChatHistory::class.java, "_id", id) { chatHistory ->
+            if (chatHistory.conversations == null) {
+                chatHistory.conversations = RealmList()
+            }
+
+            val conversation = RealmConversation()
+            conversation.query = query
+            conversation.response = response
+
+            chatHistory.conversations?.add(conversation)
+            chatHistory.updatedDate = "${System.currentTimeMillis()}"
+            chatHistory.lastUsed = System.currentTimeMillis()
+            if (rev.isNotEmpty()) {
+                chatHistory._rev = rev
+            }
         }
     }
 }
