@@ -108,8 +108,9 @@ object ServiceModule {
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, notificationsRepository, scope)
     }
 }
