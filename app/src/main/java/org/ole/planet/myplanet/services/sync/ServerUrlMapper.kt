@@ -57,11 +57,18 @@ class ServerUrlMapper @Inject constructor() {
         }
 
         val altUri = alternativeUrl.toUri()
+        val scheme = altUri.scheme
+        val host = altUri.host
+        val port = if (altUri.port == -1) {
+            if (scheme == "http") 80 else 443
+        } else {
+            altUri.port
+        }
 
         val couchdbURL = if (alternativeUrl.contains("@")) {
             alternativeUrl
         } else {
-            "${altUri.scheme}://$urlUser:$urlPwd@${altUri.host}:${if (altUri.port == -1) (if (altUri.scheme == "http") 80 else 443) else altUri.port}"
+            "$scheme://$urlUser:$urlPwd@$host:$port"
         }
 
         editor.apply {
