@@ -1304,6 +1304,6 @@ class TeamsRepositoryImpl @Inject constructor(
                 .equalTo("user", userName)
                 .equalTo("teamId", teamId)
                 .count()
-        } ?: 0
+        }
     }
 }
