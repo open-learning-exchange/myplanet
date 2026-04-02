@@ -68,4 +68,33 @@ class RealmMyPersonalTest {
         val privateFor = serialized.getAsJsonObject("privateFor")
         assertEquals("user123", privateFor.get("users").asString)
     }
+
+    @Test
+    fun testSerialize_withNullValues() {
+        val personal = RealmMyPersonal() // all nullable fields are null by default
+
+        every { FileUtils.getFileNameFromUrl(null) } returns ""
+        every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
+        every { NetworkUtils.getDeviceName() } returns "device_name"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom_device_name"
+
+        val serialized = RealmMyPersonal.serialize(personal, mockContext)
+
+        assertTrue(serialized.get("title").isJsonNull)
+        assertTrue(serialized.has("uploadDate"))
+        assertEquals(0L, serialized.get("createdDate").asLong)
+        assertEquals("", serialized.get("filename").asString)
+        assertTrue(serialized.get("author").isJsonNull)
+        assertTrue(serialized.get("addedBy").isJsonNull)
+        assertTrue(serialized.get("description").isJsonNull)
+        assertEquals("Activities", serialized.get("resourceType").asString)
+        assertTrue(serialized.get("private").asBoolean)
+
+        assertEquals("unique_id", serialized.get("androidId").asString)
+        assertEquals("device_name", serialized.get("deviceName").asString)
+        assertEquals("custom_device_name", serialized.get("customDeviceName").asString)
+
+        val privateFor = serialized.getAsJsonObject("privateFor")
+        assertTrue(privateFor.get("users").isJsonNull)
+    }
 }
