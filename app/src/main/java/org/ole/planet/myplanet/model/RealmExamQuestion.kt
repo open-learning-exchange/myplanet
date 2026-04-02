@@ -25,7 +25,7 @@ open class RealmExamQuestion : RealmObject() {
     var hasOtherOption: Boolean = false
     private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
         for (i in 0 until array.size()) {
-            question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
+            question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.ROOT))
         }
     }
 
