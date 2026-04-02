@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
+import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
