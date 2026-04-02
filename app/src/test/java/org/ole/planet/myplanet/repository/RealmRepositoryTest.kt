@@ -46,6 +46,7 @@ class RealmRepositoryTest {
 
     @Before
     fun setup() {
+        Logger.getLogger("io.mockk").level = Level.OFF
         // Suppress MockK warning for mocking RealmResults
         Logger.getLogger("io.mockk.impl.log.JULLogger").level = Level.OFF
 
