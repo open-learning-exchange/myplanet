@@ -96,7 +96,10 @@ open class RealmMeetup : RealmObject() {
             try {
                 val ar = JSONArray(meetups.day)
                 for (i in 0 until ar.length()) {
-                    recurringDays.append(ar[i].toString()).append(", ")
+                    recurringDays.append(ar[i].toString())
+                    if (i < ar.length() - 1) {
+                        recurringDays.append(", ")
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -124,6 +127,10 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("startTime", meetup.startTime)
             `object`.addProperty("endTime", meetup.endTime)
             `object`.addProperty("recurring", meetup.recurring)
+            if (!meetup.day.isNullOrEmpty()) {
+                val dayJson = JsonUtils.gson.fromJson(meetup.day, JsonArray::class.java)
+                `object`.add("day", dayJson)
+            }
             `object`.addProperty("meetupLocation", meetup.meetupLocation)
             `object`.addProperty("meetupLink", meetup.meetupLink)
             `object`.addProperty("createdBy", meetup.creator)

@@ -25,11 +25,6 @@ class RealmMeetupTest {
             val str = firstArg<CharSequence?>()
             str == null || str.length == 0
         }
-
-        io.mockk.mockkConstructor(org.json.JSONArray::class)
-        every { anyConstructed<org.json.JSONArray>().length() } returns 2
-        every { anyConstructed<org.json.JSONArray>().get(0) } returns "Monday"
-        every { anyConstructed<org.json.JSONArray>().get(1) } returns "Wednesday"
     }
 
     @After
@@ -108,6 +103,11 @@ class RealmMeetupTest {
 
     @Test
     fun testGetHashMap() {
+        io.mockk.mockkConstructor(org.json.JSONArray::class)
+        every { anyConstructed<org.json.JSONArray>().length() } returns 2
+        every { anyConstructed<org.json.JSONArray>().get(0) } returns "Monday"
+        every { anyConstructed<org.json.JSONArray>().get(1) } returns "Wednesday"
+
         val meetup = RealmMeetup().apply {
             title = "Sample Meetup"
             creator = "John Doe"
@@ -130,7 +130,7 @@ class RealmMeetupTest {
         assertEquals("Tech", map["Category"])
         assertEquals("10:00 AM - 12:00 PM", map["Meetup Time"])
         assertEquals("weekly", map["Recurring"])
-        assertEquals("Monday, Wednesday, ", map["Recurring Days"])
+        assertEquals("Monday, Wednesday", map["Recurring Days"])
         assertEquals("Room 101", map["Location"])
         assertEquals("http://example.com", map["Link"])
         assertEquals("A great meetup", map["Description"])
@@ -152,6 +152,7 @@ class RealmMeetupTest {
             startTime = "10:00"
             endTime = "11:00"
             recurring = "none"
+            day = "[\"Monday\"]"
             meetupLocation = "Loc"
             meetupLink = "Link"
             creator = "Creator"
@@ -172,6 +173,7 @@ class RealmMeetupTest {
         assertEquals("Test Desc", json.get("description").asString)
         assertEquals(1000L, json.get("startDate").asLong)
         assertEquals("10:00", json.get("startTime").asString)
+        assertEquals("Monday", json.getAsJsonArray("day").get(0).asString)
         assertEquals("Earth", json.get("sourcePlanet").asString)
         assertEquals("value", json.getAsJsonObject("link").get("key").asString)
     }
