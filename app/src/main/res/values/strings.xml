@@ -1206,5 +1206,6 @@
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
     <string name="no_results_for_filter">No results match your current filter</string>
+    <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
 
 </resources>
