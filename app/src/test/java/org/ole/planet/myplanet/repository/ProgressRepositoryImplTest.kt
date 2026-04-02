@@ -185,7 +185,10 @@ class ProgressRepositoryImplTest {
 
         coEvery {
             repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns listOf(RealmCourseProgress().apply { stepNum = 1 })
+        } returns listOf(RealmCourseProgress().apply {
+            stepNum = 1
+            courseId = "course1"
+        })
 
         coEvery {
             repository["queryList"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())

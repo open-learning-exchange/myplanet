@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -182,7 +183,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
-        if (url == "http://" || url == "https://") {
+        if (url == Constants.HTTP_PROTOCOL || url == Constants.HTTPS_PROTOCOL) {
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
