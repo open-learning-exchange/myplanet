@@ -180,29 +180,28 @@ class RealmMeetupTest {
         every { meetup.meetupLink } returns "http://meetup.link"
         every { meetup.description } returns "Test Description"
 
-        mockkObject(TimeUtils)
-        every { TimeUtils.getFormattedDate(any()) } returns "Sep 13, 2020"
-
-        // Mock JSONArray parsing logic
+        // For JVM testing of org.json.JSONArray which might be stubbed out without Robolectric,
+        // we mock the JSONArray behavior within this test method
         mockkConstructor(JSONArray::class)
         every { anyConstructed<JSONArray>().length() } returns 2
         every { anyConstructed<JSONArray>().get(0) } returns "Monday"
         every { anyConstructed<JSONArray>().get(1) } returns "Wednesday"
+
+        val expectedStartDate = TimeUtils.getFormattedDate(1600000000000)
+        val expectedEndDate = TimeUtils.getFormattedDate(1600003600000)
 
         val map = RealmMeetup.getHashMap(meetup)
 
         assertEquals("Test Title", map["Meetup Title"])
         assertEquals("Test Creator", map["Created By"])
         assertEquals("Tech", map["Category"])
-        assertEquals("Sep 13, 2020 - Sep 13, 2020", map["Meetup Date"])
+        assertEquals("$expectedStartDate - $expectedEndDate", map["Meetup Date"])
         assertEquals("10:00 - 11:00", map["Meetup Time"])
         assertEquals("weekly", map["Recurring"])
         assertEquals("Monday, Wednesday, ", map["Recurring Days"])
         assertEquals("Room A", map["Location"])
         assertEquals("http://meetup.link", map["Link"])
         assertEquals("Test Description", map["Description"])
-
-        unmockkObject(TimeUtils)
     }
 
     @Test
@@ -212,17 +211,11 @@ class RealmMeetupTest {
         every { meetup.creator } returns null
         every { meetup.day } returns "invalid json" // This will throw and test the exception block
 
-        mockkObject(TimeUtils)
-        every { TimeUtils.getFormattedDate(any()) } throws Exception("Test Exception")
-
         val map = RealmMeetup.getHashMap(meetup)
 
         assertEquals("", map["Meetup Title"])
         assertEquals("", map["Created By"])
         assertEquals("", map["Recurring Days"])
-        // Date throws exception, shouldn't crash, and "Meetup Date" might not even be put or put as null/empty
-
-        unmockkObject(TimeUtils)
     }
 
     @Test
