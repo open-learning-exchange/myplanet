@@ -4,7 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.spyk
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmList
@@ -12,16 +12,11 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Before
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class RealmExamQuestionTest {
-
-    @Before
-    fun setup() {
-        mockkStatic(JsonUtils::class)
-    }
 
     @Test
     fun testInsertExamQuestions_emptyArray() {
@@ -65,31 +60,39 @@ class RealmExamQuestionTest {
         every { mockQuery.findAll() } returns mockResults
         every { mockResults.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
 
-        val mockQuestion = mockk<RealmExamQuestion>(relaxed = true)
+        val mockQuestion = spyk(RealmExamQuestion())
         every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns mockQuestion
 
         RealmExamQuestion.insertExamQuestions(questionsArray, "exam123", mockRealm)
 
         verify { mockRealm.createObject(RealmExamQuestion::class.java, "q1") }
-        verify { mockQuestion.examId = "exam123" }
-        verify { mockQuestion.body = "Body 1" }
-        verify { mockQuestion.type = "select" }
-        verify { mockQuestion.header = "Header 1" }
-        verify { mockQuestion.marks = "5" }
-        verify { mockQuestion.hasOtherOption = false }
+        assertEquals("exam123", mockQuestion.examId)
+        assertEquals("Body 1", mockQuestion.body)
+        assertEquals("select", mockQuestion.type)
+        assertEquals("Header 1", mockQuestion.header)
+        assertEquals("5", mockQuestion.marks)
+        assertEquals(false, mockQuestion.hasOtherOption)
+
+        // Verify correctChoice was populated
+        assertNotNull(mockQuestion.getCorrectChoice())
+        assertEquals(1, mockQuestion.getCorrectChoice()?.size)
+        assertEquals("Choice A", mockQuestion.getCorrectChoice()?.get(0))
     }
 
     @Test
     fun testSerializeQuestions() {
         val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-        val mockQuestion = mockk<RealmExamQuestion>(relaxed = true)
+        val mockQuestion = spyk(RealmExamQuestion())
 
-        every { mockQuestion.header } returns "Header 1"
-        every { mockQuestion.body } returns "Body 1"
-        every { mockQuestion.type } returns "select"
-        every { mockQuestion.marks } returns "5"
-        every { mockQuestion.choices } returns "[{\"res\":\"Choice A\",\"id\":\"c1\"}]"
-        every { mockQuestion.hasOtherOption } returns false
+        mockQuestion.header = "Header 1"
+        mockQuestion.body = "Body 1"
+        mockQuestion.type = "select"
+        mockQuestion.marks = "5"
+        mockQuestion.choices = "[{\"res\":\"Choice A\",\"id\":\"c1\"}]"
+        mockQuestion.hasOtherOption = false
+
+        // Spyk will use the real correctChoiceArray property getter which reads getCorrectChoice()
+        // Wait, correctChoice is private, so we need to set it or mock the correctChoiceArray getter
         every { mockQuestion.correctChoiceArray } returns JsonArray()
 
         every { mockResults.iterator() } returns mutableListOf(mockQuestion).iterator()
