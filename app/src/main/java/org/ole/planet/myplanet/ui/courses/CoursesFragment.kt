@@ -292,7 +292,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
                 adapterCourses.submitList(courses) {
-                    if (isAdded && view != null && ::selectAll.isInitialized) {
+                    if (isAdded && ::selectAll.isInitialized) {
                         selectedItems?.clear()
                         clearAllSelections()
                         checkList()
