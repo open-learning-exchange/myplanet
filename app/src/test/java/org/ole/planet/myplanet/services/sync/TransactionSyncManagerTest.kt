@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -40,6 +41,7 @@ class TransactionSyncManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val userRepository: UserRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
+	private val notificationsRepository: NotificationsRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
@@ -58,7 +60,8 @@ class TransactionSyncManagerTest {
             feedbackRepository,
             sharedPrefManager,
             userRepository,
-	    activitiesRepository,
+            activitiesRepository,
+			notificationsRepository,
             testScope
         )
     }
