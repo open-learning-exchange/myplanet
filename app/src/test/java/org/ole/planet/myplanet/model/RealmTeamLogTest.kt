@@ -45,6 +45,12 @@ class RealmTeamLogTest {
 
         val result = RealmTeamLog.getLastVisit(mockRealm, "testUser", "testTeamId")
         assertEquals(123456789L, result)
+
+        verify { mockRealm.where(RealmTeamLog::class.java) }
+        verify { mockQuery.equalTo("type", "teamVisit") }
+        verify { mockQuery.equalTo("user", "testUser") }
+        verify { mockQuery.equalTo("teamId", "testTeamId") }
+        verify { mockQuery.max("time") }
     }
 
     @Test
@@ -126,14 +132,15 @@ class RealmTeamLogTest {
         }
         val newLog = mockk<RealmTeamLog>(relaxed = true)
 
-        every { JsonUtils.getString(any(), act) } answers {
-            val key = firstArg<String>()
-            if (act.has(key)) act.get(key).asString else ""
-        }
-        every { JsonUtils.getLong(any(), act) } answers {
-            val key = firstArg<String>()
-            if (act.has(key)) act.get(key).asLong else 0L
-        }
+        every { JsonUtils.getString("_id", act) } returns "newId"
+        every { JsonUtils.getString("_rev", act) } returns "newRev"
+        every { JsonUtils.getString("type", act) } returns "newType"
+        every { JsonUtils.getString("user", act) } returns "newUser"
+        every { JsonUtils.getString("createdOn", act) } returns "newDate"
+        every { JsonUtils.getString("parentCode", act) } returns "newParent"
+        every { JsonUtils.getString("teamId", act) } returns "newTeamId"
+        every { JsonUtils.getString("teamType", act) } returns "newTeamType"
+        every { JsonUtils.getLong("time", act) } returns 98765L
 
         every { mockRealm.where(RealmTeamLog::class.java) } returns mockQuery
         every { mockQuery.equalTo("id", "newId") } returns mockQuery
@@ -170,14 +177,15 @@ class RealmTeamLogTest {
         }
         val existingLog = mockk<RealmTeamLog>(relaxed = true)
 
-        every { JsonUtils.getString(any(), act) } answers {
-            val key = firstArg<String>()
-            if (act.has(key)) act.get(key).asString else ""
-        }
-        every { JsonUtils.getLong(any(), act) } answers {
-            val key = firstArg<String>()
-            if (act.has(key)) act.get(key).asLong else 0L
-        }
+        every { JsonUtils.getString("_id", act) } returns "existingId"
+        every { JsonUtils.getString("_rev", act) } returns "updatedRev"
+        every { JsonUtils.getString("type", act) } returns "updatedType"
+        every { JsonUtils.getString("user", act) } returns "updatedUser"
+        every { JsonUtils.getString("createdOn", act) } returns "updatedDate"
+        every { JsonUtils.getString("parentCode", act) } returns "updatedParent"
+        every { JsonUtils.getString("teamId", act) } returns "updatedTeamId"
+        every { JsonUtils.getString("teamType", act) } returns "updatedTeamType"
+        every { JsonUtils.getLong("time", act) } returns 11111L
 
         every { mockRealm.where(RealmTeamLog::class.java) } returns mockQuery
         every { mockQuery.equalTo("id", "existingId") } returns mockQuery
