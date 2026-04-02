@@ -77,12 +77,11 @@ class ConstantsTest {
     @Test
     fun testClassList() {
         val classList = Constants.classList
-        assertEquals(16, classList.size)
+        assertEquals(15, classList.size)
         assertEquals(RealmNews::class.java, classList["news"])
         assertEquals(RealmTag::class.java, classList["tags"])
         assertEquals(RealmOfflineActivity::class.java, classList["login_activities"])
         assertEquals(RealmRating::class.java, classList["ratings"])
-        assertEquals(RealmSubmission::class.java, classList["submissions"])
         assertEquals(RealmMyCourse::class.java, classList["courses"])
         assertEquals(RealmAchievement::class.java, classList["achievements"])
         assertEquals(RealmFeedback::class.java, classList["feedback"])
