@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysViewModelTest {
@@ -33,6 +34,7 @@ class SurveysViewModelTest {
     private lateinit var serverUrlMapper: ServerUrlMapper
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
@@ -48,7 +50,8 @@ class SurveysViewModelTest {
             syncManager,
             userSessionManager,
             sharedPrefManager,
-            serverUrlMapper
+            serverUrlMapper,
+            testDispatcherProvider
         )
     }
 

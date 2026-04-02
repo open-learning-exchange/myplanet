@@ -9,4 +9,5 @@ interface TagsRepository {
     suspend fun getTagsForCourse(courseId: String): List<RealmTag>
     suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>>
     suspend fun getLinkedCourseIds(db: String, tagIds: Array<String>): Set<String>
+    suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>>
 }
