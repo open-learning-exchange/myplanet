@@ -1206,5 +1206,6 @@
     <string name="select_media">मिडिया</string>
     <string name="select_resource_type">स्रोत प्रकार</string>
     <string name="no_results_for_filter">तपाईंको हालको फिल्टरसँग कुनै परिणाम मेल खाँदैन</string>
+    <string name="resource_title_already_exists">यस शीर्षकको स्रोत पहिले नै अवस्थित छ</string>
 
 </resources>

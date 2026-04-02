@@ -1210,5 +1210,6 @@
     <string name="select_media">Médias</string>
     <string name="select_resource_type">Type de ressource</string>
     <string name="no_results_for_filter">Aucun résultat ne correspond à votre filtre actuel</string>
+    <string name="resource_title_already_exists">Une ressource avec ce titre existe déjà</string>
 
 </resources>

@@ -1209,5 +1209,6 @@
     <string name="select_media">Medios</string>
     <string name="select_resource_type">Tipo de recurso</string>
     <string name="no_results_for_filter">No hay resultados que coincidan con tu filtro actual</string>
+    <string name="resource_title_already_exists">Ya existe un recurso con este título</string>
 
 </resources>
