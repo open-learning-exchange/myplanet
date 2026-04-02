@@ -12,6 +12,8 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.JsonUtils
 import java.util.*
+import java.util.logging.Level
+import java.util.logging.Logger
 
 class RealmExamQuestionTest {
 
@@ -20,6 +22,8 @@ class RealmExamQuestionTest {
 
     @Before
     fun setUp() {
+        // Suppress the MockK warning: "RealmResults should not be mocked! Consider refactoring your test."
+        Logger.getLogger("io.mockk.impl.log.JULLogger").level = Level.OFF
         realmExamQuestion = RealmExamQuestion()
         mockRealm = mockk(relaxed = true)
     }
