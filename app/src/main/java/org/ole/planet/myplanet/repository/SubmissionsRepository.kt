@@ -40,7 +40,7 @@ interface SubmissionsRepository {
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
     suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: org.ole.planet.myplanet.model.RealmStepExam, type: String?, teamId: String?): RealmSubmission?
-    suspend fun saveExamAnswer(submission: RealmSubmission?, question: org.ole.planet.myplanet.model.RealmExamQuestion, ans: String, listAns: Map<String, String>?, otherText: String?, otherVisible: Boolean, type: String, index: Int, total: Int, isExplicitSubmission: Boolean): Boolean
+    suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean
     suspend fun getLastPendingSubmission(userId: String?): RealmSubmission?
     suspend fun updateSubmissionStatus(submissionId: String?, status: String)
     suspend fun getExamByStepId(stepId: String): RealmStepExam?
