@@ -57,6 +57,7 @@ class TransactionSyncManagerTest {
             chatRepository,
             feedbackRepository,
             sharedPrefManager,
+            submissionsRepository,
             userRepository,
             testScope
         )
