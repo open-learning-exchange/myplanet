@@ -113,7 +113,9 @@ class NotificationsViewModel @Inject constructor(
             formattedText = formattedText,
             isRead = notification.isRead,
             type = notification.type,
-            relatedId = notification.relatedId
+            relatedId = notification.relatedId,
+            createdAt = notification.createdAt,
+            link = notification.link
         )
     }
 

@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
@@ -130,7 +131,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return updatedIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<org.ole.planet.myplanet.model.NotificationPayload> {
+    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
         return queryList(RealmNotification::class.java) {
             beginGroup()
             equalTo("userId", userId)
@@ -147,12 +148,20 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
             sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
         }.map {
-            org.ole.planet.myplanet.model.NotificationPayload(
+            NotificationPayload(
                 id = it.id,
-                type = it.type,
+                userId = it.userId,
                 message = it.message,
                 isRead = it.isRead,
-                relatedId = it.relatedId
+                createdAt = it.createdAt.time,
+                type = it.type,
+                relatedId = it.relatedId,
+                title = it.title,
+                link = it.link,
+                priority = it.priority,
+                isFromServer = it.isFromServer,
+                rev = it.rev,
+                needsSync = it.needsSync
             )
         }
     }
