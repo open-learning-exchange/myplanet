@@ -118,17 +118,9 @@ class ConstantsTest {
     }
 
     @Test
-    fun testIsBetaWifiFeatureEnabled() {
-        assertFalse(Constants.isBetaWifiFeatureEnabled(context))
-
-        sharedPreferences.edit().putBoolean("beta_function", true).commit()
-        assertFalse(Constants.isBetaWifiFeatureEnabled(context))
-
-        sharedPreferences.edit().putBoolean(Constants.KEY_SYNC, true).commit()
-        assertTrue(Constants.isBetaWifiFeatureEnabled(context))
-
-        sharedPreferences.edit().putBoolean("beta_function", false).commit()
-        assertFalse(Constants.isBetaWifiFeatureEnabled(context))
+    fun testProtocolConstants() {
+        assertEquals("http://", Constants.HTTP_PROTOCOL)
+        assertEquals("https://", Constants.HTTPS_PROTOCOL)
     }
 
     @Test

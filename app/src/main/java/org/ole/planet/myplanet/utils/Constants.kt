@@ -19,6 +19,8 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 
 object Constants {
+    const val HTTP_PROTOCOL = "http://"
+    const val HTTPS_PROTOCOL = "https://"
     const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
