@@ -24,20 +24,14 @@ class RealmRatingTest {
     @MockK
     lateinit var mockContext: Context
 
-    private var originalContext: Context? = null
-
     @Before
     fun setup() {
         MockKAnnotations.init(this)
 
-        try {
-            originalContext = MainApplication.context
-        } catch (e: Exception) {
-            // UninitializedPropertyAccessException if context was never set
-        }
+        mockkObject(MainApplication.Companion)
+        every { MainApplication.context } returns mockContext
 
         every { mockContext.applicationContext } returns mockContext
-        MainApplication.context = mockContext
 
         // Mock static methods
         mockkObject(NetworkUtils)
@@ -48,9 +42,6 @@ class RealmRatingTest {
 
     @After
     fun tearDown() {
-        if (originalContext != null) {
-            MainApplication.context = originalContext!!
-        }
         unmockkAll()
     }
 
@@ -129,7 +120,7 @@ class RealmRatingTest {
         verify { mockRating.user = "{\"_id\":\"new_user_id\"}" }
         verify { mockRating.userId = "new_user_id" }
         verify { mockRating.parentCode = "new_parent_code" }
-        verify { mockRating.parentCode = "new_planet_code" } // Bug in original code
+        verify { mockRating.planetCode = "new_planet_code" }
         verify { mockRating.createdOn = "2023-10-27" }
     }
 
@@ -171,7 +162,7 @@ class RealmRatingTest {
         verify { mockRating.user = "{\"_id\":\"existing_user_id\"}" }
         verify { mockRating.userId = "existing_user_id" }
         verify { mockRating.parentCode = "existing_parent_code" }
-        verify { mockRating.parentCode = "existing_planet_code" } // Bug in original code
+        verify { mockRating.planetCode = "existing_planet_code" }
         verify { mockRating.createdOn = "2023-10-28" }
     }
 }
