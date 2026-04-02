@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
