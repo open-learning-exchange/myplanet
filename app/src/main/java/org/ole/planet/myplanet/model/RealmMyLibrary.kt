@@ -9,7 +9,6 @@ import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Calendar
-import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.FileUtils
@@ -185,7 +184,7 @@ open class RealmMyLibrary : RealmObject() {
         fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
-                addProperty("uploadDate", Date().time)
+                addProperty("uploadDate", System.currentTimeMillis())
                 addProperty("createdDate", personal.createdDate)
                 addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
                 addProperty("author", personal.author ?: "")
