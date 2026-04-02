@@ -9,7 +9,6 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
-import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -177,7 +176,7 @@ class UploadManager @Inject constructor(
     private fun createImage(user: RealmUser?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
-        `object`.addProperty("createdDate", Date().time)
+        `object`.addProperty("createdDate", System.currentTimeMillis())
         `object`.addProperty("filename", getString("fileName", imgObject))
         `object`.addProperty("private", true)
         user?.id?.let { `object`.addProperty("addedBy", it) }
