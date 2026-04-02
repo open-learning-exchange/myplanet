@@ -125,6 +125,13 @@ class RealmFeedbackTest {
 
         feedback.setMessages("invalid json")
 
+        mockkStatic(com.google.gson.JsonParser::class)
+        every { com.google.gson.JsonParser.parseString(any()) } throws object : Exception("Test exception") {
+            override fun printStackTrace() {
+                // Do nothing to keep test logs clean
+            }
+        }
+
         val jsonObject = RealmFeedback.serializeFeedback(feedback)
 
         // When an exception is thrown, the "messages" property is not added
