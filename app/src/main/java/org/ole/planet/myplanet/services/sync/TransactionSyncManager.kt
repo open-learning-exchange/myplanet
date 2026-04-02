@@ -47,6 +47,7 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
@@ -104,7 +105,7 @@ class TransactionSyncManager @Inject constructor(
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
                         userModel.id?.let {
-                            userRepository.markUserKeyIvSaved(it, key ?: "", iv)
+                            userRepository.markUserKeyIvSaved(it, key, iv)
                         }
                     }
                 }
@@ -299,6 +300,9 @@ class TransactionSyncManager @Inject constructor(
             }
             "tablet_users" -> {
                 userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+            }
+            "login_activities" -> {
+                activitiesRepository.insertActivity(mRealm, jsonDoc)
             }
             else -> {
                 callMethod(mRealm, jsonDoc, table)
