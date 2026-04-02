@@ -77,7 +77,7 @@ class RealmExamQuestionTest {
         questions.add(q2)
 
         val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>()
+        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
 
         every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
         every { mockQuery.`in`("id", arrayOf("q1", "q2")) } returns mockQuery
@@ -142,7 +142,7 @@ class RealmExamQuestionTest {
         }
 
         val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResults = mockk<RealmResults<RealmExamQuestion>>()
+        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
 
         every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
         every { mockQuery.`in`("id", arrayOf("q1")) } returns mockQuery
@@ -178,7 +178,7 @@ class RealmExamQuestionTest {
         questions.add(q1)
 
         val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>()
+        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
 
         every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
         every { mockQuery.`in`("id", arrayOf("q1")) } returns mockQuery
@@ -191,7 +191,7 @@ class RealmExamQuestionTest {
 
         RealmExamQuestion.insertExamQuestions(questions, "exam1", mockRealm)
 
-        val mockResults = mockk<RealmResults<RealmExamQuestion>>()
+        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
         every { mockResults.iterator() } returns mutableListOf(realmQuestion).iterator()
 
         val serialized = RealmExamQuestion.serializeQuestions(mockResults)
