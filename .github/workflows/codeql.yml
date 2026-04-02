@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - master
+      - copilot/fix-gradle-test-classes-issue
   schedule:
     - cron: '0 6 * * 1'
 
