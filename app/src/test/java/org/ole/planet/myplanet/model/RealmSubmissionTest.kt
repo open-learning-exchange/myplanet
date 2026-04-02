@@ -104,7 +104,12 @@ class RealmSubmissionTest {
         every { mockQuery.equalTo("_id", "sub123") } returns mockQuery
 
         // Throw an exception when finding first to trigger catch block
-        every { mockQuery.findFirst() } throws RuntimeException("Test Exception")
+        val silentException = object : RuntimeException("Test Exception") {
+            override fun printStackTrace() {
+                // Do nothing to keep test logs clean
+            }
+        }
+        every { mockQuery.findFirst() } throws silentException
 
         RealmSubmission.insert(mockRealm, submission)
 
