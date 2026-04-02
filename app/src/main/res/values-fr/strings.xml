@@ -488,7 +488,6 @@
     <string name="recording_audio">Enregistrement audio en cours…</string>
     <string name="selected">Sélectionné : </string>
     <string name="last_sync">Dernière synchronisation avec le serveur : %s</string>
-    <string name="last_syncs">Dernière synchronisation</string>
     <string name="no_team_available">Aucune équipe/entreprise disponible</string>
     <string name="last_sync_date">Date de la dernière synchronisation : %s</string>
     <string name="no_assignee">Aucun assigné</string>
@@ -577,7 +576,6 @@
     <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
     <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
-    <string name="all_files_downloaded_successfully">Tous les fichiers ont été téléchargés avec succès</string>
     <string name="removed_from_mylibrary">Supprimé de ma bibliothèque</string>
     <string name="removed_from_mycourse">Supprimé de mon cours</string>
     <string name="please_allow_usages_permission_to_myplanet_app">Veuillez autoriser les permissions d\'utilisation pour l\'application myPlanet.</string>
@@ -713,7 +711,6 @@
     <string name="invalid_url">URL invalide</string>
     <string name="please_enter_valid_url_to_continue">Veuillez entrer une URL valide pour continuer.</string>
     <string name="uploading_data_to_server_please_wait">Téléchargement des données vers le serveur, veuillez patienter.....</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Vérifiez à nouveau l\'adresse du serveur. Ce à quoi je me suis connecté n\'était pas le serveur Planet.</string>
     <string name="device_couldn_t_reach_local_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au réseau Wi-Fi correct pour le serveur local (communauté).</string>
     <string name="device_couldn_t_reach_nation_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Le serveur n\'est pas configuré correctement. Connectez cet appareil au serveur Planet.</string>
@@ -952,7 +949,6 @@
     <string name="share_chat">partager le chat</string>
     <string name="shared_chat">chat partagé</string>
     <string name="check_apk_version">vérification de la version app</string>
-    <string name="checking_server">vérification du serveur</string>
     <string name="add_note">Ajouter une note (optionnel)</string>
     <string name="no_teams">équipes non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>
@@ -1071,7 +1067,6 @@
     <string name="no_reports">Aucun rapport disponible</string>
     <string name="fetching_ai_providers">Récupération des fournisseurs d\'IA…</string>
     <string name="adopt_survey">Adopter le sondage</string>
-    <string name="survey_adopted_successfully">Enquête adoptée avec succès !</string>
     <string name="beta_fast_sync">synchronisation rapide bêta</string>
     <string name="beta_improved_sync">beta improved sync</string>
     <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
@@ -1161,7 +1156,6 @@
     <string name="is_available">%1$s est disponible. Appuyez pour continuer à apprendre</string>
     <string name="failed_to_add_please_retry">Échec de l\'ajout. Veuillez réessayer</string>
     <string name="failed_to_remove_resource">Échec de la suppression de la ressource. Veuillez réessayer</string>
-    <string name="failed_to_adopt_survey">Échec de l\'adoption du sondage. Veuillez réessayer</string>
     <string name="failed_to_save_chat">Échec de l\'enregistrement de la conversation. Veuillez réessayer.</string>
     <string name="failed_to_delete_report">Échec de la suppression du rapport. Veuillez réessayer</string>
     <string name="delete_report">Supprimer le rapport</string>
