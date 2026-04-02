@@ -49,7 +49,13 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertChatHistory(realm: io.realm.Realm, json: JsonObject) {
+    override suspend fun insertChatHistoryList(chats: List<JsonObject>) {
+        executeTransaction { realm ->
+            chats.forEach { insertChatHistory(realm, it) }
+        }
+    }
+
+    private fun insertChatHistory(realm: io.realm.Realm, json: JsonObject) {
         val chatHistoryId = JsonUtils.getString("_id", json)
         val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
         existingChatHistory?.deleteFromRealm()
@@ -72,7 +78,7 @@ class ChatRepositoryImpl @Inject constructor(
         return conversations
     }
 
-    override fun addConversation(realm: io.realm.Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
+    private fun addConversation(realm: io.realm.Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
         val chatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
         if (chatHistory != null) {
             if (chatHistory.conversations == null) {

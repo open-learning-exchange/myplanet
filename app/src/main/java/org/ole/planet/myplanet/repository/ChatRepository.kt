@@ -8,6 +8,5 @@ interface ChatRepository {
     suspend fun getLatestRev(id: String): String?
     suspend fun saveNewChat(chat: JsonObject)
     suspend fun continueConversation(id: String, query: String, response: String, rev: String)
-    fun insertChatHistory(realm: io.realm.Realm, json: JsonObject)
-    fun addConversation(realm: io.realm.Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?)
+    suspend fun insertChatHistoryList(chats: List<JsonObject>)
 }
