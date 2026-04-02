@@ -38,6 +38,7 @@ class TransactionSyncManagerTest {
     private val chatRepository: ChatRepository = mockk()
     private val feedbackRepository: FeedbackRepository = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
+    private val submissionsRepository: SubmissionsRepository = mockk()
     private val userRepository: UserRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
