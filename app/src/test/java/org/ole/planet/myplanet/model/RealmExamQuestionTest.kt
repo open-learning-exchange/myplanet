@@ -59,6 +59,45 @@ class RealmExamQuestionTest {
     }
 
     @Test
+    fun testGetCorrectChoiceArray_populated() {
+        // Need to test correctChoiceArray when populated via insertCorrectChoice
+        val questionArray = JsonArray()
+        val questionObject = JsonObject()
+        questionObject.addProperty("id", "q_id")
+        questionObject.addProperty("type", "select")
+
+        val choicesArray = JsonArray()
+        val choice1 = JsonObject()
+        choice1.addProperty("id", "c1")
+        choicesArray.add(choice1)
+        questionObject.add("choices", choicesArray)
+
+        val correctChoices = JsonArray()
+        correctChoices.add("Option 1")
+        correctChoices.add("Option 2")
+        questionObject.add("correctChoice", correctChoices)
+
+        questionArray.add(questionObject)
+
+        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
+        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
+        every { mockQuery.`in`("id", arrayOf("q_id")) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
+
+        val newQuestion = RealmExamQuestion()
+        every { mockRealm.createObject(RealmExamQuestion::class.java, "q_id") } returns newQuestion
+
+        RealmExamQuestion.insertExamQuestions(questionArray, "exam_id", mockRealm)
+
+        val correctChoiceArray = newQuestion.correctChoiceArray
+        assertEquals(2, correctChoiceArray.size())
+        assertEquals("option 1", correctChoiceArray.get(0).asString)
+        assertEquals("option 2", correctChoiceArray.get(1).asString)
+    }
+
+    @Test
     fun testGetCorrectChoice() {
         assertNull(realmExamQuestion.getCorrectChoice())
     }
@@ -68,6 +107,33 @@ class RealmExamQuestionTest {
         val emptyArray = JsonArray()
         RealmExamQuestion.insertExamQuestions(emptyArray, "exam_id", mockRealm)
         verify(exactly = 0) { mockRealm.where(RealmExamQuestion::class.java) }
+    }
+
+    @Test
+    fun testInsertExamQuestions_noIdFallback() {
+        val questionArray = JsonArray()
+        val questionObject = JsonObject()
+        // Omit "id" to trigger fallback: "$examId-${i}"
+        questionObject.addProperty("body", "Test fallback body")
+        questionObject.addProperty("type", "text")
+        questionArray.add(questionObject)
+
+        val expectedFallbackId = "exam_id-0"
+
+        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
+        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
+        every { mockQuery.`in`("id", arrayOf(expectedFallbackId)) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
+
+        val newQuestion = RealmExamQuestion()
+        every { mockRealm.createObject(RealmExamQuestion::class.java, expectedFallbackId) } returns newQuestion
+
+        RealmExamQuestion.insertExamQuestions(questionArray, "exam_id", mockRealm)
+
+        assertEquals("Test fallback body", newQuestion.body)
+        verify { mockRealm.createObject(RealmExamQuestion::class.java, expectedFallbackId) }
     }
 
     @Test
@@ -164,6 +230,41 @@ class RealmExamQuestionTest {
         assertNotNull(newQuestion.getCorrectChoice())
         assertEquals(1, newQuestion.getCorrectChoice()?.size)
         assertEquals("Choice A", newQuestion.getCorrectChoice()?.get(0))
+    }
+
+    @Test
+    fun testInsertExamQuestions_correctChoiceNoMatch() {
+        val questionArray = JsonArray()
+        val questionObject = JsonObject()
+        questionObject.addProperty("id", "q_id")
+        questionObject.addProperty("type", "select")
+
+        val choicesArray = JsonArray()
+        val choice1 = JsonObject()
+        choice1.addProperty("id", "c1")
+        choice1.addProperty("res", "Choice A")
+        choicesArray.add(choice1)
+        questionObject.add("choices", choicesArray)
+
+        // Use a string that doesn't match the choice id "c1"
+        questionObject.addProperty("correctChoice", "c2")
+
+        questionArray.add(questionObject)
+
+        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
+        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
+        every { mockQuery.`in`("id", arrayOf("q_id")) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
+
+        val newQuestion = RealmExamQuestion()
+        every { mockRealm.createObject(RealmExamQuestion::class.java, "q_id") } returns newQuestion
+
+        RealmExamQuestion.insertExamQuestions(questionArray, "exam_id", mockRealm)
+
+        // The correct choice should remain null/empty as no match was found
+        assertNull(newQuestion.getCorrectChoice())
     }
 
     @Test
