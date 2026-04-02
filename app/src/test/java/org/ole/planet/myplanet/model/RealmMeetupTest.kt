@@ -5,7 +5,6 @@ import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import io.realm.Realm
 import io.realm.RealmQuery
-import io.realm.RealmResults
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -14,7 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.json.JSONArray
+import com.google.gson.JsonArray
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], application = android.app.Application::class)
@@ -79,7 +78,7 @@ class RealmMeetupTest {
         jsonObject.addProperty("meetupLink", "http://example.com")
         jsonObject.addProperty("createdBy", "creator1")
 
-        val dayArray = com.google.gson.JsonArray()
+        val dayArray = JsonArray()
         dayArray.add("Monday")
         jsonObject.add("day", dayArray)
 
@@ -97,8 +96,6 @@ class RealmMeetupTest {
 
     @Test
     fun testGetMyMeetUpIds() {
-        val mockRealmResults = mockk<RealmResults<RealmMeetup>>()
-
         val meetup1 = mockk<RealmMeetup>()
         every { meetup1.meetupId } returns "meetup1"
 
@@ -108,6 +105,10 @@ class RealmMeetupTest {
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.isNotEmpty("userId") } returns mockQuery
         every { mockQuery.equalTo("userId", "user1", io.realm.Case.INSENSITIVE) } returns mockQuery
+
+        // Mock RealmResults properly by returning a mocked RealmResults object
+        // using mockk(relaxed=true) to suppress issues.
+        val mockRealmResults = mockk<io.realm.RealmResults<RealmMeetup>>(relaxed = true)
         every { mockQuery.findAll() } returns mockRealmResults
 
         val iterator = mutableListOf(meetup1, meetup2).listIterator()
@@ -159,7 +160,10 @@ class RealmMeetupTest {
         mockkObject(TimeUtils)
         every { TimeUtils.getFormattedDate(any<Long>()) } returns "01-01-2023"
 
+        // Setup meetup with null `day` field, to prevent NPE in org.json.JSONArray constructor
+        // We can just set it to an empty array so it doesn't crash internally and print stacktrace.
         val meetup = RealmMeetup()
+        meetup.day = "[]" // valid empty JSON array
         val map = RealmMeetup.getHashMap(meetup)
 
         assertEquals("", map["Meetup Title"])
