@@ -113,4 +113,32 @@ class RatingsViewModelTest {
 
         assertEquals(mockUser, viewModel.userState.value)
     }
+
+    @Test
+    fun `submitRating success path`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+        val title = "Title"
+        val userId = "user-1"
+        val rating = 4.5f
+        val comment = "Great"
+
+        val mockUser = RealmUser().apply { id = userId }
+        val mockSummary = RatingSummary(
+            existingRating = RatingEntry("r-1", "Good", 5),
+            averageRating = 4.5f,
+            totalRatings = 10,
+            userRating = 5
+        )
+
+        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getValidUserId(mockUser, userId) } returns userId
+        coEvery { ratingsRepository.submitRating(type, itemId, title, userId, rating, comment) } returns mockSummary
+
+        viewModel.submitRating(type, itemId, title, userId, rating, comment)
+        advanceUntilIdle()
+
+        val state = viewModel.submitState.value
+        assertTrue(state is RatingsViewModel.SubmitState.Success)
+    }
 }

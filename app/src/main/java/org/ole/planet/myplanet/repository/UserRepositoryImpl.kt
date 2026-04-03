@@ -473,6 +473,10 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getActiveUserIdSuspending(): String {
         return getUserModelSuspending()?.id ?: ""
     }
+
+    override fun getValidUserId(user: RealmUser, fallbackId: String): String {
+        return user.id?.takeIf { it.isNotBlank() } ?: user._id ?: fallbackId
+    }
     override suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
         currentUser: RealmUser
