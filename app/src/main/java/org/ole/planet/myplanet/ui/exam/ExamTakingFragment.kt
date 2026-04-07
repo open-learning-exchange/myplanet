@@ -568,9 +568,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         val result = submissionsRepository.saveExamAnswer(
-            sub, currentQuestion, ans, listAns, otherText,
-            binding.etAnswer.isVisible, type ?: "exam", currentIndex,
-            questions?.size ?: 0, isExplicitSubmission
+            org.ole.planet.myplanet.model.ExamAnswerData(
+                sub, currentQuestion, ans, listAns, otherText,
+                binding.etAnswer.isVisible, type ?: "exam", currentIndex,
+                questions?.size ?: 0, isExplicitSubmission
+            )
         )
         return result
     }

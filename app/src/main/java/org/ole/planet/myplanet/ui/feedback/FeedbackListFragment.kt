@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
@@ -45,6 +45,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -104,9 +108,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 startSyncManager()
             }
         }
