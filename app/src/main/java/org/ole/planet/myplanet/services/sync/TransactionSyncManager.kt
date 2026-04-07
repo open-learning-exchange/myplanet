@@ -144,7 +144,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun syncDb(table: String): Int = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -258,10 +258,12 @@ class TransactionSyncManager @Inject constructor(
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+            totalDocs
         } catch (e: Exception) {
             e.printStackTrace()
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
+            0
         }
     }
 
