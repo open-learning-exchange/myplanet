@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
+import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -41,6 +43,7 @@ class TransactionSyncManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val userRepository: UserRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
+    private val teamsRepository: Lazy<TeamsRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -61,6 +64,7 @@ class TransactionSyncManagerTest {
             sharedPrefManager,
             userRepository,
             activitiesRepository,
+			teamsRepository,
 			notificationsRepository,
             testScope
         )
