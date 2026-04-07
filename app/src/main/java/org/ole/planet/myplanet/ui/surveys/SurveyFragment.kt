@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 
