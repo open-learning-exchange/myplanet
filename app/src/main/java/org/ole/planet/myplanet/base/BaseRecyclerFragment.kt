@@ -230,7 +230,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty()) {
             return list
         }
-
         val courses = coursesRepository.filterCoursesByTag(s, tags, isMyCourseLib, model?.id)
 
         return applyCourseFilter(courses)
