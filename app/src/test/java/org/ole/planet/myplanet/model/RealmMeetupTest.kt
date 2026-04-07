@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.*
@@ -13,9 +12,14 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.json.JSONArray
 
+@RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class RealmMeetupTest {
 
     @MockK
@@ -24,11 +28,6 @@ class RealmMeetupTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        mockkStatic(TextUtils::class)
-        every { TextUtils.isEmpty(any()) } answers {
-            val s = arg<CharSequence?>(0)
-            s == null || s.length == 0
-        }
     }
 
     @After
@@ -175,7 +174,7 @@ class RealmMeetupTest {
         every { meetup.startTime } returns "10:00"
         every { meetup.endTime } returns "11:00"
         every { meetup.recurring } returns "weekly"
-        every { meetup.day } returns "[\"Monday\", \"Wednesday\"]"
+        every { meetup.day } returns """["Monday", "Wednesday"]"""
         every { meetup.meetupLocation } returns "Room A"
         every { meetup.meetupLink } returns "http://meetup.link"
         every { meetup.description } returns "Test Description"
@@ -191,10 +190,7 @@ class RealmMeetupTest {
         assertEquals("$expectedStartDate - $expectedEndDate", map["Meetup Date"])
         assertEquals("10:00 - 11:00", map["Meetup Time"])
         assertEquals("weekly", map["Recurring"])
-        // Without Robolectric, org.json.JSONArray is an unmockable stub in standard JVM android tests
-        // meaning that ar.length() throws a RuntimeException("Stub!") natively, bypassing the logic.
-        // It's safely caught by the try-catch block in production.
-        assertEquals("", map["Recurring Days"])
+        assertEquals("Monday, Wednesday, ", map["Recurring Days"])
         assertEquals("Room A", map["Location"])
         assertEquals("http://meetup.link", map["Link"])
         assertEquals("Test Description", map["Description"])
