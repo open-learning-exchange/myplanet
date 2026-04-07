@@ -1210,5 +1210,6 @@
     <string name="no_goal_added">Weli hadaf lama dejin</string>
     <string name="no_achievement_added">Soo koobidda guulaha</string>
     <string name="no_references_added">Tixraac lama darin</string>
+    <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
 
 </resources>

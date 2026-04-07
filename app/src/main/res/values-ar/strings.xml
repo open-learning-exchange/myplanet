@@ -1226,5 +1226,6 @@
     <string name="no_goal_added">لم يتم تحديد أي أهداف بعد</string>
     <string name="no_achievement_added">ملخص الإنجازات</string>
     <string name="no_references_added">لم تتم إضافة مراجع</string>
+    <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
 
 </resources>

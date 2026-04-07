@@ -73,9 +73,10 @@ object ServiceModule {
         teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         apiInterface: ApiInterface,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         @ApplicationScope scope: CoroutineScope
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, scope)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope)
     }
 
     @Provides
@@ -106,8 +107,10 @@ object ServiceModule {
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, notificationsRepository, scope)
     }
 }
