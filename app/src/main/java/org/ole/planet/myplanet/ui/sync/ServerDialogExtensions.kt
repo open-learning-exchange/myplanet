@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 fun SyncActivity.showConfigurationUIElements(
@@ -82,7 +83,7 @@ fun SyncActivity.setUrlAndPin(checked: Boolean) {
         serverUrl.setText(ServerConfigUtils.removeProtocol(prefData.getServerUrl()))
         serverPassword.setText(prefData.getServerPin())
         protocolCheckIn.check(
-            if (TextUtils.equals(prefData.getServerProtocol(), "http://")) {
+            if (TextUtils.equals(prefData.getServerProtocol(), Constants.HTTP_PROTOCOL)) {
                 R.id.radio_http
             } else {
                 R.id.radio_https
@@ -115,7 +116,7 @@ fun SyncActivity.refreshServerList() {
 
     val pinnedUrl = prefData.getServerUrl()
     val pinnedIndex = filteredList.indexOfFirst {
-        it.url.replace(Regex("^https?://"), "") == pinnedUrl?.replace(Regex("^https?://"), "")
+        it.url.replace(Regex("^https?://"), "") == pinnedUrl.replace(Regex("^https?://"), "")
     }
     if (pinnedIndex != -1) {
         serverAddressAdapter?.setSelectedPosition(pinnedIndex)
@@ -160,7 +161,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
                 actualUrl == BuildConfig.PLANET_SANPABLO_URL ||
                 actualUrl == BuildConfig.PLANET_URIUR_URL ||
                 isLocalNetwork(actualUrl)
-            ) "http://" else "https://"
+            ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
             prefData.setServerProtocol(protocol)
             if (serverCheck) {
                 performSync(dialog)

@@ -29,15 +29,26 @@ class ProgressRepositoryImpl @Inject constructor(
         val mycourses = queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
         }
+        val courseIds = mycourses.mapNotNull { it.courseId }.toTypedArray()
+        val allSteps = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
+            `in`("courseId", courseIds)
+        }
+        val allProgresses = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+            `in`("courseId", courseIds)
+        }
+
+        val stepsByCourseId = allSteps.groupBy { it.courseId }
+        val progressesByCourseId = allProgresses.groupBy { it.courseId }
+
         val map = HashMap<String?, JsonObject>()
         for (course in mycourses) {
             course.courseId?.let { courseId ->
                 val progressObject = JsonObject()
-                val steps = queryList(RealmCourseStep::class.java) {
-                    equalTo("courseId", courseId)
-                }
+                val steps = stepsByCourseId[courseId] ?: emptyList()
+                val progresses = progressesByCourseId[courseId] ?: emptyList()
                 progressObject.addProperty("max", steps.size)
-                progressObject.addProperty("current", getCurrentProgress(steps, userId, courseId))
+                progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
                 map[courseId] = progressObject
             }
         }
@@ -81,6 +92,12 @@ class ProgressRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("courseId", courseId)
         }
+        calculateCurrentProgress(steps, progresses)
+    }
+
+    private fun calculateCurrentProgress(
+        steps: List<RealmCourseStep?>?, progresses: List<RealmCourseProgress>
+    ): Int {
         val stepsSize = steps?.size ?: 0
         val completed = BooleanArray(stepsSize + 1)
         progresses.forEach { progress ->
@@ -96,19 +113,27 @@ class ProgressRepositoryImpl @Inject constructor(
         while (i <= stepsSize && completed[i]) {
             i++
         }
-        i - 1
+        return i - 1
     }
 
     private suspend fun getCourseProgressMap(
         userId: String?, mycourses: List<RealmMyCourse>
     ): HashMap<String?, JsonObject> {
+        val courseIds = mycourses.mapNotNull { it.courseId }.toTypedArray()
+        val allProgresses = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+            `in`("courseId", courseIds)
+        }
+        val progressesByCourseId = allProgresses.groupBy { it.courseId }
+
         val map = HashMap<String?, JsonObject>()
         for (course in mycourses) {
             val progressObject = JsonObject()
             val steps = course.courseSteps ?: emptyList()
+            val progresses = progressesByCourseId[course.courseId] ?: emptyList()
             progressObject.addProperty("max", steps.size)
             progressObject.addProperty(
-                "current", getCurrentProgress(steps, userId, course.courseId)
+                "current", calculateCurrentProgress(steps, progresses)
             )
             map[course.courseId] = progressObject
         }

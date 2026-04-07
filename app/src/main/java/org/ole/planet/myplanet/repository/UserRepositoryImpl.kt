@@ -209,6 +209,28 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun fetchUserSecurityData(name: String) {
+        try {
+            val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
+            val response = withContext(dispatcherProvider.io) {
+                apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
+            }
+
+            if (response.isSuccessful && response.body() != null) {
+                val userDoc = response.body()
+                val derivedKey = userDoc?.get("derived_key")?.asString
+                val salt = userDoc?.get("salt")?.asString
+                val passwordScheme = userDoc?.get("password_scheme")?.asString
+                val iterations = userDoc?.get("iterations")?.asString
+                val userId = userDoc?.get("_id")?.asString
+                val rev = userDoc?.get("_rev")?.asString
+                updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override suspend fun ensureUserSecurityKeys(userId: String): RealmUser? {
         executeTransaction { transactionRealm ->
             val user = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
