@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
+import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -17,11 +18,15 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
     private val voicesRepository: VoicesRepository,
+    private val activitiesRepository: ActivitiesRepository,
+    private val teamsRepository: Lazy<TeamsRepository>,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) {
     val NewsActivities = UploadConfig(
@@ -60,7 +65,9 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.WithContext(RealmTeamLog::serializeTeamActivities),
+        serializer = UploadSerializer.WithContext { log, context ->
+            teamsRepository.get().serializeTeamActivities(log, context)
+        },
         idExtractor = { it._id }
     )
 
@@ -78,7 +85,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").notEqualTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it._id }
     )
 
@@ -88,7 +95,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").equalTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it._id }
     )
 
