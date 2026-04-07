@@ -1,16 +1,17 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import android.util.LruCache
 import android.widget.EditText
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
+import android.util.LruCache
 
 open class RealmAchievement : RealmObject() {
     var achievements: RealmList<String>? = null

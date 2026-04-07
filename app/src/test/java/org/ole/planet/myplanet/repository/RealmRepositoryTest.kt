@@ -11,7 +11,6 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -21,18 +20,13 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import java.util.logging.Level
-import java.util.logging.Logger
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 
 class TestRealmObject : RealmObject()
 
-class TestRealmRepository(
-    databaseService: DatabaseService,
-    realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher) {
+class TestRealmRepository(databaseService: DatabaseService) : RealmRepository(databaseService) {
     suspend fun queryFlow() = queryListFlow(TestRealmObject::class.java)
 }
 
@@ -46,10 +40,6 @@ class RealmRepositoryTest {
 
     @Before
     fun setup() {
-        Logger.getLogger("io.mockk").level = Level.OFF
-        // Suppress MockK warning for mocking RealmResults
-        Logger.getLogger("io.mockk.impl.log.JULLogger").level = Level.OFF
-
         Dispatchers.setMain(testDispatcher)
         databaseService = mockk()
         realm = mockk(relaxed = true)
@@ -57,7 +47,7 @@ class RealmRepositoryTest {
         every { databaseService.ioDispatcher } returns testDispatcher
         every { databaseService.createManagedRealmInstance() } returns realm
 
-        repository = TestRealmRepository(databaseService, testDispatcher)
+        repository = TestRealmRepository(databaseService)
     }
 
     @After

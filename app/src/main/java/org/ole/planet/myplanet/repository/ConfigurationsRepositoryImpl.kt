@@ -391,14 +391,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             currentUrl
         } else {
             val urlUser = "satellite"
-            val scheme = uri.scheme
-            val host = uri.host
-            val port = if (uri.port == -1) {
-                if (scheme == "http") 80 else 443
-            } else {
-                uri.port
-            }
-            "$scheme://$urlUser:$pin@$host:$port"
+            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
         }
     }
 

@@ -269,13 +269,9 @@ class CoursesRepositoryImpl @Inject constructor(
     ): List<RealmMyCourse> {
         return withRealm { realm ->
             val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-                val matchingTagIds = realm.where(RealmTag::class.java)
-                    .`in`("name", tagNames.toTypedArray())
-                    .findAll()
-                    .mapNotNull { it.id }
                 realm.where(RealmTag::class.java)
                     .equalTo("db", "courses")
-                    .`in`("tagId", matchingTagIds.toTypedArray())
+                    .`in`("name", tagNames.toTypedArray())
                     .findAll()
                     .mapNotNull { it.linkId }
             } else {
@@ -586,10 +582,6 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseTags(courseId: String): List<RealmTag> {
         return tagsRepository.getTagsForCourse(courseId)
-    }
-
-    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>> {
-        return tagsRepository.getTagsForCourses(courseIds)
     }
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {

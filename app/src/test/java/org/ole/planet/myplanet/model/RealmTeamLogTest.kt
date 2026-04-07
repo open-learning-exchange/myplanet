@@ -49,7 +49,7 @@ class RealmTeamLogTest {
         every { mockQuery.equalTo("teamId", "testTeam") } returns mockQuery
         every { mockQuery.max("time") } returns 123456789L
 
-        val result = RealmTeamLog.getLastVisit(mockRealm, "testUser", "testTeam")
+        val result = RealmTeamLog.Companion.getLastVisit(mockRealm, "testUser", "testTeam")
 
         assertEquals(123456789L, result)
     }
@@ -65,7 +65,7 @@ class RealmTeamLogTest {
         every { mockQuery.equalTo("teamId", "testTeam") } returns mockQuery
         every { mockQuery.max("time") } returns null
 
-        val result = RealmTeamLog.getLastVisit(mockRealm, "testUser", "testTeam")
+        val result = RealmTeamLog.Companion.getLastVisit(mockRealm, "testUser", "testTeam")
 
         assertNull(result)
     }
@@ -89,20 +89,20 @@ class RealmTeamLogTest {
         every { NetworkUtils.getDeviceName() } returns "deviceName123"
         every { NetworkUtils.getCustomDeviceName(mockContext) } returns "customName123"
 
-        val jsonObject = RealmTeamLog.serializeTeamActivities(log, mockContext)
+        val jsonObject = RealmTeamLog.Companion.serializeTeamActivities(log, mockContext)
 
-        assertEquals("testUser", jsonObject.get("user").asString)
-        assertEquals("teamVisit", jsonObject.get("type").asString)
-        assertEquals("2023-01-01", jsonObject.get("createdOn").asString)
-        assertEquals("parent123", jsonObject.get("parentCode").asString)
-        assertEquals("testType", jsonObject.get("teamType").asString)
-        assertEquals(123456789L, jsonObject.get("time").asLong)
-        assertEquals("testTeam", jsonObject.get("teamId").asString)
-        assertEquals("androidId123", jsonObject.get("androidId").asString)
-        assertEquals("deviceName123", jsonObject.get("deviceName").asString)
-        assertEquals("customName123", jsonObject.get("customDeviceName").asString)
-        assertEquals("rev123", jsonObject.get("_rev").asString)
-        assertEquals("id123", jsonObject.get("_id").asString)
+        assertEquals("testUser", jsonObject.get("user").getAsString())
+        assertEquals("teamVisit", jsonObject.get("type").getAsString())
+        assertEquals("2023-01-01", jsonObject.get("createdOn").getAsString())
+        assertEquals("parent123", jsonObject.get("parentCode").getAsString())
+        assertEquals("testType", jsonObject.get("teamType").getAsString())
+        assertEquals(123456789L, jsonObject.get("time").getAsLong())
+        assertEquals("testTeam", jsonObject.get("teamId").getAsString())
+        assertEquals("androidId123", jsonObject.get("androidId").getAsString())
+        assertEquals("deviceName123", jsonObject.get("deviceName").getAsString())
+        assertEquals("customName123", jsonObject.get("customDeviceName").getAsString())
+        assertEquals("rev123", jsonObject.get("_rev").getAsString())
+        assertEquals("id123", jsonObject.get("_id").getAsString())
     }
 
     @Test
@@ -124,18 +124,18 @@ class RealmTeamLogTest {
         every { NetworkUtils.getDeviceName() } returns "deviceName123"
         every { NetworkUtils.getCustomDeviceName(mockContext) } returns "customName123"
 
-        val jsonObject = RealmTeamLog.serializeTeamActivities(log, mockContext)
+        val jsonObject = RealmTeamLog.Companion.serializeTeamActivities(log, mockContext)
 
-        assertEquals("testUser", jsonObject.get("user").asString)
-        assertEquals("teamVisit", jsonObject.get("type").asString)
-        assertEquals("2023-01-01", jsonObject.get("createdOn").asString)
-        assertEquals("parent123", jsonObject.get("parentCode").asString)
-        assertEquals("testType", jsonObject.get("teamType").asString)
-        assertEquals(123456789L, jsonObject.get("time").asLong)
-        assertEquals("testTeam", jsonObject.get("teamId").asString)
-        assertEquals("androidId123", jsonObject.get("androidId").asString)
-        assertEquals("deviceName123", jsonObject.get("deviceName").asString)
-        assertEquals("customName123", jsonObject.get("customDeviceName").asString)
+        assertEquals("testUser", jsonObject.get("user").getAsString())
+        assertEquals("teamVisit", jsonObject.get("type").getAsString())
+        assertEquals("2023-01-01", jsonObject.get("createdOn").getAsString())
+        assertEquals("parent123", jsonObject.get("parentCode").getAsString())
+        assertEquals("testType", jsonObject.get("teamType").getAsString())
+        assertEquals(123456789L, jsonObject.get("time").getAsLong())
+        assertEquals("testTeam", jsonObject.get("teamId").getAsString())
+        assertEquals("androidId123", jsonObject.get("androidId").getAsString())
+        assertEquals("deviceName123", jsonObject.get("deviceName").getAsString())
+        assertEquals("customName123", jsonObject.get("customDeviceName").getAsString())
         assertFalse(jsonObject.has("_rev"))
         assertFalse(jsonObject.has("_id"))
     }
@@ -161,7 +161,7 @@ class RealmTeamLogTest {
         every { mockQuery.equalTo("id", "id123") } returns mockQuery
         every { mockQuery.findFirst() } returns existingLog
 
-        RealmTeamLog.insert(mockRealm, jsonObject)
+        RealmTeamLog.Companion.insert(mockRealm, jsonObject)
 
         verify { existingLog._rev = "rev123" }
         verify { existingLog._id = "id123" }
@@ -197,7 +197,7 @@ class RealmTeamLogTest {
         every { mockQuery.findFirst() } returns null
         every { mockRealm.createObject(RealmTeamLog::class.java, "id123") } returns newLog
 
-        RealmTeamLog.insert(mockRealm, jsonObject)
+        RealmTeamLog.Companion.insert(mockRealm, jsonObject)
 
         verify { newLog._rev = "rev123" }
         verify { newLog._id = "id123" }

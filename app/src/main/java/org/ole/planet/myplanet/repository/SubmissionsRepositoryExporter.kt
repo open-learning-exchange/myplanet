@@ -11,18 +11,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class SubmissionsRepositoryExporter @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher) {
+class SubmissionsRepositoryExporter @Inject constructor(private val databaseService: DatabaseService) {
 
     companion object {
         private const val PAGE_WIDTH = 595
@@ -34,7 +29,7 @@ class SubmissionsRepositoryExporter @Inject constructor(
     suspend fun generateSubmissionPdf(
         context: Context,
         submissionId: String
-    ): File? = withRealmAsync { realm ->
+    ): File? = databaseService.withRealmAsync { realm ->
         try {
             val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
                 ?: return@withRealmAsync null
@@ -120,7 +115,7 @@ class SubmissionsRepositoryExporter @Inject constructor(
         context: Context,
         submissionIds: List<String>,
         examTitle: String
-    ): File? = withRealmAsync { realm ->
+    ): File? = databaseService.withRealmAsync { realm ->
         try {
             val submissions = submissionIds.mapNotNull { id ->
                 realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()

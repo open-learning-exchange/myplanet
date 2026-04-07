@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.upload
 
-import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -18,16 +17,11 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
-    private val voicesRepository: VoicesRepository,
-    private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val voicesRepository: VoicesRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -65,9 +59,7 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.WithContext { log, context ->
-            teamsRepository.get().serializeTeamActivities(log, context)
-        },
+        serializer = UploadSerializer.WithContext(RealmTeamLog::serializeTeamActivities),
         idExtractor = { it._id }
     )
 
@@ -85,7 +77,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").notEqualTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
+        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
         idExtractor = { it._id }
     )
 
@@ -95,7 +87,7 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNull("_rev").equalTo("type", "sync")
         },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
+        serializer = UploadSerializer.Simple(RealmResourceActivity::serializeResourceActivities),
         idExtractor = { it._id }
     )
 
@@ -178,9 +170,7 @@ class UploadConfigs @Inject constructor(
                 .isNull("_id").or().isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full { realm, submission, context ->
-            RealmSubmission.serializeExamResult(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
-        },
+        serializer = UploadSerializer.Full(RealmSubmission::serializeExamResult),
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         filterGuests = true,
@@ -198,9 +188,7 @@ class UploadConfigs @Inject constructor(
                     .isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full { realm, submission, context ->
-            RealmSubmission.serialize(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
-        },
+        serializer = UploadSerializer.Full(RealmSubmission::serialize),
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         additionalUpdates = { _, submission, _ ->

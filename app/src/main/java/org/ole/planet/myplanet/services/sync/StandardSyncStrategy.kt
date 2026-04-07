@@ -2,32 +2,29 @@ package org.ole.planet.myplanet.services.sync
 
 import io.realm.Realm
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import org.ole.planet.myplanet.di.RealmDispatcher
 
 class StandardSyncStrategy @Inject constructor(
-    private val transactionSyncManager: TransactionSyncManager,
-    @RealmDispatcher private val ioDispatcher: CoroutineDispatcher
+    private val transactionSyncManager: TransactionSyncManager
 ) : SyncStrategy {
     
     override suspend fun syncTable(
         table: String,
+        realm: Realm,
         config: SyncConfig
     ): Flow<SyncResult> = flow {
         val startTime = System.currentTimeMillis()
         
         try {
             // Use the existing TransactionSyncManager for standard sync
-            val processedItems = transactionSyncManager.syncDb(table)
+            transactionSyncManager.syncDb(table)
 
             val endTime = System.currentTimeMillis()
             emit(
                 SyncResult(
                     table = table,
-                    processedItems = processedItems,
+                    processedItems = -1, // TransactionSyncManager doesn't return count
                     success = true,
                     duration = endTime - startTime,
                     strategy = getStrategyName()
@@ -46,7 +43,7 @@ class StandardSyncStrategy @Inject constructor(
                 )
             )
         }
-    }.flowOn(ioDispatcher)
+    }
     
     override fun getStrategyName(): String = "standard"
 

@@ -4,29 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NewsViewModel @Inject constructor(
-    private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
-
-    private val _privateImageUrls = MutableSharedFlow<List<String>>()
-    val privateImageUrls: SharedFlow<List<String>> = _privateImageUrls.asSharedFlow()
-
-    fun getPrivateImageUrlsCreatedAfter(timestamp: Long) {
+    fun getPrivateImageUrlsCreatedAfter(timestamp: Long, callback: (List<String>) -> Unit) {
         viewModelScope.launch {
-            val urls = withContext(dispatcherProvider.io) {
-                resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
-            }
-            _privateImageUrls.emit(urls)
+            val urls = resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
+            callback(urls)
         }
     }
 }

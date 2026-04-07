@@ -4,8 +4,6 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
 interface PersonalsRepository {
-    suspend fun personalTitleExists(title: String, userId: String?): Boolean
-
     suspend fun savePersonalResource(
         title: String,
         userId: String?,

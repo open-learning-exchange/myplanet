@@ -222,12 +222,6 @@ class ResourcesRepositoryImpl @Inject constructor(
             .count { it.userId?.contains(userId) == true }
     }
 
-    override suspend fun resourceTitleExists(title: String): Boolean {
-        return count(RealmMyLibrary::class.java) {
-            equalTo("title", title, io.realm.Case.INSENSITIVE)
-        } > 0
-    }
-
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
     }

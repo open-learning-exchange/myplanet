@@ -6,6 +6,4 @@ data class Notification(
     val isRead: Boolean,
     val type: String,
     val relatedId: String?,
-    val createdAt: Long,
-    val link: String?,
 )

@@ -8,5 +8,4 @@ interface ChatRepository {
     suspend fun getLatestRev(id: String): String?
     suspend fun saveNewChat(chat: JsonObject)
     suspend fun continueConversation(id: String, query: String, response: String, rev: String)
-    suspend fun insertChatHistoryList(chats: List<JsonObject>)
 }

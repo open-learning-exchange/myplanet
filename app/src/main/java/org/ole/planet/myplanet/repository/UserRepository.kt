@@ -33,7 +33,6 @@ interface UserRepository {
     fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser?
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
-    suspend fun fetchUserSecurityData(name: String)
     suspend fun updateSecurityData(
         name: String,
         userId: String?,

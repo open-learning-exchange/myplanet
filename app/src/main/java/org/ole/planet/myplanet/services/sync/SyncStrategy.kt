@@ -24,6 +24,7 @@ data class SyncResult(
 interface SyncStrategy {
     suspend fun syncTable(
         table: String,
+        realm: Realm,
         config: SyncConfig
     ): Flow<SyncResult>
 

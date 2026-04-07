@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 
@@ -30,8 +29,7 @@ class ImprovedSyncManager @Inject constructor(
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val transactionSyncManager: TransactionSyncManager,
     private val standardStrategy: StandardSyncStrategy,
-    private val loginSyncManager: LoginSyncManager,
-    private val activitiesRepository: ActivitiesRepository
+    private val loginSyncManager: LoginSyncManager
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
@@ -127,9 +125,11 @@ class ImprovedSyncManager @Inject constructor(
         loginSyncManager.syncAdmin()
         logger.endProcess("admin_sync")
 
-        logger.startProcess("on_synced")
-        activitiesRepository.recordSyncActivity(settings.getString("userId", "") ?: "")
-        logger.endProcess("on_synced")
+        poolManager.useRealm { realm ->
+            logger.startProcess("on_synced")
+            org.ole.planet.myplanet.model.RealmResourceActivity.onSynced(realm, settings)
+            logger.endProcess("on_synced")
+        }
 
         logger.stopLogging()
     }
@@ -141,7 +141,9 @@ class ImprovedSyncManager @Inject constructor(
             logger.startProcess("${table}_sync")
 
             if (strategy.isSupported(table)) {
-                strategy.syncTable(table, config).collect()
+                poolManager.useRealm { realm ->
+                    strategy.syncTable(table, realm, config).collect()
+                }
             } else {
                 // Fallback to standard sync
                 transactionSyncManager.syncDb(table)

@@ -30,7 +30,6 @@ interface VoicesRepository {
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
     suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
-    suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean
     suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews
     suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>

@@ -132,7 +132,6 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun setUiPageViewController() {
         dotsCount = mAdapter.count
-        if (dotsCount <= 0) return
         dots = arrayOfNulls(dotsCount)
 
         for (i in dots.indices) {

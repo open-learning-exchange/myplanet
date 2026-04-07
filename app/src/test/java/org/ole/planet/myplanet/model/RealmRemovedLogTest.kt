@@ -4,8 +4,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.realm.Realm
-import io.realm.RealmQuery
 import io.realm.RealmResults
+import io.realm.RealmQuery
 import org.junit.Assert.assertThrows
 import org.junit.Test
 

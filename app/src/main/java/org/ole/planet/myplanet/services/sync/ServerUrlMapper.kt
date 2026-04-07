@@ -24,7 +24,7 @@ class ServerUrlMapper @Inject constructor() {
     private fun extractBaseUrl(url: String): String? {
         return try {
             val uri = url.toUri()
-            val baseUrl = "${uri.scheme}://${uri.authority}"
+            val baseUrl = "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
             baseUrl
         } catch (e: Exception) {
             e.printStackTrace()
@@ -57,18 +57,11 @@ class ServerUrlMapper @Inject constructor() {
         }
 
         val altUri = alternativeUrl.toUri()
-        val scheme = altUri.scheme
-        val host = altUri.host
-        val port = if (altUri.port == -1) {
-            if (scheme == "http") 80 else 443
-        } else {
-            altUri.port
-        }
 
         val couchdbURL = if (alternativeUrl.contains("@")) {
             alternativeUrl
         } else {
-            "$scheme://$urlUser:$urlPwd@$host:$port"
+            "${altUri.scheme}://$urlUser:$urlPwd@${altUri.host}:${if (altUri.port == -1) (if (altUri.scheme == "http") 80 else 443) else altUri.port}"
         }
 
         editor.apply {

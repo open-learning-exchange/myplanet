@@ -1,7 +1,13 @@
 package org.ole.planet.myplanet.model
 
+import android.content.SharedPreferences
+import com.google.gson.JsonObject
+import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.util.Date
+import java.util.UUID
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmResourceActivity : RealmObject() {
     @PrimaryKey
@@ -16,4 +22,54 @@ open class RealmResourceActivity : RealmObject() {
     var type: String? = null
     var user: String? = null
     var androidId: String? = null
+
+    companion object {
+        @JvmStatic
+        fun serializeResourceActivities(realmResourceActivities: RealmResourceActivity): JsonObject {
+            val ob = JsonObject()
+            ob.addProperty("user", realmResourceActivities.user)
+            ob.addProperty("resourceId", realmResourceActivities.resourceId)
+            ob.addProperty("type", realmResourceActivities.type)
+            ob.addProperty("title", realmResourceActivities.title)
+            ob.addProperty("time", realmResourceActivities.time)
+            ob.addProperty("createdOn", realmResourceActivities.createdOn)
+            ob.addProperty("parentCode", realmResourceActivities.parentCode)
+            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
+            return ob
+        }
+
+        @JvmStatic
+        fun onSynced(realm: Realm, settings: SharedPreferences) {
+            val startedTransaction = !realm.isInTransaction
+            if (startedTransaction) {
+                realm.beginTransaction()
+            }
+            try {
+                val user = realm.where(RealmUser::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
+                if (user == null || user.id?.startsWith("guest") == true) {
+                    if (startedTransaction && realm.isInTransaction) {
+                        realm.cancelTransaction()
+                    }
+                    return
+                }
+                val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
+                activities.user = user.name
+                activities._rev = null
+                activities._id = null
+                activities.parentCode = user.parentCode
+                activities.createdOn = user.planetCode
+                activities.type = "sync"
+                activities.time = Date().time
+                if (startedTransaction) {
+                    realm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
+                throw e
+            }
+        }
+    }
 }

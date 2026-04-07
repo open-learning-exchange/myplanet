@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
@@ -76,9 +77,10 @@ class ConstantsTest {
     @Test
     fun testClassList() {
         val classList = Constants.classList
-        assertEquals(15, classList.size)
+        assertEquals(16, classList.size)
         assertEquals(RealmNews::class.java, classList["news"])
         assertEquals(RealmTag::class.java, classList["tags"])
+        assertEquals(RealmOfflineActivity::class.java, classList["login_activities"])
         assertEquals(RealmRating::class.java, classList["ratings"])
         assertEquals(RealmSubmission::class.java, classList["submissions"])
         assertEquals(RealmMyCourse::class.java, classList["courses"])

@@ -44,7 +44,6 @@ interface ResourcesRepository {
     suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
-    suspend fun resourceTitleExists(title: String): Boolean
     suspend fun saveLibraryItem(item: RealmMyLibrary)
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?

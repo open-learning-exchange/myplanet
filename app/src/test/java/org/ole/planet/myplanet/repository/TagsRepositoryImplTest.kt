@@ -12,8 +12,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import java.util.logging.Level
-import java.util.logging.Logger
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
@@ -28,7 +26,6 @@ class TagsRepositoryImplTest {
 
     @Before
     fun setup() {
-        Logger.getLogger("io.mockk").level = Level.OFF
         mockRealm = mockk(relaxed = true)
         databaseService = mockk(relaxed = true)
         coEvery { databaseService.withRealmAsync<List<RealmTag>>(any()) } answers {

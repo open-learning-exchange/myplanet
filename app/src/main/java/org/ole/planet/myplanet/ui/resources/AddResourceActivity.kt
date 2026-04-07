@@ -95,20 +95,6 @@ class AddResourceActivity : AppCompatActivity() {
         setupHintSpinner(binding.spnOpenWith, getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
         setupHintSpinner(binding.spnMedia, getString(R.string.select_media), resources.getStringArray(R.array.media))
         setupHintSpinner(binding.spnResourceType, getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
-        binding.etTitle.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                binding.tlTitle.error = null
-            } else {
-                val title = binding.etTitle.text.toString().trim()
-                if (title.isNotEmpty()) {
-                    lifecycleScope.launch {
-                        if (resourcesRepository.resourceTitleExists(title)) {
-                            binding.tlTitle.error = getString(R.string.resource_title_already_exists)
-                        }
-                    }
-                }
-            }
-        }
         binding.btnSubmit.setOnClickListener { saveResource() }
         binding.btnCancel.setOnClickListener { finish() }
     }
@@ -150,13 +136,7 @@ class AddResourceActivity : AppCompatActivity() {
                 setUserId(userModel?.id)
             }
         }
-        binding.btnSubmit.isEnabled = false
         lifecycleScope.launch {
-            if (resourcesRepository.resourceTitleExists(title)) {
-                binding.tlTitle.error = getString(R.string.resource_title_already_exists)
-                binding.btnSubmit.isEnabled = true
-                return@launch
-            }
             resourcesRepository.saveLibraryItem(resource)
             if (!isPrivateTeamResource) {
                 resourcesRepository.markResourceAdded(userModel?.id, id)

@@ -50,10 +50,9 @@ object ServiceModule {
         transactionSyncManager: TransactionSyncManager,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
-        @ApplicationScope scope: CoroutineScope,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+        @ApplicationScope scope: CoroutineScope
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
     }
 
     @Provides
@@ -108,11 +107,8 @@ object ServiceModule {
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
-        notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, scope)
     }
 }

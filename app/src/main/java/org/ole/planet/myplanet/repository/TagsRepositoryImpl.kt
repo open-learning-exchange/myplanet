@@ -47,10 +47,6 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
-    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
-        return getLinkedTagsBulk("courses", courseIds)
-    }
-
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
@@ -79,10 +75,7 @@ class TagsRepositoryImpl @Inject constructor(
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
-                        if (list.none { it.id == parentTag.id }) {
-                            list.add(parentTag)
-                        }
+                        tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
                     }
                 }
             }
