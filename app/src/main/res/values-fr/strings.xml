@@ -1211,5 +1211,10 @@
     <string name="select_resource_type">Type de ressource</string>
     <string name="no_results_for_filter">Aucun résultat ne correspond à votre filtre actuel</string>
     <string name="resource_title_already_exists">Une ressource avec ce titre existe déjà</string>
+    <string name="no_purpose_added">Aucun objectif n\'a été ajouté</string>
+    <string name="no_goal_added">Aucun objectif n\'a encore été défini</string>
+    <string name="no_achievement_added">Résumé des réalisations</string>
+    <string name="no_references_added">Aucune référence ajoutée</string>
+    <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
 
 </resources>

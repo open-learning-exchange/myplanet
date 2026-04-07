@@ -1207,5 +1207,10 @@
     <string name="select_resource_type">Resource type</string>
     <string name="no_results_for_filter">No results match your current filter</string>
     <string name="resource_title_already_exists">A resource with this title already exists</string>
+    <string name="no_purpose_added">No purpose added</string>
+    <string name="no_goal_added">No goals set yet</string>
+    <string name="no_achievement_added">Summary of achievements</string>
+    <string name="no_references_added">No references added</string>
+    <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
 
 </resources>
