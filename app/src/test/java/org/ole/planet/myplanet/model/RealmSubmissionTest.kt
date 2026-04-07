@@ -140,10 +140,7 @@ class RealmSubmissionTest {
         every { mockQuery.equalTo("id", "parent123") } returns mockQuery
         every { mockQuery.findFirst() } returns null
 
-        every { mockSpm.getPlanetCode() } returns "planet"
-        every { mockSpm.getParentCode() } returns "parentPlanet"
-
-        val result = RealmSubmission.serialize(mockRealm, mockSub, mockContext, mockSpm)
+        val result = RealmSubmission.serialize(mockRealm, mockSub, mockContext, "planet", "parentPlanet")
 
         assertEquals("sub123", result.get("_id").asString)
         assertEquals("rev1", result.get("_rev").asString)
