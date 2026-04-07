@@ -49,4 +49,5 @@ interface SubmissionsRepository {
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission
     suspend fun getPhotosByIds(ids: Array<String>): List<org.ole.planet.myplanet.model.RealmSubmitPhotos>
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

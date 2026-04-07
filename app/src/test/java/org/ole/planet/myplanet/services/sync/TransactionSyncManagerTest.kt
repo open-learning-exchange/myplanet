@@ -45,6 +45,15 @@ class TransactionSyncManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk()
     private val teamsRepository: Lazy<TeamsRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
+
+    private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository = mockk()
+    private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository = mockk()
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository = mockk()
+    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository = mockk()
+    private val communityRepository: org.ole.planet.myplanet.repository.CommunityRepository = mockk()
+    private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository = mockk()
+    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository = mockk()
+    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
@@ -66,6 +75,14 @@ class TransactionSyncManagerTest {
             activitiesRepository,
 			teamsRepository,
 			notificationsRepository,
+            tagsRepository,
+            ratingsRepository,
+            submissionsRepository,
+            coursesRepository,
+            communityRepository,
+            healthRepository,
+            progressRepository,
+            surveysRepository,
             testScope
         )
     }

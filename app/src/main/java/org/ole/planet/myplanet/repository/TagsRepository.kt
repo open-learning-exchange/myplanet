@@ -9,4 +9,5 @@ interface TagsRepository {
     suspend fun getTagsForCourse(courseId: String): List<RealmTag>
     suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>>
     suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>>
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }
