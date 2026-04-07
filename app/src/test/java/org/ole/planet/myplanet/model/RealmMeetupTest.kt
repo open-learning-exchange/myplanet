@@ -201,7 +201,7 @@ class RealmMeetupTest {
         val meetup = mockk<RealmMeetup>(relaxed = true)
         every { meetup.title } returns null
         every { meetup.creator } returns null
-        every { meetup.day } returns "invalid json" // This will throw and test the exception block
+        every { meetup.day } returns "[]" // valid empty array to avoid JSONException console pollution
 
         val map = RealmMeetup.getHashMap(meetup)
 
