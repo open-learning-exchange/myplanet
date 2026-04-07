@@ -139,6 +139,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        val binding = _binding ?: return
+        val searchQuery = binding.layoutSearch.etSearch.text?.toString()?.trim().orEmpty()
 
         lifecycleScope.launch {
             try {
@@ -155,7 +157,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 loadRatingsAndTags(allResourceIds, model?.id)
 
                 val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
                 val filteredLibraryList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
 
@@ -720,7 +721,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
                 withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
+                    _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                     refreshResourcesData()
                     selectedItems?.clear()
@@ -739,7 +740,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             lifecycleScope.launch {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
-                        if (_binding == null) return@onSuccess
+                        _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))
                         refreshResourcesData()
                         selectedItems?.clear()
@@ -747,7 +748,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                         hideButton()
                     }
                     .onFailure {
-                        if (_binding == null) return@onFailure
+                        _binding ?: return@onFailure
                         Utilities.toast(activity, getString(R.string.error, it.message))
                     }
             }
