@@ -1209,6 +1209,7 @@
     <string name="select_media">Medios</string>
     <string name="select_resource_type">Tipo de recurso</string>
     <string name="no_results_for_filter">No hay resultados que coincidan con tu filtro actual</string>
+    <string name="resource_title_already_exists">Ya existe un recurso con este título</string>
     <string name="no_purpose_added">No se agregó propósito</string>
     <string name="no_goal_added">Aún no se han establecido objetivos</string>
     <string name="no_achievement_added">Resumen de logros</string>
