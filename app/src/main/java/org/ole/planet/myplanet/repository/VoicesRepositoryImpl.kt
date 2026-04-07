@@ -115,6 +115,15 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("newsId", chatId)
+                .contains("viewIn", "\"_id\":\"$viewInId\"", Case.INSENSITIVE)
+                .findFirst() != null
+        }
+    }
+
     override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
         val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         return withRealmAsync { realm ->
