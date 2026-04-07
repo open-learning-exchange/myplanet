@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
@@ -40,7 +41,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     .equalTo("id", notificationId)
                     .findFirst()
                 notification?.isRead = true
-                notification?.needsSync = notification?.isFromServer == true
+                notification?.needsSync = notification.isFromServer == true
             }
         }
     }
@@ -130,7 +131,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return updatedIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<RealmNotification> {
+    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
         return queryList(RealmNotification::class.java) {
             beginGroup()
             equalTo("userId", userId)
@@ -146,6 +147,22 @@ class NotificationsRepositoryImpl @Inject constructor(
                 "unread" -> equalTo("isRead", false)
             }
             sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
+        }.map {
+            NotificationPayload(
+                id = it.id,
+                userId = it.userId,
+                message = it.message,
+                isRead = it.isRead,
+                createdAt = it.createdAt.time,
+                type = it.type,
+                relatedId = it.relatedId,
+                title = it.title,
+                link = it.link,
+                priority = it.priority,
+                isFromServer = it.isFromServer,
+                rev = it.rev,
+                needsSync = it.needsSync
+            )
         }
     }
 
@@ -315,6 +332,34 @@ class NotificationsRepositoryImpl @Inject constructor(
                 notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
             }
             notificationMap
+        }
+    }
+
+    override suspend fun getPendingSyncNotifications(): List<RealmNotification> {
+        return withRealm { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("needsSync", true)
+                .isNotNull("rev")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
+        if (syncResults.isEmpty()) return
+        val ids = syncResults.map { it.first }.toTypedArray()
+        val revMap = syncResults.toMap()
+        executeTransaction { realm ->
+            val notifications = realm.where(RealmNotification::class.java)
+                .`in`("id", ids)
+                .findAll()
+
+            notifications.forEach { notification ->
+                notification.needsSync = false
+                revMap[notification.id]?.let { newRev ->
+                    notification.rev = newRev
+                }
+            }
         }
     }
 }

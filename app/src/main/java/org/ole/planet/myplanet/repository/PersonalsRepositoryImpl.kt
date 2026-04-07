@@ -15,6 +15,13 @@ class PersonalsRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
 
+    override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
+        return count(RealmMyPersonal::class.java) {
+            equalTo("title", title, io.realm.Case.INSENSITIVE)
+            if (!userId.isNullOrBlank()) equalTo("userId", userId)
+        } > 0
+    }
+
     override suspend fun savePersonalResource(
         title: String,
         userId: String?,

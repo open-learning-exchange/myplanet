@@ -197,16 +197,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val map = ratingsDeferred.await()
                 val progressMap = progressDeferred.await()
 
+                val allCourseIds = validCourses.mapNotNull { it.courseId }
+                val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
+                    .mapValues { entry -> entry.value.map { it.toTag() } }
+
                 recyclerView.adapter = null
 
                 adapterCourses = CoursesAdapter(
                     hostActivity,
                     map,
                     userModel?.isGuest() ?: true,
-                    { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
                     isMyCourseLib
                 )
 
+                adapterCourses.setTagsMap(tagsMap)
                 adapterCourses.setProgressMap(progressMap)
                 adapterCourses.setListener(this@CoursesFragment)
                 adapterCourses.setRatingChangeListener(this@CoursesFragment)
@@ -243,14 +247,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             Pair(ratingsDeferred.await(), progressDeferred.await())
         }
 
+        val allCourseIds = validCourses.mapNotNull { it.courseId }
+        val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
+            .mapValues { entry -> entry.value.map { it.toTag() } }
+
         adapterCourses = CoursesAdapter(
             hostActivity,
             map,
             userModel?.isGuest() ?: true,
-            { courseId -> coursesRepository.getCourseTags(courseId).map { it.toTag() } },
             isMyCourseLib
         )
 
+        adapterCourses.setTagsMap(tagsMap)
         viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this@CoursesFragment)
@@ -292,7 +300,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
                 adapterCourses.submitList(courses) {
-                    if (isAdded && view != null && ::selectAll.isInitialized) {
+                    if (isAdded && ::selectAll.isInitialized) {
                         selectedItems?.clear()
                         clearAllSelections()
                         checkList()

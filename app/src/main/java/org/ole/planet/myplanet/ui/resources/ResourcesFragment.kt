@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -30,7 +31,6 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -40,8 +40,6 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -76,19 +74,52 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     @Inject
     lateinit var prefManager: SharedPrefManager
 
-    @Inject
-    lateinit var syncManager: SyncManager
-
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-    private val serverUrl: String
-        get() = prefManager.getServerUrl()
+    private val viewModel: ResourcesViewModel by viewModels()
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startResourcesSync()
+        viewModel.startResourcesSync()
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.syncState.collect { state ->
+                    when (state) {
+                        is org.ole.planet.myplanet.model.SyncState.Syncing -> {
+                            if (isAdded && !requireActivity().isFinishing && view != null) {
+                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                                customProgressDialog?.setText(getString(R.string.syncing_resources))
+                                customProgressDialog?.show()
+                            }
+                        }
+                        is org.ole.planet.myplanet.model.SyncState.Success -> {
+                            if (isAdded && view != null) {
+                                customProgressDialog?.dismiss()
+                                customProgressDialog = null
+                                refreshResourcesData()
+                                viewModel.resetSyncState()
+                            }
+                        }
+                        is org.ole.planet.myplanet.model.SyncState.Failed -> {
+                            if (isAdded && view != null) {
+                                customProgressDialog?.dismiss()
+                                customProgressDialog = null
+
+                                Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                                ).setAction("Retry") {
+                                    viewModel.startResourcesSync()
+                                }.show()
+                                viewModel.resetSyncState()
+                            }
+                        }
+                        is org.ole.planet.myplanet.model.SyncState.Idle -> {
+                            // Do nothing
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun getLayout(): Int {
@@ -99,67 +130,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val view = super.onCreateView(inflater, container, savedInstanceState)
         _binding = view?.let { FragmentMyLibraryBinding.bind(it) }
         return view
-    }
-
-    private fun startResourcesSync() {
-        val isFastSync = prefManager.getFastSync()
-        if (isFastSync && !prefManager.isResourcesSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing && view != null) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_resources))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                lifecycleScope.launch {
-                    if (isAdded && view != null) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshResourcesData()
-                        prefManager.setResourcesSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                lifecycleScope.launch {
-                    if (isAdded && view != null) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startResourcesSync()
-                        }.show()
-                    }
-                }
-            }
-        }, "full", listOf("resources"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
-            isServerReachable(url)
-        }
     }
 
     private suspend fun loadRatingsAndTags(allResourceIds: List<String>, userId: String?) {
