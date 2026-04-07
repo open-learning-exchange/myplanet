@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import com.google.gson.JsonArray
+import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.Realm
@@ -18,15 +18,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.robolectric.RobolectricTestRunner
-import androidx.test.core.app.ApplicationProvider
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
-import android.provider.Settings
-import io.mockk.mockkObject
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class, sdk = [33])
