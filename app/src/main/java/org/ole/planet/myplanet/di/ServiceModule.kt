@@ -50,9 +50,10 @@ object ServiceModule {
         transactionSyncManager: TransactionSyncManager,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
-        @ApplicationScope scope: CoroutineScope
+        @ApplicationScope scope: CoroutineScope,
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository)
     }
 
     @Provides
