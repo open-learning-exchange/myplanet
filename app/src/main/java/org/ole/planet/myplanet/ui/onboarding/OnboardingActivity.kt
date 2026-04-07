@@ -66,7 +66,7 @@ class OnboardingActivity : AppCompatActivity() {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                for (i in 0..dotsCount) {
+                for (i in dots.indices) {
                     dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.non_selected_item_dot))
                 }
                 dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.selected_item_dot))
@@ -132,9 +132,10 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun setUiPageViewController() {
         dotsCount = mAdapter.count
+        if (dotsCount <= 0) return
         dots = arrayOfNulls(dotsCount)
 
-        for (i in 0..dotsCount) {
+        for (i in dots.indices) {
             dots[i] = ImageView(this)
             dots[i]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot))
 

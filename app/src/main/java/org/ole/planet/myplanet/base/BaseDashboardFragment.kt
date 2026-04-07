@@ -13,7 +13,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -110,14 +112,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
-                if (urls.isNotEmpty()) {
-                    Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
-                    DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
-                } else {
-                    Utilities.toast(activity, getString(R.string.no_images_to_download))
-                }
-            }
+            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis)
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
@@ -168,6 +163,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                         view?.findViewById<TextView>(R.id.txtFullName)?.text =
                             getString(R.string.user_name, fullName, offlineLogins)
                     }
+            }
+            launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    newsViewModel.privateImageUrls.collect { urls ->
+                        if (urls.isNotEmpty()) {
+                            Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
+                            DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
+                        } else {
+                            Utilities.toast(activity, getString(R.string.no_images_to_download))
+                        }
+                    }
+                }
             }
         }
     }

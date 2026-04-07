@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -37,6 +36,9 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
+import dagger.Lazy
+import org.ole.planet.myplanet.repository.TeamsRepository
+
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
@@ -48,6 +50,9 @@ class TransactionSyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -104,7 +109,7 @@ class TransactionSyncManager @Inject constructor(
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
                         userModel.id?.let {
-                            userRepository.markUserKeyIvSaved(it, key ?: "", iv)
+                            userRepository.markUserKeyIvSaved(it, key, iv)
                         }
                     }
                 }
@@ -143,7 +148,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun syncDb(table: String): Int = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -222,13 +227,26 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "chat_history") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        docs.add(jsonDoc)
+                    }
+                    chatRepository.insertChatHistoryList(docs)
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                        if (table == "chat_history") {
-                            insertToChat(arr, mRealm)
-                        }
                         insertDocs(arr, mRealm, table)
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
@@ -257,22 +275,12 @@ class TransactionSyncManager @Inject constructor(
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+            totalDocs
         } catch (e: Exception) {
             e.printStackTrace()
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
-        }
-    }
-
-    private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-        val chatHistoryList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            chatHistoryList.add(jsonDoc)
-        }
-        chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
+            0
         }
     }
 
@@ -303,6 +311,12 @@ class TransactionSyncManager @Inject constructor(
             "submissions" -> {
                 submissionsRepository.insertSubmission(mRealm, jsonDoc)
             }
+            "team_activities" -> {
+                teamsRepository.get().insertTeamLog(mRealm, jsonDoc)
+            }
+            "login_activities" -> {
+                activitiesRepository.insertActivity(mRealm, jsonDoc)
+            }
             else -> {
                 callMethod(mRealm, jsonDoc, table)
             }
@@ -327,13 +341,7 @@ class TransactionSyncManager @Inject constructor(
     }
 
     suspend fun syncNotificationReads() = withContext(Dispatchers.IO) {
-        val pending = databaseService.withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("needsSync", true)
-                .isNotNull("rev")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
+        val pending = notificationsRepository.getPendingSyncNotifications()
         if (pending.isEmpty()) return@withContext
 
         val successfulSyncs = pending.map { notification ->
@@ -369,20 +377,7 @@ class TransactionSyncManager @Inject constructor(
         }.awaitAll().filterNotNull()
 
         if (successfulSyncs.isNotEmpty()) {
-            val ids = successfulSyncs.map { it.first }.toTypedArray()
-            val revMap = successfulSyncs.toMap()
-            databaseService.executeTransactionAsync { realm ->
-                val notifications = realm.where(RealmNotification::class.java)
-                    .`in`("id", ids)
-                    .findAll()
-
-                notifications.forEach { notification ->
-                    notification.needsSync = false
-                    revMap[notification.id]?.let { newRev ->
-                        notification.rev = newRev
-                    }
-                }
-            }
+            notificationsRepository.markNotificationsSynced(successfulSyncs)
         }
     }
 }

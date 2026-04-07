@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -56,7 +55,6 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    private lateinit var mRealm: Realm
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -73,8 +71,6 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -83,18 +79,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
-    private var stayOnlineDialog: AlertDialog? = null
-
-    protected fun requireRealmInstance(): Realm {
-        if (!isRealmInitialized()) {
-            mRealm = databaseService.createManagedRealmInstance()
-        }
-        return mRealm
-    }
-
-    protected fun isRealmInitialized(): Boolean {
-        return ::mRealm.isInitialized && !mRealm.isClosed
-    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -128,37 +112,6 @@ abstract class BaseResourceFragment : Fragment() {
                     pendingResult.finish()
                 }
             }
-        }
-    }
-
-    private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val pendingResult = goAsync()
-            stayOnlineDialog?.dismiss()
-            stayOnlineDialog = AlertDialog.Builder(requireContext())
-                .setMessage(R.string.do_you_want_to_stay_online)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                    pendingResult.finish()
-                }
-                .setNegativeButton(R.string.no) { _, _ ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val panelIntent = Intent(Settings.Panel.ACTION_WIFI)
-                        try {
-                            startActivity(panelIntent)
-                        } catch (_: Exception) {
-                            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                        }
-                    } else {
-                        startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                    }
-                    pendingResult.finish()
-                }
-                .setCancelable(false)
-                .create()
-            stayOnlineDialog?.setOnDismissListener {
-                stayOnlineDialog = null
-            }
-            stayOnlineDialog?.show()
         }
     }
     private val pendingDownloadUrls = mutableSetOf<String>()
@@ -360,7 +313,6 @@ abstract class BaseResourceFragment : Fragment() {
                         when (intent.action) {
                             DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
                             "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
-                            "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
                             DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                         }
                     }
@@ -377,7 +329,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
     }
 
@@ -454,8 +405,6 @@ abstract class BaseResourceFragment : Fragment() {
         downloadSuggestionDialog = null
         pendingSurveyDialog?.dismiss()
         pendingSurveyDialog = null
-        stayOnlineDialog?.dismiss()
-        stayOnlineDialog = null
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null
@@ -463,29 +412,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        cleanupRealm()
         super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (_: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
     }
 
     companion object {

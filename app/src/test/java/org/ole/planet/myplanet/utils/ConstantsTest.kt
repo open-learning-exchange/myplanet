@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
@@ -80,7 +79,6 @@ class ConstantsTest {
         assertEquals(15, classList.size)
         assertEquals(RealmNews::class.java, classList["news"])
         assertEquals(RealmTag::class.java, classList["tags"])
-        assertEquals(RealmOfflineActivity::class.java, classList["login_activities"])
         assertEquals(RealmRating::class.java, classList["ratings"])
         assertEquals(RealmMyCourse::class.java, classList["courses"])
         assertEquals(RealmAchievement::class.java, classList["achievements"])
@@ -119,17 +117,9 @@ class ConstantsTest {
     }
 
     @Test
-    fun testIsBetaWifiFeatureEnabled() {
-        assertFalse(Constants.isBetaWifiFeatureEnabled(context))
-
-        sharedPreferences.edit().putBoolean("beta_function", true).commit()
-        assertFalse(Constants.isBetaWifiFeatureEnabled(context))
-
-        sharedPreferences.edit().putBoolean(Constants.KEY_SYNC, true).commit()
-        assertTrue(Constants.isBetaWifiFeatureEnabled(context))
-
-        sharedPreferences.edit().putBoolean("beta_function", false).commit()
-        assertFalse(Constants.isBetaWifiFeatureEnabled(context))
+    fun testProtocolConstants() {
+        assertEquals("http://", Constants.HTTP_PROTOCOL)
+        assertEquals("https://", Constants.HTTPS_PROTOCOL)
     }
 
     @Test

@@ -10,7 +10,6 @@ import io.realm.RealmObject
 import io.realm.annotations.Ignore
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import java.util.UUID
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
@@ -44,7 +43,7 @@ open class RealmSubmission : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context, spm: org.ole.planet.myplanet.services.SharedPrefManager): JsonObject {
+        fun serialize(mRealm: Realm, submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject {
             val jsonObject = JsonObject()
 
             try {
@@ -71,8 +70,8 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
                 jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
                 jsonObject.addProperty("sender", submission.sender)
-                jsonObject.addProperty("source", spm.getPlanetCode())
-                jsonObject.addProperty("parentCode", spm.getParentCode())
+                jsonObject.addProperty("source", source)
+                jsonObject.addProperty("parentCode", parentCode)
                 jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList()))
                 if (exam != null) {
                     jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))

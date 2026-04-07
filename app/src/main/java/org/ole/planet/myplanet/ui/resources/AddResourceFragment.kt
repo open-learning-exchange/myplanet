@@ -297,6 +297,21 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
+            etTitle.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) {
+                    etTitle.error = null
+                } else {
+                    val title = etTitle.text.toString().trim()
+                    if (title.isNotEmpty()) {
+                        scope.launch(Dispatchers.IO) {
+                            val exists = repository.personalTitleExists(title, userId)
+                            withContext(Dispatchers.Main) {
+                                if (exists) etTitle.error = context.getString(R.string.resource_title_already_exists)
+                            }
+                        }
+                    }
+                }
+            }
             val dialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(R.string.enter_resource_detail)
                 .setView(v)
@@ -315,6 +330,13 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     val desc = etDesc.text.toString().trim { it <= ' ' }
                     positiveButton.isEnabled = false
                     scope.launch(Dispatchers.IO) {
+                        if (repository.personalTitleExists(title, userId)) {
+                            withContext(Dispatchers.Main) {
+                                etTitle.error = context.getString(R.string.resource_title_already_exists)
+                                positiveButton.isEnabled = true
+                            }
+                            return@launch
+                        }
                         repository.savePersonalResource(title, userId, userName, path, desc)
                         withContext(Dispatchers.Main) {
                             Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
