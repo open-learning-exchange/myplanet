@@ -11,17 +11,12 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.findViewTreeLifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
@@ -43,7 +38,6 @@ class CoursesAdapter(
     private val context: Context,
     private val map: HashMap<String?, JsonObject>,
     private val isGuest: Boolean,
-    private val tagsProvider: suspend (String) -> List<Tag>,
     var isMyCourseLib: Boolean = false
 ) : ListAdapter<Course, CoursesAdapter.CoursesViewHolder>(
     DiffUtils.itemCallback<Course>(
@@ -72,8 +66,7 @@ class CoursesAdapter(
     private var isAscending = true
     private var isTitleAscending = false
     private var areAllSelected = false
-    private val tagCache: MutableMap<String, List<Tag>> = mutableMapOf()
-    private val activeJobs: MutableMap<String, Job> = mutableMapOf()
+    private var tagsMap: Map<String, List<Tag>> = emptyMap()
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -90,6 +83,11 @@ class CoursesAdapter(
 
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
         this.ratingChangeListener = ratingChangeListener
+    }
+
+    fun setTagsMap(tagsMap: Map<String, List<Tag>>) {
+        this.tagsMap = tagsMap
+        notifyItemRangeChanged(0, itemCount)
     }
 
     fun removeCourses(courseIds: List<String>) {
@@ -177,11 +175,6 @@ class CoursesAdapter(
         holder.bind(position, course)
     }
 
-    fun cancelAllJobs() {
-        activeJobs.values.forEach { it.cancel() }
-        activeJobs.clear()
-    }
-
     fun areAllSelected(): Boolean {
         val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
@@ -241,22 +234,13 @@ class CoursesAdapter(
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
-        cancelAllJobs()
     }
 
     abstract inner class CoursesViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         abstract fun bind(position: Int, course: Course)
         abstract fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean)
 
-        open fun onRecycled() {
-            val position = bindingAdapterPosition
-            if (position != RecyclerView.NO_POSITION && position < itemCount) {
-                val course = getItem(position)
-                val courseId = course.courseId
-                activeJobs[courseId]?.cancel()
-                activeJobs.remove(courseId)
-            }
-        }
+        open fun onRecycled() {}
     }
 
     internal inner class CourseViewHolder(val rowCourseBinding: RowCourseBinding) :
@@ -319,8 +303,7 @@ class CoursesAdapter(
 
         override fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean) {
             if (hasTagPayload) {
-                val tags = tagCache[course.courseId].orEmpty()
-                renderTagCloud(rowCourseBinding.flexboxDrawable, tags)
+                renderTagCloud(rowCourseBinding.flexboxDrawable, tagsMap[course.courseId].orEmpty())
             }
             if (hasRatingPayload) {
                 updateRatingViews(position)
@@ -432,34 +415,7 @@ class CoursesAdapter(
                 flexboxDrawable.removeAllViews()
                 return
             }
-
-            val cachedTags = tagCache[courseId]
-            if (cachedTags != null) {
-                renderTagCloud(flexboxDrawable, cachedTags)
-                return
-            }
-
-            flexboxDrawable.removeAllViews()
-
-            activeJobs[courseId]?.cancel()
-
-            val job = itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-                try {
-                    val tags = tagsProvider(courseId)
-                    tagCache[courseId] = tags
-                    val adapterPosition = bindingAdapterPosition
-                    if (adapterPosition != RecyclerView.NO_POSITION) {
-                        withContext(kotlinx.coroutines.Dispatchers.Main) {
-                            notifyItemChanged(adapterPosition, TAG_PAYLOAD)
-                        }
-                    }
-                } finally {
-                    activeJobs.remove(courseId)
-                }
-            }
-            if (job != null) {
-                activeJobs[courseId] = job
-            }
+            renderTagCloud(flexboxDrawable, tagsMap[courseId].orEmpty())
         }
 
         private fun renderTagCloud(flexboxDrawable: FlexboxLayout, tags: List<Tag>) {

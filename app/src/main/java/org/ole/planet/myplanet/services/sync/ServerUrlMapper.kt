@@ -24,7 +24,7 @@ class ServerUrlMapper @Inject constructor() {
     private fun extractBaseUrl(url: String): String? {
         return try {
             val uri = url.toUri()
-            val baseUrl = "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
+            val baseUrl = "${uri.scheme}://${uri.authority}"
             baseUrl
         } catch (e: Exception) {
             e.printStackTrace()
