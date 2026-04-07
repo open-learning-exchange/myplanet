@@ -415,7 +415,4 @@ abstract class BaseResourceFragment : Fragment() {
         super.onDestroy()
     }
 
-    companion object {
-        var auth = ""
-    }
 }
