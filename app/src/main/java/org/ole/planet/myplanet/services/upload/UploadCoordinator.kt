@@ -24,8 +24,7 @@ class UploadCoordinator @Inject constructor(
     private val databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
-    private val retryQueue: RetryQueue,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val retryQueue: RetryQueue
 ) {
 
     companion object {
@@ -104,7 +103,7 @@ class UploadCoordinator @Inject constructor(
                     is UploadSerializer.Simple -> serializer.serialize(copiedItem)
                     is UploadSerializer.WithRealm -> serializer.serialize(realm, copiedItem)
                     is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
-                    is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context, sharedPrefManager)
+                    is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)

@@ -47,6 +47,8 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -103,7 +105,7 @@ class TransactionSyncManager @Inject constructor(
 
                     if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
                         userModel.id?.let {
-                            userRepository.markUserKeyIvSaved(it, key ?: "", iv)
+                            userRepository.markUserKeyIvSaved(it, key, iv)
                         }
                     }
                 }
@@ -301,6 +303,9 @@ class TransactionSyncManager @Inject constructor(
             "tablet_users" -> {
                 userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
             }
+            "login_activities" -> {
+                activitiesRepository.insertActivity(mRealm, jsonDoc)
+            }
             else -> {
                 callMethod(mRealm, jsonDoc, table)
             }
@@ -325,13 +330,7 @@ class TransactionSyncManager @Inject constructor(
     }
 
     suspend fun syncNotificationReads() = withContext(Dispatchers.IO) {
-        val pending = databaseService.withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("needsSync", true)
-                .isNotNull("rev")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
+        val pending = notificationsRepository.getPendingSyncNotifications()
         if (pending.isEmpty()) return@withContext
 
         val successfulSyncs = pending.map { notification ->
@@ -367,20 +366,7 @@ class TransactionSyncManager @Inject constructor(
         }.awaitAll().filterNotNull()
 
         if (successfulSyncs.isNotEmpty()) {
-            val ids = successfulSyncs.map { it.first }.toTypedArray()
-            val revMap = successfulSyncs.toMap()
-            databaseService.executeTransactionAsync { realm ->
-                val notifications = realm.where(RealmNotification::class.java)
-                    .`in`("id", ids)
-                    .findAll()
-
-                notifications.forEach { notification ->
-                    notification.needsSync = false
-                    revMap[notification.id]?.let { newRev ->
-                        notification.rev = newRev
-                    }
-                }
-            }
+            notificationsRepository.markNotificationsSynced(successfulSyncs)
         }
     }
 }

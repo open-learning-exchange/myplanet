@@ -11,13 +11,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class AddExaminationViewModel @Inject constructor(
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _isSaving = MutableStateFlow(false)
@@ -32,7 +35,9 @@ class AddExaminationViewModel @Inject constructor(
         viewModelScope.launch {
             _isSaving.value = true
             try {
-                healthRepository.saveExamination(examination, pojo, user)
+                withContext(dispatcherProvider.io) {
+                    healthRepository.saveExamination(examination, pojo, user)
+                }
                 _saveResult.emit(true)
             } catch (e: Exception) {
                 e.printStackTrace()
