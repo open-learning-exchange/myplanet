@@ -145,6 +145,9 @@ class RealmTeamLogTest {
         val act = JsonObject()
         val mockLog = mockk<RealmTeamLog>(relaxed = true)
 
+        every { JsonUtils.getString(any() as String, any() as JsonObject?) } returns "fallbackString"
+        every { JsonUtils.getLong(any() as String, any() as JsonObject?) } returns 0L
+
         every { JsonUtils.getString("_id", act) } returns "newDoc123"
         every { JsonUtils.getString("_rev", act) } returns "1-rev"
         every { JsonUtils.getString("type", act) } returns "teamVisit"
@@ -182,6 +185,9 @@ class RealmTeamLogTest {
         // Arrange
         val act = JsonObject()
         val mockLog = mockk<RealmTeamLog>(relaxed = true)
+
+        every { JsonUtils.getString(any() as String, any() as JsonObject?) } returns "fallbackString"
+        every { JsonUtils.getLong(any() as String, any() as JsonObject?) } returns 0L
 
         every { JsonUtils.getString("_id", act) } returns "existingDoc123"
         every { JsonUtils.getString("_rev", act) } returns "2-rev"
