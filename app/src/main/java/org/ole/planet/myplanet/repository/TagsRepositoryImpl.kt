@@ -22,10 +22,14 @@ class TagsRepositoryImpl @Inject constructor(
     override suspend fun buildChildMap(): HashMap<String, List<RealmTag>> {
         val allTags = queryList(RealmTag::class.java)
         val childMap = HashMap<String, List<RealmTag>>()
+        val seenParents = HashSet<String>()
         allTags.forEach { t ->
-            t.attachedTo?.distinct()?.forEach { parent ->
-                val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
-                list.add(t)
+            seenParents.clear()
+            t.attachedTo?.forEach { parent ->
+                if (seenParents.add(parent)) {
+                    val list = childMap.getOrPut(parent) { mutableListOf() } as MutableList<RealmTag>
+                    list.add(t)
+                }
             }
         }
         return childMap
@@ -41,6 +45,10 @@ class TagsRepositoryImpl @Inject constructor(
 
     override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>> {
         return getLinkedTagsBulk("resources", resourceIds)
+    }
+
+    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
+        return getLinkedTagsBulk("courses", courseIds)
     }
 
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
@@ -71,7 +79,10 @@ class TagsRepositoryImpl @Inject constructor(
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
+                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
+                        if (list.none { it.id == parentTag.id }) {
+                            list.add(parentTag)
+                        }
                     }
                 }
             }

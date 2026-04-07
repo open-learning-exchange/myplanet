@@ -34,8 +34,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiClient.client
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUser
@@ -46,6 +44,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -184,7 +183,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
-        if (url == "http://" || url == "https://") {
+        if (url == Constants.HTTP_PROTOCOL || url == Constants.HTTPS_PROTOCOL) {
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
@@ -354,54 +353,13 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
-                val apiInterface = client.create(ApiInterface::class.java)
-                val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
-
-                if (response.isSuccessful && response.body() != null) {
-                    val userDoc = response.body()
-                    val derivedKey = userDoc?.get("derived_key")?.asString
-                    val salt = userDoc?.get("salt")?.asString
-                    val passwordScheme = userDoc?.get("password_scheme")?.asString
-                    val iterations = userDoc?.get("iterations")?.asString
-                    val userId = userDoc?.get("_id")?.asString
-                    val rev = userDoc?.get("_rev")?.asString
-                    updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
-
-                } else {
-                    withContext(Dispatchers.Main) {
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-                }
-
+                userRepository.fetchUserSecurityData(name)
             } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
                 withContext(Dispatchers.Main) {
-                    e.printStackTrace()
                     securityCallback?.onSecurityDataUpdated()
                 }
-            }
-        }
-    }
-
-    private suspend fun updateRealmUserSecurityData(
-        name: String,
-        userId: String?,
-        rev: String?,
-        derivedKey: String?,
-        salt: String?,
-        passwordScheme: String?,
-        iterations: String?,
-        securityCallback: OnSecurityDataListener? = null,
-    ) {
-        try {
-            userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
-            withContext(Dispatchers.Main) {
-                securityCallback?.onSecurityDataUpdated()
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                e.printStackTrace()
-                securityCallback?.onSecurityDataUpdated()
             }
         }
     }

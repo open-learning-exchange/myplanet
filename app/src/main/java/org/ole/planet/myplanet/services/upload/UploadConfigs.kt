@@ -23,7 +23,8 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 @Singleton
 class UploadConfigs @Inject constructor(
     private val voicesRepository: VoicesRepository,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -172,7 +173,9 @@ class UploadConfigs @Inject constructor(
                 .isNull("_id").or().isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full(RealmSubmission::serializeExamResult),
+        serializer = UploadSerializer.Full { realm, submission, context ->
+            RealmSubmission.serializeExamResult(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+        },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         filterGuests = true,
@@ -190,7 +193,9 @@ class UploadConfigs @Inject constructor(
                     .isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full(RealmSubmission::serialize),
+        serializer = UploadSerializer.Full { realm, submission, context ->
+            RealmSubmission.serialize(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+        },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         additionalUpdates = { _, submission, _ ->

@@ -17,4 +17,6 @@ interface NotificationsRepository {
     suspend fun getTaskTeamName(taskTitle: String): String?
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
+    suspend fun getPendingSyncNotifications(): List<org.ole.planet.myplanet.model.RealmNotification>
+    suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
 }

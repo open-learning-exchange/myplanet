@@ -104,7 +104,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun logLogout(userName: String?) {
         executeTransaction { realm ->
-            RealmOfflineActivity.getRecentLogin(realm)
+            getRecentLogin(realm)
                 ?.logoutTime = Date().time
         }
     }
@@ -191,7 +191,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 org.ole.planet.myplanet.model.LoginActivityData(
                     activity.id!!,
                     activity.userId!!,
-                    RealmOfflineActivity.serializeLoginActivities(activity, context)
+                    serializeLoginActivities(activity, context)
                 )
             }
         }
@@ -295,6 +295,64 @@ class ActivitiesRepositoryImpl @Inject constructor(
             activities.type = "sync"
             activities.time = Date().time
         }
+    }
+
+    override fun insertActivity(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
+        val serverIdStr = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
+        val loginTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", json)
+        val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
+
+        var activities = realm.where(RealmOfflineActivity::class.java)
+            .equalTo("_id", serverIdStr)
+            .findFirst()
+
+        if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
+            activities = realm.where(RealmOfflineActivity::class.java)
+                .equalTo("loginTime", loginTime)
+                .equalTo("userName", userName)
+                .findFirst()
+        }
+
+        if (activities == null) {
+            activities = realm.createObject(RealmOfflineActivity::class.java, serverIdStr)
+        }
+        if (activities != null) {
+            activities._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", json)
+            activities._id = serverIdStr
+            activities.loginTime = loginTime
+            activities.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", json)
+            activities.userName = userName
+            activities.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", json)
+            activities.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", json)
+            activities.logoutTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("logoutTime", json)
+            activities.androidId = org.ole.planet.myplanet.utils.JsonUtils.getString("androidId", json)
+        }
+    }
+
+    override fun getRecentLogin(realm: io.realm.Realm): RealmOfflineActivity? {
+        return realm.where(RealmOfflineActivity::class.java)
+            .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", io.realm.Sort.DESCENDING)
+            .findFirst()
+    }
+
+    override fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): com.google.gson.JsonObject {
+        val ob = com.google.gson.JsonObject()
+        ob.addProperty("user", activity.userName)
+        ob.addProperty("type", activity.type)
+        ob.addProperty("loginTime", activity.loginTime)
+        ob.addProperty("logoutTime", activity.logoutTime)
+        ob.addProperty("createdOn", activity.createdOn)
+        ob.addProperty("parentCode", activity.parentCode)
+        ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+        ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+        ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+        if (activity._id != null) {
+            ob.addProperty("_id", activity.logoutTime)
+        }
+        if (activity._rev != null) {
+            ob.addProperty("_rev", activity._rev)
+        }
+        return ob
     }
 }
 
