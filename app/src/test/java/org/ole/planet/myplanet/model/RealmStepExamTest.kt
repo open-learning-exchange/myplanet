@@ -93,6 +93,7 @@ class RealmStepExamTest {
             addProperty("name", "Test Exam")
             addProperty("description", "Exam Description")
             addProperty("passingPercentage", "50")
+            addProperty("type", "exam")
             addProperty("_rev", "1-abc")
             addProperty("createdBy", "admin")
             addProperty("sourcePlanet", "earth")
@@ -113,6 +114,7 @@ class RealmStepExamTest {
 
         val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
         every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
         every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
         every { mockRealm.createObject(RealmStepExam::class.java, null as String?) } returns mockRealmStepExam
 
@@ -129,6 +131,7 @@ class RealmStepExamTest {
 
         verify { mockRealmStepExam.name = "Test Exam" }
         verify { mockRealmStepExam.description = "Exam Description" }
+        verify { mockRealmStepExam.type = "exam" }
         verify { mockRealmStepExam.courseId = "course1" }
         verify { mockRealmStepExam.stepId = "step1" }
         verify { mockRealmStepExam.isFromNation = false }
@@ -136,6 +139,42 @@ class RealmStepExamTest {
         verify { mockRealmStepExam.isTeamShareAllowed = true }
         verify { mockRealmStepExam.sourceSurveyId = "survey1" }
     }
+
+    @Test
+    fun testInsertCourseStepsExams_withParentId() {
+        val examId = UUID.randomUUID().toString()
+        val examJson = JsonObject().apply {
+            addProperty("_id", examId)
+            addProperty("name", "Nation Exam")
+            add("questions", JsonArray())
+        }
+
+        val mockQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
+        every { mockRealm.where(RealmStepExam::class.java) } returns mockQuery
+        every { mockQuery.equalTo("id", examId) } returns mockQuery
+        every { mockQuery.findFirst() } returns null
+
+        val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
+        val parentId = "parent-nation-id"
+        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, parentId) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
+
+        val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
+        val mockQuestionsResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
+        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuestionsQuery
+        every { mockQuestionsQuery.equalTo("examId", examId) } returns mockQuestionsQuery
+        every { mockQuestionsQuery.findAll() } returns mockQuestionsResults
+        every { mockQuestionsResults.isEmpty() } returns true
+
+        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
+
+        RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, parentId, mockRealm)
+
+        verify { mockRealmStepExam.name = "Nation Exam" }
+        verify { mockRealmStepExam.isFromNation = true }
+    }
+
 
     @Test
     fun testSerializeExam() {
@@ -172,6 +211,7 @@ class RealmStepExamTest {
         assertEquals("exam1", json.get("_id").asString)
         assertEquals("Test Exam", json.get("name").asString)
         assertEquals("Description", json.get("description").asString)
+        assertEquals("exam", json.get("type").asString)
         assertEquals("survey1", json.get("sourceSurveyId").asString)
         assertEquals("team1", json.get("teamId").asString)
         assertTrue(json.has("questions"))
