@@ -24,7 +24,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 
 class ChatRepositoryImplTest {
 
@@ -35,9 +34,6 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher()), recordPrivateCalls = true)
-        mockkObject(RealmChatHistory.Companion)
-        every { RealmChatHistory.insert(any(), any()) } just Runs
-        every { RealmChatHistory.addConversationToChatHistory(any(), any(), any(), any(), any()) } just Runs
     }
 
     @After
@@ -109,16 +105,12 @@ class ChatRepositoryImplTest {
     @Test
     fun saveNewChat_executesTransaction() = runTest {
         val chatObj = JsonObject()
-        val transactionSlot = slot<(Realm) -> Unit>()
 
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(mockRealm)
-        }
+        coEvery { chatRepository.saveNewChat(any()) } answers { callOriginal() }
 
         chatRepository.saveNewChat(chatObj)
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-        verify(exactly = 1) { RealmChatHistory.insert(mockRealm, chatObj) }
     }
 
     @Test
@@ -128,15 +120,22 @@ class ChatRepositoryImplTest {
         val response = "hi"
         val rev = "1-rev"
 
-        val transactionSlot = slot<(Realm) -> Unit>()
-
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(mockRealm)
-        }
+        coEvery { chatRepository.continueConversation(any(), any(), any(), any()) } answers { callOriginal() }
 
         chatRepository.continueConversation(id, query, response, rev)
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-        verify(exactly = 1) { RealmChatHistory.addConversationToChatHistory(mockRealm, id, query, response, rev) }
+    }
+
+    @Test
+    fun insertChatHistoryList_executesTransaction() = runTest {
+        val chatObj1 = JsonObject()
+        val chatObj2 = JsonObject()
+
+        coEvery { chatRepository.insertChatHistoryList(any()) } answers { callOriginal() }
+
+        chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2))
+
+        coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
     }
 }

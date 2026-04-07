@@ -259,7 +259,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-
         _binding = null
         super.onDestroyView()
     }

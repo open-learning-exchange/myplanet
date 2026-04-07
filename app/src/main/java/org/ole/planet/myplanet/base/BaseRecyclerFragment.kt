@@ -10,7 +10,6 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmList
 import io.realm.RealmObject
 import java.text.Normalizer
 import java.util.Locale
@@ -230,16 +229,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty()) {
             return list
         }
-
-        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-        val linkedCourseIds = tagsRepository.getLinkedCourseIds("courses", tagIds)
-
-        val courses = RealmList<RealmMyCourse>()
-        list.forEach { course ->
-            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
-                courses.add(course)
-            }
-        }
+        val courses = coursesRepository.filterCoursesByTag(s, tags, isMyCourseLib, model?.id)
         return applyCourseFilter(courses)
     }
 

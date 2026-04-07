@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -40,7 +39,6 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -72,8 +70,6 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var surveysRepository: SurveysRepository
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
-    @Inject
-    lateinit var tagsRepository: TagsRepository
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
@@ -414,8 +410,6 @@ abstract class BaseResourceFragment : Fragment() {
         convertView = null
         super.onDestroyView()
     }
-
-
 
     companion object {
         var auth = ""
