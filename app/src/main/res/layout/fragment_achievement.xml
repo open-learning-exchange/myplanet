@@ -125,7 +125,7 @@
                             android:layout_marginStart="16dp"
                             android:textColor="@color/daynight_textColor"
                             android:textSize="15sp"
-                            tools:text="No purpose added yet" />
+                            android:text="@string/no_purpose_added" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -181,7 +181,7 @@
                             android:layout_marginStart="16dp"
                             android:textColor="@color/daynight_textColor"
                             android:textSize="15sp"
-                            tools:text="No goals set yet" />
+                            android:text="@string/no_goal_added" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -238,7 +238,7 @@
                             android:layout_marginStart="16dp"
                             android:textColor="@color/daynight_textColor"
                             android:textSize="14sp"
-                            tools:text="Summary of achievements" />
+                            android:text="@string/no_achievement_added" />
                         <LinearLayout
                             android:id="@+id/ll_achievement"
                             android:layout_width="match_parent"
@@ -296,6 +296,17 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:nestedScrollingEnabled="false" />
+                        <TextView
+                            android:id="@+id/tv_references_header"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginStart="16dp"
+                            android:lineSpacingMultiplier="1.5"
+                            android:text="@string/no_references_added"
+                            android:textColor="@color/daynight_textColor"
+                            android:textSize="14sp"
+                            android:visibility="gone" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
