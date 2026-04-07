@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.data.queryList
 
 open class RealmRepository(
     protected val databaseService: DatabaseService,
-    protected val realmDispatcher: CoroutineDispatcher = Dispatchers.Main
+    protected val realmDispatcher: CoroutineDispatcher
 ) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
