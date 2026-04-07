@@ -1,15 +1,10 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.Sort
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey
@@ -30,69 +25,6 @@ open class RealmOfflineActivity : RealmObject() {
         if (r != null) {
             _rev = JsonUtils.getString("_rev", r)
             _id = JsonUtils.getString("_id", r)
-        }
-    }
-
-    companion object {
-        @JvmStatic
-        fun serializeLoginActivities(realmOfflineActivities: RealmOfflineActivity, context: Context): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("user", realmOfflineActivities.userName)
-            ob.addProperty("type", realmOfflineActivities.type)
-            ob.addProperty("loginTime", realmOfflineActivities.loginTime)
-            ob.addProperty("logoutTime", realmOfflineActivities.logoutTime)
-            ob.addProperty("createdOn", realmOfflineActivities.createdOn)
-            ob.addProperty("parentCode", realmOfflineActivities.parentCode)
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            if (realmOfflineActivities._id != null) {
-                ob.addProperty("_id", realmOfflineActivities.logoutTime)
-            }
-            if (realmOfflineActivities._rev != null) {
-                ob.addProperty("_rev", realmOfflineActivities._rev)
-            }
-            return ob
-        }
-
-        @JvmStatic
-        fun getRecentLogin(mRealm: Realm): RealmOfflineActivity? {
-            return mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", Sort.DESCENDING)
-                .findFirst()
-        }
-
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject?) {
-            val serverIdStr = JsonUtils.getString("_id", act)
-            val loginTime = JsonUtils.getLong("loginTime", act)
-            val userName = JsonUtils.getString("user", act)
-
-            var activities = mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("_id", serverIdStr)
-                .findFirst()
-
-            if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
-                activities = mRealm.where(RealmOfflineActivity::class.java)
-                    .equalTo("loginTime", loginTime)
-                    .equalTo("userName", userName)
-                    .findFirst()
-            }
-
-            if (activities == null) {
-                activities = mRealm.createObject(RealmOfflineActivity::class.java, serverIdStr)
-            }
-            if (activities != null) {
-                activities._rev = JsonUtils.getString("_rev", act)
-                activities._id = serverIdStr
-                activities.loginTime = loginTime
-                activities.type = JsonUtils.getString("type", act)
-                activities.userName = userName
-                activities.parentCode = JsonUtils.getString("parentCode", act)
-                activities.createdOn = JsonUtils.getString("createdOn", act)
-                activities.logoutTime = JsonUtils.getLong("logoutTime", act)
-                activities.androidId = JsonUtils.getString("androidId", act)
-            }
         }
     }
 }
