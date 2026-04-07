@@ -39,6 +39,7 @@ interface ActivitiesRepository {
     suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>?
     suspend fun getUnuploadedLoginActivities(): List<org.ole.planet.myplanet.model.LoginActivityData>
     suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>)
+    suspend fun recordSyncActivity(userId: String)
     fun insertActivity(realm: io.realm.Realm, json: JsonObject)
     fun getRecentLogin(realm: io.realm.Realm): RealmOfflineActivity?
     fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): JsonObject
