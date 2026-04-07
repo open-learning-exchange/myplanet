@@ -211,6 +211,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 adapterCourses.setListener(this@CoursesFragment)
                 adapterCourses.setRatingChangeListener(this@CoursesFragment)
                 recyclerView.adapter = adapterCourses
+                enableSortButtons()
 
                 viewModel.processCourses(isMyCourseLib, userModel?.id, validCourses, myCourses, map, progressMap)
             } catch (e: CancellationException) {
@@ -259,6 +260,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
+        enableSortButtons()
         return adapterCourses
     }
 
@@ -419,18 +421,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
+        // Disabled until adapterCourses is ready; enabled in getAdapter()/loadDataAsync().
+        orderByDate.isEnabled = false
+        orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
-            if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleSortOrder {
-                scrollToTop()
-            }
+            adapterCourses.toggleSortOrder { scrollToTop() }
         }
         orderByTitle.setOnClickListener {
-            if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleTitleSortOrder {
-                scrollToTop()
-            }
+            adapterCourses.toggleTitleSortOrder { scrollToTop() }
         }
+    }
+
+    private fun enableSortButtons() {
+        if (::orderByDate.isInitialized) orderByDate.isEnabled = true
+        if (::orderByTitle.isInitialized) orderByTitle.isEnabled = true
     }
 
     private fun initializeView() {
