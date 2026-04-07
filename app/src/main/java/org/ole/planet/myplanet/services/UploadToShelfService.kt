@@ -157,7 +157,7 @@ class UploadToShelfService @Inject constructor(
 
     private suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
         try {
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+            val password = model.password ?: SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
