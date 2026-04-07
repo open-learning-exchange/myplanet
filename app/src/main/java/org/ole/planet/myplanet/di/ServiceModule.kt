@@ -109,9 +109,10 @@ object ServiceModule {
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, notificationsRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, scope)
     }
 }

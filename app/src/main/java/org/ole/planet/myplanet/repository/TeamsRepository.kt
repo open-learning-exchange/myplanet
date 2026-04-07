@@ -1,11 +1,14 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import com.google.gson.JsonObject
+import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -125,4 +128,20 @@ interface TeamsRepository {
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
+
+    /**
+     * Inserts a team log into the Realm.
+     * The [Realm] instance is passed explicitly to allow this operation to participate
+     * in a shared transaction during the sync process.
+     */
+    fun insertTeamLog(realm: Realm, json: JsonObject)
+
+    /**
+     * Retrieves the last visit timestamp for a user in a specific team.
+     * The [Realm] instance is passed explicitly so that callers can manage the Realm
+     * lifecycle or execute this within an existing Realm context.
+     */
+    fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long?
+
+    fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
 }
