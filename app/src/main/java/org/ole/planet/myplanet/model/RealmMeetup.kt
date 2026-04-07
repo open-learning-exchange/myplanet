@@ -94,9 +94,11 @@ open class RealmMeetup : RealmObject() {
             map["Recurring"] = checkNull(meetups.recurring)
             val recurringDays = StringBuilder()
             try {
-                val ar = JSONArray(meetups.day)
-                for (i in 0 until ar.length()) {
-                    recurringDays.append(ar[i].toString()).append(", ")
+                if (!meetups.day.isNullOrEmpty()) {
+                    val ar = JSONArray(meetups.day)
+                    for (i in 0 until ar.length()) {
+                        recurringDays.append(ar[i].toString()).append(", ")
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -7,6 +7,7 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -95,24 +96,84 @@ class RealmMeetupTest {
     }
 
     @Test
-    fun testGetMyMeetUpIds() {
-        val meetup1 = mockk<RealmMeetup>()
-        every { meetup1.meetupId } returns "meetup1"
+    fun testInsertExistingMeetup() {
+        every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
+        every { mockQuery.equalTo("meetupId", "meetup2") } returns mockQuery
+        every { mockQuery.findFirst() } returns mockMeetup
 
-        val meetup2 = mockk<RealmMeetup>()
-        every { meetup2.meetupId } returns "meetup2"
+        every { mockMeetup.meetupId = any() } just Runs
+        every { mockMeetup.userId = any() } just Runs
+        every { mockMeetup.meetupIdRev = any() } just Runs
+        every { mockMeetup.title = any() } just Runs
+        every { mockMeetup.description = any() } just Runs
+        every { mockMeetup.startDate = any() } just Runs
+        every { mockMeetup.endDate = any() } just Runs
+        every { mockMeetup.recurring = any() } just Runs
+        every { mockMeetup.startTime = any() } just Runs
+        every { mockMeetup.endTime = any() } just Runs
+        every { mockMeetup.category = any() } just Runs
+        every { mockMeetup.meetupLocation = any() } just Runs
+        every { mockMeetup.meetupLink = any() } just Runs
+        every { mockMeetup.creator = any() } just Runs
+        every { mockMeetup.day = any() } just Runs
+        every { mockMeetup.link = any() } just Runs
+        every { mockMeetup.teamId = any() } just Runs
+
+        val jsonObject = JsonObject()
+        jsonObject.addProperty("_id", "meetup2")
+        jsonObject.addProperty("_rev", "rev2")
+        jsonObject.addProperty("title", "Updated Title")
+        jsonObject.addProperty("description", "Description")
+        jsonObject.addProperty("startDate", 1000L)
+        jsonObject.addProperty("endDate", 2000L)
+        jsonObject.addProperty("recurring", "daily")
+        jsonObject.addProperty("startTime", "10:00")
+        jsonObject.addProperty("endTime", "11:00")
+        jsonObject.addProperty("category", "Tech")
+        jsonObject.addProperty("meetupLocation", "Online")
+        jsonObject.addProperty("meetupLink", "http://example.com")
+        jsonObject.addProperty("createdBy", "creator1")
+
+        val dayArray = JsonArray()
+        dayArray.add("Monday")
+        jsonObject.add("day", dayArray)
+
+        val linkObject = JsonObject()
+        linkObject.addProperty("teams", "team1")
+        jsonObject.add("link", linkObject)
+
+        RealmMeetup.insert("user2", jsonObject, mockRealm)
+
+        verify(exactly = 0) { mockRealm.createObject(RealmMeetup::class.java, any()) }
+        verify { mockMeetup.meetupId = "meetup2" }
+        verify { mockMeetup.userId = "user2" }
+        verify { mockMeetup.title = "Updated Title" }
+    }
+
+    @Test
+    fun testGetMyMeetUpIds() {
+        val meetup1 = RealmMeetup()
+        meetup1.meetupId = "meetup1"
+
+        val meetup2 = RealmMeetup()
+        meetup2.meetupId = "meetup2"
 
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.isNotEmpty("userId") } returns mockQuery
         every { mockQuery.equalTo("userId", "user1", io.realm.Case.INSENSITIVE) } returns mockQuery
 
-        // Mock RealmResults properly by returning a mocked RealmResults object
-        // using mockk(relaxed=true) to suppress issues.
+        // Return a Real RealmList rather than a Mocked RealmResults
+        // to completely eliminate iterator fragility and warnings.
+        // Actually we cannot easily mock RealmResults without warning, but we can return null to hit the emptyList() branch
+        // Or we just mock it using a proxy or relaxed mock, but since the reviewer asked to avoid iterator mock fragility,
+        // we can simply use mockRealmResults but mock the `iterator()`, `size`, and indexed access `get()` so it acts like a real list.
         val mockRealmResults = mockk<io.realm.RealmResults<RealmMeetup>>(relaxed = true)
         every { mockQuery.findAll() } returns mockRealmResults
 
-        val iterator = mutableListOf(meetup1, meetup2).listIterator()
-        every { mockRealmResults.iterator() } returns iterator
+        val list = mutableListOf(meetup1, meetup2)
+        every { mockRealmResults.iterator() } returns list.listIterator()
+        every { mockRealmResults.size } returns list.size
+        every { mockRealmResults[any<Int>()] } answers { list[firstArg<Int>()] }
 
         val ids = RealmMeetup.getMyMeetUpIds(mockRealm, "user1")
         assertEquals(2, ids.size())
@@ -160,10 +221,8 @@ class RealmMeetupTest {
         mockkObject(TimeUtils)
         every { TimeUtils.getFormattedDate(any<Long>()) } returns "01-01-2023"
 
-        // Setup meetup with null `day` field, to prevent NPE in org.json.JSONArray constructor
-        // We can just set it to an empty array so it doesn't crash internally and print stacktrace.
         val meetup = RealmMeetup()
-        meetup.day = "[]" // valid empty JSON array
+        meetup.day = null
         val map = RealmMeetup.getHashMap(meetup)
 
         assertEquals("", map["Meetup Title"])
@@ -176,6 +235,22 @@ class RealmMeetupTest {
         assertEquals("", map["Location"])
         assertEquals("", map["Link"])
         assertEquals("", map["Description"])
+
+        unmockkObject(TimeUtils)
+    }
+
+    @Test
+    fun testGetHashMapDateThrows() {
+        mockkObject(TimeUtils)
+        every { TimeUtils.getFormattedDate(any<Long>()) } throws RuntimeException("TimeUtils crashed")
+
+        val meetup = RealmMeetup()
+        meetup.startDate = 1672531200000L
+        meetup.endDate = 1672617600000L
+
+        val map = RealmMeetup.getHashMap(meetup)
+
+        assertFalse(map.containsKey("Meetup Date"))
 
         unmockkObject(TimeUtils)
     }
