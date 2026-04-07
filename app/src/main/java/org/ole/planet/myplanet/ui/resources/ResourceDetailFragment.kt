@@ -272,10 +272,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
         }
     }
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
