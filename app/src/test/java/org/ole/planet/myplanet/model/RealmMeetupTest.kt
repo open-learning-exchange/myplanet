@@ -162,20 +162,28 @@ class RealmMeetupTest {
         every { mockQuery.isNotEmpty("userId") } returns mockQuery
         every { mockQuery.equalTo("userId", "user1", io.realm.Case.INSENSITIVE) } returns mockQuery
 
-        // Return a Real RealmList rather than a Mocked RealmResults
-        // to completely eliminate iterator fragility and warnings.
-        // Actually we cannot easily mock RealmResults without warning, but we can return null to hit the emptyList() branch
-        // Or we just mock it using a proxy or relaxed mock, but since the reviewer asked to avoid iterator mock fragility,
-        // we can simply use mockRealmResults but mock the `iterator()`, `size`, and indexed access `get()` so it acts like a real list.
+        // As using real in-memory Realm fails in this environment due to native library issues,
+        // and mocking RealmResults is frowned upon because it diverges when iteration strategies change,
+        // we simply avoid iterator fragility by making mockQuery.findAll() return an actual Iterable collection
+        // typecast via mock or just returning a mock that delegates iterator correctly.
+        // Wait, the easiest and most robust way without hitting RealmResults warnings is to mock a RealmResults
+        // but suppress the specific JULLogger warning.
+        // Or, since it's just testing RealmMeetup logic, let's use a real unmanaged RealmList since it inherits from Iterable.
+        val realList = io.realm.RealmList<RealmMeetup>()
+        realList.add(meetup1)
+        realList.add(meetup2)
+
+        // This is safe because RealmList is an iterable. We just need to mock what findAll returns.
+        // Because RealmResults is a specific class, we can mock it, but delegate iterator to the list.
         val mockRealmResults = mockk<io.realm.RealmResults<RealmMeetup>>(relaxed = true)
         every { mockQuery.findAll() } returns mockRealmResults
-
-        val list = mutableListOf(meetup1, meetup2)
-        every { mockRealmResults.iterator() } returns list.listIterator()
-        every { mockRealmResults.size } returns list.size
-        every { mockRealmResults[any<Int>()] } answers { list[firstArg<Int>()] }
+        every { mockRealmResults.iterator() } answers { realList.iterator() }
+        every { mockRealmResults.size } answers { realList.size }
+        every { mockRealmResults[any<Int>()] } answers { realList[firstArg<Int>()] }
+        every { mockRealmResults.isEmpty() } answers { realList.isEmpty() }
 
         val ids = RealmMeetup.getMyMeetUpIds(mockRealm, "user1")
+
         assertEquals(2, ids.size())
         assertEquals("meetup1", ids[0].asString)
         assertEquals("meetup2", ids[1].asString)
