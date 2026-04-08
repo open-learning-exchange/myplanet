@@ -1,15 +1,20 @@
 package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
+import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.impl.annotations.MockK
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.repository.retry.RetryRepository
+import org.ole.planet.myplanet.services.upload.UploadError
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryQueueTest {
@@ -63,5 +68,61 @@ class RetryQueueTest {
         retryQueue.cleanup()
 
         coVerify(exactly = 1) { retryRepository.cleanup() }
+    }
+
+    @Test
+    fun queueFailedOperation_nonRetryableError_returnsEarly() = runTest {
+        val error = UploadError("item1", Exception("fail"), retryable = false)
+
+        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
+
+        coVerify(exactly = 0) { retryRepository.getExistingOperation(any(), any()) }
+        coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun queueFailedOperation_retryableError_noExistingOp_enqueues() = runTest {
+        val error = UploadError("item1", Exception("fail"), retryable = true)
+        val payload = JsonObject()
+        coEvery { retryRepository.getExistingOperation("item1", "type") } returns null
+        coEvery { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+
+        retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
+
+        coVerify(exactly = 1) { retryRepository.enqueue("type", error, payload.toString(), "endpoint", "POST", null, "Model", null) }
+    }
+
+    @Test
+    fun queueFailedOperation_retryableError_existingOp_updates() = runTest {
+        val error = UploadError("item1", Exception("fail"), retryable = true)
+        val existingOp = RealmRetryOperation().apply { id = "op1" }
+        coEvery { retryRepository.getExistingOperation("item1", "type") } returns existingOp
+        coEvery { retryRepository.updateAttempt("op1", error) } returns Unit
+
+        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
+
+        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", error) }
+        coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun safeClearQueue_isProcessing_returnsFalse() = runTest {
+        retryQueue.setProcessing(true)
+
+        val result = retryQueue.safeClearQueue()
+
+        assertFalse(result)
+        coVerify(exactly = 0) { retryRepository.deletePendingAndAbandonedOperations() }
+    }
+
+    @Test
+    fun safeClearQueue_notProcessing_returnsTrue() = runTest {
+        retryQueue.setProcessing(false)
+        coEvery { retryRepository.deletePendingAndAbandonedOperations() } returns Unit
+
+        val result = retryQueue.safeClearQueue()
+
+        assertTrue(result)
+        coVerify(exactly = 1) { retryRepository.deletePendingAndAbandonedOperations() }
     }
 }
