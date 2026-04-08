@@ -43,7 +43,7 @@ class RealmTeamLogTest {
         every { mockQuery.equalTo("teamId", "testTeamId") } returns mockQuery
         every { mockQuery.max("time") } returns 123456789L
 
-        val result = RealmTeamLog.getLastVisit(mockRealm, "testUser", "testTeamId")
+        val result = RealmTeamLog.Companion.getLastVisit(mockRealm, "testUser", "testTeamId")
         assertEquals(123456789L, result)
 
         verify { mockRealm.where(RealmTeamLog::class.java) }
@@ -73,7 +73,7 @@ class RealmTeamLogTest {
         every { NetworkUtils.getCustomDeviceName(mockContext) } returns "testCustomDevice"
         every { TextUtils.isEmpty("testRev") } returns false
 
-        val result = RealmTeamLog.serializeTeamActivities(log, mockContext)
+        val result = RealmTeamLog.Companion.serializeTeamActivities(log, mockContext)
 
         assertEquals("testUser", result.get("user").asString)
         assertEquals("testType", result.get("type").asString)
@@ -109,7 +109,7 @@ class RealmTeamLogTest {
         every { NetworkUtils.getCustomDeviceName(mockContext) } returns "testCustomDevice"
         every { TextUtils.isEmpty("") } returns true
 
-        val result = RealmTeamLog.serializeTeamActivities(log, mockContext)
+        val result = RealmTeamLog.Companion.serializeTeamActivities(log, mockContext)
 
         assertEquals(false, result.has("_rev"))
         assertEquals(false, result.has("_id"))
@@ -147,7 +147,7 @@ class RealmTeamLogTest {
         every { mockQuery.findFirst() } returns null
         every { mockRealm.createObject(RealmTeamLog::class.java, "newId") } returns newLog
 
-        RealmTeamLog.insert(mockRealm, act)
+        RealmTeamLog.Companion.insert(mockRealm, act)
 
         verify { newLog._rev = "newRev" }
         verify { newLog._id = "newId" }
@@ -191,7 +191,7 @@ class RealmTeamLogTest {
         every { mockQuery.equalTo("id", "existingId") } returns mockQuery
         every { mockQuery.findFirst() } returns existingLog
 
-        RealmTeamLog.insert(mockRealm, act)
+        RealmTeamLog.Companion.insert(mockRealm, act)
 
         verify(exactly = 0) { mockRealm.createObject(RealmTeamLog::class.java, any<String>()) }
         verify { existingLog._rev = "updatedRev" }
