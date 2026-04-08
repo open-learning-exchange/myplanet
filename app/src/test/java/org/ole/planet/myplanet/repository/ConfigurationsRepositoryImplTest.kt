@@ -63,7 +63,6 @@ class ConfigurationsRepositoryImplTest {
 
     @Test
     fun `checkHealth calls listener with success message when server is accessible`() = runTest(testDispatcher) {
-        val listener: OnSuccessListener = mockk(relaxed = true)
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
         // Mock preferences for UrlUtils
@@ -81,11 +80,11 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.healthAccess(any()) } returns response
         every { context.getString(R.string.server_sync_successfully) } returns "Success"
 
-        repository.checkHealth(listener)
+        val result = repository.checkHealth()
 
         advanceUntilIdle()
 
         coVerify { apiInterface.healthAccess(healthUrl) }
-        verify { listener.onSuccess("Success") }
+        assert(result == "Success")
     }
 }

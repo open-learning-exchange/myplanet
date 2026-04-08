@@ -81,7 +81,8 @@ class AutoSyncWorker @AssistedInject constructor(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                configurationsRepository.checkHealth {
+                MainApplication.applicationScope.launch {
+                    configurationsRepository.checkHealth()
                     uploadToShelfService.uploadHealth()
                 }
             }
