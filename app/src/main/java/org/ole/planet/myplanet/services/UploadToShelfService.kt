@@ -157,15 +157,31 @@ class UploadToShelfService @Inject constructor(
 
     private suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
         try {
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+            val password = model.password ?: SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse.isSuccessful) {
-                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
-                model.derived_key = getString("derived_key", fetchDataResponse.body())
-                model.salt = getString("salt", fetchDataResponse.body())
-                model.iterations = getString("iterations", fetchDataResponse.body())
+                val passwordScheme = getString("password_scheme", fetchDataResponse.body())
+                val derivedKey = getString("derived_key", fetchDataResponse.body())
+                val salt = getString("salt", fetchDataResponse.body())
+                val iterations = getString("iterations", fetchDataResponse.body())
+
+                model.password_scheme = passwordScheme
+                model.derived_key = derivedKey
+                model.salt = salt
+                model.iterations = iterations
+
+                userRepository.updateSecurityData(
+                    model.name ?: "",
+                    model._id,
+                    model._rev,
+                    derivedKey,
+                    salt,
+                    passwordScheme,
+                    iterations
+                )
+
                 saveKeyIv(apiInterface, model, obj)
 
                 healthRepository.updateExaminationUserId(model.id ?: "", model._id ?: "")

@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
@@ -56,7 +55,6 @@ object Constants {
     private fun initClasses() {
         classList["news"] = RealmNews::class.java
         classList["tags"] = RealmTag::class.java
-        classList["login_activities"] = RealmOfflineActivity::class.java
         classList["ratings"] = RealmRating::class.java
         classList["submissions"] = RealmSubmission::class.java
         classList["courses"] = RealmMyCourse::class.java

@@ -5,11 +5,15 @@ import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
 import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.InputStream
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

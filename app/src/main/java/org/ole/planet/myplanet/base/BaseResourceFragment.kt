@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -20,14 +19,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.RealmObject
 import javax.inject.Inject
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -56,7 +53,6 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    private lateinit var mRealm: Realm
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -73,8 +69,6 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -83,17 +77,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
-
-    protected fun requireRealmInstance(): Realm {
-        if (!isRealmInitialized()) {
-            mRealm = databaseService.createManagedRealmInstance()
-        }
-        return mRealm
-    }
-
-    protected fun isRealmInitialized(): Boolean {
-        return ::mRealm.isInitialized && !mRealm.isClosed
-    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -344,7 +327,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
     }
 
@@ -425,35 +407,5 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog = null
         convertView = null
         super.onDestroyView()
-    }
-
-    override fun onDestroy() {
-        cleanupRealm()
-        super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (_: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
-    }
-
-    companion object {
-        var auth = ""
     }
 }

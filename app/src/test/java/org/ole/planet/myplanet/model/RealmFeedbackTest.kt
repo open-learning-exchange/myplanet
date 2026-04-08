@@ -29,94 +29,119 @@ class RealmFeedbackTest {
     }
 
     @Test
-    fun testSetAndGetMessagesString() {
-        val feedback = RealmFeedback()
-        feedback.setMessages("test_message")
-        assertEquals("test_message", feedback.messages)
-    }
-
-    @Test
     fun testSetMessagesJsonArray() {
         val feedback = RealmFeedback()
         val jsonArray = JsonArray()
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("message", "hello")
-        jsonArray.add(jsonObject)
-        feedback.setMessages(jsonArray)
+        val obj = JsonObject()
+        obj.addProperty("message", "Test message")
+        jsonArray.add(obj)
 
-        assertEquals("[{\"message\":\"hello\"}]", feedback.messages)
+        feedback.setMessages(jsonArray)
+        assertEquals("[{\"message\":\"Test message\"}]", feedback.messages)
     }
 
     @Test
-    fun testMessageListWithEmptyMessages() {
+    fun testSetMessagesString() {
+        val feedback = RealmFeedback()
+        val messageString = "[{\"message\":\"Test message\"}]"
+        feedback.setMessages(messageString)
+        assertEquals(messageString, feedback.messages)
+    }
+
+    @Test
+    fun testMessageListEmpty() {
         val feedback = RealmFeedback()
         feedback.setMessages("")
+        assertNull(feedback.messageList)
+
+        feedback.setMessages(null as String?)
         assertNull(feedback.messageList)
     }
 
     @Test
-    fun testMessageListWithValidMessages() {
+    fun testMessageListWithElements() {
         val feedback = RealmFeedback()
-        val jsonStr = "[{\"message\":\"hello\",\"user\":\"user1\",\"time\":\"time1\"}, {\"message\":\"reply1\",\"user\":\"user2\",\"time\":\"time2\"}]"
-        feedback.setMessages(jsonStr)
+        val messageString = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1", "user": "user1", "time": "time1"},
+              {"message": "msg2", "user": "user2", "time": "time2"}
+            ]
+        """.trimIndent()
+        feedback.setMessages(messageString)
 
         val list = feedback.messageList
-        assertEquals(1, list?.size)
-        assertEquals("reply1", list?.get(0)?.message)
-        assertEquals("user2", list?.get(0)?.user)
-        assertEquals("time2", list?.get(0)?.date)
+        assertEquals(2, list?.size)
+        assertEquals("msg1", list?.get(0)?.message)
+        assertEquals("user1", list?.get(0)?.user)
+        assertEquals("time1", list?.get(0)?.date)
+        assertEquals("msg2", list?.get(1)?.message)
+        assertEquals("user2", list?.get(1)?.user)
+        assertEquals("time2", list?.get(1)?.date)
     }
 
     @Test
-    fun testMessageWithEmptyMessages() {
+    fun testMessageEmpty() {
         val feedback = RealmFeedback()
         feedback.setMessages("")
+        assertEquals("", feedback.message)
+
+        feedback.setMessages(null as String?)
         assertEquals("", feedback.message)
     }
 
     @Test
-    fun testMessageWithValidMessages() {
+    fun testMessageWithElements() {
         val feedback = RealmFeedback()
-        val jsonStr = "[{\"message\":\"hello\",\"user\":\"user1\",\"time\":\"time1\"}, {\"message\":\"reply1\",\"user\":\"user2\",\"time\":\"time2\"}]"
-        feedback.setMessages(jsonStr)
-
-        assertEquals("hello", feedback.message)
+        val messageString = """
+            [
+              {"message": "First message", "user": "user0", "time": "time0"},
+              {"message": "Second message", "user": "user1", "time": "time1"}
+            ]
+        """.trimIndent()
+        feedback.setMessages(messageString)
+        assertEquals("First message", feedback.message)
     }
 
     @Test
     fun testSerializeFeedback() {
-        val feedback = RealmFeedback()
-        feedback.title = "test_title"
-        feedback.source = "test_source"
-        feedback.status = "test_status"
-        feedback.priority = "test_priority"
-        feedback.owner = "test_owner"
-        feedback.openTime = 12345L
-        feedback.type = "test_type"
-        feedback.url = "test_url"
-        feedback.parentCode = "test_parentCode"
-        feedback.state = "test_state"
-        feedback.item = "test_item"
-        feedback._id = "test_id"
-        feedback._rev = "test_rev"
-        feedback.setMessages("[{\"message\":\"hello\"}]")
+        val feedback = RealmFeedback().apply {
+            title = "Test Title"
+            source = "Test Source"
+            status = "Open"
+            priority = "High"
+            owner = "Test Owner"
+            openTime = 123456789L
+            type = "Bug"
+            url = "http://example.com"
+            parentCode = "Parent123"
+            state = "Active"
+            item = "Item1"
+            _id = "id123"
+            _rev = "rev123"
+        }
+        val messageString = "[{\"message\":\"Test message\"}]"
+        feedback.setMessages(messageString)
 
-        val jsonObject = RealmFeedback.serializeFeedback(feedback)
+        val serialized = RealmFeedback.serializeFeedback(feedback)
 
-        assertEquals("test_title", jsonObject.get("title").asString)
-        assertEquals("test_source", jsonObject.get("source").asString)
-        assertEquals("test_status", jsonObject.get("status").asString)
-        assertEquals("test_priority", jsonObject.get("priority").asString)
-        assertEquals("test_owner", jsonObject.get("owner").asString)
-        assertEquals(12345L, jsonObject.get("openTime").asLong)
-        assertEquals("test_type", jsonObject.get("type").asString)
-        assertEquals("test_url", jsonObject.get("url").asString)
-        assertEquals("test_parentCode", jsonObject.get("parentCode").asString)
-        assertEquals("test_state", jsonObject.get("state").asString)
-        assertEquals("test_item", jsonObject.get("item").asString)
-        assertEquals("test_id", jsonObject.get("_id").asString)
-        assertEquals("test_rev", jsonObject.get("_rev").asString)
-        assertEquals("hello", jsonObject.get("messages").asJsonArray.get(0).asJsonObject.get("message").asString)
+        assertEquals("Test Title", serialized.get("title").asString)
+        assertEquals("Test Source", serialized.get("source").asString)
+        assertEquals("Open", serialized.get("status").asString)
+        assertEquals("High", serialized.get("priority").asString)
+        assertEquals("Test Owner", serialized.get("owner").asString)
+        assertEquals(123456789L, serialized.get("openTime").asLong)
+        assertEquals("Bug", serialized.get("type").asString)
+        assertEquals("http://example.com", serialized.get("url").asString)
+        assertEquals("Parent123", serialized.get("parentCode").asString)
+        assertEquals("Active", serialized.get("state").asString)
+        assertEquals("Item1", serialized.get("item").asString)
+        assertEquals("id123", serialized.get("_id").asString)
+        assertEquals("rev123", serialized.get("_rev").asString)
+
+        val messagesArray = serialized.get("messages").asJsonArray
+        assertEquals(1, messagesArray.size())
+        assertEquals("Test message", messagesArray[0].asJsonObject.get("message").asString)
     }
 
     @Test

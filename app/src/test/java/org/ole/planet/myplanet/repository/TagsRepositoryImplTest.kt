@@ -8,6 +8,8 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -26,6 +28,7 @@ class TagsRepositoryImplTest {
 
     @Before
     fun setup() {
+        Logger.getLogger("io.mockk").level = Level.OFF
         mockRealm = mockk(relaxed = true)
         databaseService = mockk(relaxed = true)
         coEvery { databaseService.withRealmAsync<List<RealmTag>>(any()) } answers {

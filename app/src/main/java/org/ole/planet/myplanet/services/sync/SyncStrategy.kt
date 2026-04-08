@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 
 data class SyncConfig(
@@ -24,7 +23,6 @@ data class SyncResult(
 interface SyncStrategy {
     suspend fun syncTable(
         table: String,
-        realm: Realm,
         config: SyncConfig
     ): Flow<SyncResult>
 

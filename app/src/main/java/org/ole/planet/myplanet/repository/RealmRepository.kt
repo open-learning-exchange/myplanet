@@ -7,7 +7,6 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +20,7 @@ import org.ole.planet.myplanet.data.queryList
 
 open class RealmRepository(
     protected val databaseService: DatabaseService,
-    protected val realmDispatcher: CoroutineDispatcher = Dispatchers.Main
+    protected val realmDispatcher: CoroutineDispatcher
 ) {
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,

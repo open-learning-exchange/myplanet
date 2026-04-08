@@ -69,7 +69,7 @@ open class RealmRating : RealmObject() {
                 rating.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", act))
                 rating.userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act))
                 rating.parentCode = JsonUtils.getString("parentCode", act)
-                rating.parentCode = JsonUtils.getString("planetCode", act)
+                rating.planetCode = JsonUtils.getString("planetCode", act)
                 rating.createdOn = JsonUtils.getString("createdOn", act)
             }
         }

@@ -8,6 +8,8 @@ import io.mockk.slot
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -23,6 +25,7 @@ class LifeRepositoryImplTest {
 
     @Before
     fun setUp() {
+        Logger.getLogger("io.mockk").level = Level.OFF
         databaseService = mockk(relaxed = true)
         repository = LifeRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
     }
