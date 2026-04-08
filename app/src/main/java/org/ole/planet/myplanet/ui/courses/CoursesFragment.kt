@@ -136,7 +136,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         delay(3000)
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        loadDataAsync()
+                        viewModel.loadCourses(isMyCourseLib, model?.id)
                         prefManager.setCoursesSynced(true)
                     }
                 }
@@ -171,35 +171,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-
-    private fun loadDataAsync() {
-        val hostActivity = activity ?: return
-        if (hostActivity.isFinishing) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-                val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
-
-                val allCourses = coursesRepository.getAllCourses()
-                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-
-                val myCourses = if (isMyCourseLib) {
-                    coursesRepository.getMyCourses(userModel?.id, validCourses)
-                } else {
-                    emptyList()
-                }
-
-                val map = ratingsDeferred.await()
-                val progressMap = progressDeferred.await()
-
-                viewModel.processCourses(isMyCourseLib, userModel?.id, validCourses, myCourses, map, progressMap)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
         val hostActivity = activity ?: throw CancellationException("Fragment detached")
@@ -310,9 +281,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
                 searchJob?.cancel()
-                searchJob = lifecycleScope.launch {
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
                     delay(300)
-                    filterCoursesAndUpdateUi()
+                    viewModel.filterCourses(
+                        searchText = s.toString().trim(),
+                        gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString(),
+                        subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString(),
+                        tagNames = searchTags.mapNotNull { it.name },
+                        userId = model?.id,
+                        isMyCourseLib = isMyCourseLib
+                    )
+                    scrollToTop()
                 }
             }
             override fun afterTextChanged(s: Editable) {}
@@ -400,7 +379,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
-        // Disabled until adapterCourses is ready; enabled in getAdapter()/loadDataAsync().
+        // Disabled until adapterCourses is ready; enabled in getAdapter().
         orderByDate.isEnabled = false
         orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
@@ -518,10 +497,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
-            filterCoursesAndUpdateUi()
-            if (!::adapterCourses.isInitialized) return
-            showNoFilter(tvMessage, adapterCourses.itemCount)
-            scrollToTop()
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.filterCourses(
+                    searchText = etSearch.text.toString().trim(),
+                    gradeLevel = gradeLevel,
+                    subjectLevel = subjectLevel,
+                    tagNames = searchTags.mapNotNull { it.name },
+                    userId = model?.id,
+                    isMyCourseLib = isMyCourseLib
+                )
+                if (::adapterCourses.isInitialized) {
+                    showNoFilter(tvMessage, adapterCourses.itemCount)
+                }
+                scrollToTop()
+            }
         }
 
         override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -534,28 +523,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             tvSelected.text = context?.getString(R.string.empty_text)
             spnGrade.setSelection(0)
             spnSubject.setSelection(0)
-            filterCoursesAndUpdateUi()
-            scrollToTop()
-        }
-    }
-
-    private fun filterCoursesAndUpdateUi() {
-        if (!::adapterCourses.isInitialized) return
-        val searchText = etSearch.text.toString().trim()
-        val selectedGrade = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
-        val selectedSubject = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
-        val tagNames = searchTags.mapNotNull { it.name }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = model?.id
-            val (filteredCourses, map, progressMap) = withContext(Dispatchers.IO) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = coursesRepository.getCourseRatings(userId)
-                val progress = coursesRepository.getCourseProgress(userId)
-                Triple(courses, ratings, progress)
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.filterCourses(
+                    searchText = etSearch.text.toString().trim(),
+                    gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString(),
+                    subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString(),
+                    tagNames = searchTags.mapNotNull { it.name },
+                    userId = model?.id,
+                    isMyCourseLib = isMyCourseLib
+                )
+                scrollToTop()
             }
-            viewModel.processCourses(isMyCourseLib, userId, filteredCourses, filteredCourses.filter { it.userId?.contains(userId) == true }, map, progressMap)
-            scrollToTop()
         }
     }
 
@@ -652,9 +630,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!searchTags.any { it.name == tag.name }) {
             searchTags.add(tag)
         }
-        filterCoursesAndUpdateUi()
-        showTagText(searchTags, tvSelected)
-        scrollToTop()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.filterCourses(
+                searchText = etSearch.text.toString().trim(),
+                gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString(),
+                subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString(),
+                tagNames = searchTags.mapNotNull { it.name },
+                userId = model?.id,
+                isMyCourseLib = isMyCourseLib
+            )
+            showTagText(searchTags, tvSelected)
+            scrollToTop()
+        }
     }
 
     private fun updateCheckBoxState(programmaticState: Boolean) {
@@ -688,9 +675,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         li.add(tag)
         searchTags = li
         tvSelected.text = context?.getString(R.string.tag_selected, tag.name)
-        filterCoursesAndUpdateUi()
-        scrollToTop()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.filterCourses(
+                searchText = etSearch.text.toString().trim(),
+                gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString(),
+                subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString(),
+                tagNames = searchTags.mapNotNull { it.name },
+                userId = model?.id,
+                isMyCourseLib = isMyCourseLib
+            )
+            scrollToTop()
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        }
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
@@ -700,8 +696,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 searchTags.add(tag)
             }
         }
-        filterCoursesAndUpdateUi()
-        scrollToTop()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.filterCourses(
+                searchText = etSearch.text.toString().trim(),
+                gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString(),
+                subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString(),
+                tagNames = searchTags.mapNotNull { it.name },
+                userId = model?.id,
+                isMyCourseLib = isMyCourseLib
+            )
+            scrollToTop()
+        }
     }
 
     private fun filterApplied(): Boolean {
@@ -763,7 +768,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
                 }
             } else {
-                loadDataAsync()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.loadCourses(isMyCourseLib, model?.id)
+                }
             }
         }
     }
@@ -785,7 +792,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             super.onRatingChanged()
             return
         }
-        filterCoursesAndUpdateUi()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.filterCourses(
+                searchText = etSearch.text.toString().trim(),
+                gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString(),
+                subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString(),
+                tagNames = searchTags.mapNotNull { it.name },
+                userId = model?.id,
+                isMyCourseLib = isMyCourseLib
+            )
+            scrollToTop()
+        }
     }
 
     private fun RealmMyCourse.toCourse(): Course {

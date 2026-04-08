@@ -5,10 +5,15 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class CoursesUiState(
     val courses: List<Course> = emptyList(),
@@ -17,10 +22,67 @@ data class CoursesUiState(
 )
 
 @HiltViewModel
-class CoursesViewModel @Inject constructor() : ViewModel() {
+class CoursesViewModel @Inject constructor(
+    private val coursesRepository: CoursesRepository,
+    private val dispatcherProvider: DispatcherProvider
+) : ViewModel() {
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState
+
+    suspend fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
+        withContext(dispatcherProvider.io) {
+            coroutineScope {
+                val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
+                val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+
+                val allCourses = coursesRepository.getAllCourses()
+                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+
+                val myCourses = if (isMyCourseLib) {
+                    coursesRepository.getMyCourses(userId, validCourses)
+                } else {
+                    emptyList()
+                }
+
+                val map = ratingsDeferred.await()
+                val progressMap = progressDeferred.await()
+
+                withContext(dispatcherProvider.main) {
+                    processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap)
+                }
+            }
+        }
+    }
+
+    suspend fun filterCourses(
+        searchText: String,
+        gradeLevel: String,
+        subjectLevel: String,
+        tagNames: List<String>,
+        userId: String?,
+        isMyCourseLib: Boolean
+    ) {
+        withContext(dispatcherProvider.io) {
+            coroutineScope {
+                val coursesDeferred = async {
+                    coursesRepository.filterCourses(searchText, gradeLevel, subjectLevel, tagNames)
+                }
+                val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
+                val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+
+                val filteredCourses = coursesDeferred.await()
+                val map = ratingsDeferred.await()
+                val progressMap = progressDeferred.await()
+
+                val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
+
+                withContext(dispatcherProvider.main) {
+                    processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap)
+                }
+            }
+        }
+    }
 
     fun processCourses(
         isMyCourseLib: Boolean,
