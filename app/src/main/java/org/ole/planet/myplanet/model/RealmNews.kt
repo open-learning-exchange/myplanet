@@ -51,6 +51,12 @@ open class RealmNews : RealmObject() {
     var sharedBy: String? = null
     @Ignore
     var sortDate: Long = 0
+    @Ignore
+    var parsedViewIn: JsonArray? = null
+    @Ignore
+    var parsedConversations: List<RealmConversation>? = null
+    @Ignore
+    var parsedImageUrls: List<JsonObject>? = null
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
