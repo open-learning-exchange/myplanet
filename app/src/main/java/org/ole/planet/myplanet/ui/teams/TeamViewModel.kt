@@ -93,6 +93,19 @@ class TeamViewModel @Inject constructor(
     }
 
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
+        val currentList = _teamData.value.toMutableList()
+        val index = currentList.indexOfFirst { it._id == teamId }
+        if (index != -1) {
+            val team = currentList[index]
+            val newStatus = TeamStatus(
+                isMember = false,
+                isLeader = false,
+                hasPendingRequest = true
+            )
+            currentList[index] = team.copy(teamStatus = newStatus)
+            _teamData.value = currentList
+        }
+
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
