@@ -210,6 +210,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         super.onCreate()
         context = this
         setupCriticalProperties()
+        LocaleUtils.preload(this)
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
