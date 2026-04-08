@@ -278,6 +278,13 @@ class ChatHistoryFragment : Fragment() {
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
                         val currentUser = user
+                        val chatId = chat._id ?: ""
+                        val viewInId = map["viewInId"] ?: ""
+                        if (chatId.isNotEmpty() && viewInId.isNotEmpty() &&
+                            voicesRepository.isAlreadyShared(chatId, viewInId)) {
+                            Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
+                            return@launch
+                        }
                         val createdNews = voicesRepository.createNews(map, currentUser, null)
                         if (currentUser?.planetCode != null) {
                             sharedNewsMessages = sharedNewsMessages + createdNews
