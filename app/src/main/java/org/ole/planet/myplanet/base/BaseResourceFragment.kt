@@ -410,8 +410,4 @@ abstract class BaseResourceFragment : Fragment() {
         convertView = null
         super.onDestroyView()
     }
-
-    companion object {
-        var auth = ""
-    }
 }
