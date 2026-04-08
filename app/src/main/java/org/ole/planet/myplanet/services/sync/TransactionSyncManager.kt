@@ -155,12 +155,30 @@ class TransactionSyncManager @Inject constructor(
                 "submissions" -> 100  // Medium batches for slow endpoint
                 else -> 1000          // Large batches for fast endpoints
             }
+
+            // Safety limits to prevent infinite loops
+            val maxBatches = when (table) {
+                "ratings" -> 100
+                "submissions" -> 500
+                else -> 2000
+            }
+
+            val maxDocs = when (table) {
+                "ratings" -> 2000
+                "submissions" -> 50000
+                else -> 2000000
+            }
+
             var skip = 0
             var totalDocs = 0
             var batchNumber = 0
 
             // Paginated fetching to avoid long-blocking API calls
             while (true) {
+                if (batchNumber >= maxBatches || totalDocs >= maxDocs) {
+                    android.util.Log.w("SyncPerf", "  ⚠ Safety limit reached for $table: batches=$batchNumber, docs=$totalDocs. Aborting loop.")
+                    break
+                }
                 batchNumber++
                 val batchStartTime = System.currentTimeMillis()
                 // Time the batch API call (much faster with pagination)
@@ -180,6 +198,10 @@ class TransactionSyncManager @Inject constructor(
                 if (arr.size() == 0) {
                     break // No more documents
                 }
+
+                // Break explicitly if row count < pageSize to skip the next round-trip
+                val isLastPage = arr.size() < pageSize
+
                 org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
                     "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
@@ -266,12 +288,12 @@ class TransactionSyncManager @Inject constructor(
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
                 // If we got less than pageSize, we're done
-                if (arr.size() < pageSize) {
+                if (isLastPage) {
                     break
                 }
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
-            android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+            android.util.Log.d("SyncPerf", "  ✓ $table summary: batches=$batchNumber, docs=$totalDocs, duration=${totalDuration}ms")
             totalDocs
         } catch (e: Exception) {
             e.printStackTrace()
