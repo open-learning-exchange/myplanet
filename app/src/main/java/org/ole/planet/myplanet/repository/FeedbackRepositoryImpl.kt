@@ -143,7 +143,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmFeedback.insert(realm, jsonDoc)
+            insertFeedbackToRealm(realm, jsonDoc)
         }
     }
 }

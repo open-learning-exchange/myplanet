@@ -641,7 +641,8 @@ class VoicesRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmNews.insert(realm, jsonDoc)
+            insertNewsToRealm(realm, jsonDoc)
         }
+        saveConcatenatedLinksToPrefs()
     }
 }
