@@ -410,12 +410,4 @@ abstract class BaseResourceFragment : Fragment() {
         convertView = null
         super.onDestroyView()
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
-
-    companion object {
-        var auth = ""
-    }
 }

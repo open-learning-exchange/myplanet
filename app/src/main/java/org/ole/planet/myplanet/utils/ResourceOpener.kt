@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
@@ -74,7 +73,7 @@ object ResourceOpener {
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
             bundle.putString("videoURL", "${UrlUtils.getUrl(items)}")
-            bundle.putString("Auth", "${BaseResourceFragment.auth}")
+            bundle.putString("Auth", "")
         } else if (videoType == "offline") {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
