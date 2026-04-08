@@ -10,7 +10,6 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmList
 import io.realm.RealmObject
 import java.text.Normalizer
 import java.util.Locale
@@ -231,7 +230,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             return list
         }
         val courses = coursesRepository.filterCoursesByTag(s, tags, isMyCourseLib, model?.id)
-
         return applyCourseFilter(courses)
     }
 
