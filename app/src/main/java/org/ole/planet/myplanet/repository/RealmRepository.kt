@@ -12,7 +12,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.applyEqualTo
@@ -54,7 +56,7 @@ open class RealmRepository(
     protected suspend fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow {
+    ): Flow<List<T>> = callbackFlow<RealmResults<T>> {
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
@@ -92,12 +94,11 @@ open class RealmRepository(
             if (initialResults.isValid && initialResults.isLoaded) {
                 try {
                     val frozenInitial = initialResults.freeze()
-                    val copiedInitial = frozenInitial.realm.copyFromRealm(frozenInitial)
                     if (!isClosed.get()) {
-                        trySend(copiedInitial)
+                        trySend(frozenInitial)
                     }
                 } catch (e: Exception) {
-                    RealmLog.error(e, "Error copying initial results")
+                    RealmLog.error(e, "Error sending initial results")
                 }
             }
 
@@ -106,12 +107,11 @@ open class RealmRepository(
                 if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
                     try {
                         val frozenResults = changedResults.freeze()
-                        val copiedList = frozenResults.realm.copyFromRealm(frozenResults)
                         if (!isClosed.get()) {
-                            trySend(copiedList)
+                            trySend(frozenResults)
                         }
                     } catch (e: Exception) {
-                        RealmLog.error(e, "Error copying changed results")
+                        RealmLog.error(e, "Error sending changed results")
                     }
                 }
             }
@@ -125,6 +125,11 @@ open class RealmRepository(
             throw e
         }
     }.flowOn(realmDispatcher)
+        .conflate()
+        .map { frozenResults ->
+            frozenResults.realm.copyFromRealm(frozenResults)
+        }
+        .flowOn(databaseService.ioDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
