@@ -12,6 +12,7 @@ import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.JsonArray
@@ -52,6 +53,7 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
+    private val viewModel: NewsViewModel by viewModels()
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -100,7 +102,7 @@ class VoicesFragment : BaseVoicesFragment() {
             }
 
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
+                viewModel.observeCommunityNews(getUserIdentifier()).collect { news ->
                     val filtered = news.map { it as RealmNews? }
                     val labels = collectAllLabels(filtered)
                     val labelFiltered = applyLabelFilter(filtered)

@@ -8,13 +8,17 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NewsViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
+    private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -28,5 +32,9 @@ class NewsViewModel @Inject constructor(
             }
             _privateImageUrls.emit(urls)
         }
+    }
+
+    suspend fun observeCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+        return voicesRepository.getCommunityNews(userIdentifier)
     }
 }

@@ -13,7 +13,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainDispatcherRule
+import kotlinx.coroutines.flow.flowOf
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -23,6 +26,7 @@ class NewsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var resourcesRepository: ResourcesRepository
+    private lateinit var voicesRepository: VoicesRepository
     private lateinit var viewModel: NewsViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
@@ -35,7 +39,8 @@ class NewsViewModelTest {
     @Before
     fun setup() {
         resourcesRepository = mockk()
-        viewModel = NewsViewModel(resourcesRepository, testDispatcherProvider)
+        voicesRepository = mockk()
+        viewModel = NewsViewModel(resourcesRepository, voicesRepository, testDispatcherProvider)
     }
 
     @Test
@@ -56,6 +61,27 @@ class NewsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(expectedUrls, capturedResult)
+    }
+
+    @Test
+    fun `observeCommunityNews returns flow from repository`() = runTest {
+        val userIdentifier = "user123"
+        val expectedNews = listOf(RealmNews())
+        val expectedFlow = flowOf(expectedNews)
+        coEvery { voicesRepository.getCommunityNews(userIdentifier) } returns expectedFlow
+
+        val resultFlow = viewModel.observeCommunityNews(userIdentifier)
+
+        var capturedResult: List<RealmNews>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            resultFlow.collect { news ->
+                capturedResult = news
+            }
+        }
+
+        advanceUntilIdle()
+
+        assertEquals(expectedNews, capturedResult)
     }
 
     @Test
