@@ -14,6 +14,12 @@ import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 
+enum class SyncRefreshPolicy {
+    DIFF_ONLY,
+    SUBMIT_LIST_FALLBACK,
+    SKIP
+}
+
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
     fun onDataUpdated(table: String, update: TableDataUpdate)
@@ -23,6 +29,11 @@ interface RealtimeSyncMixin {
 
 class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    private val refreshPolicies = mutableMapOf<String, SyncRefreshPolicy>()
+
+    fun setRefreshPolicy(table: String, policy: SyncRefreshPolicy) {
+        refreshPolicies[table] = policy
+    }
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun setupRealtimeSync() {
@@ -39,22 +50,33 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
                     .collect { update ->
                         mixin.onDataUpdated(update.table, update)
                         if (mixin.shouldAutoRefresh(update.table)) {
-                            refreshRecyclerView()
+                            refreshRecyclerView(update)
                         }
                     }
             }
         }
     }
 
-    private fun refreshRecyclerView() {
+    private fun refreshRecyclerView(update: TableDataUpdate) {
+        if (update.newItemsCount == 0 && update.updatedItemsCount == 0) return
+
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
+            if (adapter.itemCount == 0) return@launch
+
+            val policy = refreshPolicies[update.table]
+            if (policy == SyncRefreshPolicy.SKIP) return@launch
+
             when (adapter) {
-                is OnDiffRefreshListener -> adapter.refreshWithDiff()
+                is OnDiffRefreshListener -> {
+                    adapter.refreshWithDiff()
+                }
                 is ListAdapter<*, *> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    (adapter as ListAdapter<Any, *>).let { listAdapter ->
-                        listAdapter.submitList(listAdapter.currentList.toList())
+                    if (policy != SyncRefreshPolicy.DIFF_ONLY) {
+                        @Suppress("UNCHECKED_CAST")
+                        (adapter as ListAdapter<Any, *>).let { listAdapter ->
+                            listAdapter.submitList(listAdapter.currentList.toList())
+                        }
                     }
                 }
             }
