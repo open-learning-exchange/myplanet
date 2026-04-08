@@ -177,7 +177,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (hostActivity.isFinishing) return
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                // Run independent queries in parallel
                 val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
                 val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
 
@@ -192,26 +191,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                 val map = ratingsDeferred.await()
                 val progressMap = progressDeferred.await()
-
-                val allCourseIds = validCourses.mapNotNull { it.courseId }
-                val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
-                    .mapValues { entry -> entry.value.map { it.toTag() } }
-
-                recyclerView.adapter = null
-
-                adapterCourses = CoursesAdapter(
-                    hostActivity,
-                    map,
-                    userModel?.isGuest() ?: true,
-                    isMyCourseLib
-                )
-
-                adapterCourses.setTagsMap(tagsMap)
-                adapterCourses.setProgressMap(progressMap)
-                adapterCourses.setListener(this@CoursesFragment)
-                adapterCourses.setRatingChangeListener(this@CoursesFragment)
-                recyclerView.adapter = adapterCourses
-                enableSortButtons()
 
                 viewModel.processCourses(isMyCourseLib, userModel?.id, validCourses, myCourses, map, progressMap)
             } catch (e: CancellationException) {
