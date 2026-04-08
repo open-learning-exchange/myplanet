@@ -8,11 +8,11 @@ import io.mockk.slot
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.logging.Level
+import java.util.logging.Logger
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import java.util.logging.Level
-import java.util.logging.Logger
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
