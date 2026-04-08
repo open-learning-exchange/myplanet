@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.ratings
 
 import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -17,7 +18,6 @@ import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import kotlinx.coroutines.Dispatchers
 
 @ExperimentalCoroutinesApi
 class RatingsViewModelTest {

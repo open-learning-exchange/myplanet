@@ -47,6 +47,18 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
+    override suspend fun getLinkedCourseIds(db: String, tagIds: Array<String>): Set<String> {
+        val links = queryList(RealmTag::class.java) {
+            equalTo("db", db)
+            `in`("tagId", tagIds)
+        }
+        return links.mapNotNull { it.linkId }.toSet()
+    }
+
+    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
+        return getLinkedTagsBulk("courses", courseIds)
+    }
+
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
@@ -75,7 +87,10 @@ class TagsRepositoryImpl @Inject constructor(
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
+                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
+                        if (list.none { it.id == parentTag.id }) {
+                            list.add(parentTag)
+                        }
                     }
                 }
             }
