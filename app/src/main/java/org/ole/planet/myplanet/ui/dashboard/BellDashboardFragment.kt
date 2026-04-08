@@ -22,9 +22,11 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -249,22 +251,23 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun checkScheduledReminders(): Boolean {
-        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
         val currentTime = System.currentTimeMillis()
 
-        val remindersToShow = mutableListOf<String>()
-        val remindersToRemove = mutableListOf<String>()
-
-        for (entry in preferences.all) {
-            if (entry.key.startsWith("reminder_time_")) {
-                val surveyIds = entry.key.removePrefix("reminder_time_")
-                val reminderTime = preferences.getLong(entry.key, 0)
-
-                if (reminderTime <= currentTime) {
-                    remindersToShow.add(surveyIds)
-                    remindersToRemove.add(surveyIds)
+        val (remindersToShow, remindersToRemove, preferences) = withContext(Dispatchers.IO) {
+            val prefs = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+            val toShow = mutableListOf<String>()
+            val toRemove = mutableListOf<String>()
+            for (entry in prefs.all) {
+                if (entry.key.startsWith("reminder_time_")) {
+                    val surveyIds = entry.key.removePrefix("reminder_time_")
+                    val reminderTime = prefs.getLong(entry.key, 0)
+                    if (reminderTime <= currentTime) {
+                        toShow.add(surveyIds)
+                        toRemove.add(surveyIds)
+                    }
                 }
             }
+            Triple(toShow, toRemove, prefs)
         }
 
         for (surveyIds in remindersToShow) {
