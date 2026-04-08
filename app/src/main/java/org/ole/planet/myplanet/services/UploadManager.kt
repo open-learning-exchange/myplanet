@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
+
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
@@ -76,7 +76,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadActivities(listener: OnSuccessListener?) {
-        val apiInterface = client.create(ApiInterface::class.java)
+
 
         scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
@@ -226,7 +226,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
         ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
+
 
         val photosToUpload = submissionsRepository.getUnuploadedPhotos()
 
@@ -280,7 +280,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
         ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
+
 
         try {
             val user = userRepository.getUserModelSuspending()
@@ -378,7 +378,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
         ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
+
 
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
@@ -447,7 +447,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadTeams() {
         ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
+
 
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
@@ -476,7 +476,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
+
         val model = userRepository.getUserModelSuspending() ?: run {
             withContext(dispatcherProvider.main) {
                 listener.onSuccess("Cannot upload user activities: user model is null")
@@ -571,7 +571,7 @@ class UploadManager @Inject constructor(
         // the coordinator for the core upload/update flow where possible.
 
         ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
+
         val user = userRepository.getUserModelSuspending()
 
         val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
