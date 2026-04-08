@@ -35,8 +35,8 @@ object ServiceModule {
     @Provides
     @Singleton
     @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideApplicationScope(dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
     }
 
     @Provides
