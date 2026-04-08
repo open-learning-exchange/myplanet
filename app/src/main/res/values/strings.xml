@@ -488,7 +488,6 @@
     <string name="recording_audio">Recording audio…</string>
     <string name="selected">"Selected: "</string>
     <string name="last_sync">Last sync with server: %s</string>
-    <string name="last_syncs">LastSync</string>
     <string name="no_team_available">No team / enterprise available</string>
     <string name="last_sync_date">last sync: %s</string>
     <string name="no_assignee">No assignee</string>
@@ -575,9 +574,7 @@
     <string name="no_course_matched_filter">No courses matched filter</string>
     <string name="added_to_my_library">added to myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
-    <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
-    <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
     <string name="removed_from_mylibrary">Removed from myLibrary</string>
     <string name="removed_from_mycourse">Removed from myCourse</string>
     <string name="please_allow_usages_permission_to_myplanet_app">Please allow usages permission to myPlanet app.</string>
@@ -692,9 +689,6 @@
     <string name="please_enter_message">Please enter message</string>
     <string name="record_survey">Record Survey</string>
     <string name="survey_sent_to_users">Survey sent to users</string>
-    <string name="wifi_is_turned_off_saving_battery_power">Wifi is turned Off. Saving battery power</string>
-    <string name="turning_on_wifi_please_wait">Turning on Wifi. Please wait…</string>
-    <string name="you_are_now_connected">"You are now connected "</string>
     <string name="press_back_again_to_exit">Press BACK again to exit</string>
     <string name="it_has_been_more_than">"It has been more than "</string>
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
@@ -713,7 +707,6 @@
     <string name="invalid_url">Invalid Url</string>
     <string name="please_enter_valid_url_to_continue">Please enter valid url to continue.</string>
     <string name="uploading_data_to_server_please_wait">Uploading data to server, please wait.....</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Check the server address again. What i connected to wasn\'t the Planet Server</string>
     <string name="device_couldn_t_reach_local_server">device couldn\'t reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).</string>
     <string name="device_couldn_t_reach_nation_server">device couldn’t reach the server. check if you are connected to the internet and try again</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Server not configured properly. Connect this device with Planet server</string>
@@ -854,7 +847,6 @@
     <string name="auto_sync">auto sync</string>
     <string name="force_weekly_sync">force weekly sync</string>
     <string name="force_monthly_sync">force monthly sync</string>
-    <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
     <string name="upgrade_application">upgrade application</string>
     <string name="always_move_to_maximum_version">Always move to maximum version</string>
     <string name="all_beta_functions">all beta functions</string>
@@ -951,7 +943,6 @@
     <string name="share_chat">share chat</string>
     <string name="shared_chat">shared chat</string>
     <string name="check_apk_version">checking app version</string>
-    <string name="checking_server">checking server</string>
     <string name="add_note">add a note (optional)</string>
     <string name="no_teams">teams not available</string>
     <string name="no_chats">no previous chats</string>
@@ -981,8 +972,6 @@
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
     <string name="dark_mode">dark mode</string>
-    <string name="dark_mode_off">off</string>
-    <string name="dark_mode_on">on</string>
     <string name="dark_mode_follow_system">Follow System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
@@ -1070,7 +1059,6 @@
     <string name="no_reports">No reports available</string>
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
-    <string name="survey_adopted_successfully">Survey adopted successfully!</string>
     <string name="beta_fast_sync">beta fast sync</string>
     <string name="beta_improved_sync">beta improved sync</string>
     <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
@@ -1108,21 +1096,6 @@
     <string name="set_reminder">Set Reminder</string>
     <string name="reminder_surveys_to_complete">Reminder: You have %1$d %2$s to complete</string>
 
-    <plurals name="minutes">
-        <item quantity="one">%d minute</item>
-        <item quantity="other">%d minutes</item>
-    </plurals>
-
-    <plurals name="hours">
-        <item quantity="one">%d hour</item>
-        <item quantity="other">%d hours</item>
-    </plurals>
-
-    <plurals name="days">
-        <item quantity="one">%d day</item>
-        <item quantity="other">%d days</item>
-    </plurals>
-
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Your health data will appear here as you continue tracking it</string>
     <string name="no_health_records_available">No health records available</string>
     <string name="permission_required">Permission Required</string>
@@ -1158,9 +1131,7 @@
     <string name="is_available">%1$s is available. Tap to continue learning</string>
     <string name="failed_to_add_please_retry">Failed to add. Please retry</string>
     <string name="failed_to_remove_resource">Failed to remove resource. Please retry</string>
-    <string name="failed_to_adopt_survey">Failed to adopt survey. Please retry</string>
     <string name="failed_to_save_chat">Failed to save chat. Please retry.</string>
-    <string name="failed_to_delete_report">Failed to delete report. Please retry</string>
     <string name="delete_report">Delete report</string>
     <string name="loading_teams">Loading teams…</string>
     <string name="year_of_birth">Year of birth</string>
