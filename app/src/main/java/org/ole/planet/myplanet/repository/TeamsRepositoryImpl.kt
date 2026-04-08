@@ -1311,31 +1311,35 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertTeamLog(realm: Realm, json: JsonObject) {
-        var tag = realm.where(RealmTeamLog::class.java)
-            .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
-        if (tag == null) {
-            tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
-        }
-        if (tag != null) {
-            tag._rev = JsonUtils.getString("_rev", json)
-            tag._id = JsonUtils.getString("_id", json)
-            tag.type = JsonUtils.getString("type", json)
-            tag.user = JsonUtils.getString("user", json)
-            tag.createdOn = JsonUtils.getString("createdOn", json)
-            tag.parentCode = JsonUtils.getString("parentCode", json)
-            tag.time = JsonUtils.getLong("time", json)
-            tag.teamId = JsonUtils.getString("teamId", json)
-            tag.teamType = JsonUtils.getString("teamType", json)
+    override suspend fun insertTeamLog(json: JsonObject) {
+        executeTransaction { realm ->
+            var tag = realm.where(RealmTeamLog::class.java)
+                .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
+            if (tag == null) {
+                tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
+            }
+            if (tag != null) {
+                tag._rev = JsonUtils.getString("_rev", json)
+                tag._id = JsonUtils.getString("_id", json)
+                tag.type = JsonUtils.getString("type", json)
+                tag.user = JsonUtils.getString("user", json)
+                tag.createdOn = JsonUtils.getString("createdOn", json)
+                tag.parentCode = JsonUtils.getString("parentCode", json)
+                tag.time = JsonUtils.getLong("time", json)
+                tag.teamId = JsonUtils.getString("teamId", json)
+                tag.teamType = JsonUtils.getString("teamType", json)
+            }
         }
     }
 
-    override fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long? {
-        return realm.where(RealmTeamLog::class.java)
-            .equalTo("type", "teamVisit")
-            .equalTo("user", userName)
-            .equalTo("teamId", teamId)
-            .max("time")?.toLong()
+    override suspend fun getLastVisit(userName: String?, teamId: String?): Long? {
+        return withRealm { realm ->
+            realm.where(RealmTeamLog::class.java)
+                .equalTo("type", "teamVisit")
+                .equalTo("user", userName)
+                .equalTo("teamId", teamId)
+                .max("time")?.toLong()
+        }
     }
 
     override fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
