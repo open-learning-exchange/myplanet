@@ -141,6 +141,29 @@ class RealmMeetupTest {
     }
 
     @Test
+    fun testSerializeWithMalformedDay() {
+        val meetup = RealmMeetup().apply {
+            meetupId = "m1"
+            day = "malformed_json"
+        }
+
+        val originalSystemErr = System.err
+        System.setErr(java.io.PrintStream(object : java.io.OutputStream() {
+            override fun write(b: Int) {}
+        }))
+
+        // This should not throw an exception
+        val json = RealmMeetup.serialize(meetup)
+
+        System.setErr(originalSystemErr)
+
+        // Assert basic fields are still serialized
+        assertEquals("m1", json.get("_id").asString)
+        // Assert day is not present due to the exception
+        assertEquals(false, json.has("day"))
+    }
+
+    @Test
     fun testSerialize() {
         val meetup = RealmMeetup().apply {
             meetupId = "m1"
