@@ -134,14 +134,14 @@ interface TeamsRepository {
      * The [Realm] instance is passed explicitly to allow this operation to participate
      * in a shared transaction during the sync process.
      */
-    fun insertTeamLog(realm: Realm, json: JsonObject)
+    suspend fun insertTeamLog(json: JsonObject)
 
     /**
      * Retrieves the last visit timestamp for a user in a specific team.
      * The [Realm] instance is passed explicitly so that callers can manage the Realm
      * lifecycle or execute this within an existing Realm context.
      */
-    fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long?
+    suspend fun getLastVisit(userName: String?, teamId: String?): Long?
 
     fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
 }
