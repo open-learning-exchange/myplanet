@@ -10,10 +10,14 @@ import io.realm.RealmList
 import io.realm.RealmQuery
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import java.util.UUID
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -40,6 +44,19 @@ class RealmSubmissionTest {
         every { NetworkUtils.getUniqueIdentifier() } returns "android_id"
         every { NetworkUtils.getDeviceName() } returns "device_name"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom_device"
+
+        mockkObject(RealmAnswer)
+        every { RealmAnswer.serializeRealmAnswer(any<RealmList<RealmAnswer>>()) } returns JsonArray()
+
+        mockkStatic(RealmStepExam::class)
+
+        mockkStatic(JsonUtils::class)
+        every { JsonUtils.getString(any(), any<JsonObject>()) } returns ""
+        every { JsonUtils.getString("_id", any<JsonObject>()) } returns "sub123"
+        every { JsonUtils.getString("status", any<JsonObject>()) } returns "pending"
+        every { JsonUtils.getString("_rev", any<JsonObject>()) } returns "rev1"
+        every { JsonUtils.getLong(any(), any<JsonObject>()) } returns 0L
+        every { JsonUtils.getJsonObject(any(), any<JsonObject>()) } returns JsonObject()
     }
 
     @After
@@ -140,10 +157,7 @@ class RealmSubmissionTest {
         every { mockQuery.equalTo("id", "parent123") } returns mockQuery
         every { mockQuery.findFirst() } returns null
 
-        every { mockSpm.getPlanetCode() } returns "planet"
-        every { mockSpm.getParentCode() } returns "parentPlanet"
-
-        val result = RealmSubmission.serialize(mockRealm, mockSub, mockContext, mockSpm)
+        val result = RealmSubmission.serialize(mockRealm, mockSub, mockContext, "planet", "parentPlanet")
 
         assertEquals("sub123", result.get("_id").asString)
         assertEquals("rev1", result.get("_rev").asString)
