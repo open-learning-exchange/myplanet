@@ -485,9 +485,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             var attempt = 0
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
-                val hasUser = withContext(Dispatchers.IO) {
-                    userRepository.hasAtLeastOneUser()
-                }
+                val hasUser = userRepository.hasAtLeastOneUser()
                 if (hasUser) {
                     break
                 }

@@ -158,4 +158,24 @@ class UserRepositoryImplTest {
         assertEquals(true, result.first)
         assertEquals(successMessage, result.second)
     }
+
+    @Test
+    fun `hasAtLeastOneUser returns true when user exists`() = testScope.runTest {
+        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealmQuery.findFirst() } returns mockk()
+
+        val result = repository.hasAtLeastOneUser()
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun `hasAtLeastOneUser returns false when no user exists`() = testScope.runTest {
+        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealmQuery.findFirst() } returns null
+
+        val result = repository.hasAtLeastOneUser()
+        assertEquals(false, result)
+    }
 }

@@ -681,8 +681,8 @@ class UserRepositoryImpl @Inject constructor(
         return null
     }
 
-    override fun hasAtLeastOneUser(): Boolean {
-        return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+    override suspend fun hasAtLeastOneUser(): Boolean {
+        return withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
     }
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {

@@ -86,7 +86,7 @@ interface UserRepository {
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
-    fun hasAtLeastOneUser(): Boolean
+    suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
     suspend fun initializeAchievement(achievementId: String): RealmAchievement?
     suspend fun updateAchievement(
