@@ -611,7 +611,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getLastPendingSubmission(userId: String?): RealmSubmission? {
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             realm.where(RealmSubmission::class.java)
                 .equalTo("status", "pending")
                 .equalTo("userId", userId)
@@ -661,7 +661,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             val results = realm.where(RealmSubmitPhotos::class.java)
                 .`in`("id", ids)
                 .findAll()
