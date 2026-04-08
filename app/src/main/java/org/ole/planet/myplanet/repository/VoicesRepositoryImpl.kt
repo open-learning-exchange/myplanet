@@ -504,70 +504,68 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        executeTransaction { mRealm ->
-            docs.forEach { doc ->
-                insertNewsToRealm(mRealm, doc)
-            }
+        docs.forEach { doc ->
+            insertNewsToRealm(doc)
         }
         saveConcatenatedLinksToPrefs()
     }
 
     override suspend fun insertNewsFromJson(doc: JsonObject) {
-        executeTransaction { mRealm ->
-            insertNewsToRealm(mRealm, doc)
-        }
+        insertNewsToRealm(doc)
         saveConcatenatedLinksToPrefs()
     }
 
-    private fun insertNewsToRealm(mRealm: Realm, doc: JsonObject) {
-        var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
-        if (news == null) {
-            news = mRealm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
-        }
-        news?._rev = JsonUtils.getString("_rev", doc)
-        news?._id = JsonUtils.getString("_id", doc)
-        news?.viewableBy = JsonUtils.getString("viewableBy", doc)
-        news?.docType = JsonUtils.getString("docType", doc)
-        news?.avatar = JsonUtils.getString("avatar", doc)
-        news?.updatedDate = JsonUtils.getLong("updatedDate", doc)
-        news?.viewableId = JsonUtils.getString("viewableId", doc)
-        news?.createdOn = JsonUtils.getString("createdOn", doc)
-        news?.messageType = JsonUtils.getString("messageType", doc)
-        news?.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
-        news?.replyTo = JsonUtils.getString("replyTo", doc)
-        news?.parentCode = JsonUtils.getString("parentCode", doc)
-        val user = JsonUtils.getJsonObject("user", doc)
-        news?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
-        news?.userId = JsonUtils.getString("_id", user)
-        news?.userName = JsonUtils.getString("name", user)
-        news?.time = JsonUtils.getLong("time", doc)
-        val images = JsonUtils.getJsonArray("images", doc)
-        val message = JsonUtils.getString("message", doc)
-        news?.message = message
-        val links = extractLinks(message)
-        val baseUrl = UrlUtils.getUrl()
-        synchronized(concatenatedLinks) {
-            for (link in links) {
-                val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
+    private suspend fun insertNewsToRealm(doc: JsonObject) {
+        executeTransaction { realm ->
+            var news = realm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
+            if (news == null) {
+                news = realm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
             }
-        }
-        news?.images = JsonUtils.gson.toJson(images)
-        val labels = JsonUtils.getJsonArray("labels", doc)
-        news?.viewIn = JsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
-        news?.setLabels(labels)
-        news?.chat = JsonUtils.getBoolean("chat", doc)
+            news?._rev = JsonUtils.getString("_rev", doc)
+            news?._id = JsonUtils.getString("_id", doc)
+            news?.viewableBy = JsonUtils.getString("viewableBy", doc)
+            news?.docType = JsonUtils.getString("docType", doc)
+            news?.avatar = JsonUtils.getString("avatar", doc)
+            news?.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            news?.viewableId = JsonUtils.getString("viewableId", doc)
+            news?.createdOn = JsonUtils.getString("createdOn", doc)
+            news?.messageType = JsonUtils.getString("messageType", doc)
+            news?.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
+            news?.replyTo = JsonUtils.getString("replyTo", doc)
+            news?.parentCode = JsonUtils.getString("parentCode", doc)
+            val user = JsonUtils.getJsonObject("user", doc)
+            news?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
+            news?.userId = JsonUtils.getString("_id", user)
+            news?.userName = JsonUtils.getString("name", user)
+            news?.time = JsonUtils.getLong("time", doc)
+            val images = JsonUtils.getJsonArray("images", doc)
+            val message = JsonUtils.getString("message", doc)
+            news?.message = message
+            val links = extractLinks(message)
+            val baseUrl = UrlUtils.getUrl()
+            synchronized(concatenatedLinks) {
+                for (link in links) {
+                    val concatenatedLink = "$baseUrl/$link"
+                    concatenatedLinks.add(concatenatedLink)
+                }
+            }
+            news?.images = JsonUtils.gson.toJson(images)
+            val labels = JsonUtils.getJsonArray("labels", doc)
+            news?.viewIn = JsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
+            news?.setLabels(labels)
+            news?.chat = JsonUtils.getBoolean("chat", doc)
 
-        val newsObj = JsonUtils.getJsonObject("news", doc)
-        news?.newsId = JsonUtils.getString("_id", newsObj)
-        news?.newsRev = JsonUtils.getString("_rev", newsObj)
-        news?.newsUser = JsonUtils.getString("user", newsObj)
-        news?.aiProvider = JsonUtils.getString("aiProvider", newsObj)
-        news?.newsTitle = JsonUtils.getString("title", newsObj)
-        news?.conversations = JsonUtils.gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
-        news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
-        news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
-        news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
+            val newsObj = JsonUtils.getJsonObject("news", doc)
+            news?.newsId = JsonUtils.getString("_id", newsObj)
+            news?.newsRev = JsonUtils.getString("_rev", newsObj)
+            news?.newsUser = JsonUtils.getString("user", newsObj)
+            news?.aiProvider = JsonUtils.getString("aiProvider", newsObj)
+            news?.newsTitle = JsonUtils.getString("title", newsObj)
+            news?.conversations = JsonUtils.gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
+            news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
+            news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
+            news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
+        }
     }
 
     override fun serializeNews(news: RealmNews): JsonObject {
