@@ -258,7 +258,10 @@ class TransactionSyncManager @Inject constructor(
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
-                            "courses" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
+                            "courses" -> {
+                                coursesRepository.bulkInsertFromSync(mRealm, arr)
+                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                            }
                             "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
                             "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
@@ -269,7 +272,6 @@ class TransactionSyncManager @Inject constructor(
                             "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
                             else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
                         }
-                        org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
                             android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
