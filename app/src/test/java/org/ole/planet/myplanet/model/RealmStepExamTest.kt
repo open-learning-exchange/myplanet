@@ -11,6 +11,7 @@ import io.realm.RealmResults
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -104,7 +105,7 @@ class RealmStepExamTest {
             addProperty("teamId", "team1")
             addProperty("teamShareAllowed", true)
             addProperty("sourceSurveyId", "survey1")
-            add("questions", JsonArray())
+            add("questions", JsonArray().apply { add(JsonObject()) })
         }
 
         val mockQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
@@ -113,10 +114,10 @@ class RealmStepExamTest {
         every { mockQuery.findFirst() } returns null
 
         val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
-        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
         every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
         every { mockRealm.createObject(RealmStepExam::class.java, null as String?) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
 
         val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
         val mockQuestionsResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
@@ -127,6 +128,7 @@ class RealmStepExamTest {
 
         every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
 
+        // Calling the 4 arg which delegates to 5 arg with empty string
         RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, mockRealm)
 
         verify { mockRealmStepExam.name = "Test Exam" }
@@ -138,6 +140,7 @@ class RealmStepExamTest {
         verify { mockRealmStepExam.teamId = "team1" }
         verify { mockRealmStepExam.isTeamShareAllowed = true }
         verify { mockRealmStepExam.sourceSurveyId = "survey1" }
+        verify { mockRealmStepExam.noOfQuestions = 1 }
     }
 
     @Test
@@ -156,8 +159,10 @@ class RealmStepExamTest {
 
         val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
         val parentId = "parent-nation-id"
-        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
+        // Ensure ambiguity is removed by explicitly testing specific arg logic
         every { mockRealm.createObject(RealmStepExam::class.java, parentId) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
+        every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
         every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
 
         val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
@@ -169,10 +174,12 @@ class RealmStepExamTest {
 
         every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
 
+        // Explicitly calling the 5 arg method
         RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, parentId, mockRealm)
 
         verify { mockRealmStepExam.name = "Nation Exam" }
         verify { mockRealmStepExam.isFromNation = true }
+        verify { mockRealmStepExam.noOfQuestions = 0 }
     }
 
 
