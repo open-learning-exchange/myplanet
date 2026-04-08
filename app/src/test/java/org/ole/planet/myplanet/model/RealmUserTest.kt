@@ -3,17 +3,11 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import io.mockk.MockKAnnotations
 import io.mockk.Runs
-import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.runs
-import io.mockk.slot
-import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.Realm

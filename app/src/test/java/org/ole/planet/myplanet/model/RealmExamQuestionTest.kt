@@ -2,21 +2,25 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.Called
+import io.mockk.MockKAnnotations
 import io.mockk.every
-import io.mockk.mockk
-import io.mockk.spyk
-import io.mockk.verify
-import io.mockk.unmockkAll
-import io.mockk.*
 import io.mockk.impl.annotations.MockK
-import io.realm.RealmResults
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkClass
+import io.mockk.spyk
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
+import io.realm.RealmResults
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.*
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 

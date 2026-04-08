@@ -2,16 +2,21 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import com.google.gson.JsonObject
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class RealmRatingTest {
 

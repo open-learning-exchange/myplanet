@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import javax.inject.Inject
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsEx
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -35,9 +37,6 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-
-import dagger.Lazy
-import org.ole.planet.myplanet.repository.TeamsRepository
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
