@@ -218,9 +218,10 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
-        binding.tvGoals.text = a.goals
-        binding.tvPurpose.text = a.purpose
-        binding.tvAchievementHeader.text = a.achievementsHeader
+        binding.tvGoals.text = a.goals.ifBlank { getString(R.string.no_goal_added) }
+        binding.tvPurpose.text = a.purpose.ifBlank { getString(R.string.no_purpose_added) }
+        binding.tvAchievementHeader.text =
+            a.achievementsHeader.ifBlank { getString(R.string.no_achievement_added) }
     }
 
     private fun populateAchievements(data: AchievementData) {
@@ -302,6 +303,10 @@ class AchievementFragment : BaseContainerFragment() {
 
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
+        val hasReferences = data.references.isNotEmpty()
+        binding.rvOtherInfo.visibility = if (hasReferences) View.VISIBLE else View.GONE
+        binding.tvReferencesHeader.visibility = if (hasReferences) View.GONE else View.VISIBLE
+
         if (binding.rvOtherInfo.adapter == null) {
             binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
         } else {

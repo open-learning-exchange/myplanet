@@ -1222,5 +1222,11 @@
     <string name="select_media">وسائط</string>
     <string name="select_resource_type">نوع المورد</string>
     <string name="no_results_for_filter">لا توجد نتائج تطابق الفلتر الحالي</string>
+    <string name="resource_title_already_exists">يوجد مورد بهذا العنوان بالفعل</string>
+    <string name="no_purpose_added">لم تتم إضافة غرض</string>
+    <string name="no_goal_added">لم يتم تحديد أي أهداف بعد</string>
+    <string name="no_achievement_added">ملخص الإنجازات</string>
+    <string name="no_references_added">لم تتم إضافة مراجع</string>
+    <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
 
 </resources>

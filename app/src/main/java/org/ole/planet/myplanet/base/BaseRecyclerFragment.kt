@@ -10,7 +10,6 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmList
 import io.realm.RealmObject
 import java.text.Normalizer
 import java.util.Locale
@@ -78,7 +77,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            requireRealmInstance()
             model = profileDbHandler.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
@@ -114,7 +112,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open fun addToMyList() {
-        if (!isRealmInitialized() || isAddInProgress) return
+        if (isAddInProgress) return
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) return
@@ -165,10 +163,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             setJoinInProgress(false)
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
-
-            if (!requireRealmInstance().isClosed) {
-                requireRealmInstance().refresh()
-            }
 
             val newAdapter = getAdapter()
             recyclerView.adapter = newAdapter
@@ -235,21 +229,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (tags.isEmpty()) {
             return list
         }
-
-        val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-        val linkedCourseIds = requireRealmInstance().where(RealmTag::class.java)
-            .equalTo("db", "courses")
-            .`in`("tagId", tagIds)
-            .findAll()
-            .mapNotNull { it.linkId }
-            .toSet()
-
-        val courses = RealmList<RealmMyCourse>()
-        list.forEach { course ->
-            if (linkedCourseIds.contains(course.courseId) && !courses.contains(course)) {
-                courses.add(course)
-            }
-        }
+        val courses = coursesRepository.filterCoursesByTag(s, tags, isMyCourseLib, model?.id)
         return applyCourseFilter(courses)
     }
 
