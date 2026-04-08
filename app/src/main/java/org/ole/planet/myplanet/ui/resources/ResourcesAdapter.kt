@@ -153,13 +153,22 @@ class ResourcesAdapter(
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        val oldSelectedIds = selectedItems.mapNotNull { it.id }.toSet()
         if (selectAll) {
             selectedItems.clear()
             selectedItems.addAll(currentList)
         } else {
             selectedItems.clear()
         }
-        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
+        val newSelectedIds = selectedItems.mapNotNull { it.id }.toSet()
+
+        currentList.forEachIndexed { index, library ->
+            val wasSelected = oldSelectedIds.contains(library.id)
+            val isSelected = newSelectedIds.contains(library.id)
+            if (wasSelected != isSelected) {
+                notifyItemChanged(index, SELECTION_PAYLOAD)
+            }
+        }
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
         }
@@ -203,8 +212,19 @@ class ResourcesAdapter(
     }
 
     fun setTagsMap(tagsMap: Map<String, List<TagItem>>) {
+        val oldTagsMap = this.tagsMap
         this.tagsMap = tagsMap
-        notifyItemRangeChanged(0, currentList.size, TAGS_PAYLOAD)
+
+        currentList.forEachIndexed { index, library ->
+            val resourceId = library.id
+            if (resourceId != null) {
+                val oldTags = oldTagsMap[resourceId].orEmpty()
+                val newTags = tagsMap[resourceId].orEmpty()
+                if (oldTags != newTags) {
+                    notifyItemChanged(index, TAGS_PAYLOAD)
+                }
+            }
+        }
     }
 
     fun setOpenedResourceIds(openedResourceIds: Set<String>) {
