@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import java.lang.reflect.Method
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -52,6 +53,8 @@ class TransactionSyncManager @Inject constructor(
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
+    private val methodCache = mutableMapOf<String, Method?>()
+
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
@@ -320,15 +323,12 @@ class TransactionSyncManager @Inject constructor(
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
         try {
-            val methods = Constants.classList[type]?.methods
-            methods?.let {
-                for (m in it) {
-                    if ("insert" == m.name) {
-                        m.invoke(null, mRealm, jsonDoc)
-                        break
-                    }
+            val method = synchronized(methodCache) {
+                methodCache.getOrPut(type) {
+                    Constants.classList[type]?.methods?.find { "insert" == it.name }
                 }
             }
+            method?.invoke(null, mRealm, jsonDoc)
         } catch (e: Exception) {
             e.printStackTrace()
         }
