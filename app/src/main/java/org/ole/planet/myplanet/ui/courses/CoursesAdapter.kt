@@ -57,7 +57,7 @@ class CoursesAdapter(
         submitList(currentList.toList())
     }
 
-    private val selectedItems: MutableList<Course?> = ArrayList()
+    private var selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
