@@ -250,7 +250,9 @@ class RealmMeetupTest {
     @Test
     fun testGetHashMapDateThrows() {
         mockkObject(TimeUtils)
-        every { TimeUtils.getFormattedDate(any<Long>()) } throws RuntimeException("TimeUtils crashed")
+        every { TimeUtils.getFormattedDate(any<Long>()) } throws object : RuntimeException("TimeUtils crashed") {
+            override fun printStackTrace() {} // Silence stack trace in test logs
+        }
 
         val meetup = RealmMeetup()
         meetup.startDate = 1672531200000L
