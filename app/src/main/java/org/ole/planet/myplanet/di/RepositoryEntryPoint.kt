@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
+@Deprecated("Use SharedInternalEntryPoint instead")
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface RepositoryEntryPoint {

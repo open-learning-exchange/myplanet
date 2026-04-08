@@ -6,6 +6,7 @@ import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.retry.RetryQueue
 
+@Deprecated("Use SharedInternalEntryPoint instead")
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface RetryQueueEntryPoint {

@@ -7,6 +7,7 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.services.BroadcastService
 
+@Deprecated("Use SharedInternalEntryPoint instead")
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface BroadcastServiceEntryPoint {

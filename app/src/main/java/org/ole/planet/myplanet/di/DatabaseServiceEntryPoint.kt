@@ -5,6 +5,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.data.DatabaseService
 
+@Deprecated("Use SharedInternalEntryPoint instead")
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface DatabaseServiceEntryPoint {

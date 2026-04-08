@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 
+@Deprecated("Use SharedInternalEntryPoint instead")
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface WorkerDependenciesEntryPoint {

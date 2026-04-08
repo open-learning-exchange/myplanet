@@ -36,11 +36,10 @@ import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApiClientEntryPoint
 import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.RetryQueueEntryPoint
 import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
-import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.di.SharedInternalEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
@@ -116,10 +115,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             applicationScope.launch {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     context,
-                    WorkerDependenciesEntryPoint::class.java
+                    SharedInternalEntryPoint::class.java
                 )
                 val userSessionManager = entryPoint.userSessionManager()
-                val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                val spm = EntryPointAccessors.fromApplication(context, SharedInternalEntryPoint::class.java).sharedPrefManager()
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
                     val model = userSessionManager.getUserModel()

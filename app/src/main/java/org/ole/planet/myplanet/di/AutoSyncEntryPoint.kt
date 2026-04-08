@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.SyncManager
 
+@Deprecated("Use SharedInternalEntryPoint instead")
 @EntryPoint
 @InstallIn(SingletonComponent::class)
 interface AutoSyncEntryPoint {
