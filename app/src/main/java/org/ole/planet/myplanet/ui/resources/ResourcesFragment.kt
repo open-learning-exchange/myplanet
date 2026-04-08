@@ -384,7 +384,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun checkList(listSize: Int = adapterLibrary.getLibraryList().size) {
+    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
         if (listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
