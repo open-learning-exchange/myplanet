@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
