@@ -5,6 +5,7 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import io.realm.log.RealmLog
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -59,8 +60,6 @@ open class RealmRepository(
         var results: RealmResults<T>? = null
         var listener: RealmChangeListener<RealmResults<T>>? = null
 
-        val channel = Channel<RealmResults<T>>(Channel.CONFLATED)
-
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
                 try {
@@ -72,7 +71,7 @@ open class RealmRepository(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    RealmLog.error(e, "Error removing RealmChangeListener")
                 }
                 try {
                     realm?.let { r ->
@@ -81,23 +80,7 @@ open class RealmRepository(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-
-        // Single serialized path to copy and send downstream
-        launch(databaseService.ioDispatcher) {
-            for (frozenResults in channel) {
-                if (isClosed.get()) break
-                try {
-                    val frozenRealm = frozenResults.realm
-                    val copiedList = frozenRealm.copyFromRealm(frozenResults)
-                    if (!isClosed.get()) {
-                        send(copiedList)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    RealmLog.error(e, "Error closing Realm")
                 }
             }
         }
@@ -107,8 +90,15 @@ open class RealmRepository(
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
             if (initialResults.isValid && initialResults.isLoaded) {
-                val frozenInitial = initialResults.freeze()
-                channel.trySend(frozenInitial)
+                try {
+                    val frozenInitial = initialResults.freeze()
+                    val copiedInitial = frozenInitial.realm.copyFromRealm(frozenInitial)
+                    if (!isClosed.get()) {
+                        trySend(copiedInitial)
+                    }
+                } catch (e: Exception) {
+                    RealmLog.error(e, "Error copying initial results")
+                }
             }
 
             results = realm.where(clazz).apply(builder).findAllAsync()
@@ -116,20 +106,21 @@ open class RealmRepository(
                 if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
                     try {
                         val frozenResults = changedResults.freeze()
-                        channel.trySend(frozenResults)
+                        val copiedList = frozenResults.realm.copyFromRealm(frozenResults)
+                        if (!isClosed.get()) {
+                            trySend(copiedList)
+                        }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        RealmLog.error(e, "Error copying changed results")
                     }
                 }
             }
             results.addChangeListener(listener)
 
             awaitClose {
-                channel.close()
                 safeCloseRealm()
             }
         } catch (e: Exception) {
-            channel.close()
             safeCloseRealm()
             throw e
         }
