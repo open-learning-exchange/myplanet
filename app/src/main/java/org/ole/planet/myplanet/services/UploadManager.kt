@@ -556,11 +556,8 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
-
         ApiClient.ensureInitialized()
-
         val user = userRepository.getUserModelSuspending()
-
         val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
         withContext(dispatcherProvider.io) {
