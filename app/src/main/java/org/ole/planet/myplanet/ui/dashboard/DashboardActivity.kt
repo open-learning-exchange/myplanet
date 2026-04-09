@@ -104,7 +104,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, prefData, dashboardViewModel)
     }
-    private lateinit var notificationManager: NotificationUtils.NotificationManager
+    private var notificationManager: NotificationUtils.NotificationManager? = null
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
@@ -119,7 +119,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onCreate(savedInstanceState)
         postponeEnterTransition()
         initViews()
-        notificationManager = NotificationUtils.getInstance(this)
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
@@ -147,6 +146,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         collectUiState()
 
         lifecycleScope.launch {
+            notificationManager = withContext(Dispatchers.IO) {
+                NotificationUtils.getInstance(this@DashboardActivity)
+            }
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
@@ -192,7 +194,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             openNotificationsList(user?.id ?: "")
                         }
                         if (state.newNotifications.isNotEmpty()) {
-                            state.newNotifications.forEach { notificationManager.showNotification(it) }
+                            state.newNotifications.forEach { notificationManager?.showNotification(it) }
                             dashboardViewModel.clearNewNotifications()
                         }
                     }
@@ -430,7 +432,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val notificationId = intent.getStringExtra("notification_id")
 
             notificationId?.let {
-                notificationManager.clearNotification(it)
+                notificationManager?.clearNotification(it)
                 markDatabaseNotificationAsRead(it)
             }
 
