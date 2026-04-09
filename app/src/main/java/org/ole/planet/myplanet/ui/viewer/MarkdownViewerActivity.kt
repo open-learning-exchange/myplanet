@@ -23,9 +23,6 @@ class MarkdownViewerActivity : AppCompatActivity() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var binding: ActivityMarkdownViewerBinding
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
