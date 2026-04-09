@@ -713,7 +713,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmSubmission.insert(realm, jsonDoc)
+            insertSubmission(realm, jsonDoc)
         }
     }
 
