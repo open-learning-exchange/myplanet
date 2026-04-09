@@ -16,7 +16,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -332,15 +331,10 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun openNotificationSettings() {
         try {
-            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val intent =
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                 }
-            } else {
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", packageName, null)
-                }
-            }
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
@@ -432,7 +426,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     }
 
     fun checkNotificationPermissionStatus() {
-        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         val lastCheck = prefs.getLong("last_notification_check", 0)
         val currentTime = System.currentTimeMillis()
 
@@ -497,7 +491,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
-            return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
+            return context.packageManager.canRequestPackageInstalls()
         }
     }
 }

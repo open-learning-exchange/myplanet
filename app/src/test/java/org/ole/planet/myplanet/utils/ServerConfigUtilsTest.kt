@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
