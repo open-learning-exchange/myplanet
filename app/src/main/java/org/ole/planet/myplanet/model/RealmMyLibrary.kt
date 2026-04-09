@@ -309,8 +309,10 @@ open class RealmMyLibrary : RealmObject() {
                 if (!isLocalOnlyPrivate) {
                     isPrivate = JsonUtils.getBoolean("private", doc)
                     if (isPrivate && doc.has("privateFor")) {
-                        val privateForObj = doc.getAsJsonObject("privateFor")
-                        privateFor = privateForObj.get("teams")?.asString
+                        val privateForElement = doc.get("privateFor")
+                        if (privateForElement.isJsonObject) {
+                            privateFor = privateForElement.asJsonObject.get("teams")?.asString
+                        }
                     }
                 }
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)

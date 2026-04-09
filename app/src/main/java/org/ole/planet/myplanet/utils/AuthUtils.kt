@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.utils
 
 import android.widget.Toast
 import kotlin.coroutines.resume
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.repository.UserRepository
@@ -21,7 +23,9 @@ object AuthUtils {
         if (activity.forceSyncTrigger()) return
 
         val settings = activity.settings
-        SecurePrefs.saveCredentials(activity, settings, name, password)
+        withContext(Dispatchers.IO) {
+            SecurePrefs.saveCredentials(activity, settings, name, password)
+        }
 
         val isLoggedIn = activity.authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
