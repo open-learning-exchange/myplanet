@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.base
 
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,14 +10,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmObject
-import java.text.Normalizer
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -211,50 +207,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
-
-    suspend fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
-        if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse>()))
-        }
-        var list = coursesRepository.search(s)
-        list = if (isMyCourseLib) {
-            coursesRepository.getMyCourses(model?.id, list)
-        } else {
-            coursesRepository.getAllCourses(model?.id, list)
-        }
-        if (tags.isEmpty()) {
-            return list
-        }
-        val courses = coursesRepository.filterCoursesByTag(s, tags, isMyCourseLib, model?.id)
-        return applyCourseFilter(courses)
-    }
-
-    private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
-        return items.filterIsInstance<RealmMyCourse>()
-    }
-
     fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
         val newList: MutableList<RealmMyLibrary> = ArrayList()
         for (l in libraries) {
             if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
-    private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
-        if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
-        val newList: MutableList<RealmMyCourse> = ArrayList()
-        for (l in courses) {
-            if (TextUtils.equals(l.gradeLevel, gradeLevel) || TextUtils.equals(
-                    l.subjectLevel, subjectLevel
-                )
-            ) {
-                newList.add(l)
-            }
         }
         return newList
     }
@@ -281,8 +237,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,
@@ -310,15 +264,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             v.visibility = if (count == 0) View.VISIBLE else View.GONE
             val messageRes = noDataMessages[source]
                 ?: R.string.no_data_available_please_check_and_try_again
-            val textView = if (v is TextView) v else v.findViewById<TextView>(R.id.tv_empty_message)
-            textView?.setText(messageRes)
+            val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
+            textView.setText(messageRes)
         }
 
         fun showNoFilter(v: View?, count: Int) {
             v ?: return
             v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            val textView = if (v is TextView) v else v.findViewById<TextView>(R.id.tv_empty_message)
-            textView?.setText(R.string.no_course_matched_filter)
+            val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
+            textView.setText(R.string.no_course_matched_filter)
         }
     }
 }
