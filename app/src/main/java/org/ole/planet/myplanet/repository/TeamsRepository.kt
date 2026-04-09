@@ -144,4 +144,7 @@ interface TeamsRepository {
     fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long?
 
     fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertTasksFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertTeamActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }
