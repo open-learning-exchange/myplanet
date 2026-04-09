@@ -275,7 +275,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.getUserModel()
         val userId = prefData.getUserId().ifEmpty { "--" }
 
         val allForUser = lifeRepository.getMyLifeByUserId(userId)
@@ -290,11 +289,10 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
         }
 
-        val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
-        updateMyLifeSurveyCount(flexboxLayout, surveyCount)
+        updateMyLifeSurveyCount()
     }
 
-    private fun updateMyLifeSurveyCount(flexboxLayout: FlexboxLayout, surveyCount: Int) {
+    private fun updateMyLifeSurveyCount() {
         // Update views with survey count if needed
     }
 
