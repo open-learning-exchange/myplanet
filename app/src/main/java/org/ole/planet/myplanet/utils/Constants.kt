@@ -56,7 +56,6 @@ object Constants {
         classList["news"] = RealmNews::class.java
         classList["tags"] = RealmTag::class.java
         classList["ratings"] = RealmRating::class.java
-        classList["submissions"] = RealmSubmission::class.java
         classList["courses"] = RealmMyCourse::class.java
         classList["achievements"] = RealmAchievement::class.java
         classList["feedback"] = RealmFeedback::class.java

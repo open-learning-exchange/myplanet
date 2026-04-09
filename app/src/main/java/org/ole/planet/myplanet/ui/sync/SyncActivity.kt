@@ -120,7 +120,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var isSync = false
     var forceSync = false
     var syncFailed = false
-    lateinit var defaultPref: SharedPreferences
+    val defaultPref: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+    }
     @Inject
     lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null

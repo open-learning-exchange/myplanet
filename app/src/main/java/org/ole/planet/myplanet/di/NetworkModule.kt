@@ -22,6 +22,15 @@ import org.ole.planet.myplanet.services.BroadcastService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
+private class TaggedSocketFactory(private val delegate: SocketFactory) : SocketFactory() {
+    private fun tag() = TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+    override fun createSocket(): Socket { tag(); return delegate.createSocket() }
+    override fun createSocket(host: String, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
+    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(host, port, localHost, localPort) }
+    override fun createSocket(host: InetAddress, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
+    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(address, port, localAddress, localPort) }
+}
+
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardHttpClient

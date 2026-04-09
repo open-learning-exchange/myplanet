@@ -9,6 +9,14 @@ import java.util.Locale
 
 object LocaleUtils {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"
+    @Volatile private var cachedLanguage: String? = null
+
+    fun preload(context: Context) {
+        if (cachedLanguage == null) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+            cachedLanguage = prefs.getString(SELECTED_LANGUAGE, null) ?: Locale.getDefault().language
+        }
+    }
 
     @Volatile private var cachedLanguage: String? = null
 
