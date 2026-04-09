@@ -108,7 +108,6 @@ object ServiceModule {
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
-        submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
