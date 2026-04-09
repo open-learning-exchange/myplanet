@@ -18,7 +18,7 @@ class RealmFeedbackTest {
     fun setup() {
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
-            val str = arg<CharSequence?>(0)
+            val str = firstArg<CharSequence?>()
             str == null || str.length == 0
         }
     }
@@ -142,5 +142,24 @@ class RealmFeedbackTest {
         val messagesArray = serialized.get("messages").asJsonArray
         assertEquals(1, messagesArray.size())
         assertEquals("Test message", messagesArray[0].asJsonObject.get("message").asString)
+    }
+
+    @Test
+    fun testSerializeFeedbackWithInvalidMessagesException() {
+        val feedback = RealmFeedback()
+
+        feedback.setMessages("invalid json")
+
+        mockkStatic(com.google.gson.JsonParser::class)
+        every { com.google.gson.JsonParser.parseString(any()) } throws object : Exception("Test exception") {
+            override fun printStackTrace() {
+                // Do nothing to keep test logs clean
+            }
+        }
+
+        val jsonObject = RealmFeedback.serializeFeedback(feedback)
+
+        // When an exception is thrown, the "messages" property is not added
+        assertNull(jsonObject.get("messages"))
     }
 }
