@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -42,6 +43,7 @@ class TransactionSyncManagerTest {
     private val feedbackRepository: FeedbackRepository = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val userRepository: UserRepository = mockk()
+    private val submissionsRepository: SubmissionsRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
     private val teamsRepository: Lazy<TeamsRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
@@ -63,6 +65,7 @@ class TransactionSyncManagerTest {
             feedbackRepository,
             sharedPrefManager,
             userRepository,
+            submissionsRepository,
             activitiesRepository,
 			teamsRepository,
 			notificationsRepository,
