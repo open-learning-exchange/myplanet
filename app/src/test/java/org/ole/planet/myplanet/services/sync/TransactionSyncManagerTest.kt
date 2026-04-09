@@ -72,7 +72,6 @@ class TransactionSyncManagerTest {
             feedbackRepository,
             sharedPrefManager,
             userRepository,
-            submissionsRepository,
             activitiesRepository,
 			teamsRepository,
 			notificationsRepository,
