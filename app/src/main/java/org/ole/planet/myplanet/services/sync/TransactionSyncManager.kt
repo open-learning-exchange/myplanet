@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
@@ -308,6 +309,9 @@ class TransactionSyncManager @Inject constructor(
             }
             "submissions" -> {
                 submissionsRepository.insertSubmission(mRealm, jsonDoc)
+            }
+            "courses" -> {
+                RealmMyCourse.insert(mRealm, jsonDoc, sharedPrefManager)
             }
             "team_activities" -> {
                 teamsRepository.get().insertTeamLog(mRealm, jsonDoc)
