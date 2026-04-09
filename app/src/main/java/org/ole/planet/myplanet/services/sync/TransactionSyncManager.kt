@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
@@ -47,6 +48,7 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
@@ -304,6 +306,12 @@ class TransactionSyncManager @Inject constructor(
             }
             "tablet_users" -> {
                 userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
+            }
+            "submissions" -> {
+                submissionsRepository.insertSubmission(mRealm, jsonDoc)
+            }
+            "courses" -> {
+                RealmMyCourse.insert(mRealm, jsonDoc, sharedPrefManager)
             }
             "team_activities" -> {
                 teamsRepository.get().insertTeamLog(mRealm, jsonDoc)
