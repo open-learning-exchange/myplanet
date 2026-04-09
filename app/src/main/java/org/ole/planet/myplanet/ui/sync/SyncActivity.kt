@@ -190,7 +190,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
         settings = prefData.rawPreferences
         requestAllPermissions()
-        defaultPref = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         processedUrl = UrlUtils.getUrl()
     }
 
