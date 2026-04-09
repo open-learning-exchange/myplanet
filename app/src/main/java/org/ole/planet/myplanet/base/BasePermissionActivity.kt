@@ -336,15 +336,10 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun openNotificationSettings() {
         try {
-            val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val intent =
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                     putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
                 }
-            } else {
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", packageName, null)
-                }
-            }
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
@@ -506,7 +501,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
-            return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
+            return context.packageManager.canRequestPackageInstalls()
         }
     }
 }
