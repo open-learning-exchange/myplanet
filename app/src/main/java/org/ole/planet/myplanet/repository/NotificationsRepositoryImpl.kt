@@ -232,15 +232,15 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTaskTeamNames(taskTitles: List<String>): Map<String, String> {
+    override suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
         return withRealm { realm ->
-            if (taskTitles.isEmpty()) return@withRealm emptyMap()
+            if (taskIds.isEmpty()) return@withRealm emptyMap()
             val map = mutableMapOf<String, String>()
             val query = realm.where(RealmTeamTask::class.java)
             query.beginGroup()
-            taskTitles.forEachIndexed { index, title ->
+            taskIds.forEachIndexed { index, taskId ->
                 if (index > 0) query.or()
-                query.equalTo("title", title)
+                query.equalTo("id", taskId)
             }
             query.endGroup()
             val tasks = query.findAll()
@@ -258,11 +258,11 @@ class NotificationsRepositoryImpl @Inject constructor(
                 val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
 
                 tasks.forEach { task ->
-                    val title = task.title
+                    val taskId = task.id
                     val teamId = task.teamId
-                    if (!title.isNullOrEmpty() && !teamId.isNullOrEmpty()) {
+                    if (!taskId.isNullOrEmpty() && !teamId.isNullOrEmpty()) {
                         teamMap[teamId]?.let { teamName ->
-                            map[title] = teamName
+                            map[taskId] = teamName
                         }
                     }
                 }
