@@ -36,11 +36,11 @@ class RetryQueueTest {
     fun setUp() {
         MockKAnnotations.init(this)
         mockkStatic(Log::class)
-        every { Log.d(any(), any()) } returns 0
-        every { Log.i(any(), any()) } returns 0
-        every { Log.w(any(), any()) } returns 0
-        every { Log.e(any(), any()) } returns 0
-        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.d(any<String>(), any<String>()) } returns 0
+        every { Log.i(any<String>(), any<String>()) } returns 0
+        every { Log.w(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         retryQueue = RetryQueue(retryRepository, context)
     }
@@ -93,8 +93,8 @@ class RetryQueueTest {
 
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 0) { retryRepository.getExistingOperation(any(), any()) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryRepository.getExistingOperation(any<String>(), any<String>()) }
+        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<UploadError>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
     }
 
     @Test
@@ -102,7 +102,7 @@ class RetryQueueTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
         val payload = JsonObject()
         coEvery { retryRepository.getExistingOperation("item1", "type") } returns null
-        coEvery { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        coEvery { retryRepository.enqueue(any<String>(), any<UploadError>(), any<String>(), any<String>(), any<String>(), any<String?>(), any<String>(), any<String?>()) } returns Unit
 
         retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
 
@@ -119,7 +119,7 @@ class RetryQueueTest {
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
         coVerify(exactly = 1) { retryRepository.updateAttempt("op1", error) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<UploadError>(), any<String>(), any<String>(), any<String>(), any<String?>(), any<String>(), any<String?>()) }
     }
 
     @Test
