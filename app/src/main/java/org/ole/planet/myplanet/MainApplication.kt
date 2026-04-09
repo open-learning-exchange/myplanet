@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.TrafficStats
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
@@ -171,6 +172,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
+                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
@@ -180,6 +182,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         connection.responseCode
                     } finally {
                         connection.disconnect()
+                        TrafficStats.clearThreadStatsTag()
                     }
                 }
                 responseCode in 200..299
@@ -210,6 +213,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         super.onCreate()
         context = this
         setupCriticalProperties()
+        LocaleUtils.preload(this)
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
