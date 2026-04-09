@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
-
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
@@ -76,8 +75,6 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadActivities(listener: OnSuccessListener?) {
-
-
         scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
                 withContext(dispatcherProvider.main) {
@@ -226,8 +223,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
         ApiClient.ensureInitialized()
-
-
         val photosToUpload = submissionsRepository.getUnuploadedPhotos()
 
         if (photosToUpload.isEmpty()) {
@@ -280,8 +275,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
         ApiClient.ensureInitialized()
-
-
         try {
             val user = userRepository.getUserModelSuspending()
 
@@ -378,8 +371,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
         ApiClient.ensureInitialized()
-
-
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
@@ -447,8 +438,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadTeams() {
         ApiClient.ensureInitialized()
-
-
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
@@ -476,7 +465,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
         ApiClient.ensureInitialized()
-
         val model = userRepository.getUserModelSuspending() ?: run {
             withContext(dispatcherProvider.main) {
                 listener.onSuccess("Cannot upload user activities: user model is null")
@@ -535,7 +523,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
         val logsData = activitiesRepository.getUnuploadedTeamLogs()
-
         val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
 
         logsData.forEach { logData ->
