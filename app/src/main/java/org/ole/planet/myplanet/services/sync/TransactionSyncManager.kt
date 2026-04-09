@@ -48,7 +48,6 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
-    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
