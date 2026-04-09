@@ -242,14 +242,16 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else if (table == "team_activities") {
                     val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
                         val id = getString("_id", jsonDoc)
                         if (!id.startsWith("_design")) {
-                            teamsRepository.get().insertTeamLog(jsonDoc)
+                            docs.add(jsonDoc)
                         }
                     }
+                    teamsRepository.get().insertTeamLogs(docs)
                     val insertDuration = System.currentTimeMillis() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",

@@ -137,6 +137,11 @@ interface TeamsRepository {
     suspend fun insertTeamLog(json: JsonObject)
 
     /**
+     * Inserts a list of team logs into the Realm within a single transaction.
+     */
+    suspend fun insertTeamLogs(logs: List<JsonObject>)
+
+    /**
      * Retrieves the last visit timestamp for a user in a specific team.
      * The [Realm] instance is passed explicitly so that callers can manage the Realm
      * lifecycle or execute this within an existing Realm context.
