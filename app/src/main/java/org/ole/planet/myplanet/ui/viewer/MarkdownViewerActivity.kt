@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import dagger.hilt.android.AndroidEntryPointimport org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 class MarkdownViewerActivity : AppCompatActivity() {
