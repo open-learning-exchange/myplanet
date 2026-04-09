@@ -18,6 +18,22 @@
     <color name="mainColor">@color/colorPrimary</color>
     <color name="mainColorLight">@color/colorPrimaryLight</color>
     <color name="dashboard_item_alternative">@color/md_grey_300</color>
+
+    <!-- Material colors copied from com.mikepenz.materialize -->
+    <color name="md_black_1000">#000000</color>
+    <color name="md_blue_50">#E3F2FD</color>
+    <color name="md_blue_grey_300">#90A4AE</color>
+    <color name="md_green_50">#E8F5E9</color>
+    <color name="md_green_500">#4CAF50</color>
+    <color name="md_grey_300">#E0E0E0</color>
+    <color name="md_grey_50">#FAFAFA</color>
+    <color name="md_grey_500">#9E9E9E</color>
+    <color name="md_red_700">#D32F2F</color>
+    <color name="md_white_1000">#FFFFFF</color>
+    <color name="md_yellow_500">#FFEB3B</color>
+    <color name="md_yellow_600">#FDD835</color>
+    <color name="primary_dark">@color/colorPrimaryDark</color>
+    <color name="accent">@color/colorAccent</color>
     <color name="total_color">@color/md_blue_900</color>
 
     <color name="black_overlay">#66000000</color>

@@ -52,8 +52,8 @@ class AudioPlayerActivity : AppCompatActivity() {
 
         binding.trackTitle.text = extractedFileName
         binding.artistName.text = resourceTitle
-        playButton = binding.playerView.findViewById(R.id.exo_play)
-        pauseButton = binding.playerView.findViewById(R.id.exo_pause)
+        playButton = binding.playerView.findViewById(androidx.media3.ui.R.id.exo_play)
+        pauseButton = binding.playerView.findViewById(androidx.media3.ui.R.id.exo_pause)
 
         Glide.with(this)
             .load(getThemeBackground())
