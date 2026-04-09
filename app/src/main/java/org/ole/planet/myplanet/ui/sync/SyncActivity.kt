@@ -393,7 +393,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (settings != null) {
                 this.settings = settings
             }
-            if (!userRepository.hasAtLeastOneUser()) {
+            if (!withContext(Dispatchers.IO) { userRepository.hasAtLeastOneUser() }) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {

@@ -204,6 +204,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
+    private var mainThreadRealm: io.realm.Realm? = null
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
@@ -214,6 +215,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         context = this
         setupCriticalProperties()
         LocaleUtils.preload(this)
+        warmUpMainThreadRealm()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
@@ -245,6 +247,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             this,
             ApplicationScopeEntryPoint::class.java
         ).applicationScope()
+    }
+
+    private fun warmUpMainThreadRealm() {
+        try {
+            mainThreadRealm = databaseService.createManagedRealmInstance()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun ensureApiClientInitialized() {
@@ -449,6 +459,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
+        mainThreadRealm?.close()
+        mainThreadRealm = null
         super.onTerminate()
         stopListenNetworkState()
     }

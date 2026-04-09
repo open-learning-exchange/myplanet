@@ -16,6 +16,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -426,15 +431,20 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     }
 
     fun checkNotificationPermissionStatus() {
-        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        val lastCheck = prefs.getLong("last_notification_check", 0)
-        val currentTime = System.currentTimeMillis()
-
-        if (currentTime - lastCheck > 24 * 60 * 60 * 1000) {
-            if (!areNotificationsEnabled()) {
-                onNotificationPermissionChanged(false)
+        lifecycleScope.launch {
+            val currentTime = System.currentTimeMillis()
+            val (lastCheck, prefs) = withContext(Dispatchers.IO) {
+                val p = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                Pair(p.getLong("last_notification_check", 0), p)
             }
-            prefs.edit { putLong("last_notification_check", currentTime) }
+            if (currentTime - lastCheck > 24 * 60 * 60 * 1000) {
+                if (!areNotificationsEnabled()) {
+                    onNotificationPermissionChanged(false)
+                }
+                withContext(Dispatchers.IO) {
+                    prefs.edit { putLong("last_notification_check", currentTime) }
+                }
+            }
         }
     }
 

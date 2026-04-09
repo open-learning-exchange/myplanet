@@ -19,8 +19,7 @@ object LocaleUtils {
     }
 
     fun onAttach(context: Context): Context {
-        val default = Locale.getDefault().language
-        val lang = cachedLanguage ?: getPersistedData(context, default)
+        val lang = cachedLanguage ?: getPersistedData(context, Locale.getDefault().language)
         return applyLocale(context, lang)
     }
 
