@@ -86,18 +86,8 @@ class CoursesAdapter(
     }
 
     fun setTagsMap(tagsMap: Map<String, List<Tag>>) {
-        val oldTagsMap = this.tagsMap
         this.tagsMap = tagsMap
-
-        val allKeys = mutableSetOf<String>()
-        allKeys.addAll(oldTagsMap.keys)
-        allKeys.addAll(tagsMap.keys)
-
-        allKeys.forEach { courseId ->
-            if (oldTagsMap[courseId] != tagsMap[courseId]) {
-                dispatchPayloadByCourseId(courseId, TAG_PAYLOAD)
-            }
-        }
+        notifyItemRangeChanged(0, itemCount, TAG_PAYLOAD)
     }
 
     fun removeCourses(courseIds: List<String>) {
@@ -117,31 +107,14 @@ class CoursesAdapter(
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
-        val oldMap = HashMap(this.map)
-        val oldProgressMap = this.progressMap?.let { HashMap(it) } ?: hashMapOf()
-
         this.map.clear()
         this.map.putAll(newMap)
         this.progressMap = newProgressMap
-
         submitList(newCourseList) {
-            val allKeys = mutableSetOf<String?>()
-            allKeys.addAll(oldMap.keys)
-            allKeys.addAll(newMap.keys)
-            allKeys.addAll(oldProgressMap.keys)
-            newProgressMap?.keys?.let { allKeys.addAll(it) }
-
-            allKeys.forEach { courseId ->
-                val ratingChanged = oldMap[courseId] != newMap[courseId]
-                val progressChanged = oldProgressMap[courseId] != newProgressMap?.get(courseId)
-
-                if (ratingChanged || progressChanged) {
-                    val bundle = Bundle()
-                    if (ratingChanged) bundle.putBoolean(RATING_PAYLOAD, true)
-                    if (progressChanged) bundle.putBoolean(PROGRESS_PAYLOAD, true)
-                    dispatchPayloadByCourseId(courseId, bundle)
-                }
-            }
+            val bundle = Bundle()
+            bundle.putBoolean(RATING_PAYLOAD, true)
+            bundle.putBoolean(PROGRESS_PAYLOAD, true)
+            notifyItemRangeChanged(0, itemCount, bundle)
         }
     }
 
