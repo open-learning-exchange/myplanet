@@ -340,7 +340,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return withRealm { realm ->
             realm.where(RealmOfflineActivity::class.java)
                 .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", io.realm.Sort.DESCENDING)
-                .findFirst()
+                .findFirst()?.let { realm.copyFromRealm(it) }
         }
     }
 
