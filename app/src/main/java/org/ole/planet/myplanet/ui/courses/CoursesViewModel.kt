@@ -7,8 +7,10 @@ import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -30,8 +32,8 @@ class CoursesViewModel @Inject constructor(
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState
 
-    suspend fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
-        withContext(dispatcherProvider.io) {
+    fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
+        viewModelScope.launch(dispatcherProvider.io) {
             coroutineScope {
                 val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
                 val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
@@ -55,7 +57,7 @@ class CoursesViewModel @Inject constructor(
         }
     }
 
-    suspend fun filterCourses(
+    fun filterCourses(
         searchText: String,
         gradeLevel: String,
         subjectLevel: String,
@@ -63,7 +65,7 @@ class CoursesViewModel @Inject constructor(
         userId: String?,
         isMyCourseLib: Boolean
     ) {
-        withContext(dispatcherProvider.io) {
+        viewModelScope.launch(dispatcherProvider.io) {
             coroutineScope {
                 val coursesDeferred = async {
                     coursesRepository.filterCourses(searchText, gradeLevel, subjectLevel, tagNames)
@@ -75,7 +77,11 @@ class CoursesViewModel @Inject constructor(
                 val map = ratingsDeferred.await()
                 val progressMap = progressDeferred.await()
 
-                val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
+                val myCourses = if (isMyCourseLib) {
+                    coursesRepository.getMyCourses(userId, filteredCourses)
+                } else {
+                    emptyList()
+                }
 
                 withContext(dispatcherProvider.main) {
                     processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap)
