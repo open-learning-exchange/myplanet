@@ -18,15 +18,6 @@ object LocaleUtils {
         }
     }
 
-    @Volatile private var cachedLanguage: String? = null
-
-    fun preload(context: Context) {
-        if (cachedLanguage == null) {
-            val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
-            cachedLanguage = prefs.getString(SELECTED_LANGUAGE, null) ?: Locale.getDefault().language
-        }
-    }
-
     fun onAttach(context: Context): Context {
         val lang = cachedLanguage ?: getPersistedData(context, Locale.getDefault().language)
         return applyLocale(context, lang)
