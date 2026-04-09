@@ -19,12 +19,13 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 
 @Singleton
 class UploadConfigs @Inject constructor(
     private val voicesRepository: VoicesRepository,
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
@@ -179,7 +180,7 @@ class UploadConfigs @Inject constructor(
                 .endGroup()
         },
         serializer = UploadSerializer.Full { realm, submission, context ->
-            RealmSubmission.serializeExamResult(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+            submissionsRepository.serializeExamResult(realm, submission, context, sharedPrefManager)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic

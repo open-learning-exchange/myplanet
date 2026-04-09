@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 
 data class SyncConfig(

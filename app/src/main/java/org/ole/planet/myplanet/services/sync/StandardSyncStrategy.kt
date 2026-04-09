@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
