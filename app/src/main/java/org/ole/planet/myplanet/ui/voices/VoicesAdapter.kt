@@ -210,7 +210,9 @@ class VoicesAdapter(
     }
 
     private fun extractSharedTeamName(news: RealmNews): String {
-        val ar = news.parsedViewIn ?: if (!TextUtils.isEmpty(news.viewIn)) {
+        val ar = if (news.parsedViewIn != null && news.rawViewIn == news.viewIn) {
+            news.parsedViewIn
+        } else if (!TextUtils.isEmpty(news.viewIn)) {
             try { JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java) } catch (e: Exception) { null }
         } else null
 
@@ -368,9 +370,11 @@ class VoicesAdapter(
 
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = news.parsedConversations ?: if (!news.conversations.isNullOrEmpty()) {
-                try { JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList() } catch (e: Exception) { emptyList() }
-            } else emptyList()
+            val conversations = if (news.parsedConversations != null && news.rawConversations == news.conversations) {
+                news.parsedConversations!!
+            } else {
+                JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
+            }
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
                 val cancelJob = launchCoroutine {
                     var currentIndex = 0
@@ -445,20 +449,35 @@ class VoicesAdapter(
 
     private fun preParseNews(news: RealmNews?) {
         news?.let {
-            if (it.parsedViewIn == null && !TextUtils.isEmpty(it.viewIn)) {
-                try { it.parsedViewIn = JsonUtils.gson.fromJson(it.viewIn, JsonArray::class.java) } catch (e: Exception) {}
-            }
-            if (it.parsedConversations == null && !it.conversations.isNullOrEmpty()) {
-                try { it.parsedConversations = JsonUtils.gson.fromJson(it.conversations, Array<RealmConversation>::class.java).toList() } catch (e: Exception) {}
-            }
-            if (it.parsedImageUrls == null && !it.imageUrls.isNullOrEmpty()) {
-                try {
-                    val urls = mutableListOf<JsonObject>()
-                    it.imageUrls?.forEach { url ->
-                        urls.add(JsonUtils.gson.fromJson(url, JsonObject::class.java))
-                    }
-                    it.parsedImageUrls = urls
-                } catch (e: Exception) {}
+            try {
+                if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
+                    try {
+                        it.parsedViewIn = JsonUtils.gson.fromJson(it.viewIn, JsonArray::class.java)
+                        it.rawViewIn = it.viewIn
+                    } catch (e: Exception) { e.printStackTrace() }
+                }
+                if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
+                    try {
+                        it.parsedConversations = JsonUtils.gson.fromJson(it.conversations, Array<RealmConversation>::class.java).toList()
+                        it.rawConversations = it.conversations
+                    } catch (e: Exception) { e.printStackTrace() }
+                }
+
+                val currentImageUrls = it.imageUrls?.toList()
+                if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
+                    try {
+                        val urls = mutableListOf<JsonObject>()
+                        currentImageUrls.forEach { url ->
+                            urls.add(JsonUtils.gson.fromJson(url, JsonObject::class.java))
+                        }
+                        it.parsedImageUrls = urls
+                        it.rawImageUrls = currentImageUrls
+                    } catch (e: Exception) { e.printStackTrace() }
+                }
+            } catch (e: IllegalStateException) {
+                // If Realm manages the object and we are on a different thread, mutating @Ignore fields might throw.
+                // We ignore the cache and let the fallback mechanism handle the parsing on the main thread later.
+                e.printStackTrace()
             }
         }
     }
@@ -669,20 +688,27 @@ class VoicesAdapter(
         }
     }
 
-    private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
-        binding.imgNews.visibility = View.GONE
-        binding.llNewsImages.visibility = View.GONE
-        binding.llNewsImages.removeAllViews()
-
-        val parsedImageUrls = news?.parsedImageUrls ?: if (!news?.imageUrls.isNullOrEmpty()) {
+    private fun getParsedImageUrls(news: RealmNews?): List<JsonObject>? {
+        val currentImageUrls = news?.imageUrls?.toList()
+        return if (news?.parsedImageUrls != null && news.rawImageUrls == currentImageUrls) {
+            news.parsedImageUrls
+        } else if (!currentImageUrls.isNullOrEmpty()) {
             try {
                 val urls = mutableListOf<JsonObject>()
-                news?.imageUrls?.forEach { url ->
+                currentImageUrls.forEach { url ->
                     urls.add(JsonUtils.gson.fromJson(url, JsonObject::class.java))
                 }
                 urls
             } catch (e: Exception) { null }
         } else null
+    }
+
+    private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
+        binding.imgNews.visibility = View.GONE
+        binding.llNewsImages.visibility = View.GONE
+        binding.llNewsImages.removeAllViews()
+
+        val parsedImageUrls = getParsedImageUrls(news)
 
         if (!parsedImageUrls.isNullOrEmpty()) {
             try {
