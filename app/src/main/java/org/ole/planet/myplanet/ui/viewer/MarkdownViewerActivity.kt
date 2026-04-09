@@ -5,18 +5,18 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityMarkdownViewerBinding
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 class MarkdownViewerActivity : AppCompatActivity() {
