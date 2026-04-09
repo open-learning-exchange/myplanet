@@ -1,6 +1,4 @@
-package org.ole.planet.myplanet.ui.surveys
-
-import org.ole.planet.myplanet.model.RealmSubmission
+package org.ole.planet.myplanet.model
 
 data class SurveyFormState(
     val teamSubmission: RealmSubmission?,
