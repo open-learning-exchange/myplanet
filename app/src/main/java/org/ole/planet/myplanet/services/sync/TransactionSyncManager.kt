@@ -197,13 +197,15 @@ class TransactionSyncManager @Inject constructor(
                 )
                 if (table == "news") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (i in 0 until arr.size()) {
+                        val rowObj = arr.get(i).asJsonObject
+                        val docElement = rowObj.get("doc")
+                        val docObj = if (docElement != null && docElement.isJsonObject) docElement.asJsonObject else JsonObject()
+                        val idElement = docObj.get("_id")
+                        val id = if (idElement != null && idElement.isJsonPrimitive && idElement.asJsonPrimitive.isString) idElement.asString else ""
                         if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
+                            docs.add(docObj)
                         }
                     }
                     voicesRepository.insertNewsList(docs)
@@ -216,13 +218,15 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else if (table == "feedback") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (i in 0 until arr.size()) {
+                        val rowObj = arr.get(i).asJsonObject
+                        val docElement = rowObj.get("doc")
+                        val docObj = if (docElement != null && docElement.isJsonObject) docElement.asJsonObject else JsonObject()
+                        val idElement = docObj.get("_id")
+                        val id = if (idElement != null && idElement.isJsonPrimitive && idElement.asJsonPrimitive.isString) idElement.asString else ""
                         if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
+                            docs.add(docObj)
                         }
                     }
                     feedbackRepository.insertFeedbackList(docs)
