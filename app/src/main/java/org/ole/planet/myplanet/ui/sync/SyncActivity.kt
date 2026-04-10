@@ -65,7 +65,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.autoSynFeature
 import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
