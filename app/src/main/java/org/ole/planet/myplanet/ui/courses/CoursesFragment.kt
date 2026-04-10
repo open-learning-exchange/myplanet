@@ -178,30 +178,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun loadDataAsync() {
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-                val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
-
-                val allCourses = coursesRepository.getAllCourses()
-                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-
-                val myCourses = if (isMyCourseLib) {
-                    coursesRepository.getMyCourses(userModel?.id, validCourses)
-                } else {
-                    emptyList()
-                }
-
-                val map = ratingsDeferred.await()
-                val progressMap = progressDeferred.await()
-
-                viewModel.processCourses(isMyCourseLib, userModel?.id, validCourses, myCourses, map, progressMap)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
@@ -211,38 +188,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             userModel = userSessionManager.getUserModel()
         }
 
-        val allCourses = coursesRepository.getAllCourses()
-        val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-
-        val myCourses = if (isMyCourseLib) {
-            coursesRepository.getMyCourses(model?.id, validCourses)
-        } else {
-            emptyList()
-        }
-
-        val (map, progressMap) = coroutineScope {
-            val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-            val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
-            Pair(ratingsDeferred.await(), progressDeferred.await())
-        }
-
-        val allCourseIds = validCourses.mapNotNull { it.courseId }
-        val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
-            .mapValues { entry -> entry.value.map { it.toTag() } }
-
         adapterCourses = CoursesAdapter(
             hostActivity,
-            map,
+            HashMap(),
             userModel?.isGuest() ?: true,
             isMyCourseLib
         )
 
-        adapterCourses.setTagsMap(tagsMap)
-        viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
-        adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
+        viewModel.loadCourses(isMyCourseLib, model?.id)
         return adapterCourses
     }
 
@@ -279,6 +235,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val courses = state.courses
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
+                adapterCourses.setTagsMap(state.tagsMap)
                 adapterCourses.submitList(courses) {
                     if (isAdded && ::selectAll.isInitialized) {
                         selectedItems?.clear()
@@ -549,17 +506,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val selectedSubject = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
         val tagNames = searchTags.mapNotNull { it.name }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = model?.id
-            val (filteredCourses, map, progressMap) = withContext(dispatcherProvider.io) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = coursesRepository.getCourseRatings(userId)
-                val progress = coursesRepository.getCourseProgress(userId)
-                Triple(courses, ratings, progress)
-            }
-            viewModel.processCourses(isMyCourseLib, userId, filteredCourses, filteredCourses.filter { it.userId?.contains(userId) == true }, map, progressMap)
-            scrollToTop()
-        }
+        val userId = model?.id
+        viewModel.filterCourses(isMyCourseLib, userId, searchText, selectedGrade, selectedSubject, tagNames)
+        scrollToTop()
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -752,22 +701,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
-            if (::adapterCourses.isInitialized) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val map = coursesRepository.getCourseRatings(model?.id)
-                    val progressMap = coursesRepository.getCourseProgress(model?.id)
-                    val allCourses = coursesRepository.getAllCourses()
-                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-                    val myCourses = if (isMyCourseLib) {
-                        coursesRepository.getMyCourses(model?.id, validCourses)
-                    } else {
-                        emptyList()
-                    }
-                    viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
-                }
-            } else {
-                loadDataAsync()
-            }
+            loadDataAsync()
         }
     }
 
@@ -804,10 +738,4 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         )
     }
 
-    private fun RealmTag.toTag(): Tag {
-        return Tag(
-            id = this.id,
-            name = this.name
-        )
-    }
 }
