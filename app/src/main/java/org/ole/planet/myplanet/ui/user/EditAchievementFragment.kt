@@ -40,7 +40,9 @@ import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.ui.components.CheckboxListView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
@@ -284,7 +286,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
                 builder.setView(myLibraryAlertdialogView)
                 builder.setPositiveButton("Ok") { _: DialogInterface?, _: Int ->
-                    val items = lv.selectedItemsList
+                    val items = (lv.adapter as CheckboxAdapter).selectedItemsList
                     resourceArray = JsonArray()
                     for (ii in items) {
                         resourceArray?.add(list[ii].serializeResource())
@@ -330,25 +332,15 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
     }
 
-    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<RealmMyLibrary>, prevList: List<String?>): CheckboxListView {
-        val names = ArrayList<String?>()
+    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<RealmMyLibrary>, prevList: List<String?>): RecyclerView {
+        val names = ArrayList<String>()
         val selected: ArrayList<Int> = ArrayList()
         for (i in list.indices) {
-            names.add(list[i].title)
+            names.add(list[i].title ?: "")
             if (prevList.contains(list[i].title)) selected.add(i)
         }
-        val adapter: ArrayAdapter<String?> = object : ArrayAdapter<String?>(requireActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val rowLayoutBinding = RowlayoutBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                val textView = rowLayoutBinding.root
-                textView.text = getItem(position)
-                textView.isChecked = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList.contains(position)
-                myLibraryAlertdialogBinding.alertDialogListView.setItemChecked(position, myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList.contains(position))
-                return textView
-            }
-        }
-        myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList = selected
-        myLibraryAlertdialogBinding.alertDialogListView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+        val adapter = CheckboxAdapter(names, selected)
+        myLibraryAlertdialogBinding.alertDialogListView.layoutManager = LinearLayoutManager(requireActivity())
         myLibraryAlertdialogBinding.alertDialogListView.adapter = adapter
         return myLibraryAlertdialogBinding.alertDialogListView
     }

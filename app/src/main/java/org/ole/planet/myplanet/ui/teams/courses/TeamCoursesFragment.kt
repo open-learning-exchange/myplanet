@@ -19,8 +19,9 @@ import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.Utilities
 
 class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
@@ -107,7 +108,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
                 alertDialogBuilder.setView(dialogBinding.root)
                     .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
-                        val selectedIndices = dialogBinding.alertDialogListView.selectedItemsList
+                        val selectedIndices = (dialogBinding.alertDialogListView.adapter as CheckboxAdapter).selectedItemsList
                         val selectedCourses = selectedIndices.map { availableCourses[it] }
                         addCoursesToTeam(selectedCourses)
                     }.setNegativeButton(R.string.cancel, null)
@@ -123,13 +124,12 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         }
     }
 
-    private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<RealmMyCourse>, lv: CheckboxListView) {
+    private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<RealmMyCourse>, lv: RecyclerView) {
         val names = courses.map { it.courseTitle ?: getString(R.string.untitled_course) }
-        val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
-        lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        lv.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
+        val adapter = CheckboxAdapter(names) {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
         }
+        lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
         alertDialog.show()
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false

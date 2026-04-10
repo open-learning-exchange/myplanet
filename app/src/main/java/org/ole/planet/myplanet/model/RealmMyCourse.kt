@@ -66,7 +66,7 @@ open class RealmMyCourse : RealmObject() {
         private val concatenatedLinks = HashSet<String>()
 
         @JvmStatic
-        fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+        fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: SharedPrefManager) {
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
@@ -160,7 +160,7 @@ open class RealmMyCourse : RealmObject() {
             }
         }
 
-        private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+        private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
             resources.forEach { resource ->
                 if (mRealm != null) {
                     createStepResource(mRealm, resource.asJsonObject, myCoursesID, stepId, spm)
@@ -176,7 +176,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: SharedPrefManager) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
                 mRealm.beginTransaction()
