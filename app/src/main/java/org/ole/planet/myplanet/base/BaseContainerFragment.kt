@@ -182,8 +182,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return@launch
             }
 
-            val result = resourcesRepository.getHtmlResourceDownloadUrls(resourceId)
-            when (result) {
+            when (val result = resourcesRepository.getHtmlResourceDownloadUrls(resourceId)) {
                 is ResourceUrlsResponse.Success -> {
                     startDownloadWithAutoOpen(ArrayList(result.urls), items)
                 }
@@ -267,11 +266,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = ("package:" + requireContext().packageName).toUri()
         installApkLauncher?.launch(intent)
-    }
-
-    private fun openFileType(items: RealmMyLibrary, videoType: String) {
-        dismissProgressDialog()
-        ResourceOpener.openFileType(requireActivity(), items, videoType, profileDbHandler)
     }
 
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>) {

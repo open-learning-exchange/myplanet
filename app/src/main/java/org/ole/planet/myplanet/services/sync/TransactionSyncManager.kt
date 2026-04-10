@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
@@ -50,6 +51,14 @@ class TransactionSyncManager @Inject constructor(
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
+    private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
+    private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+    private val communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
+    private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     suspend fun authenticate(): Boolean {
@@ -225,12 +234,16 @@ class TransactionSyncManager @Inject constructor(
                         arr.size()
                     )
                 } else if (table == "chat_history") {
-                    val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        docs.add(jsonDoc)
+                    databaseService.executeTransactionAsync { mRealm: Realm ->
+                        val insertStartTime = System.currentTimeMillis()
+                        chatRepository.insertChatHistoryBatch(mRealm, arr)
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
                     }
                     chatRepository.insertChatHistoryList(docs)
                     val insertDuration = System.currentTimeMillis() - insertStartTime
@@ -265,7 +278,28 @@ class TransactionSyncManager @Inject constructor(
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                        insertDocs(arr, mRealm, table)
+                                                when (table) {
+                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
+                            "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
+                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
+                            "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
+                            "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
+                            "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
+                            "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
+                            "courses" -> {
+                                coursesRepository.bulkInsertFromSync(mRealm, arr)
+                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                            }
+                            "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
+                            "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
+                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
+                            "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
+                            "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
+                            "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
+                            "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)
+                            "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
+                            else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
+                        }
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
                             android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
@@ -299,56 +333,6 @@ class TransactionSyncManager @Inject constructor(
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
-        }
-    }
-
-    private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
-        val documentList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            val id = getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc)
-        }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
-    }
-
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        when (table) {
-            "exams" -> {
-                insertCourseStepsExams("", "", jsonDoc, mRealm)
-            }
-            "tablet_users" -> {
-                userRepository.populateUser(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
-            }
-            "team_activities" -> {
-                teamsRepository.get().insertTeamLog(mRealm, jsonDoc)
-            }
-            else -> {
-                callMethod(mRealm, jsonDoc, table)
-            }
-        }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
-    }
-
-    private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
-        try {
-            val methods = Constants.classList[type]?.methods
-            methods?.let {
-                for (m in it) {
-                    if ("insert" == m.name) {
-                        m.invoke(null, mRealm, jsonDoc)
-                        break
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

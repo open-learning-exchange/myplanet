@@ -107,4 +107,6 @@ interface UserRepository {
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getAchievementsForUpload(): List<JsonObject>
     suspend fun markAchievementUploaded(id: String, rev: String?)
+    fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences)
 }

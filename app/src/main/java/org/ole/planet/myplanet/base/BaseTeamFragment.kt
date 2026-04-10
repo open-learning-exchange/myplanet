@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -28,6 +29,8 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     var team: RealmMyTeam? = null
     @Inject
     lateinit var teamsRepository: TeamsRepository
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
     val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
@@ -49,7 +52,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     private fun loadTeamDetails() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()
         val existingTeam = team
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             val teamResult = if (shouldQueryTeam) {
                 try {
                     teamsRepository.getTeamById(teamId)
@@ -67,7 +70,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
 
             val membership = teamsRepository.isMember(user?.id, teamId)
 
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 teamResult?.let {
                     team = it
                 }
