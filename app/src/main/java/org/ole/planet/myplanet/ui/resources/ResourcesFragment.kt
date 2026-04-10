@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -20,18 +21,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
-import androidx.fragment.app.viewModels
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -41,12 +38,11 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -76,6 +72,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var prefManager: SharedPrefManager
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     private val viewModel: ResourcesViewModel by viewModels()
     
@@ -142,6 +141,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        val binding = _binding ?: return
+        val searchQuery = binding.layoutSearch.etSearch.text?.toString()?.trim().orEmpty()
 
         lifecycleScope.launch {
             try {
@@ -158,7 +159,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 loadRatingsAndTags(allResourceIds, model?.id)
 
                 val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
                 val filteredLibraryList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
 
@@ -386,7 +386,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun checkList(listSize: Int = adapterLibrary.getLibraryList().size) {
+    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
         if (listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
@@ -639,7 +639,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
                 return@launch
             }
@@ -718,12 +718,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch(dispatcherProvider.io) {
                 itemsToDelete.forEach { resourceId ->
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
+                withContext(dispatcherProvider.main) {
+                    _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                     refreshResourcesData()
                     selectedItems?.clear()
@@ -742,7 +742,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             lifecycleScope.launch {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
-                        if (_binding == null) return@onSuccess
+                        _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))
                         refreshResourcesData()
                         selectedItems?.clear()
@@ -750,7 +750,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                         hideButton()
                     }
                     .onFailure {
-                        if (_binding == null) return@onFailure
+                        _binding ?: return@onFailure
                         Utilities.toast(activity, getString(R.string.error, it.message))
                     }
             }

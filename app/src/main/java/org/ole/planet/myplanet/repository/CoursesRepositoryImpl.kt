@@ -35,7 +35,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
-    private val ratingsRepository: RatingsRepository
+    private val ratingsRepository: RatingsRepository,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -269,9 +270,13 @@ class CoursesRepositoryImpl @Inject constructor(
     ): List<RealmMyCourse> {
         return withRealm { realm ->
             val courseIdsWithTags = if (tagNames.isNotEmpty()) {
+                val matchingTagIds = realm.where(RealmTag::class.java)
+                    .`in`("name", tagNames.toTypedArray())
+                    .findAll()
+                    .mapNotNull { it.id }
                 realm.where(RealmTag::class.java)
                     .equalTo("db", "courses")
-                    .`in`("name", tagNames.toTypedArray())
+                    .`in`("tagId", matchingTagIds.toTypedArray())
                     .findAll()
                     .mapNotNull { it.linkId }
             } else {
@@ -584,6 +589,10 @@ class CoursesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForCourse(courseId)
     }
 
+    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>> {
+        return tagsRepository.getTagsForCourses(courseIds)
+    }
+
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
     }
@@ -654,6 +663,35 @@ class CoursesRepositoryImpl @Inject constructor(
                 .toSet()
 
             list.filter { linkedCourseIds.contains(it.courseId) }.distinct()
+        }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
+        }
+    }
+    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmCertification.insert(realm, jsonDoc)
         }
     }
 }

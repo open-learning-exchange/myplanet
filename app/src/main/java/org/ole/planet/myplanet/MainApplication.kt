@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.net.TrafficStats
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
@@ -51,13 +52,13 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
-import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
@@ -171,6 +172,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
+                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
@@ -180,6 +182,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         connection.responseCode
                     } finally {
                         connection.disconnect()
+                        TrafficStats.clearThreadStatsTag()
                     }
                 }
                 responseCode in 200..299
@@ -201,6 +204,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
+    private var mainThreadRealm: io.realm.Realm? = null
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
@@ -210,6 +214,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         super.onCreate()
         context = this
         setupCriticalProperties()
+        LocaleUtils.preload(this)
+        warmUpMainThreadRealm()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
@@ -241,6 +247,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             this,
             ApplicationScopeEntryPoint::class.java
         ).applicationScope()
+    }
+
+    private fun warmUpMainThreadRealm() {
+        try {
+            mainThreadRealm = databaseService.createManagedRealmInstance()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun ensureApiClientInitialized() {
@@ -445,6 +459,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
+        mainThreadRealm?.close()
+        mainThreadRealm = null
         super.onTerminate()
         stopListenNetworkState()
     }

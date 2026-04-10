@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -51,12 +50,11 @@ class UploadToShelfService @Inject constructor(
     private val userRepository: UserRepository,
     private val healthRepository: HealthRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val apiInterface: ApiInterface
 ) {
-    lateinit var mRealm: Realm
 
     fun uploadUserData(listener: OnSuccessListener) {
-        val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             try {
                 val userModels = userRepository.getPendingSyncUsers(100)
@@ -93,7 +91,6 @@ class UploadToShelfService @Inject constructor(
     }
 
     fun uploadSingleUserData(userName: String?, listener: OnSuccessListener) {
-        val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             try {
                 val userModel = if (userName != null) userRepository.getUserByName(userName) else null
@@ -157,15 +154,31 @@ class UploadToShelfService @Inject constructor(
 
     private suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
         try {
-            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+            val password = model.password ?: SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse.isSuccessful) {
-                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
-                model.derived_key = getString("derived_key", fetchDataResponse.body())
-                model.salt = getString("salt", fetchDataResponse.body())
-                model.iterations = getString("iterations", fetchDataResponse.body())
+                val passwordScheme = getString("password_scheme", fetchDataResponse.body())
+                val derivedKey = getString("derived_key", fetchDataResponse.body())
+                val salt = getString("salt", fetchDataResponse.body())
+                val iterations = getString("iterations", fetchDataResponse.body())
+
+                model.password_scheme = passwordScheme
+                model.derived_key = derivedKey
+                model.salt = salt
+                model.iterations = iterations
+
+                userRepository.updateSecurityData(
+                    model.name ?: "",
+                    model._id,
+                    model._rev,
+                    derivedKey,
+                    salt,
+                    passwordScheme,
+                    iterations
+                )
+
                 saveKeyIv(apiInterface, model, obj)
 
                 healthRepository.updateExaminationUserId(model.id ?: "", model._id ?: "")
@@ -261,7 +274,6 @@ class UploadToShelfService @Inject constructor(
     }
 
     fun uploadHealth() {
-        val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             val myHealths = healthRepository.getUpdatedHealthExaminations()
 
@@ -286,7 +298,6 @@ class UploadToShelfService @Inject constructor(
     }
 
     fun uploadSingleUserHealth(userId: String?, listener: OnSuccessListener?) {
-        val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             try {
                 if (userId.isNullOrEmpty()) return@launch
@@ -328,7 +339,6 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun uploadToShelf(listener: OnSuccessListener) {
-        val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             val unmanagedUsers = userRepository.getSyncedUsers()
 
@@ -372,7 +382,6 @@ class UploadToShelfService @Inject constructor(
     }
 
     private fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
-        val apiInterface = client.create(ApiInterface::class.java)
         appScope.launch(dispatcherProvider.io) {
             try {
                 val model = userName?.let { userRepository.getSyncedUserByName(it) }
@@ -427,29 +436,26 @@ class UploadToShelfService @Inject constructor(
         return array
     }
 
-    companion object {
-        private suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
-            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-            val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
-            val apiInterface = client.create(ApiInterface::class.java)
-            try {
-                val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
-                if (response.body() != null) {
-                    val jsonObject = response.body()
-                    val members = jsonObject?.getAsJsonObject("members")
-                    val rolesArray: JsonArray = if (members?.has("roles") == true) {
-                        members.getAsJsonArray("roles")
-                    } else {
-                        JsonArray()
-                    }
-                    rolesArray.add("health")
-                    members?.add("roles", rolesArray)
-                    jsonObject?.add("members", members)
-                    apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
+    private suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        try {
+            val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
+            if (response.body() != null) {
+                val jsonObject = response.body()
+                val members = jsonObject?.getAsJsonObject("members")
+                val rolesArray: JsonArray = if (members?.has("roles") == true) {
+                    members.getAsJsonArray("roles")
+                } else {
+                    JsonArray()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                rolesArray.add("health")
+                members?.add("roles", rolesArray)
+                jsonObject?.add("members", members)
+                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

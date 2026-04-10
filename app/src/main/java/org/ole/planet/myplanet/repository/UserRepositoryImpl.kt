@@ -209,6 +209,28 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun fetchUserSecurityData(name: String) {
+        try {
+            val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
+            val response = withContext(dispatcherProvider.io) {
+                apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
+            }
+
+            if (response.isSuccessful && response.body() != null) {
+                val userDoc = response.body()
+                val derivedKey = userDoc?.get("derived_key")?.asString
+                val salt = userDoc?.get("salt")?.asString
+                val passwordScheme = userDoc?.get("password_scheme")?.asString
+                val iterations = userDoc?.get("iterations")?.asString
+                val userId = userDoc?.get("_id")?.asString
+                val rev = userDoc?.get("_rev")?.asString
+                updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override suspend fun ensureUserSecurityKeys(userId: String): RealmUser? {
         executeTransaction { transactionRealm ->
             val user = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
@@ -659,8 +681,8 @@ class UserRepositoryImpl @Inject constructor(
         return null
     }
 
-    override fun hasAtLeastOneUser(): Boolean {
-        return databaseService.withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+    override suspend fun hasAtLeastOneUser(): Boolean {
+        return withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
     }
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
@@ -801,6 +823,35 @@ class UserRepositoryImpl @Inject constructor(
                 if (!rev.isNullOrEmpty()) achievement._rev = rev
                 achievement.isUpdated = false
             }
+        }
+    }
+
+    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmAchievement.insert(realm, jsonDoc)
+        }
+    }
+    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            populateUser(jsonDoc, realm, settings)
         }
     }
 }

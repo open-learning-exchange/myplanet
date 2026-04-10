@@ -60,7 +60,10 @@ interface CoursesRepository {
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTags(courseId: String): List<RealmTag>
+    suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>>
     suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

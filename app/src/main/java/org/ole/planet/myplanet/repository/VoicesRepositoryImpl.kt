@@ -115,6 +115,15 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("newsId", chatId)
+                .contains("viewIn", "\"_id\":\"$viewInId\"", Case.INSENSITIVE)
+                .findFirst() != null
+        }
+    }
+
     override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
         val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         return withRealmAsync { realm ->
@@ -619,5 +628,21 @@ class VoicesRepositoryImpl @Inject constructor(
         existingConcatenatedLinks.addAll(linksToProcess)
         val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            insertNewsToRealm(realm, jsonDoc)
+        }
+        saveConcatenatedLinksToPrefs()
     }
 }
