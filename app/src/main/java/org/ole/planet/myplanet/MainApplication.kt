@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.utils.ANRWatchdog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
@@ -225,6 +226,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private fun performDeferredInitialization() {
         applicationScope.launch(Dispatchers.IO) {
             SecurePrefs.warmUp(this@MainApplication)
+            MarkdownUtils.warmUp(this@MainApplication)
         }
         applicationScope.launch {
             initApp()
