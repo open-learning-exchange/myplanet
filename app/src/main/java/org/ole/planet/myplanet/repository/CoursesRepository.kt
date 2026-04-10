@@ -20,6 +20,7 @@ interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
     suspend fun getCourseById(courseId: String): RealmMyCourse?
     suspend fun getCourseByCourseId(courseId: String): RealmMyCourse?
+    suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse>
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
