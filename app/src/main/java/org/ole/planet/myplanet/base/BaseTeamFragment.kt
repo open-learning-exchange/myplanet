@@ -4,17 +4,16 @@ import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
