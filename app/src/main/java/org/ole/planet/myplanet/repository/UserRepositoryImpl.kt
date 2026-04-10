@@ -837,8 +837,30 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmAchievement.insert(realm, jsonDoc)
+            insertAchievement(realm, jsonDoc)
         }
+    }
+
+    private fun insertAchievement(mRealm: io.realm.Realm, act: com.google.gson.JsonObject?) {
+        var achievement = mRealm.where(org.ole.planet.myplanet.model.RealmAchievement::class.java)
+            .equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
+        if (achievement == null) {
+            achievement = mRealm.createObject(org.ole.planet.myplanet.model.RealmAchievement::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
+        }
+        achievement?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
+        achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
+        achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
+        achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
+        achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+        achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
+        achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
+        achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)
+        achievement?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", act)
+        achievement?.isUpdated = false
+        achievement?.setReferences(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("references", act))
+        achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
+        achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
+        achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
     }
     override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
         val documentList = mutableListOf<com.google.gson.JsonObject>()
