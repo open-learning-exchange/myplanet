@@ -212,9 +212,9 @@ class VoicesAdapter(
     private fun extractSharedTeamName(news: RealmNews): String {
         val ar = if (news.parsedViewIn != null && news.rawViewIn == news.viewIn) {
             news.parsedViewIn
-        } else if (!TextUtils.isEmpty(news.viewIn)) {
-            try { JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java) } catch (e: Exception) { null }
-        } else null
+        } else {
+            parseViewIn(news.viewIn)
+        }
 
         if (ar != null && ar.size() > 1) {
             val ob = ar[0].asJsonObject
@@ -373,7 +373,7 @@ class VoicesAdapter(
             val conversations = if (news.parsedConversations != null && news.rawConversations == news.conversations) {
                 news.parsedConversations!!
             } else {
-                JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
+                parseConversations(news.conversations) ?: JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
             }
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
                 val cancelJob = launchCoroutine {
@@ -447,32 +447,61 @@ class VoicesAdapter(
         submitListSafely(currentList.toList())
     }
 
+    private fun parseViewIn(viewIn: String?): JsonArray? {
+        if (TextUtils.isEmpty(viewIn)) return null
+        return try {
+            JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun parseConversations(conversations: String?): List<RealmConversation>? {
+        if (conversations.isNullOrEmpty()) return null
+        return try {
+            JsonUtils.gson.fromJson(conversations, Array<RealmConversation>::class.java).toList()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
+        if (imageUrls.isNullOrEmpty()) return null
+        return try {
+            imageUrls.map { JsonUtils.gson.fromJson(it, JsonObject::class.java) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private fun preParseNews(news: RealmNews?) {
         news?.let {
             try {
                 if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
-                    try {
-                        it.parsedViewIn = JsonUtils.gson.fromJson(it.viewIn, JsonArray::class.java)
+                    val parsed = parseViewIn(it.viewIn)
+                    if (parsed != null) {
+                        it.parsedViewIn = parsed
                         it.rawViewIn = it.viewIn
-                    } catch (e: Exception) { e.printStackTrace() }
+                    }
                 }
                 if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
-                    try {
-                        it.parsedConversations = JsonUtils.gson.fromJson(it.conversations, Array<RealmConversation>::class.java).toList()
+                    val parsed = parseConversations(it.conversations)
+                    if (parsed != null) {
+                        it.parsedConversations = parsed
                         it.rawConversations = it.conversations
-                    } catch (e: Exception) { e.printStackTrace() }
+                    }
                 }
 
                 val currentImageUrls = it.imageUrls?.toList()
                 if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
-                    try {
-                        val urls = mutableListOf<JsonObject>()
-                        currentImageUrls.forEach { url ->
-                            urls.add(JsonUtils.gson.fromJson(url, JsonObject::class.java))
-                        }
-                        it.parsedImageUrls = urls
+                    val parsed = parseImageUrls(currentImageUrls)
+                    if (parsed != null) {
+                        it.parsedImageUrls = parsed
                         it.rawImageUrls = currentImageUrls
-                    } catch (e: Exception) { e.printStackTrace() }
+                    }
                 }
             } catch (e: IllegalStateException) {
                 // If Realm manages the object and we are on a different thread, mutating @Ignore fields might throw.
@@ -692,15 +721,9 @@ class VoicesAdapter(
         val currentImageUrls = news?.imageUrls?.toList()
         return if (news?.parsedImageUrls != null && news.rawImageUrls == currentImageUrls) {
             news.parsedImageUrls
-        } else if (!currentImageUrls.isNullOrEmpty()) {
-            try {
-                val urls = mutableListOf<JsonObject>()
-                currentImageUrls.forEach { url ->
-                    urls.add(JsonUtils.gson.fromJson(url, JsonObject::class.java))
-                }
-                urls
-            } catch (e: Exception) { null }
-        } else null
+        } else {
+            parseImageUrls(currentImageUrls)
+        }
     }
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
