@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -25,7 +24,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val userRepository: Lazy<UserRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -68,6 +68,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
+        val user = userRepository.get().getUserByName(userId)
+        val parentCode = user?.parentCode
+        val createdOn = user?.planetCode
+
         executeTransaction { realm ->
             val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
             activity.type = "visit"
@@ -76,10 +80,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
             activity.time = Date().time
             activity.user = userId
 
-            val user = realm.where(RealmUser::class.java).equalTo("name", userId).findFirst()
             if (user != null) {
-                activity.parentCode = user.parentCode
-                activity.createdOn = user.planetCode
+                activity.parentCode = parentCode
+                activity.createdOn = createdOn
             }
         }
     }
@@ -284,17 +287,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun recordSyncActivity(userId: String) {
+        val user = userRepository.get().getUserById(userId)
+        if (user == null || user.id?.startsWith("guest") == true) {
+            return
+        }
+        val userName = user.name
+        val parentCode = user.parentCode
+        val createdOn = user.planetCode
+
         executeTransaction { realm ->
-            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            if (user == null || user.id?.startsWith("guest") == true) {
-                return@executeTransaction
-            }
             val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
-            activities.user = user.name
+            activities.user = userName
             activities._rev = null
             activities._id = null
-            activities.parentCode = user.parentCode
-            activities.createdOn = user.planetCode
+            activities.parentCode = parentCode
+            activities.createdOn = createdOn
             activities.type = "sync"
             activities.time = Date().time
         }
