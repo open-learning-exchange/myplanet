@@ -27,4 +27,5 @@ interface SurveysRepository {
     suspend fun getSurvey(id: String): RealmStepExam?
     suspend fun getSurveys(): List<RealmStepExam>
     suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam>
+    fun bulkInsertExamsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

@@ -43,4 +43,5 @@ interface ActivitiesRepository {
     fun insertActivity(realm: io.realm.Realm, json: JsonObject)
     fun getRecentLogin(realm: io.realm.Realm): RealmOfflineActivity?
     fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): JsonObject
+    fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

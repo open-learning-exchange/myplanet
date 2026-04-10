@@ -360,10 +360,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
     fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
         val selected = list.joinToString(separator = ",", prefix = getString(R.string.selected)) { it.name.orEmpty() }
         tvSelected?.text = selected
