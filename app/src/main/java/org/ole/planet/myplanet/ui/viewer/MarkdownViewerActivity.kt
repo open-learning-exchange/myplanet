@@ -5,18 +5,23 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityMarkdownViewerBinding
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
+@AndroidEntryPoint
 class MarkdownViewerActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var binding: ActivityMarkdownViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,17 +43,17 @@ class MarkdownViewerActivity : AppCompatActivity() {
             binding.markdownFileName.text = getString(R.string.message_placeholder, "No file selected")
             binding.markdownFileName.visibility = View.VISIBLE
         }
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             try {
                 val basePath = getExternalFilesDir(null)
                 val markdownFile = File(basePath, "ole/$fileName")
                 if (markdownFile.exists()) {
                     val markdownContent = readMarkdownFile(markdownFile)
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         setMarkdownText(binding.markdownView, markdownContent)
                     }
                 } else {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         Toast.makeText(
                             this@MarkdownViewerActivity,
                             getString(R.string.unable_to_load) + fileName,

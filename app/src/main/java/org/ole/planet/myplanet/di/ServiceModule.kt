@@ -35,8 +35,8 @@ object ServiceModule {
     @Provides
     @Singleton
     @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideApplicationScope(dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
     }
 
     @Provides
@@ -112,8 +112,16 @@ object ServiceModule {
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
+        tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
+        ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
+        submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
+        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+        progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+        surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope)
     }
 }
