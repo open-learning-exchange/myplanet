@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
@@ -491,7 +490,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
         val logsData = activitiesRepository.getUnuploadedTeamLogs()
-
         val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
 
         logsData.forEach { logData ->
@@ -525,9 +523,7 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
-
         val user = userRepository.getUserModelSuspending()
-
         val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
         withContext(dispatcherProvider.io) {
