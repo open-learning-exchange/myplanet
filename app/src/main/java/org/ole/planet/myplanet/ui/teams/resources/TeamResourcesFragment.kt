@@ -116,8 +116,12 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
                     val selectedResources = (myLibraryAlertdialogBinding.alertDialogListView.adapter as CheckboxAdapter).selectedItemsList
                         .map { index -> availableLibraries[index] }
+                        .mapNotNull {
+                            val id = it._id ?: it.resourceId
+                            if (id != null) org.ole.planet.myplanet.model.TeamResourceDto(id, it.title) else null
+                        }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamsRepository.addResourceLinks(teamId, selectedResources, user)
+                        teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
                         showLibraryList()
                     }
                 }
