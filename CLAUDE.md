@@ -877,7 +877,6 @@ When making changes, verify:
 - [ ] All supported languages display correctly
 - [ ] Permissions are requested appropriately
 - [ ] Background sync continues to work
-- [ ] No direct usage of `Dispatchers.IO/Main` in Resources feature area (using `DispatcherProvider` instead).
 
 ---
 
