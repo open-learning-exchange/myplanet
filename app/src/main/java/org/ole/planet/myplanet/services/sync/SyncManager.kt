@@ -43,13 +43,13 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -71,7 +71,8 @@ class SyncManager @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val communityRepository: CommunityRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -1025,7 +1026,7 @@ class SyncManager @Inject constructor(
                                     try {
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
-                                            "meetups" -> insert(realmTx, doc)
+                                            "meetups" -> communityRepository.insertMeetup(realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
                                             "teams" -> insertMyTeams(doc, realmTx)
                                         }
