@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmChatHistory
 
 interface ChatRepository {
+    suspend fun fetchAiProviders(serverUrl: String, sharedPreferences: android.content.SharedPreferences): Map<String, Boolean>?
     suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun saveNewChat(chat: JsonObject)

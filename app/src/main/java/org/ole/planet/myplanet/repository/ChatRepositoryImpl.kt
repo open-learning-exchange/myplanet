@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.RealmList
@@ -7,16 +8,29 @@ import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val chatApiService: ChatApiService,
+    private val serverUrlMapper: ServerUrlMapper
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
+
+    override suspend fun fetchAiProviders(serverUrl: String, sharedPreferences: SharedPreferences): Map<String, Boolean>? {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPreferences) { url ->
+            MainApplication.isServerReachable(url)
+        }
+        return chatApiService.fetchAiProviders()
+    }
 
     override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
         if (userName.isNullOrEmpty()) {
