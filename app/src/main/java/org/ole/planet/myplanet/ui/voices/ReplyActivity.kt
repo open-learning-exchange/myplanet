@@ -153,7 +153,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                         return@VoicesAdapter { job.cancel() }
                     },
                     labelManager = labelManager,
-                    voicesRepository = voicesRepository
+                    voicesRepository = voicesRepository,
+                    userRepository = userRepository
                 )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)

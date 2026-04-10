@@ -55,6 +55,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val apiInterface: ApiInterface,
+    private val userRepository: UserRepository,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -1109,7 +1110,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
 
         if (communityLeadersJson.isNotEmpty()) {
-            val adminUsers = RealmUser.parseLeadersJson(communityLeadersJson)
+            val adminUsers = userRepository.parseLeadersJson(communityLeadersJson)
 
             val teamUserIds = queryList(RealmMyTeam::class.java) {
                 equalTo("teamId", teamId)
