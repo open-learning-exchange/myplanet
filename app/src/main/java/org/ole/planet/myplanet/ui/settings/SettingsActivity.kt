@@ -46,7 +46,6 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
@@ -272,7 +271,7 @@ class SettingsActivity : AppCompatActivity() {
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             lifecycleScope.launch(Dispatchers.IO) {
                                 configurationsRepository.clearAllData()
-                                clearSharedPref()
+                                sharedPrefManager.clearPreferences()
                                 withContext(Dispatchers.Main) {
                                     restartApp()
                                 }
