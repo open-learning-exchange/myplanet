@@ -234,10 +234,20 @@ class TransactionSyncManager @Inject constructor(
                         arr.size()
                     )
                 } else if (table == "chat_history") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
                     databaseService.executeTransactionAsync { mRealm: Realm ->
-                        val insertStartTime = System.currentTimeMillis()
+                        val batchInsertStartTime = System.currentTimeMillis()
                         chatRepository.insertChatHistoryBatch(mRealm, arr)
-                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        val insertDuration = System.currentTimeMillis() - batchInsertStartTime
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
                             table,
