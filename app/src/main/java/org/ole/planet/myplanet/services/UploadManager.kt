@@ -474,7 +474,7 @@ class UploadManager @Inject constructor(
                 }
             }
 
-            uploadTeamActivitiesRefactored()
+            uploadTeamActivities()
 
             notifyListener(listener, "User activities sync completed successfully")
         } catch (e: Exception) {
@@ -483,34 +483,8 @@ class UploadManager @Inject constructor(
         }
     }
 
-    private suspend fun uploadTeamActivitiesRefactored() {
-        uploadCoordinator.upload(uploadConfigs.TeamActivitiesRefactored)
-    }
-
-    suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        val logsData = activitiesRepository.getUnuploadedTeamLogs()
-        val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
-
-        logsData.forEach { logData ->
-            try {
-                val `object` = apiInterface.postDoc(
-                    UrlUtils.header, "application/json",
-                    "${UrlUtils.getUrl()}/team_activities", logData.serialized
-                ).body()
-
-                if (`object` != null) {
-                    val id = getString("id", `object`)
-                    val rev = getString("rev", `object`)
-                    successfulUploads.add(org.ole.planet.myplanet.repository.TeamLogUploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (successfulUploads.isNotEmpty()) {
-            activitiesRepository.markTeamLogsUploaded(successfulUploads)
-        }
+    suspend fun uploadTeamActivities() {
+        uploadCoordinator.upload(uploadConfigs.TeamActivities)
     }
 
     suspend fun uploadRating() {
