@@ -1,0 +1,814 @@
+--- a/app/src/main/java/org/ole/planet/myplanet/repository/UserRepository.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/repository/UserRepository.kt
+@@ -31,6 +31,8 @@
+         endMillis: Long,
+     ): Map<Int, Int>
+     fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser?
++    suspend fun isUserExists(name: String?): Boolean
++    fun parseLeadersJson(jsonString: String): List<RealmUser>
+     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
+     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
+     suspend fun fetchUserSecurityData(name: String)
+--- a/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/repository/UserRepositoryImpl.kt
+@@ -32,7 +32,6 @@
+ import org.ole.planet.myplanet.model.RealmMyLibrary
+ import org.ole.planet.myplanet.model.RealmOfflineActivity
+ import org.ole.planet.myplanet.model.RealmUser
+-import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+ import org.ole.planet.myplanet.model.RealmUserChallengeActions
+ import org.ole.planet.myplanet.services.UploadToShelfService
+ import org.ole.planet.myplanet.utils.AndroidDecrypter
+@@ -104,7 +103,20 @@
+
+     override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
+         return withRealm { realm ->
+-            RealmUser.createGuestUser(username, realm, settings)?.let { realm.copyFromRealm(it) }
++            val `object` = JsonObject()
++            `object`.addProperty("_id", "guest_$username")
++            `object`.addProperty("name", username)
++            `object`.addProperty("firstName", username)
++            val rolesArray = JsonArray()
++            rolesArray.add("guest")
++            `object`.add("roles", rolesArray)
++            val startedTransaction = !realm.isInTransaction
++            if (startedTransaction) realm.beginTransaction()
++            val user = populateUser(`object`, realm, settings)
++            if (startedTransaction && realm.isInTransaction) {
++                realm.commitTransaction()
++            }
++            user?.let { realm.copyFromRealm(it) }
+         }
+     }
+
+@@ -150,9 +162,222 @@
+             realm.copyFromRealm(results)
+         }
+     }
++
++    override suspend fun isUserExists(name: String?): Boolean {
++        return withRealm { realm ->
++            realm.where(RealmUser::class.java)
++                .equalTo("name", name)
++                .not().beginsWith("_id", "guest").count() > 0
++        }
++    }
++
++    override fun parseLeadersJson(jsonString: String): List<RealmUser> {
++        val leadersList = mutableListOf<RealmUser>()
++        try {
++            val jsonObject = org.json.JSONObject(jsonString)
++            val docsArray = jsonObject.getJSONArray("docs")
++            for (i in 0 until docsArray.length()) {
++                val docObject = docsArray.getJSONObject(i)
++                val user = RealmUser()
++                user.name = docObject.getString("name")
++                user.id = if (!docObject.isNull("_id")) {
++                    docObject.getString("_id")
++                } else {
++                    "org.couchdb.user:${user.name}"
++                }
++                user.rolesList = io.realm.RealmList()
++                if (!docObject.isNull("firstName")) {
++                    user.firstName = docObject.getString("firstName")
++                }
++                if (!docObject.isNull("lastName")) {
++                    user.lastName = docObject.getString("lastName")
++                }
++                if (!docObject.isNull("email")) {
++                    user.email = docObject.getString("email")
++                }
++                leadersList.add(user)
++            }
++        } catch (e: org.json.JSONException) {
++            e.printStackTrace()
++        }
++        return leadersList
++    }
++
++    private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUser, settings: SharedPreferences) {
++        if (jsonDoc == null) return
++
++        val planetCodes = JsonUtils.getString("planetCode", jsonDoc)
++        val rolesArray = JsonUtils.getJsonArray("roles", jsonDoc)
++        val newId = JsonUtils.getString("_id", jsonDoc)
++
++        user.apply {
++            _rev = JsonUtils.getString("_rev", jsonDoc)
++            _id = newId
++            name = JsonUtils.getString("name", jsonDoc)
++            setRoles(io.realm.RealmList<String?>().apply {
++                for (i in 0 until rolesArray.size()) {
++                    add(JsonUtils.getString(rolesArray, i))
++                }
++            })
++            userAdmin = JsonUtils.getBoolean("isUserAdmin", jsonDoc)
++            val newJoinDate = JsonUtils.getLong("joinDate", jsonDoc)
++            if (newJoinDate != 0L || joinDate == 0L) {
++                joinDate = newJoinDate
++            }
++
++            val newFirstName = JsonUtils.getString("firstName", jsonDoc)
++            if (newFirstName.isNotEmpty() || firstName.isNullOrEmpty()) {
++                firstName = newFirstName
++            }
++
++            val newLastName = JsonUtils.getString("lastName", jsonDoc)
++            if (newLastName.isNotEmpty() || lastName.isNullOrEmpty()) {
++                lastName = newLastName
++            }
++
++            val newMiddleName = JsonUtils.getString("middleName", jsonDoc)
++            if (newMiddleName.isNotEmpty() || middleName.isNullOrEmpty()) {
++                middleName = newMiddleName
++            }
++
++            val newEmail = JsonUtils.getString("email", jsonDoc)
++            if (newEmail.isNotEmpty() || email.isNullOrEmpty()) {
++                email = newEmail
++            }
++
++            val newPhoneNumber = JsonUtils.getString("phoneNumber", jsonDoc)
++            if (newPhoneNumber.isNotEmpty() || phoneNumber.isNullOrEmpty()) {
++                phoneNumber = newPhoneNumber
++            }
++
++            val newLevel = JsonUtils.getString("level", jsonDoc)
++            if (newLevel.isNotEmpty() || level.isNullOrEmpty()) {
++                level = newLevel
++            }
++
++            val newLanguage = JsonUtils.getString("language", jsonDoc)
++            if (newLanguage.isNotEmpty() || language.isNullOrEmpty()) {
++                language = newLanguage
++            }
++
++            val newGender = JsonUtils.getString("gender", jsonDoc)
++            if (newGender.isNotEmpty() || gender.isNullOrEmpty()) {
++                gender = newGender
++            }
++
++            val newDob = JsonUtils.getString("birthDate", jsonDoc)
++            if (newDob.isNotEmpty() || dob.isNullOrEmpty()) {
++                dob = newDob
++            }
++
++            val newBirthPlace = JsonUtils.getString("birthPlace", jsonDoc)
++            if (newBirthPlace.isNotEmpty() || birthPlace.isNullOrEmpty()) {
++                birthPlace = newBirthPlace
++            }
++
++            val newAge = JsonUtils.getString("age", jsonDoc)
++            if (newAge.isNotEmpty() || age.isNullOrEmpty()) {
++                age = newAge
++            }
++            planetCode = planetCodes
++            parentCode = JsonUtils.getString("parentCode", jsonDoc)
++            if (_id?.isEmpty() == true) {
++                password = JsonUtils.getString("password", jsonDoc)
++            }
++            password_scheme = JsonUtils.getString("password_scheme", jsonDoc)
++            iterations = JsonUtils.getString("iterations", jsonDoc)
++            derived_key = JsonUtils.getString("derived_key", jsonDoc)
++            salt = JsonUtils.getString("salt", jsonDoc)
++            isShowTopbar = true
++            isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
++            addImageUrl(jsonDoc)
++        }
++
++        if (planetCodes.isNotEmpty()) {
++            settings.edit().putString("planetCode", planetCodes).apply()
++        }
++    }
++
++    private fun migrateGuestUser(realm: io.realm.Realm, id: String, userName: String, settings: SharedPreferences): RealmUser? {
++        val guestUser = realm.where(RealmUser::class.java)
++            .equalTo("name", userName)
++            .beginsWith("_id", "guest_")
++            .findFirst()
++
++        if (guestUser != null) {
++            val tempData = JsonObject()
++            tempData.addProperty("_id", id)
++            tempData.addProperty("name", guestUser.name)
++            tempData.addProperty("firstName", guestUser.firstName)
++            tempData.addProperty("lastName", guestUser.lastName)
++            tempData.addProperty("middleName", guestUser.middleName)
++            tempData.addProperty("email", guestUser.email)
++            tempData.addProperty("phoneNumber", guestUser.phoneNumber)
++            tempData.addProperty("level", guestUser.level)
++            tempData.addProperty("language", guestUser.language)
++            tempData.addProperty("gender", guestUser.gender)
++            tempData.addProperty("birthDate", guestUser.dob)
++            tempData.addProperty("planetCode", guestUser.planetCode)
++            tempData.addProperty("parentCode", guestUser.parentCode)
++            tempData.addProperty("userImage", guestUser.userImage)
++            tempData.addProperty("joinDate", guestUser.joinDate)
++            tempData.addProperty("isShowTopbar", guestUser.isShowTopbar)
++            tempData.addProperty("isArchived", guestUser.isArchived)
++
++            val rolesArray = JsonArray()
++            guestUser.rolesList?.forEach { role ->
++                rolesArray.add(role)
++            }
++            tempData.add("roles", rolesArray)
++            guestUser.deleteFromRealm()
++            val user = realm.createObject(RealmUser::class.java, id)
++            user?.let { insertIntoUsers(tempData, it, settings) }
++            return user
++        }
++        return null
++    }
+
+     override fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser? {
+-        return RealmUser.populateUsersTable(jsonDoc, mRealm, settings)
++        if (jsonDoc == null || mRealm == null) return null
++        try {
++            val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
++            val userName = JsonUtils.getString("name", jsonDoc)
++            var user: RealmUser? = null
++
++            if (!mRealm.isInTransaction) {
++                mRealm.executeTransaction { realm ->
++                    user = realm.where(RealmUser::class.java)
++                        .equalTo("_id", id)
++                        .findFirst()
++
++                    if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
++                        user = migrateGuestUser(realm, id, userName, settings)
++                    }
++
++                    if (user == null) {
++                        user = realm.createObject(RealmUser::class.java, id)
++                    }
++                    user?.let { insertIntoUsers(jsonDoc, it, settings) }
++                }
++            } else {
++                user = mRealm.where(RealmUser::class.java)
++                    .equalTo("_id", id)
++                    .findFirst()
++
++                if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
++                    user = migrateGuestUser(mRealm, id, userName, settings)
++                }
++
++                if (user == null) {
++                    user = mRealm.createObject(RealmUser::class.java, id)
++                }
++                user?.let { insertIntoUsers(jsonDoc, it, settings) }
++            }
++            return user
++        } catch (err: Exception) {
++            err.printStackTrace()
++        }
++        return null
+     }
+
+     override suspend fun getMonthlyLoginCounts(
+@@ -406,7 +619,7 @@
+
+         var userId: String? = null
+         withRealm { realm ->
+-            val managedUser = populateUsersTable(jsonDoc, realm, settings)
++            val managedUser = populateUser(jsonDoc, realm, settings)
+             userId = managedUser?.id
+         }
+
+--- a/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt
+@@ -55,6 +55,7 @@
+     private val serverUrlMapper: ServerUrlMapper,
+     private val dispatcherProvider: DispatcherProvider,
+     private val apiInterface: ApiInterface,
++    private val userRepository: UserRepository,
+ ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
+     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
+         return queryListFlow(RealmTeamTask::class.java) {
+@@ -1109,7 +1110,7 @@
+         val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
+
+         if (communityLeadersJson.isNotEmpty()) {
+-            val adminUsers = RealmUser.parseLeadersJson(communityLeadersJson)
++            val adminUsers = userRepository.parseLeadersJson(communityLeadersJson)
+
+             val teamUserIds = queryList(RealmMyTeam::class.java) {
+                 equalTo("teamId", teamId)
+--- a/app/src/main/java/org/ole/planet/myplanet/ui/community/LeadersFragment.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/ui/community/LeadersFragment.kt
+@@ -10,7 +10,7 @@
+ import javax.inject.Inject
+ import org.ole.planet.myplanet.R
+ import org.ole.planet.myplanet.databinding.FragmentMembersBinding
+-import org.ole.planet.myplanet.model.RealmUser
++import org.ole.planet.myplanet.repository.UserRepository
+ import org.ole.planet.myplanet.services.SharedPrefManager
+
+ @AndroidEntryPoint
+@@ -18,6 +18,8 @@
+     private var binding: FragmentMembersBinding? = null
+     @Inject
+     lateinit var sharedPrefManager: SharedPrefManager
++    @Inject
++    lateinit var userRepository: UserRepository
+
+     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+         binding = FragmentMembersBinding.inflate(inflater, container, false)
+@@ -32,7 +34,7 @@
+         if (leaders.isEmpty()) {
+             binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
+         } else {
+-            val leadersList = RealmUser.parseLeadersJson(leaders)
++            val leadersList = userRepository.parseLeadersJson(leaders)
+             binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
+             val adapter = CommunityLeadersAdapter(requireActivity())
+             binding?.rvMember?.adapter = adapter
+--- a/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesAdapter.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesAdapter.kt
+@@ -66,7 +66,8 @@
+     private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> (() -> Unit),
+     private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
+     private val labelManager: VoicesLabelManager,
+-    private val voicesRepository: VoicesRepository
++    private val voicesRepository: VoicesRepository,
++    private val userRepository: org.ole.planet.myplanet.repository.UserRepository
+ ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+     DiffUtils.itemCallback(
+         areItemsTheSame = { oldItem, newItem ->
+@@ -112,7 +113,7 @@
+     private val replyCountCache = mutableMapOf<String, Int>()
+     private val leadersList: List<RealmUser> by lazy {
+         val raw = sharedPrefManager.getCommunityLeaders()
+-        RealmUser.parseLeadersJson(raw)
++        userRepository.parseLeadersJson(raw)
+     }
+     private var _isTeamLeader: Boolean? = null
+
+--- a/app/src/main/java/org/ole/planet/myplanet/ui/voices/ReplyActivity.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/ui/voices/ReplyActivity.kt
+@@ -153,7 +153,8 @@
+                         return@VoicesAdapter { job.cancel() }
+                     },
+                     labelManager = labelManager,
+-                    voicesRepository = voicesRepository
++                    voicesRepository = voicesRepository,
++                    userRepository = userRepository
+                 )
+                 newsAdapter.sharedPrefManager = sharedPrefManager
+                 newsAdapter.setListener(this@ReplyActivity)
+--- a/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/ui/voices/VoicesFragment.kt
+@@ -260,7 +260,8 @@
+                     return@VoicesAdapter { job.cancel() }
+                 },
+                 labelManager = labelManager,
+-                voicesRepository = voicesRepository
++                voicesRepository = voicesRepository,
++                userRepository = userRepository
+             )
+             adapterNews?.sharedPrefManager = sharedPrefManager
+             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+--- a/app/src/main/java/org/ole/planet/myplanet/ui/teams/voices/TeamsVoicesFragment.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/ui/teams/voices/TeamsVoicesFragment.kt
+@@ -233,7 +233,8 @@
+                         return@VoicesAdapter { job.cancel() }
+                     },
+                     labelManager = labelManager,
+-                    voicesRepository = voicesRepository
++                    voicesRepository = voicesRepository,
++                    userRepository = userRepository
+                 )
+             }
+             adapterNews?.sharedPrefManager = sharedPrefManager
+--- a/app/src/main/java/org/ole/planet/myplanet/model/RealmUser.kt
++++ b/app/src/main/java/org/ole/planet/myplanet/model/RealmUser.kt
+@@ -200,294 +200,5 @@
+     }
+
+     companion object {
+-        @JvmStatic
+-        fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUser? {
+-            val `object` = JsonObject()
+-            `object`.addProperty("_id", "guest_$username")
+-            `object`.addProperty("name", username)
+-            `object`.addProperty("firstName", username)
+-            val rolesArray = JsonArray()
+-            rolesArray.add("guest")
+-            `object`.add("roles", rolesArray)
+-            val startedTransaction = !mRealm.isInTransaction
+-            if (startedTransaction) mRealm.beginTransaction()
+-            val user = populateUsersTable(`object`, mRealm, settings)
+-            if (startedTransaction && mRealm.isInTransaction) {
+-                mRealm.commitTransaction()
+-            }
+-            return user
+-        }
+-
+-        private fun migrateGuestUser(realm: Realm, id: String, userName: String, settings: SharedPreferences): RealmUser? {
+-            val guestUser = realm.where(RealmUser::class.java)
+-                .equalTo("name", userName)
+-                .beginsWith("_id", "guest_")
+-                .findFirst()
+-
+-            if (guestUser != null) {
+-                val tempData = JsonObject()
+-                tempData.addProperty("_id", id)
+-                tempData.addProperty("name", guestUser.name)
+-                tempData.addProperty("firstName", guestUser.firstName)
+-                tempData.addProperty("lastName", guestUser.lastName)
+-                tempData.addProperty("middleName", guestUser.middleName)
+-                tempData.addProperty("email", guestUser.email)
+-                tempData.addProperty("phoneNumber", guestUser.phoneNumber)
+-                tempData.addProperty("level", guestUser.level)
+-                tempData.addProperty("language", guestUser.language)
+-                tempData.addProperty("gender", guestUser.gender)
+-                tempData.addProperty("birthDate", guestUser.dob)
+-                tempData.addProperty("planetCode", guestUser.planetCode)
+-                tempData.addProperty("parentCode", guestUser.parentCode)
+-                tempData.addProperty("userImage", guestUser.userImage)
+-                tempData.addProperty("joinDate", guestUser.joinDate)
+-                tempData.addProperty("isShowTopbar", guestUser.isShowTopbar)
+-                tempData.addProperty("isArchived", guestUser.isArchived)
+-
+-                val rolesArray = JsonArray()
+-                guestUser.rolesList?.forEach { role ->
+-                    rolesArray.add(role)
+-                }
+-                tempData.add("roles", rolesArray)
+-                guestUser.deleteFromRealm()
+-                val user = realm.createObject(RealmUser::class.java, id)
+-                user?.let { insertIntoUsers(tempData, it, settings) }
+-                return user
+-            }
+-            return null
+-        }
+-
+-        @JvmStatic
+-        fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUser? {
+-            if (jsonDoc == null || mRealm == null) return null
+-            try {
+-                val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
+-                val userName = JsonUtils.getString("name", jsonDoc)
+-                var user: RealmUser? = null
+-
+-                if (!mRealm.isInTransaction) {
+-                    mRealm.executeTransaction { realm ->
+-                        user = realm.where(RealmUser::class.java)
+-                            .equalTo("_id", id)
+-                            .findFirst()
+-
+-                        if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
+-                            user = migrateGuestUser(realm, id, userName, settings)
+-                        }
+-
+-                        if (user == null) {
+-                            user = realm.createObject(RealmUser::class.java, id)
+-                        }
+-                        user?.let { insertIntoUsers(jsonDoc, it, settings) }
+-                    }
+-                } else {
+-                    user = mRealm.where(RealmUser::class.java)
+-                        .equalTo("_id", id)
+-                        .findFirst()
+-
+-                    if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
+-                        user = migrateGuestUser(mRealm, id, userName, settings)
+-                    }
+-
+-                    if (user == null) {
+-                        user = mRealm.createObject(RealmUser::class.java, id)
+-                    }
+-                    user?.let { insertIntoUsers(jsonDoc, it, settings) }
+-                }
+-                return user
+-            } catch (err: Exception) {
+-                err.printStackTrace()
+-            }
+-            return null
+-        }
+-
+-        private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUser, settings: SharedPreferences) {
+-            if (jsonDoc == null) return
+-
+-            val planetCodes = JsonUtils.getString("planetCode", jsonDoc)
+-            val rolesArray = JsonUtils.getJsonArray("roles", jsonDoc)
+-            val newId = JsonUtils.getString("_id", jsonDoc)
+-
+-            user.apply {
+-                _rev = JsonUtils.getString("_rev", jsonDoc)
+-                _id = newId
+-                name = JsonUtils.getString("name", jsonDoc)
+-                setRoles(RealmList<String?>().apply {
+-                    for (i in 0 until rolesArray.size()) {
+-                        add(JsonUtils.getString(rolesArray, i))
+-                    }
+-                })
+-                userAdmin = JsonUtils.getBoolean("isUserAdmin", jsonDoc)
+-                val newJoinDate = JsonUtils.getLong("joinDate", jsonDoc)
+-                if (newJoinDate != 0L || joinDate == 0L) {
+-                    joinDate = newJoinDate
+-                }
+-
+-                val newFirstName = JsonUtils.getString("firstName", jsonDoc)
+-                if (newFirstName.isNotEmpty() || firstName.isNullOrEmpty()) {
+-                    firstName = newFirstName
+-                }
+-
+-                val newLastName = JsonUtils.getString("lastName", jsonDoc)
+-                if (newLastName.isNotEmpty() || lastName.isNullOrEmpty()) {
+-                    lastName = newLastName
+-                }
+-
+-                val newMiddleName = JsonUtils.getString("middleName", jsonDoc)
+-                if (newMiddleName.isNotEmpty() || middleName.isNullOrEmpty()) {
+-                    middleName = newMiddleName
+-                }
+-
+-                val newEmail = JsonUtils.getString("email", jsonDoc)
+-                if (newEmail.isNotEmpty() || email.isNullOrEmpty()) {
+-                    email = newEmail
+-                }
+-
+-                val newPhoneNumber = JsonUtils.getString("phoneNumber", jsonDoc)
+-                if (newPhoneNumber.isNotEmpty() || phoneNumber.isNullOrEmpty()) {
+-                    phoneNumber = newPhoneNumber
+-                }
+-
+-                val newLevel = JsonUtils.getString("level", jsonDoc)
+-                if (newLevel.isNotEmpty() || level.isNullOrEmpty()) {
+-                    level = newLevel
+-                }
+-
+-                val newLanguage = JsonUtils.getString("language", jsonDoc)
+-                if (newLanguage.isNotEmpty() || language.isNullOrEmpty()) {
+-                    language = newLanguage
+-                }
+-
+-                val newGender = JsonUtils.getString("gender", jsonDoc)
+-                if (newGender.isNotEmpty() || gender.isNullOrEmpty()) {
+-                    gender = newGender
+-                }
+-
+-                val newDob = JsonUtils.getString("birthDate", jsonDoc)
+-                if (newDob.isNotEmpty() || dob.isNullOrEmpty()) {
+-                    dob = newDob
+-                }
+-
+-                val newBirthPlace = JsonUtils.getString("birthPlace", jsonDoc)
+-                if (newBirthPlace.isNotEmpty() || birthPlace.isNullOrEmpty()) {
+-                    birthPlace = newBirthPlace
+-                }
+-
+-                val newAge = JsonUtils.getString("age", jsonDoc)
+-                if (newAge.isNotEmpty() || age.isNullOrEmpty()) {
+-                    age = newAge
+-                }
+-                planetCode = planetCodes
+-                parentCode = JsonUtils.getString("parentCode", jsonDoc)
+-                if (_id?.isEmpty() == true) {
+-                    password = JsonUtils.getString("password", jsonDoc)
+-                }
+-                password_scheme = JsonUtils.getString("password_scheme", jsonDoc)
+-                iterations = JsonUtils.getString("iterations", jsonDoc)
+-                derived_key = JsonUtils.getString("derived_key", jsonDoc)
+-                salt = JsonUtils.getString("salt", jsonDoc)
+-                isShowTopbar = true
+-                isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
+-                addImageUrl(jsonDoc)
+-            }
+-
+-            if (planetCodes.isNotEmpty()) {
+-                settings.edit { putString("planetCode", planetCodes) }
+-            }
+-        }
+-
+-        @JvmStatic
+-        fun isUserExists(realm: Realm, name: String?): Boolean {
+-            return realm.where(RealmUser::class.java)
+-                .equalTo("name", name)
+-                .not().beginsWith("_id", "guest").count() > 0
+-        }
+-
+-        fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
+-        middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
+-        gender: String?, dob: String?, onSuccess: () -> Unit) {
+-            realm.executeTransactionAsync({ mRealm ->
+-                val user = mRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+-                if (user != null) {
+-                    user.firstName = firstName
+-                    user.lastName = lastName
+-                    user.middleName = middleName
+-                    user.email = email
+-                    user.phoneNumber = phoneNumber
+-                    user.level = level
+-                    user.language = language
+-                    user.gender = gender
+-                    user.dob = dob
+-                    user.isUpdated = true
+-                }
+-            }, {
+-                onSuccess.invoke()
+-                Utilities.toast(context, "User details updated successfully")
+-            }) {
+-                Utilities.toast(context, "User details update failed")
+-            }
+-        }
+-
+-        @JvmStatic
+-        fun parseLeadersJson(jsonString: String): List<RealmUser> {
+-            val leadersList = mutableListOf<RealmUser>()
+-            try {
+-                val jsonObject = JSONObject(jsonString)
+-                val docsArray = jsonObject.getJSONArray("docs")
+-                for (i in 0 until docsArray.length()) {
+-                    val docObject = docsArray.getJSONObject(i)
+-                    val user = RealmUser()
+-                    user.name = docObject.getString("name")
+-                    user.id = if (!docObject.isNull("_id")) {
+-                        docObject.getString("_id")
+-                    } else {
+-                        "org.couchdb.user:${user.name}"
+-                    }
+-                    user.rolesList = RealmList()
+-                    if (!docObject.isNull("firstName")) {
+-                        user.firstName = docObject.getString("firstName")
+-                    }
+-                    if (!docObject.isNull("lastName")) {
+-                        user.lastName = docObject.getString("lastName")
+-                    }
+-                    if (!docObject.isNull("email")) {
+-                        user.email = docObject.getString("email")
+-                    }
+-                    leadersList.add(user)
+-                }
+-            } catch (e: JSONException) {
+-                e.printStackTrace()
+-            }
+-            return leadersList
+-        }
+-
+-        @JvmStatic
+-        fun cleanupDuplicateUsers(realm: Realm, onSuccess: () -> Unit) {
+-            realm.executeTransactionAsync({ mRealm: Realm ->
+-                val allUsers = mRealm.where(RealmUser::class.java).findAll()
+-                val usersByName = allUsers.groupBy { it.name }
+-
+-                usersByName.forEach { (_, users) ->
+-                    if (users.size > 1) {
+-                        val sortedUsers = users.sortedWith { user1, user2 ->
+-                            when {
+-                                user1._id?.startsWith("org.couchdb.user:") == true &&
+-                                        user2._id?.startsWith("guest_") == true -> -1
+-                                user1._id?.startsWith("guest_") == true &&
+-                                        user2._id?.startsWith("org.couchdb.user:") == true -> 1
+-                                else -> 0
+-                            }
+-                        }
+-
+-                        for (i in 1 until sortedUsers.size) {
+-                            sortedUsers[i].deleteFromRealm()
+-                        }
+-                    }
+-                }
+-            }, {
+-                onSuccess.invoke()
+-            }) {
+-            }
+-        }
+     }
+ }
+--- a/app/src/test/java/org/ole/planet/myplanet/model/RealmUserTest.kt
++++ b/app/src/test/java/org/ole/planet/myplanet/model/RealmUserTest.kt
+@@ -58,113 +58,6 @@
+         Dispatchers.resetMain()
+         unmockkAll()
+     }
+-
+-    @Test
+-    fun `updateUserDetails triggers success block on transaction success`() {
+-        // Arrange
+-        val userId = "user123"
+-
+-        // Mock Realm.executeTransactionAsync to trigger the success callback
+-        every {
+-            mockRealm.executeTransactionAsync(any(), any(), any())
+-        } answers {
+-            val transaction = arg<Realm.Transaction>(0)
+-            val successCallback = arg<Realm.Transaction.OnSuccess>(1)
+-
+-            // Execute the transaction body. We must ensure no exception is thrown
+-            // here to avoid false positives, so do not try-catch it silently.
+-            transaction.execute(mockRealm)
+-
+-            successCallback.onSuccess()
+-            mockk()
+-        }
+-
+-        // Mock the realm where query inside the transaction
+-        val mockQuery = mockk<io.realm.RealmQuery<RealmUser>>(relaxed = true)
+-        every { mockRealm.where(RealmUser::class.java) } returns mockQuery
+-        every { mockQuery.equalTo("id", userId) } returns mockQuery
+-
+-        val mockRealmUser = mockk<RealmUser>(relaxed = false)
+-        every { mockQuery.findFirst() } returns mockRealmUser
+-
+-        // Mock the property setters explicitly to enforce verification
+-        every { mockRealmUser.firstName = "John" } just Runs
+-        every { mockRealmUser.lastName = "Doe" } just Runs
+-        every { mockRealmUser.middleName = "" } just Runs
+-        every { mockRealmUser.email = "john@example.com" } just Runs
+-        every { mockRealmUser.phoneNumber = "1234567890" } just Runs
+-        every { mockRealmUser.level = "1" } just Runs
+-        every { mockRealmUser.language = "en" } just Runs
+-        every { mockRealmUser.gender = "Male" } just Runs
+-        every { mockRealmUser.dob = "2000-01-01" } just Runs
+-        every { mockRealmUser.isUpdated = true } just Runs
+-
+-        val onSuccessMock = mockk<() -> Unit>(relaxed = true)
+-
+-        // Act
+-        RealmUser.updateUserDetails(
+-            realm = mockRealm,
+-            userId = userId,
+-            firstName = "John",
+-            lastName = "Doe",
+-            middleName = "",
+-            email = "john@example.com",
+-            phoneNumber = "1234567890",
+-            level = "1",
+-            language = "en",
+-            gender = "Male",
+-            dob = "2000-01-01",
+-            onSuccess = onSuccessMock
+-        )
+-
+-        // Assert
+-        verify(exactly = 1) { onSuccessMock.invoke() }
+-        verify { Utilities.toast(mockContext, "User details updated successfully") }
+-
+-        // Verify user properties were set
+-        verify { mockRealmUser.firstName = "John" }
+-        verify { mockRealmUser.lastName = "Doe" }
+-        verify { mockRealmUser.email = "john@example.com" }
+-        verify { mockRealmUser.isUpdated = true }
+-    }
+-
+-    @Test
+-    fun `updateUserDetails triggers error block on transaction failure`() {
+-        // Arrange
+-        val userId = "user123"
+-        val mockError = Throwable("Transaction failed")
+-
+-        // Mock Realm.executeTransactionAsync to trigger the error callback
+-        every {
+-            mockRealm.executeTransactionAsync(any(), any(), any())
+-        } answers {
+-            val errorCallback = arg<Realm.Transaction.OnError>(2)
+-            errorCallback.onError(mockError)
+-            mockk()
+-        }
+-
+-        val onSuccessMock = mockk<() -> Unit>(relaxed = true)
+-
+-        // Act
+-        RealmUser.updateUserDetails(
+-            realm = mockRealm,
+-            userId = userId,
+-            firstName = "John",
+-            lastName = "Doe",
+-            middleName = "",
+-            email = "john@example.com",
+-            phoneNumber = "1234567890",
+-            level = "1",
+-            language = "en",
+-            gender = "Male",
+-            dob = "2000-01-01",
+-            onSuccess = onSuccessMock
+-        )
+-
+-        // Assert
+-        verify(exactly = 0) { onSuccessMock.invoke() }
+-        verify { Utilities.toast(mockContext, "User details update failed") }
+-    }
+
+     @Test
+     fun testIsManagerWithManagerRole() {
+--- a/app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryImplTest.kt
++++ b/app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryImplTest.kt
+@@ -57,6 +57,8 @@
+         coEvery { serverUrlMapper.processUrl(any()) } returns serverUrlMapping
+         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
+
++        val mockUserRepository = mockk<UserRepository>(relaxed = true)
++
+         teamsRepository = TeamsRepositoryImpl(
+             databaseService,
+             UnconfinedTestDispatcher(),
+@@ -67,7 +69,8 @@
+             sharedPrefManager,
+             serverUrlMapper,
+             dispatcherProvider,
+-            apiInterfaceMock
++            apiInterfaceMock,
++            mockUserRepository
+         )
+     }

@@ -57,6 +57,8 @@ class TeamsRepositoryImplTest {
         coEvery { serverUrlMapper.processUrl(any()) } returns serverUrlMapping
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
+        val mockUserRepository = mockk<UserRepository>(relaxed = true)
+
         teamsRepository = TeamsRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
@@ -67,7 +69,8 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            apiInterfaceMock
+            apiInterfaceMock,
+            mockUserRepository
         )
     }
 
