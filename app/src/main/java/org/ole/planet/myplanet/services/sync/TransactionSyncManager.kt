@@ -197,9 +197,9 @@ class TransactionSyncManager @Inject constructor(
                 )
                 if (table == "news") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (i in 0 until arr.size()) {
+                        var jsonDoc = arr.get(i).asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
                         val id = getString("_id", jsonDoc)
                         if (!id.startsWith("_design")) {
@@ -216,9 +216,9 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else if (table == "feedback") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (i in 0 until arr.size()) {
+                        var jsonDoc = arr.get(i).asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
                         val id = getString("_id", jsonDoc)
                         if (!id.startsWith("_design")) {
