@@ -208,6 +208,23 @@ class ProgressRepositoryImpl @Inject constructor(
         } > 0
     }
 
+    private fun insertCourseProgress(mRealm: io.realm.Realm, act: com.google.gson.JsonObject?) {
+        var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+        if (courseProgress == null) {
+            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
+        }
+        courseProgress?._rev = JsonUtils.getString("_rev", act)
+        courseProgress?._id = JsonUtils.getString("_id", act)
+        courseProgress?.passed = JsonUtils.getBoolean("passed", act)
+        courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
+        courseProgress?.userId = JsonUtils.getString("userId", act)
+        courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
+        courseProgress?.courseId = JsonUtils.getString("courseId", act)
+        courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
+        courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
+        courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
+    }
+
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = mutableListOf<com.google.gson.JsonObject>()
         for (j in jsonArray) {
@@ -219,7 +236,7 @@ class ProgressRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmCourseProgress.insert(realm, jsonDoc)
+            insertCourseProgress(realm, jsonDoc)
         }
     }
 }
