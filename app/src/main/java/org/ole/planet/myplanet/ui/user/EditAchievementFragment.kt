@@ -336,7 +336,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             names.add(list[i].title ?: "")
             if (prevList.contains(list[i].title)) selected.add(i)
         }
-        val adapter = CheckboxAdapter(names, selected)
+        val adapter = CheckboxAdapter(initialSelectedItems = selected).apply { submitList(names) }
         myLibraryAlertdialogBinding.alertDialogListView.layoutManager = LinearLayoutManager(requireActivity())
         myLibraryAlertdialogBinding.alertDialogListView.adapter = adapter
         return myLibraryAlertdialogBinding.alertDialogListView

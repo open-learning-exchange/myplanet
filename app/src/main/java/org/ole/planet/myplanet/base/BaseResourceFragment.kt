@@ -297,9 +297,9 @@ abstract class BaseResourceFragment : Fragment() {
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = dbMyLibrary.map { it?.title ?: "" }
-        val adapter = CheckboxAdapter(names) {
+        val adapter = CheckboxAdapter(checkChangeListener = {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
-        }
+        }).apply { submitList(names) }
         lv?.layoutManager = LinearLayoutManager(requireActivity().baseContext)
         lv?.adapter = adapter
     }
