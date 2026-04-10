@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 interface ConfigurationsRepository {
-    fun checkHealth(listener: OnSuccessListener)
+    suspend fun checkHealth(): String
     fun checkVersion(callback: CheckVersionCallback, spm: SharedPrefManager)
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean

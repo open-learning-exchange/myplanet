@@ -120,7 +120,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var isSync = false
     var forceSync = false
     var syncFailed = false
-    lateinit var defaultPref: SharedPreferences
+    val defaultPref: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+    }
     @Inject
     lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
@@ -186,9 +188,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         }
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        settings = prefData.rawPreferences
         requestAllPermissions()
-        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = UrlUtils.getUrl()
     }
 
@@ -392,7 +393,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (settings != null) {
                 this.settings = settings
             }
-            if (!userRepository.hasAtLeastOneUser()) {
+            if (!withContext(Dispatchers.IO) { userRepository.hasAtLeastOneUser() }) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
