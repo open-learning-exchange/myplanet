@@ -523,7 +523,7 @@ class UploadManager @Inject constructor(
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
         val user = userRepository.getUserModelSuspending()
-        val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
+        val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
