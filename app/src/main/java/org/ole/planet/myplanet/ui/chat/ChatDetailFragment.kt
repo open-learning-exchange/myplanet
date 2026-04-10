@@ -33,20 +33,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.ContentData
-import org.ole.planet.myplanet.model.ContinueChatRequest
-import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -86,7 +79,6 @@ class ChatDetailFragment : Fragment() {
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
-    private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -166,17 +158,14 @@ class ChatDetailFragment : Fragment() {
                     _id.isNotEmpty() -> {
                         viewLifecycleOwner.lifecycleScope.launch {
                             val newRev = getLatestRev(_id) ?: _rev
-                            val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                            launchRequest(requestBody, message, _id)
+                            launchContinueChatRequest(message, user?.name, aiProvider, _id, newRev)
                         }
                     }
                     currentID.isNotEmpty() -> {
-                        val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
-                        launchRequest(requestBody, message, currentID)
+                        launchContinueChatRequest(message, user?.name, aiProvider, currentID, _rev)
                     }
                     else -> {
-                        val requestBody = createChatRequest(message, aiProvider)
-                        launchRequest(requestBody, message, null)
+                        launchNewChatRequest(message, user?.name, aiProvider)
                     }
                 }
                 binding.editGchatMessage.text.clear()
@@ -448,12 +437,21 @@ class ChatDetailFragment : Fragment() {
         refreshInputState()
     }
 
-    private fun launchRequest(content: RequestBody, query: String, id: String?) {
+    private fun launchNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         disableUI()
         val mapping = processServerUrl()
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            sendChatRequest(content, query, id, id == null)
+            sendNewChatRequest(query, userName, aiProvider)
+        }
+    }
+
+    private fun launchContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
+        disableUI()
+        val mapping = processServerUrl()
+        viewLifecycleOwner.lifecycleScope.launch {
+            updateServerIfNecessary(mapping)
+            sendContinueChatRequest(query, userName, aiProvider, id, rev)
         }
     }
 
@@ -498,21 +496,6 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun jsonRequestBody(json: String): RequestBody =
-        json.toRequestBody(jsonMediaType)
-
-    private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
-        val continueChatData = ContinueChatRequest(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
-        val jsonContent = JsonUtils.gson.toJson(continueChatData)
-        return jsonRequestBody(jsonContent)
-    }
-
-    private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
-        val chatData = ChatRequest(data = ContentData("${user?.name}", message, aiProvider), save = true)
-        val jsonContent = JsonUtils.gson.toJson(chatData)
-        return jsonRequestBody(jsonContent)
-    }
-
     private suspend fun getLatestRev(id: String): String? {
         return try {
             chatRepository.getLatestRev(id)
@@ -522,10 +505,21 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
+    private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = chatApiService.sendChatRequest(content)
+                val response = chatRepository.sendNewChatRequest(query, userName, aiProvider)
+                handleResponse(response, query, null)
+            } catch (t: Exception) {
+                handleFailure(t.message, query, null)
+            }
+        }
+    }
+
+    private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
                 handleResponse(response, query, id)
             } catch (t: Exception) {
                 handleFailure(t.message, query, id)
