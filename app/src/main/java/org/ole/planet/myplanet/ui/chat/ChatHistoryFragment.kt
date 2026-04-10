@@ -348,11 +348,8 @@ class ChatHistoryFragment : Fragment() {
         sharedViewModel.setAiProvidersLoading(true)
         sharedViewModel.setAiProvidersError(false)
 
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
         viewLifecycleOwner.lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            val providers = chatApiService.fetchAiProviders()
+            val providers = chatRepository.fetchAiProviders(serverUrl, sharedPrefManager.rawPreferences)
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 sharedViewModel.setAiProvidersError(true)
