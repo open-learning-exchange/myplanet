@@ -1,9 +1,14 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
+import retrofit2.Response
 
 interface ChatRepository {
+    suspend fun sendNewChatRequest(query: String, user: String?, aiProvider: AiProvider): Response<ChatResponse>
+    suspend fun sendContinueChatRequest(message: String, user: String?, aiProvider: AiProvider, id: String, rev: String): Response<ChatResponse>
     suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun saveNewChat(chat: JsonObject)
