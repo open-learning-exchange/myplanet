@@ -3,14 +3,20 @@ package org.ole.planet.myplanet.ui.components
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.CheckedTextView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class CheckboxAdapter(
-    private val items: List<String>,
     private val initialSelectedItems: List<Int> = emptyList(),
     private val checkChangeListener: CheckChangeListener? = null
-) : RecyclerView.Adapter<CheckboxAdapter.ViewHolder>() {
+) : ListAdapter<String, CheckboxAdapter.ViewHolder>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { a, b -> a == b },
+        areContentsTheSame = { a, b -> a == b }
+    )
+) {
 
     val selectedItemsList = ArrayList<Int>()
 
@@ -29,7 +35,7 @@ class CheckboxAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val isChecked = selectedItemsList.contains(position)
-        holder.checkedTextView.text = items[position]
+        holder.checkedTextView.text = getItem(position)
         holder.checkedTextView.isChecked = isChecked
 
         holder.checkedTextView.setOnClickListener {
@@ -43,8 +49,6 @@ class CheckboxAdapter(
             checkChangeListener?.onCheckChange()
         }
     }
-
-    override fun getItemCount(): Int = items.size
 
     class ViewHolder(val checkedTextView: CheckedTextView) : RecyclerView.ViewHolder(checkedTextView)
 }
