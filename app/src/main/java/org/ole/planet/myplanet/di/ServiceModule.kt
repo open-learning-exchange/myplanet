@@ -50,9 +50,10 @@ object ServiceModule {
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
         @ApplicationScope scope: CoroutineScope,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        communityRepository: org.ole.planet.myplanet.repository.CommunityRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, communityRepository)
     }
 
     @Provides
@@ -90,11 +91,12 @@ object ServiceModule {
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+        communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
         @ApplicationScope appScope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, communityRepository, appScope, dispatcherProvider, apiInterface)
     }
 
     @Provides

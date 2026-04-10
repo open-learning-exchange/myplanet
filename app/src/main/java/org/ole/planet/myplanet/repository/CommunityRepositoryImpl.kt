@@ -6,8 +6,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import io.realm.Case
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
@@ -75,7 +77,45 @@ class CommunityRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMeetup.insert(realm, jsonDoc)
+            insertMeetup(realm, jsonDoc)
         }
+    }
+
+    override suspend fun getMyMeetupIds(userId: String?): com.google.gson.JsonArray {
+        return withRealm { realm ->
+            val meetups = realm.where(RealmMeetup::class.java).isNotEmpty("userId")
+                .equalTo("userId", userId, Case.INSENSITIVE).findAll()
+            val ids = com.google.gson.JsonArray()
+            for (lib in meetups ?: emptyList()) {
+                ids.add(lib.meetupId)
+            }
+            ids
+        }
+    }
+
+    override fun insertMeetup(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+        val userId = ""
+        var myMeetupsDB = realm.where(RealmMeetup::class.java)
+            .equalTo("meetupId", JsonUtils.getString("_id", doc)).findFirst()
+        if (myMeetupsDB == null) {
+            myMeetupsDB = realm.createObject(RealmMeetup::class.java, JsonUtils.getString("_id", doc))
+        }
+        myMeetupsDB?.meetupId = JsonUtils.getString("_id", doc)
+        myMeetupsDB?.userId = userId
+        myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", doc)
+        myMeetupsDB?.title = JsonUtils.getString("title", doc)
+        myMeetupsDB?.description = JsonUtils.getString("description", doc)
+        myMeetupsDB?.startDate = JsonUtils.getLong("startDate", doc)
+        myMeetupsDB?.endDate = JsonUtils.getLong("endDate", doc)
+        myMeetupsDB?.recurring = JsonUtils.getString("recurring", doc)
+        myMeetupsDB?.startTime = JsonUtils.getString("startTime", doc)
+        myMeetupsDB?.endTime = JsonUtils.getString("endTime", doc)
+        myMeetupsDB?.category = JsonUtils.getString("category", doc)
+        myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", doc)
+        myMeetupsDB?.meetupLink = JsonUtils.getString("meetupLink", doc)
+        myMeetupsDB?.creator = JsonUtils.getString("createdBy", doc)
+        myMeetupsDB?.day = JsonUtils.getJsonArray("day", doc).toString()
+        myMeetupsDB?.link = JsonUtils.getJsonObject("link", doc).toString()
+        myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", doc))
     }
 }
