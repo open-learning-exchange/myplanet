@@ -3,19 +3,26 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.Runs
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.JsonUtils
-import java.util.UUID
 
 class RealmStepExamTest {
 

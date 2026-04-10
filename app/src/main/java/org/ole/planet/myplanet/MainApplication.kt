@@ -5,8 +5,8 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.TrafficStats
 import android.content.res.Configuration
+import android.net.TrafficStats
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
