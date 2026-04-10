@@ -198,7 +198,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
-        viewModel.loadCourses(isMyCourseLib, model?.id)
         return adapterCourses
     }
 

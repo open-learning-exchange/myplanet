@@ -98,12 +98,10 @@ class CoursesViewModel @Inject constructor(
 
     fun filterCourses(isMyCourseLib: Boolean, userId: String?, searchText: String, selectedGrade: String, selectedSubject: String, tagNames: List<String>) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
-                val tagsMap = _coursesState.value.tagsMap
-                processCourses(isMyCourseLib, userId, filteredCourses, myCourses, _coursesState.value.map, _coursesState.value.progressMap, tagsMap)
-            }
+            val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+            val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
+            val tagsMap = _coursesState.value.tagsMap
+            processCourses(isMyCourseLib, userId, filteredCourses, myCourses, _coursesState.value.map, _coursesState.value.progressMap, tagsMap)
         }
     }
 

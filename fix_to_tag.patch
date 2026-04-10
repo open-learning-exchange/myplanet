@@ -1,0 +1,14 @@
+--- app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesViewModel.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesViewModel.kt
+@@ -108,4 +108,11 @@
+             isMyCourse = this.isMyCourse
+         )
+     }
++
++    private fun RealmTag.toTag(): Tag {
++        return Tag(
++            id = this.id,
++            name = this.name
++        )
++    }
+ }

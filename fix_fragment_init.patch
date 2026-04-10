@@ -1,0 +1,9 @@
+--- app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesFragment.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/courses/CoursesFragment.kt
+@@ -194,6 +194,7 @@
+         adapterCourses.setListener(this@CoursesFragment)
+         adapterCourses.setRatingChangeListener(this@CoursesFragment)
+         enableSortButtons()
++        viewModel.loadCourses(isMyCourseLib, model?.id)
+         return adapterCourses
+     }
