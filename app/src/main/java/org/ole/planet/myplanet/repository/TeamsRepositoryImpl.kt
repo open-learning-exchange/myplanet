@@ -1017,7 +1017,7 @@ class TeamsRepositoryImpl @Inject constructor(
             withContext(dispatcherProvider.io) {
                 uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
-                uploadManager.uploadTeamActivities(apiInterface)
+                uploadManager.uploadTeamActivities()
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -1336,25 +1336,6 @@ class TeamsRepositoryImpl @Inject constructor(
             .equalTo("user", userName)
             .equalTo("teamId", teamId)
             .max("time")?.toLong()
-    }
-
-    override fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
-        val ob = JsonObject()
-        ob.addProperty("user", log.user)
-        ob.addProperty("type", log.type)
-        ob.addProperty("createdOn", log.createdOn)
-        ob.addProperty("parentCode", log.parentCode)
-        ob.addProperty("teamType", log.teamType)
-        ob.addProperty("time", log.time)
-        ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-        if (!TextUtils.isEmpty(log._rev)) {
-            ob.addProperty("_rev", log._rev)
-            ob.addProperty("_id", log._id)
-        }
-        return ob
     }
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {

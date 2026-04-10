@@ -62,12 +62,27 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id }
     )
 
-    val TeamActivitiesRefactored = UploadConfig(
+    val TeamActivities = UploadConfig(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
         serializer = UploadSerializer.WithContext { log, context ->
-            teamsRepository.get().serializeTeamActivities(log, context)
+            val ob = com.google.gson.JsonObject()
+            ob.addProperty("user", log.user)
+            ob.addProperty("type", log.type)
+            ob.addProperty("createdOn", log.createdOn)
+            ob.addProperty("parentCode", log.parentCode)
+            ob.addProperty("teamType", log.teamType)
+            ob.addProperty("time", log.time)
+            ob.addProperty("teamId", log.teamId)
+            ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+            ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+            ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+            if (!android.text.TextUtils.isEmpty(log._rev)) {
+                ob.addProperty("_rev", log._rev)
+                ob.addProperty("_id", log._id)
+            }
+            ob
         },
         idExtractor = { it._id }
     )

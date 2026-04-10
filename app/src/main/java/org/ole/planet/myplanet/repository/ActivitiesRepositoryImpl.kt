@@ -200,21 +200,6 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUnuploadedTeamLogs(): List<TeamLogData> {
-        return withRealm { realm ->
-            val results = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-            results.map { log ->
-                TeamLogData(
-                    id = log.id,
-                    time = log.time,
-                    user = log.user,
-                    type = log.type,
-                    serialized = teamsRepository.get().serializeTeamActivities(log, context)
-                )
-            }
-        }
-    }
-
     override suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>) {
         executeTransaction { transactionRealm ->
             val activities = transactionRealm.where(RealmOfflineActivity::class.java)
@@ -227,61 +212,6 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun markTeamLogsUploaded(results: List<TeamLogUploadResult>) {
-        if (results.isEmpty()) return
-
-        executeTransaction { realm ->
-            val ids = results.mapNotNull { it.id }
-            val managedLogs = mutableMapOf<String, RealmTeamLog>()
-
-            if (ids.isNotEmpty()) {
-                ids.chunked(999).forEach { chunk ->
-                    val queryResults = realm.where(RealmTeamLog::class.java)
-                        .`in`("id", chunk.toTypedArray())
-                        .findAll()
-                    queryResults.forEach { log ->
-                        log.id?.let { id -> managedLogs[id] = log }
-                    }
-                }
-            }
-
-            val uploadsWithoutId = results.filter { it.id == null }
-            val fallbackLogs = mutableMapOf<Triple<Long?, String?, String?>, RealmTeamLog>()
-
-            if (uploadsWithoutId.isNotEmpty()) {
-                uploadsWithoutId.chunked(250).forEach { chunk ->
-                    val query = realm.where(RealmTeamLog::class.java)
-                    query.beginGroup()
-                    chunk.forEachIndexed { index, upload ->
-                        if (index > 0) query.or()
-                        query.beginGroup()
-                            .equalTo("time", upload.time)
-                            .equalTo("user", upload.user)
-                            .equalTo("type", upload.type)
-                        .endGroup()
-                    }
-                    query.endGroup()
-
-                    val queryResults = query.findAll()
-                    queryResults.forEach { log ->
-                        val key = Triple(log.time, log.user, log.type)
-                        fallbackLogs[key] = log
-                    }
-                }
-            }
-
-            results.forEach { upload ->
-                val managedLog = if (upload.id != null) {
-                    managedLogs[upload.id]
-                } else {
-                    val key = Triple(upload.time, upload.user, upload.type)
-                    fallbackLogs[key]
-                }
-                managedLog?._id = upload._id
-                managedLog?._rev = upload._rev
-            }
-        }
-    }
 
     override suspend fun recordSyncActivity(userId: String) {
         executeTransaction { realm ->
