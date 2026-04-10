@@ -52,7 +52,7 @@ interface TeamsRepository {
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
-    suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
+    suspend fun getTeamCourseIds(teamId: String): List<String>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam?
