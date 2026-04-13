@@ -16,6 +16,7 @@ import androidx.work.workDataOf
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint
 import dagger.hilt.components.SingletonComponent
 import java.util.regex.Pattern
 import kotlinx.coroutines.launch
@@ -288,14 +289,10 @@ object DownloadUtils {
     private val resourcesRepository: ResourcesRepository by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(
             MainApplication.context,
-            DownloadUtilsEntryPoint::class.java
+            RepositoryDependenciesEntryPoint::class.java
         )
         entryPoint.resourcesRepository()
     }
 
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface DownloadUtilsEntryPoint {
-        fun resourcesRepository(): ResourcesRepository
-    }
+
 }

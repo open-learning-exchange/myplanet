@@ -200,7 +200,11 @@ class AchievementFragment : BaseContainerFragment() {
         } else {
             binding.imageView.setImageResource(R.drawable.profile)
         }
-        binding.tvName.text = String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+        val fullName = listOfNotNull(user?.firstName, user?.middleName, user?.lastName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+
+        binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
     }
 
 
