@@ -392,8 +392,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             return isValidTemp && isValidHeight && isValidPulse && isValidWeight
         }
 
-    //    private float getFloat(String trim) {
-    //    }
     private fun getInt(trim: String): Int {
         return try {
             trim.toInt()

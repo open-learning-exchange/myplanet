@@ -11,13 +11,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmObject
 import javax.inject.Inject
@@ -41,7 +42,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -53,7 +54,7 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    var lv: CheckboxListView? = null
+    var lv: RecyclerView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
@@ -164,14 +165,15 @@ abstract class BaseResourceFragment : Fragment() {
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
-                            lv?.selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, it)
+                            val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
+                            selectedItemsList?.let {
+                                addToLibrary(dbMyLibrary, ArrayList(it))
                                 val selectedLibraries = it.mapNotNull { index ->
                                     dbMyLibrary.getOrNull(
                                         index
                                     ) }
                                 if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
                                     showProgressDialog()
                                 }
                             }
@@ -185,7 +187,7 @@ abstract class BaseResourceFragment : Fragment() {
                             addAllToLibrary(dbMyLibrary)
                             val filtered = dbMyLibrary.filterNotNull()
                             if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
                                 showProgressDialog()
                             }
                         } else {
@@ -201,7 +203,7 @@ abstract class BaseResourceFragment : Fragment() {
                     downloadSuggestionDialog = null
                 }
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
                     ?: 0) > 0
             }
         }
@@ -294,12 +296,11 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
-        val names = dbMyLibrary.map { it?.title }
-        val adapter = ArrayAdapter(requireActivity().baseContext, R.layout.rowlayout, R.id.checkBoxRowLayout, names)
-        lv?.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        lv?.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
+        val names = dbMyLibrary.map { it?.title ?: "" }
+        val adapter = CheckboxAdapter(names) {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
         }
+        lv?.layoutManager = LinearLayoutManager(requireActivity().baseContext)
         lv?.adapter = adapter
     }
 

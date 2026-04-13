@@ -6,8 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
@@ -15,6 +13,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 
 @AndroidEntryPoint
@@ -114,7 +114,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
 
             alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
                 .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
-                    val selectedResources = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
+                    val selectedResources = (myLibraryAlertdialogBinding.alertDialogListView.adapter as CheckboxAdapter).selectedItemsList
                         .map { index -> availableLibraries[index] }
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamsRepository.addResourceLinks(teamId, selectedResources, user)
@@ -141,16 +141,15 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         fragment.show(childFragmentManager, "AddResourceFragment")
     }
 
-    private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: CheckboxListView) {
-        val names = libraries.map { it.title }
-        val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
-        lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        lv.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
+    private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: RecyclerView) {
+        val names = libraries.map { it.title ?: "" }
+        val adapter = CheckboxAdapter(names) {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
         }
+        lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
         alertDialog.show()
-        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
     }
 
     fun checkAndShowNoData() {
