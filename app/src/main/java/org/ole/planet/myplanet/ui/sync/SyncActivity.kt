@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -65,7 +65,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utils.Constants.autoSynFeature
 import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
@@ -486,9 +485,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             var attempt = 0
             val maxAttempts = 3 // Maximum 3 seconds wait
             while (attempt < maxAttempts) {
-                val hasUser = withContext(Dispatchers.IO) {
-                    userRepository.hasAtLeastOneUser()
-                }
+                val hasUser = userRepository.hasAtLeastOneUser()
                 if (hasUser) {
                     break
                 }
@@ -824,7 +821,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         suspend fun clearSharedPref() {
             withContext(Dispatchers.IO) {
-                val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                val spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
                 val prefs = spm.rawPreferences
                 val editor = prefs.edit()
                 val keysToKeep =
