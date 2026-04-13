@@ -34,7 +34,7 @@ class ChatRepositoryImpl @Inject constructor(
         user: String?,
         aiProvider: AiProvider
     ): Response<ChatResponse> {
-        val chatData = ChatRequest(data = ContentData("${user}", query, aiProvider), save = true)
+        val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
         val jsonContent = JsonUtils.gson.toJson(chatData)
         val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
         return chatApiService.sendChatRequest(requestBody)
@@ -47,7 +47,7 @@ class ChatRepositoryImpl @Inject constructor(
         id: String,
         rev: String
     ): Response<ChatResponse> {
-        val continueChatData = ContinueChatRequest(data = Data("${user}", message, aiProvider, id, rev), save = true)
+        val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
         val jsonContent = JsonUtils.gson.toJson(continueChatData)
         val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
         return chatApiService.sendChatRequest(requestBody)
