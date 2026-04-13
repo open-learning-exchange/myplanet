@@ -24,6 +24,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 class ChatRepositoryImplTest {
@@ -33,11 +34,12 @@ class ChatRepositoryImplTest {
     private val mockRealm: Realm = mockk(relaxed = true)
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
-    private val sharedPreferences: SharedPreferences = mockk(relaxed = true)
+    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
 
     @Before
     fun setup() {
-        chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher(), chatApiService, serverUrlMapper), recordPrivateCalls = true)
+        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
+        chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher(), chatApiService, serverUrlMapper, sharedPrefManager), recordPrivateCalls = true)
     }
 
     @After
@@ -50,16 +52,18 @@ class ChatRepositoryImplTest {
         val serverUrl = "http://example.com"
         val mockMapping = ServerUrlMapper.UrlMapping(primaryUrl = serverUrl)
         val mockResponse = mapOf("provider1" to true, "provider2" to false)
+        val mockPrefs = mockk<SharedPreferences>(relaxed = true)
 
+        every { sharedPrefManager.rawPreferences } returns mockPrefs
         every { serverUrlMapper.processUrl(serverUrl) } returns mockMapping
         coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers { }
         coEvery { chatApiService.fetchAiProviders() } returns mockResponse
 
-        val result = chatRepository.fetchAiProviders(serverUrl, sharedPreferences)
+        val result = chatRepository.fetchAiProviders(serverUrl) { true }
 
         assertEquals(mockResponse, result)
         verify(exactly = 1) { serverUrlMapper.processUrl(serverUrl) }
-        coVerify(exactly = 1) { serverUrlMapper.updateServerIfNecessary(mockMapping, sharedPreferences, any()) }
+        coVerify(exactly = 1) { serverUrlMapper.updateServerIfNecessary(mockMapping, mockPrefs, any()) }
         coVerify(exactly = 1) { chatApiService.fetchAiProviders() }
     }
 

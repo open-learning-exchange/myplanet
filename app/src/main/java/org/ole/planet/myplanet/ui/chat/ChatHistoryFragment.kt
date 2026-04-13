@@ -73,8 +73,6 @@ class ChatHistoryFragment : Fragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var chatApiService: ChatApiService
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
@@ -349,7 +347,7 @@ class ChatHistoryFragment : Fragment() {
         sharedViewModel.setAiProvidersError(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl, sharedPrefManager.rawPreferences)
+            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 sharedViewModel.setAiProvidersError(true)
