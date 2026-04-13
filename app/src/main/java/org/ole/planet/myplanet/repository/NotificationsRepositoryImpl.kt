@@ -232,6 +232,96 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
+        return withRealm { realm ->
+            if (taskIds.isEmpty()) return@withRealm emptyMap()
+            val map = mutableMapOf<String, String>()
+            val query = realm.where(RealmTeamTask::class.java)
+            query.beginGroup()
+            taskIds.forEachIndexed { index, taskId ->
+                if (index > 0) query.or()
+                query.equalTo("id", taskId)
+            }
+            query.endGroup()
+            val tasks = query.findAll()
+
+            val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+            if (teamIds.isNotEmpty()) {
+                val teamQuery = realm.where(RealmMyTeam::class.java)
+                teamQuery.beginGroup()
+                teamIds.forEachIndexed { index, id ->
+                    if (index > 0) teamQuery.or()
+                    teamQuery.equalTo("_id", id)
+                }
+                teamQuery.endGroup()
+                val teams = teamQuery.findAll()
+                val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
+
+                tasks.forEach { task ->
+                    val taskId = task.id
+                    val teamId = task.teamId
+                    if (!taskId.isNullOrEmpty() && !teamId.isNullOrEmpty()) {
+                        teamMap[teamId]?.let { teamName ->
+                            map[taskId] = teamName
+                        }
+                    }
+                }
+            }
+            map
+        }
+    }
+
+    override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
+        return withRealm { realm ->
+            if (relatedIds.isEmpty()) return@withRealm emptyMap()
+            val map = mutableMapOf<String, Pair<String, String>>()
+
+            val query = realm.where(RealmMyTeam::class.java).equalTo("docType", "request")
+            query.beginGroup()
+            relatedIds.forEachIndexed { index, id ->
+                if (index > 0) query.or()
+                query.equalTo("_id", id)
+            }
+            query.endGroup()
+            val joinRequests = query.findAll()
+
+            val teamIds = joinRequests.mapNotNull { it.teamId }.distinct()
+            val userIds = joinRequests.mapNotNull { it.userId }.distinct()
+
+            val teamMap = if (teamIds.isNotEmpty()) {
+                val tq = realm.where(RealmMyTeam::class.java)
+                tq.beginGroup()
+                teamIds.forEachIndexed { index, id ->
+                    if (index > 0) tq.or()
+                    tq.equalTo("_id", id)
+                }
+                tq.endGroup()
+                tq.findAll().associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
+            } else emptyMap()
+
+            val userMap = if (userIds.isNotEmpty()) {
+                val uq = realm.where(RealmUser::class.java)
+                uq.beginGroup()
+                userIds.forEachIndexed { index, id ->
+                    if (index > 0) uq.or()
+                    uq.equalTo("id", id)
+                }
+                uq.endGroup()
+                uq.findAll().associateBy({ it.id ?: "" }, { it.name ?: "Unknown User" })
+            } else emptyMap()
+
+            joinRequests.forEach { jr ->
+                val id = jr._id
+                if (!id.isNullOrEmpty()) {
+                    val tName = teamMap[jr.teamId ?: ""] ?: "Unknown Team"
+                    val uName = userMap[jr.userId ?: ""] ?: "Unknown User"
+                    map[id] = Pair(uName, tName)
+                }
+            }
+            map
+        }
+    }
+
     override suspend fun getTaskTeamName(taskTitle: String): String? {
         return withRealm { realm ->
             val taskObj = realm.where(RealmTeamTask::class.java)
@@ -360,6 +450,21 @@ class NotificationsRepositoryImpl @Inject constructor(
                     notification.rev = newRev
                 }
             }
+        }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmNotification.insert(realm, jsonDoc)
         }
     }
 }

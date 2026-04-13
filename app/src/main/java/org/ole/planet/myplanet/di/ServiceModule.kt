@@ -12,7 +12,6 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -35,8 +34,8 @@ object ServiceModule {
     @Provides
     @Singleton
     @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideApplicationScope(dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
     }
 
     @Provides
@@ -92,9 +91,10 @@ object ServiceModule {
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, appScope, dispatcherProvider)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
     }
 
     @Provides
@@ -111,8 +111,16 @@ object ServiceModule {
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
+        tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
+        ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
+        submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
+        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+        progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+        surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
         @ApplicationScope scope: CoroutineScope
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope)
     }
 }

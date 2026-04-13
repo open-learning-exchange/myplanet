@@ -19,8 +19,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
@@ -75,46 +73,38 @@ class UploadManager @Inject constructor(
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
     }
 
-    fun uploadActivities(listener: OnSuccessListener?) {
-        val apiInterface = client.create(ApiInterface::class.java)
+    private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
+        withContext(dispatcherProvider.main) {
+            listener?.onSuccess(message)
+        }
+    }
 
+    fun uploadActivities(listener: OnSuccessListener?) {
         scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
-                withContext(dispatcherProvider.main) {
-                    listener?.onSuccess("Cannot upload activities: user model is null")
-                }
+                notifyListener(listener, "Cannot upload activities: user model is null")
                 return@launch
             }
 
             if (model.isManager()) {
-                withContext(dispatcherProvider.main) {
-                    listener?.onSuccess("Skipping activities upload for manager")
-                }
+                notifyListener(listener, "Skipping activities upload for manager")
                 return@launch
             }
 
             try {
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                apiInterface.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/myplanet_activities",
+                    MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
+                )
 
-                val response = try {
-                    apiInterface.getJsonObject(
-                        UrlUtils.header,
-                        "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
-                    )
-                } catch (e: Exception) {
-                    null
-                }
+                val response = apiInterface.getJsonObject(
+                    UrlUtils.header,
+                    "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
+                )
 
-                var `object` = response?.body()
+                var `object` = response.body()
 
                 if (`object` != null) {
                     val usages = `object`.getAsJsonArray("usages")
@@ -124,26 +114,16 @@ class UploadManager @Inject constructor(
                     `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, model)
                 }
 
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        `object`
-                    )
-                    withContext(dispatcherProvider.main) {
-                        listener?.onSuccess("My planet activities uploaded successfully")
-                    }
-                } catch (e: Exception) {
-                    withContext(dispatcherProvider.main) {
-                        listener?.onSuccess("Failed to upload activities: ${e.message}")
-                    }
-                }
+                apiInterface.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/myplanet_activities",
+                    `object`
+                )
+                notifyListener(listener, "My planet activities uploaded successfully")
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(dispatcherProvider.main) {
-                    listener?.onSuccess("Failed to upload activities: ${e.message}")
-                }
+                notifyListener(listener, "Failed to upload activities: ${e.message}")
             }
         }
     }
@@ -161,14 +141,10 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess(message)
-                }
+                notifyListener(listener, message)
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Error during result sync: ${e.message}")
-                }
+                notifyListener(listener, "Error during result sync: ${e.message}")
             }
         }
     }
@@ -225,13 +201,10 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         val photosToUpload = submissionsRepository.getUnuploadedPhotos()
 
         if (photosToUpload.isEmpty()) {
-            listener?.onSuccess("No photos to upload")
+            notifyListener(listener, "No photos to upload")
             return
         }
 
@@ -279,16 +252,13 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         try {
             val user = userRepository.getUserModelSuspending()
 
             val resourcesToUpload = resourcesRepository.getUnuploadedResources(user)
 
             if (resourcesToUpload.isEmpty()) {
-                listener?.onSuccess("No resources to upload")
+                notifyListener(listener, "No resources to upload")
                 return
             }
 
@@ -372,14 +342,11 @@ class UploadManager @Inject constructor(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            listener?.onSuccess("Resource upload failed: ${e.message}")
+            notifyListener(listener, "Resource upload failed: ${e.message}")
         }
     }
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
@@ -446,9 +413,6 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
@@ -475,19 +439,13 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("Cannot upload user activities: user model is null")
-            }
+            notifyListener(listener, "Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("Skipping user activities upload for manager")
-            }
+            notifyListener(listener, "Skipping user activities upload for manager")
             return
         }
 
@@ -518,14 +476,10 @@ class UploadManager @Inject constructor(
 
             uploadTeamActivitiesRefactored()
 
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("User activities sync completed successfully")
-            }
+            notifyListener(listener, "User activities sync completed successfully")
         } catch (e: Exception) {
             e.printStackTrace()
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("Failed to upload user activities: ${e.message}")
-            }
+            notifyListener(listener, "Failed to upload user activities: ${e.message}")
         }
     }
 
@@ -535,7 +489,6 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
         val logsData = activitiesRepository.getUnuploadedTeamLogs()
-
         val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
 
         logsData.forEach { logData ->
@@ -569,11 +522,7 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
-
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
-
         val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
 
         withContext(dispatcherProvider.io) {

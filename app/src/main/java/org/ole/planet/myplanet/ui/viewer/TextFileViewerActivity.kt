@@ -4,17 +4,23 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 
+@AndroidEntryPoint
 class TextFileViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTextfileViewerBinding
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,12 +43,12 @@ class TextFileViewerActivity : AppCompatActivity() {
         renderTextFileThread()
     }
     private fun renderTextFileThread() {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             try {
                 val basePath = getExternalFilesDir(null)
                 val file = File(basePath, "ole/$fileName")
                 val text = file.readText()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     binding.textFileContent.text = text
                 }
             } catch (e: Exception) {

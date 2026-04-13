@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.ListView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -16,6 +15,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import java.util.Calendar
@@ -28,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
@@ -216,28 +217,28 @@ class AddResourceActivity : AppCompatActivity() {
         return true
     }
     private fun showMultiSelectList(list: Array<String>, items: MutableList<String>?, view: View, title: String) {
-        val listView = CheckboxListView(this)
-        val adapter = ArrayAdapter(this, R.layout.rowlayout, R.id.checkBoxRowLayout, list)
-        listView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        listView.adapter = adapter
+        val listView = RecyclerView(this)
+        listView.layoutManager = LinearLayoutManager(this)
 
+        val initialSelectedIndices = mutableListOf<Int>()
         items?.forEach { selectedItem ->
             val index = list.indexOf(selectedItem)
             if (index >= 0) {
-                listView.setItemChecked(index, true)
+                initialSelectedIndices.add(index)
             }
         }
 
+        val adapter = CheckboxAdapter(list.toList(), initialSelectedIndices)
+        listView.adapter = adapter
+
         AlertDialog.Builder(this, R.style.AlertDialogTheme).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-            val selected = listView.checkedItemPositions
+            val selected = adapter.selectedItemsList
             items?.clear()
             val selectionList = mutableListOf<String>()
-            for (i in 0 until listView.count) {
-                if (selected[i]) {
-                    val s = list[i]
-                    selectionList.add(s)
-                    items?.add(s)
-                }
+            for (i in selected) {
+                val s = list[i]
+                selectionList.add(s)
+                items?.add(s)
             }
             val selection = selectionList.joinToString(", ")
             if (selection.isEmpty()) {

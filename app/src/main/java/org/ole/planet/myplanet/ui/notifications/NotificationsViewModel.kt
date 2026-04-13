@@ -37,7 +37,22 @@ class NotificationsViewModel @Inject constructor(
         currentFilter = filter
         viewModelScope.launch(dispatcherProvider.io) {
             val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
-            _notifications.value = payloadNotifications.map { formatNotification(it) }
+
+            val taskIds = payloadNotifications
+                .filter { it.type.lowercase() == "task" }
+                .mapNotNull { it.relatedId }
+                .distinct()
+            val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds)
+
+            val joinRequestIds = payloadNotifications
+                .filter { it.type.lowercase() == "join_request" }
+                .mapNotNull { it.relatedId }
+                .distinct()
+            val joinRequestDetails = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds)
+
+            _notifications.value = payloadNotifications.map {
+                formatNotification(it, taskTeamNames, joinRequestDetails)
+            }
             _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
         }
     }
@@ -75,13 +90,17 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun formatNotification(notification: NotificationPayload): Notification {
+    private suspend fun formatNotification(
+        notification: NotificationPayload,
+        taskTeamNames: Map<String, String> = emptyMap(),
+        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
+    ): Notification {
         val formattedText = when (notification.type.lowercase()) {
             "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
             "task" -> {
                 val parsedDate = parseTaskDate(notification.message)
                 if (parsedDate != null) {
-                    formatTaskNotification(parsedDate.first, parsedDate.second)
+                    formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)
                 } else {
                     notification.message
                 }
@@ -99,7 +118,14 @@ class NotificationsViewModel @Inject constructor(
                 )
             }
             "join_request" -> {
-                val (requesterName, teamName) = notificationsRepository.getJoinRequestDetails(notification.relatedId)
+                val relatedId = notification.relatedId
+                val details = if (!relatedId.isNullOrEmpty()) {
+                    joinRequestDetails[relatedId] ?: notificationsRepository.getJoinRequestDetails(relatedId)
+                } else {
+                    notificationsRepository.getJoinRequestDetails(relatedId)
+                }
+                val requesterName = details.first
+                val teamName = details.second
                 val userRequestedStr = context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
                 formatJoinRequestNotification(
                     context.getString(R.string.join_request_prefix),
@@ -119,8 +145,12 @@ class NotificationsViewModel @Inject constructor(
         )
     }
 
-    private suspend fun formatTaskNotification(taskTitle: String, dateValue: String): String {
-        val teamName = notificationsRepository.getTaskTeamName(taskTitle)
+    private suspend fun formatTaskNotification(taskTitle: String, dateValue: String, relatedId: String?, taskTeamNames: Map<String, String> = emptyMap()): String {
+        val teamName = if (!relatedId.isNullOrEmpty()) {
+            taskTeamNames[relatedId] ?: notificationsRepository.getTaskTeamName(taskTitle)
+        } else {
+            notificationsRepository.getTaskTeamName(taskTitle)
+        }
         return if (teamName != null) {
             "<b>$teamName</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
         } else {
