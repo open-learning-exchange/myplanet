@@ -334,7 +334,7 @@ class UploadManager @Inject constructor(
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Log.e("UploadManager", "Error uploading attachments", e)
                                 }
                             }
                         }
@@ -342,7 +342,7 @@ class UploadManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UploadManager", "Resource upload failed", e)
             notifyListener(listener, "Resource upload failed: ${e.message}")
         }
     }
