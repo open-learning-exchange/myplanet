@@ -74,8 +74,8 @@ object ServiceModule {
         teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         apiInterface: ApiInterface,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-        @ApplicationScope scope: CoroutineScope
+        @ApplicationScope scope: CoroutineScope,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): UploadManager {
         return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope)
     }
@@ -120,8 +120,9 @@ object ServiceModule {
         healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
         progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
         surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
-        @ApplicationScope scope: CoroutineScope
+        @ApplicationScope scope: CoroutineScope,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
     }
 }
