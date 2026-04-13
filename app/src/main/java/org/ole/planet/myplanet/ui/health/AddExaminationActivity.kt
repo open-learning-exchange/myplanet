@@ -23,7 +23,6 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -47,8 +46,6 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
