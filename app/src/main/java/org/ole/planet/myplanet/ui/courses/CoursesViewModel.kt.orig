@@ -119,4 +119,11 @@ class CoursesViewModel @Inject constructor(
             isMyCourse = this.isMyCourse
         )
     }
+
+    private fun RealmTag.toTag(): Tag {
+        return Tag(
+            id = this.id,
+            name = this.name
+        )
+    }
 }
