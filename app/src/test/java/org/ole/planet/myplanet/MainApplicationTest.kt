@@ -15,14 +15,14 @@ import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainApplicationTest {
 
     private lateinit var mockContext: Context
-    private lateinit var mockEntryPoint: ServerUrlMapperEntryPoint
+    private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
     private lateinit var mockServerUrlMapper: ServerUrlMapper
 
     @Before
@@ -34,7 +34,7 @@ class MainApplicationTest {
         mockServerUrlMapper = mockk(relaxed = true)
 
         mockkStatic(EntryPointAccessors::class)
-        every { EntryPointAccessors.fromApplication(mockContext, ServerUrlMapperEntryPoint::class.java) } returns mockEntryPoint
+        every { EntryPointAccessors.fromApplication(mockContext, CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
         every { mockEntryPoint.serverUrlMapper() } returns mockServerUrlMapper
 
         val mockMapping = mockk<ServerUrlMapper.UrlMapping>(relaxed = true)
