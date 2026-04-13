@@ -1026,7 +1026,7 @@ class SyncManager @Inject constructor(
                                     try {
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
-                                            "meetups" -> communityRepository.insertMeetup(realmTx, doc)
+                                            "meetups" -> communityRepository.insertMeetup(shelfId, realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
                                             "teams" -> insertMyTeams(doc, realmTx)
                                         }

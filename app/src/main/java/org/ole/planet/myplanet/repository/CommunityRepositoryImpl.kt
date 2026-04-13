@@ -77,7 +77,7 @@ class CommunityRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            insertMeetup(realm, jsonDoc)
+            insertMeetup("", realm, jsonDoc)
         }
     }
 
@@ -93,8 +93,7 @@ class CommunityRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertMeetup(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
-        val userId = ""
+    override fun insertMeetup(userId: String?, realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
         var myMeetupsDB = realm.where(RealmMeetup::class.java)
             .equalTo("meetupId", JsonUtils.getString("_id", doc)).findFirst()
         if (myMeetupsDB == null) {

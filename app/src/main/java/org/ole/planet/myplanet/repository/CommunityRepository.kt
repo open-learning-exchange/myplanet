@@ -9,5 +9,5 @@ interface CommunityRepository {
     suspend fun syncCommunityDocs(): Boolean
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     suspend fun getMyMeetupIds(userId: String?): com.google.gson.JsonArray
-    fun insertMeetup(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
+    fun insertMeetup(userId: String?, realm: io.realm.Realm, doc: com.google.gson.JsonObject)
 }
