@@ -668,8 +668,8 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (i in 0 until jsonArray.size()) {
-            var jsonDoc = jsonArray.get(i).asJsonObject
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
@@ -682,8 +682,8 @@ class CoursesRepositoryImpl @Inject constructor(
     }
     override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (i in 0 until jsonArray.size()) {
-            var jsonDoc = jsonArray.get(i).asJsonObject
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
