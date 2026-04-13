@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 import androidx.preference.PreferenceManager
 
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext val context: Context) {
+class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
     val rawPreferences: SharedPreferences get() = pref
