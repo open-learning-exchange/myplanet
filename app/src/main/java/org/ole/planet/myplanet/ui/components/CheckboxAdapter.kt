@@ -24,6 +24,23 @@ class CheckboxAdapter(
         selectedItemsList.addAll(initialSelectedItems)
     }
 
+    override fun onCurrentListChanged(
+        previousList: MutableList<String>,
+        currentList: MutableList<String>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        if (previousList.isNotEmpty()) {
+            val selectedValues = selectedItemsList.mapNotNull { index -> previousList.getOrNull(index) }
+            selectedItemsList.clear()
+            selectedValues.forEach { value ->
+                val newIndex = currentList.indexOf(value)
+                if (newIndex != -1) {
+                    selectedItemsList.add(newIndex)
+                }
+            }
+        }
+    }
+
     fun interface CheckChangeListener {
         fun onCheckChange()
     }
@@ -40,7 +57,7 @@ class CheckboxAdapter(
 
         holder.checkedTextView.setOnClickListener {
             if (selectedItemsList.contains(position)) {
-                selectedItemsList.remove(position)
+                selectedItemsList.remove(Integer.valueOf(position))
                 holder.checkedTextView.isChecked = false
             } else {
                 selectedItemsList.add(position)

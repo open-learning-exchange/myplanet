@@ -228,8 +228,9 @@ class AddResourceActivity : AppCompatActivity() {
             }
         }
 
-        val adapter = CheckboxAdapter(initialSelectedItems = initialSelectedIndices).apply { submitList(list.toList()) }
+        val adapter = CheckboxAdapter(initialSelectedItems = initialSelectedIndices)
         listView.adapter = adapter
+        adapter.submitList(list.toList())
 
         AlertDialog.Builder(this, R.style.AlertDialogTheme).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
             val selected = adapter.selectedItemsList

@@ -299,9 +299,10 @@ abstract class BaseResourceFragment : Fragment() {
         val names = dbMyLibrary.map { it?.title ?: "" }
         val adapter = CheckboxAdapter(checkChangeListener = {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
-        }).apply { submitList(names) }
+        })
         lv?.layoutManager = LinearLayoutManager(requireActivity().baseContext)
         lv?.adapter = adapter
+        adapter.submitList(names)
     }
 
     private fun registerReceiver() {

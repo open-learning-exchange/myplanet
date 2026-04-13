@@ -145,9 +145,10 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         val names = libraries.map { it.title ?: "" }
         val adapter = CheckboxAdapter(checkChangeListener = {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
-        }).apply { submitList(names) }
+        })
         lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
+        adapter.submitList(names)
         alertDialog.show()
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
     }

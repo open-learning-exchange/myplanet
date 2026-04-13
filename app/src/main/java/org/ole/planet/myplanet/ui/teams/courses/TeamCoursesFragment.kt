@@ -126,9 +126,10 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         val names = courses.map { it.courseTitle ?: getString(R.string.untitled_course) }
         val adapter = CheckboxAdapter(checkChangeListener = {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
-        }).apply { submitList(names) }
+        })
         lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
+        adapter.submitList(names)
         alertDialog.show()
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
     }
