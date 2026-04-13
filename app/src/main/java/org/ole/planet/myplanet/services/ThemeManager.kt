@@ -7,12 +7,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 
 object ThemeManager {
     private fun getSpm(context: Context): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context.applicationContext, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
 
     fun showThemeDialog(context: Context) {
         val options = arrayOf(
