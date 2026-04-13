@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 
@@ -73,7 +74,7 @@ interface TeamsRepository {
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun removeMember(teamId: String, userId: String)
-    suspend fun addResourceLinks(teamId: String, resources: List<org.ole.planet.myplanet.model.TeamResourceDto>, userId: String?)
+    suspend fun addResourceLinks(teamId: String, resources: List<TeamResourceDto>, userId: String?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)

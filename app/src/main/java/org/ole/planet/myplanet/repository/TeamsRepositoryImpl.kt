@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
@@ -697,12 +698,14 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun addResourceLinks(
         teamId: String,
-        resources: List<org.ole.planet.myplanet.model.TeamResourceDto>,
+        resources: List<TeamResourceDto>,
         userId: String?,
     ) {
         if (teamId.isBlank() || resources.isEmpty() || userId.isNullOrBlank()) return
 
-        val user = findByField(RealmUser::class.java, "id", userId) ?: return
+        val user = findByField(RealmUser::class.java, "id", userId)
+            ?: findByField(RealmUser::class.java, "_id", userId)
+            ?: return
 
         val teamResources = resources.map { resource ->
             val teamResource = RealmMyTeam()
