@@ -121,7 +121,7 @@ class UploadCoordinator @Inject constructor(
                 if (config.serializer is UploadSerializer.Async) {
                     config.serializer.serialize(copiedItem)
                 } else {
-                    preSerialized!!
+                    preSerialized ?: return@mapNotNull null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
