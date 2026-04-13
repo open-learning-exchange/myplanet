@@ -695,7 +695,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+    override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
         val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
         var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
         if (certification == null) {
