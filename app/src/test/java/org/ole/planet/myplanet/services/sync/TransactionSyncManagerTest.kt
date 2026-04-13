@@ -56,12 +56,15 @@ class TransactionSyncManagerTest {
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = mockk()
 
     @Before
     fun setup() {
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockHeader"
+        every { dispatcherProvider.io } returns testDispatcher
+        every { dispatcherProvider.main } returns testDispatcher
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
@@ -83,7 +86,8 @@ class TransactionSyncManagerTest {
             healthRepository,
             progressRepository,
             surveysRepository,
-            testScope
+            testScope,
+            dispatcherProvider
         )
     }
 
