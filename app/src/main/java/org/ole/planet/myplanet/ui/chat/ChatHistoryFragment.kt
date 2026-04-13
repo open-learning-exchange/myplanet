@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -336,7 +337,21 @@ class ChatHistoryFragment : Fragment() {
         } else {
             null
         }
-        val community = communityId?.let { teamsRepository.getTeamSummaryById(it) }
+        val community = communityId?.let { id ->
+            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
+                _id = id,
+                name = communityName ?: "",
+                teamType = null,
+                teamPlanetCode = null,
+                createdDate = null,
+                type = null,
+                status = null,
+                teamId = null,
+                description = null,
+                services = null,
+                rules = null
+            )
+        }
         return ChatShareTargets(community, teams, enterprises)
     }
 
