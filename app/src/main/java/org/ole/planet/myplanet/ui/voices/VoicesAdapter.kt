@@ -210,11 +210,7 @@ class VoicesAdapter(
     }
 
     private fun extractSharedTeamName(news: RealmNews): String {
-        val ar = if (news.parsedViewIn != null && news.rawViewIn == news.viewIn) {
-            news.parsedViewIn
-        } else {
-            parseViewIn(news.viewIn)
-        }
+        val ar = news.parsedViewIn
 
         if (ar != null && ar.size() > 1) {
             val ob = ar[0].asJsonObject
@@ -370,11 +366,7 @@ class VoicesAdapter(
 
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = if (news.parsedConversations != null && news.rawConversations == news.conversations) {
-                news.parsedConversations!!
-            } else {
-                parseConversations(news.conversations) ?: JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
-            }
+            val conversations = news.parsedConversations!!
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
                 val cancelJob = launchCoroutine {
                     var currentIndex = 0
@@ -505,7 +497,6 @@ class VoicesAdapter(
                 }
             } catch (e: IllegalStateException) {
                 // If Realm manages the object and we are on a different thread, mutating @Ignore fields might throw.
-                // We ignore the cache and let the fallback mechanism handle the parsing on the main thread later.
                 e.printStackTrace()
             }
         }
@@ -718,12 +709,7 @@ class VoicesAdapter(
     }
 
     private fun getParsedImageUrls(news: RealmNews?): List<JsonObject>? {
-        val currentImageUrls = news?.imageUrls?.toList()
-        return if (news?.parsedImageUrls != null && news.rawImageUrls == currentImageUrls) {
-            news.parsedImageUrls
-        } else {
-            parseImageUrls(currentImageUrls)
-        }
+        return news?.parsedImageUrls
     }
 
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
