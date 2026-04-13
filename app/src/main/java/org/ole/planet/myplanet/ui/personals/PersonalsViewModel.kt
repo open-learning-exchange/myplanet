@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.personals
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emitAll
@@ -12,7 +13,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import javax.inject.Inject
 
 @HiltViewModel
 class PersonalsViewModel @Inject constructor(
