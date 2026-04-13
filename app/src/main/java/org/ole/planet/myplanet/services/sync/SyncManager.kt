@@ -22,7 +22,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -35,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -71,7 +71,8 @@ class SyncManager @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -174,7 +175,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        backgroundSync = syncScope.launch(Dispatchers.IO) {
+        backgroundSync = syncScope.launch(dispatcherProvider.io) {
             if (transactionSyncManager.authenticate()) {
                 startSync(type, syncTables)
             } else {
@@ -773,7 +774,7 @@ class SyncManager @Inject constructor(
         coroutineScope {
             val semaphore = Semaphore(8)
             val checkJobs = allShelves.chunked(25).map { shelfBatch ->
-                async(Dispatchers.IO) {
+                async(dispatcherProvider.io) {
                     semaphore.withPermit {
                         checkShelfBatchForDataOptimized(shelfBatch, apiInterface)
                     }
@@ -878,7 +879,7 @@ class SyncManager @Inject constructor(
             coroutineScope {
                 val semaphore = Semaphore(6)
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
-                    async(Dispatchers.IO) {
+                    async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = System.currentTimeMillis()
                             val items = processShelfParallel(shelfId, apiInterface)
@@ -914,7 +915,7 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val shelfDoc: JsonObject? = withContext(Dispatchers.IO) {
+            val shelfDoc: JsonObject? = withContext(dispatcherProvider.io) {
                 var doc: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
                     apiInterface.getJsonObject(
@@ -936,7 +937,7 @@ class SyncManager @Inject constructor(
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
                     val array = getJsonArray(shelfData.key, shelfDoc)
                     if (array.size() > 0) {
-                        async(Dispatchers.IO) {
+                        async(dispatcherProvider.io) {
                             processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
                         }
                     } else null

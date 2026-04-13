@@ -10,7 +10,7 @@ import io.realm.Realm
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
@@ -57,7 +57,8 @@ class TransactionSyncManager @Inject constructor(
     private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
     private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -80,17 +81,17 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val usersToSync = userRepository.getUsersForHealthSync()
                 usersToSync.forEach { userModel ->
                     syncHealthData(userModel, header)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncComplete()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncFailed(e.message)
                 }
             }
@@ -133,7 +134,7 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()
             val id = model?.id
             try {
@@ -141,18 +142,18 @@ class TransactionSyncManager @Inject constructor(
                 if (userModel != null) {
                     syncHealthData(userModel, header)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncComplete()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncFailed(e.message)
                 }
             }
         }
     }
 
-    suspend fun syncDb(table: String): Int = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun syncDb(table: String): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -305,7 +306,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncNotificationReads() = withContext(Dispatchers.IO) {
+    suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {
         val pending = notificationsRepository.getPendingSyncNotifications()
         if (pending.isEmpty()) return@withContext
 
