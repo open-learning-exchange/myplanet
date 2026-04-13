@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Realm
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -208,13 +209,12 @@ class ProgressRepositoryImpl @Inject constructor(
         } > 0
     }
 
-    private fun insertCourseProgress(mRealm: io.realm.Realm, act: com.google.gson.JsonObject?) {
+    private fun insertCourseProgress(mRealm: Realm, act: JsonObject?) {
         var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
         }
         courseProgress?._rev = JsonUtils.getString("_rev", act)
-        courseProgress?._id = JsonUtils.getString("_id", act)
         courseProgress?.passed = JsonUtils.getBoolean("passed", act)
         courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
         courseProgress?.userId = JsonUtils.getString("userId", act)
@@ -225,12 +225,12 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = mutableListOf<com.google.gson.JsonObject>()
+    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
+        val documentList = mutableListOf<JsonObject>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
