@@ -128,17 +128,6 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
-        fun processDescription(description: String?) {
-            val links = extractLinks(description ?: "")
-            val baseUrl = getUrl()
-            val concatenatedLinks = LinkedHashSet<String>()
-            for (link in links) {
-                val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
-            }
-            openDownloadService(context, ArrayList(concatenatedLinks), true)
-        }
-
         @JvmStatic
         fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
             team.description = JsonUtils.getString("description", doc)

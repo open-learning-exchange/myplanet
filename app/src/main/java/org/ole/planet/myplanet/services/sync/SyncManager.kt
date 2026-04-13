@@ -1027,14 +1027,7 @@ class SyncManager @Inject constructor(
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> {
-                                                val arr = com.google.gson.JsonArray()
-                                                val wrapped = com.google.gson.JsonObject()
-                                                wrapped.add("doc", doc)
-                                                wrapped.addProperty("id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc))
-                                                arr.add(wrapped)
-                                                teamsRepository.bulkInsertFromSync(realmTx, arr)
-                                            }
+                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++
                                     } catch (e: Exception) {

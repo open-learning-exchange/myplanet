@@ -1357,7 +1357,18 @@ class TeamsRepositoryImpl @Inject constructor(
         return ob
     }
 
-    private fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+    private fun processDescription(description: String?) {
+        val links = org.ole.planet.myplanet.utils.DownloadUtils.extractLinks(description ?: "")
+        val baseUrl = org.ole.planet.myplanet.utils.UrlUtils.getUrl()
+        val concatenatedLinks = LinkedHashSet<String>()
+        for (link in links) {
+            val concatenatedLink = "$baseUrl/$link"
+            concatenatedLinks.add(concatenatedLink)
+        }
+        org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(org.ole.planet.myplanet.MainApplication.context, ArrayList(concatenatedLinks), true)
+    }
+
+    override fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
         val status = org.ole.planet.myplanet.utils.JsonUtils.getString("status", doc)
         if (status == "archived") {
             return
@@ -1392,7 +1403,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
         myTeams?.let {
             org.ole.planet.myplanet.model.RealmMyTeam.populateTeamFields(doc, it, true)
-            org.ole.planet.myplanet.model.RealmMyTeam.processDescription(it.description)
+            processDescription(it.description)
         }
     }
 
