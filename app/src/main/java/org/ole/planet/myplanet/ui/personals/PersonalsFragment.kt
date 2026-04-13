@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -19,9 +20,7 @@ import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.services.UploadManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -36,10 +35,9 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
 
     @Inject
     lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var personalsRepository: PersonalsRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
+
+    private val viewModel: PersonalsViewModel by viewModels()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
@@ -64,9 +62,8 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
-            val model = userSessionManager.getUserModel()
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                personalsRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
+                viewModel.personals.collectLatest { realmMyPersonals ->
                     personalAdapter?.submitList(realmMyPersonals)
                     showNodata()
                 }
@@ -127,11 +124,9 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
                 }
                 val id = personal.id ?: personal._id
                 if (id != null) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        personalsRepository.updatePersonalResource(id) { realmPersonal ->
-                            realmPersonal.description = desc
-                            realmPersonal.title = title
-                        }
+                    viewModel.updatePersonalResource(id) { realmPersonal ->
+                        realmPersonal.description = desc
+                        realmPersonal.title = title
                     }
                 }
             }
@@ -145,9 +140,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
             .setPositiveButton(R.string.ok) { _, _ ->
                 val id = personal.id ?: personal._id
                 if (id != null) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        personalsRepository.deletePersonalResource(id)
-                    }
+                    viewModel.deletePersonalResource(id)
                 }
             }
             .setNegativeButton(R.string.cancel, null)

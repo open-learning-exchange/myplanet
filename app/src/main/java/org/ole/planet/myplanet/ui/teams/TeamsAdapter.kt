@@ -176,19 +176,6 @@ class TeamsAdapter(
 
     private fun requestToJoin(team: TeamDetails, user: RealmUser?) {
         teamActionsListener?.onRequestToJoin(team, user)
-
-        val teamId = team._id ?: return
-
-        val newStatus = TeamStatus(
-            isMember = false,
-            isLeader = false,
-            hasPendingRequest = true
-        )
-
-        val updatedList = currentList.map {
-            if (it._id == teamId) it.copy(teamStatus = newStatus) else it
-        }
-        submitList(updatedList)
     }
 
     private fun getBundle(team: TeamDetails): Bundle {
