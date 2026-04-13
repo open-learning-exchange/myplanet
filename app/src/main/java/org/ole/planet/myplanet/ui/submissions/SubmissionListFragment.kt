@@ -56,20 +56,20 @@ class SubmissionListFragment : Fragment() {
                 viewModel.submissions.collect { submissionItems ->
                     if (_binding != null) {
                         adapter.submitList(submissionItems)
-                        val submissionIds = submissionItems.mapNotNull { it.id }
-                        binding.btnDownloadReport.setOnClickListener {
-                            generateReport(submissionIds)
-                        }
                     }
                 }
             }
         }
 
-        loadSubmissions()
-    }
+        binding.btnDownloadReport.setOnClickListener {
+            val submissionIds = viewModel.submissions.value.mapNotNull { it.id }
+            if (submissionIds.isNotEmpty()) {
+                generateReport(submissionIds)
+            } else {
+                Toast.makeText(context, "No submissions to report", Toast.LENGTH_SHORT).show()
+            }
+        }
 
-    override fun onResume() {
-        super.onResume()
         loadSubmissions()
     }
 
