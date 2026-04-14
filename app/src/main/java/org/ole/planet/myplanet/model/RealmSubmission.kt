@@ -1,15 +1,10 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Ignore
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utils.NetworkUtils
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey

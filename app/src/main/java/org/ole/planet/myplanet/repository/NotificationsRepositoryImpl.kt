@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
@@ -11,7 +12,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
-import dagger.Lazy
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo

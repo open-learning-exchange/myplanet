@@ -9,10 +9,7 @@ import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
