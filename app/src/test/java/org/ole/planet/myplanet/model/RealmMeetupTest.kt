@@ -2,8 +2,12 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.mockk.*
+import io.mockk.MockKAnnotations
+import io.mockk.every
 import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -13,10 +17,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.ole.planet.myplanet.utils.TimeUtils
-import org.json.JSONArray
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class)

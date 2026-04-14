@@ -19,7 +19,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
@@ -334,7 +333,7 @@ class UploadManager @Inject constructor(
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Log.e("UploadManager", "Error uploading attachments", e)
                                 }
                             }
                         }
@@ -342,7 +341,7 @@ class UploadManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UploadManager", "Resource upload failed", e)
             notifyListener(listener, "Resource upload failed: ${e.message}")
         }
     }
