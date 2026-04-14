@@ -1,28 +1,28 @@
 package org.ole.planet.myplanet.model
 
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import dagger.Lazy
 import io.mockk.mockk
 import io.realm.Realm
 import io.realm.RealmConfiguration
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import android.content.SharedPreferences
-import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import dagger.Lazy
 
 @RunWith(AndroidJUnit4::class)
 class RealmUserTest {
