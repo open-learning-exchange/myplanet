@@ -210,9 +210,10 @@ class ChatHistoryAdapter(
 
             val sharedIds = getSharedViewInIds(item._id)
             val isCommunityShared = shareTargets.community?._id?.let { it in sharedIds } == true
-            expandableDetailList = getData(isCommunityShared) as HashMap<String, List<String>>
+            val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
+            expandableDetailList = getData() as HashMap<String, List<String>>
             expandableTitleList = ArrayList(expandableDetailList.keys)
-            expandableListAdapter = ChatShareTargetAdapter(context, expandableTitleList, expandableDetailList)
+            expandableListAdapter = ChatShareTargetAdapter(context, expandableTitleList, expandableDetailList, sharedChildren)
             chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
 
             chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
@@ -332,14 +333,9 @@ class ChatHistoryAdapter(
         return conversationMap
     }
 
-    private fun getData(isCommunityShared: Boolean = false): Map<String, List<String>> {
+    private fun getData(): Map<String, List<String>> {
         val expandableListDetail: MutableMap<String, List<String>> = HashMap()
-        val communityLabel = if (isCommunityShared) {
-            "${context.getString(R.string.community)} ✓"
-        } else {
-            context.getString(R.string.community)
-        }
-        expandableListDetail[context.getString(R.string.share_with_community)] = listOf(communityLabel)
+        expandableListDetail[context.getString(R.string.share_with_community)] = listOf(context.getString(R.string.community))
 
         val teams: MutableList<String> = ArrayList()
         teams.add(context.getString(R.string.teams))
