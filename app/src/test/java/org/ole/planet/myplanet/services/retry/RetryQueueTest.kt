@@ -11,6 +11,9 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
@@ -18,7 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.repository.retry.RetryRepository
+import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -141,5 +144,31 @@ class RetryQueueTest {
 
         assertTrue(result)
         coVerify(exactly = 1) { retryRepository.deletePendingAndAbandonedOperations() }
+    }
+
+    @Test
+    fun safeClearQueue_processingBecomesTrueWhileWaitingForLock_returnsFalse() = runTest {
+        retryQueue.setProcessing(false)
+
+        val mutexField = RetryQueue::class.java.getDeclaredField("mutex")
+        mutexField.isAccessible = true
+        val mutex = mutexField.get(retryQueue) as Mutex
+
+        mutex.lock()
+
+        val deferred = async {
+            retryQueue.safeClearQueue()
+        }
+
+        runCurrent()
+
+        retryQueue.setProcessing(true)
+
+        mutex.unlock()
+
+        val result = deferred.await()
+
+        assertFalse(result)
+        coVerify(exactly = 0) { retryRepository.deletePendingAndAbandonedOperations() }
     }
 }

@@ -22,7 +22,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -46,12 +45,12 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -72,7 +71,9 @@ class SyncManager @Inject constructor(
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
-    private val communityRepository: CommunityRepository
+    private val communityRepository: CommunityRepository,
+    private val dispatcherProvider: DispatcherProvider,
+    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -175,7 +176,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun authenticateAndSync(type: String, syncTables: List<String>?) {
-        backgroundSync = syncScope.launch(Dispatchers.IO) {
+        backgroundSync = syncScope.launch(dispatcherProvider.io) {
             if (transactionSyncManager.authenticate()) {
                 startSync(type, syncTables)
             } else {
@@ -774,7 +775,7 @@ class SyncManager @Inject constructor(
         coroutineScope {
             val semaphore = Semaphore(8)
             val checkJobs = allShelves.chunked(25).map { shelfBatch ->
-                async(Dispatchers.IO) {
+                async(dispatcherProvider.io) {
                     semaphore.withPermit {
                         checkShelfBatchForDataOptimized(shelfBatch, apiInterface)
                     }
@@ -879,7 +880,7 @@ class SyncManager @Inject constructor(
             coroutineScope {
                 val semaphore = Semaphore(6)
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
-                    async(Dispatchers.IO) {
+                    async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = System.currentTimeMillis()
                             val items = processShelfParallel(shelfId, apiInterface)
@@ -915,7 +916,7 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val shelfDoc: JsonObject? = withContext(Dispatchers.IO) {
+            val shelfDoc: JsonObject? = withContext(dispatcherProvider.io) {
                 var doc: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
                     apiInterface.getJsonObject(
@@ -937,7 +938,7 @@ class SyncManager @Inject constructor(
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
                     val array = getJsonArray(shelfData.key, shelfDoc)
                     if (array.size() > 0) {
-                        async(Dispatchers.IO) {
+                        async(dispatcherProvider.io) {
                             processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
                         }
                     } else null
@@ -1028,7 +1029,7 @@ class SyncManager @Inject constructor(
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> communityRepository.insertMeetup(shelfId, realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> insertMyTeams(doc, realmTx)
+                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++
                                     } catch (e: Exception) {

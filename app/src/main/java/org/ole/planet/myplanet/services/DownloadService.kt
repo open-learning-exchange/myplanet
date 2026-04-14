@@ -25,7 +25,6 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.services.DownloadWorker
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
@@ -44,6 +44,9 @@ import org.ole.planet.myplanet.utils.UrlUtils.header
 
 @AndroidEntryPoint
 class DownloadService : Service() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     @Inject
     lateinit var downloadRepository: DownloadRepository
 
@@ -65,9 +68,14 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
 
     private val downloadJob = SupervisorJob()
-    private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
+    private lateinit var downloadScope: CoroutineScope
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager

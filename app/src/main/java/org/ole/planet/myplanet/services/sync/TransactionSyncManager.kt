@@ -10,7 +10,6 @@ import io.realm.Realm
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
@@ -21,7 +20,6 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -57,7 +55,8 @@ class TransactionSyncManager @Inject constructor(
     private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
     private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -80,17 +79,17 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val usersToSync = userRepository.getUsersForHealthSync()
                 usersToSync.forEach { userModel ->
                     syncHealthData(userModel, header)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncComplete()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncFailed(e.message)
                 }
             }
@@ -133,7 +132,7 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()
             val id = model?.id
             try {
@@ -141,18 +140,18 @@ class TransactionSyncManager @Inject constructor(
                 if (userModel != null) {
                     syncHealthData(userModel, header)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncComplete()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncFailed(e.message)
                 }
             }
         }
     }
 
-    suspend fun syncDb(table: String): Int = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun syncDb(table: String): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -195,7 +194,7 @@ class TransactionSyncManager @Inject constructor(
                 )
                 if (table == "news") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
+                    val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
@@ -214,7 +213,7 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else if (table == "feedback") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
+                    val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
@@ -232,10 +231,20 @@ class TransactionSyncManager @Inject constructor(
                         arr.size()
                     )
                 } else if (table == "chat_history") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
                     databaseService.executeTransactionAsync { mRealm: Realm ->
-                        val insertStartTime = System.currentTimeMillis()
+                        val batchInsertStartTime = System.currentTimeMillis()
                         chatRepository.insertChatHistoryBatch(mRealm, arr)
-                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        val insertDuration = System.currentTimeMillis() - batchInsertStartTime
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
                             table,
@@ -243,6 +252,35 @@ class TransactionSyncManager @Inject constructor(
                             arr.size()
                         )
                     }
+                    chatRepository.insertChatHistoryList(docs)
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "login_activities") {
+                    val insertStartTime = System.currentTimeMillis()
+                    val docs = mutableListOf<JsonObject>()
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    docs.forEach { jsonDoc ->
+                        activitiesRepository.insertActivity(jsonDoc)
+                    }
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
@@ -305,7 +343,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncNotificationReads() = withContext(Dispatchers.IO) {
+    suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {
         val pending = notificationsRepository.getPendingSyncNotifications()
         if (pending.isEmpty()) return@withContext
 
