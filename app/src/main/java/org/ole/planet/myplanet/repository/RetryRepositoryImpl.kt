@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.repository.retry
+package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher

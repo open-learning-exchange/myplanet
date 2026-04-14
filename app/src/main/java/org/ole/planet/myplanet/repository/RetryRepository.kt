@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.repository.retry
+package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.services.upload.UploadError
