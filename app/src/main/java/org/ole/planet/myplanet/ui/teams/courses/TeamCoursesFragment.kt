@@ -39,7 +39,8 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
     private fun setupCoursesList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val courses = teamsRepository.getTeamCourses(teamId)
+            val courseIds = teamsRepository.getTeamCourseIds(teamId)
+            val courses = coursesRepository.getCoursesByIds(courseIds)
             val teamCreator = teamsRepository.getTeamCreator(teamId)
             val currentUserId = sharedPrefManager.getUserId().ifEmpty { "--" }
             val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
@@ -82,8 +83,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val existingCourses = teamsRepository.getTeamCourses(teamId)
-                val existingIds = existingCourses.mapNotNull { it.courseId }
+                val existingIds = teamsRepository.getTeamCourseIds(teamId)
                 val allCourses = coursesRepository.getAllCourses()
                 val availableCourses = allCourses.filter { it.courseId !in existingIds }
 
@@ -124,9 +124,10 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
     private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<RealmMyCourse>, lv: RecyclerView) {
         val names = courses.map { it.courseTitle ?: getString(R.string.untitled_course) }
-        val adapter = CheckboxAdapter(names) {
+        val adapter = CheckboxAdapter {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
         }
+        adapter.submitList(names)
         lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
         alertDialog.show()
