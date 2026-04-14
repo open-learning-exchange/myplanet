@@ -10,19 +10,25 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.FileReader
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 
+@AndroidEntryPoint
 class CSVViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCsvviewerBinding
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCsvviewerBinding.inflate(layoutInflater)
@@ -45,7 +51,7 @@ class CSVViewerActivity : AppCompatActivity() {
         binding.csvProgressBar.visibility = View.VISIBLE
         binding.csvFileContent.text = ""
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             try {
                 val csvFile: File = if (fileName?.startsWith("/") == true) {
                     File(fileName)
@@ -65,7 +71,7 @@ class CSVViewerActivity : AppCompatActivity() {
                         chunk.add(row)
                         if (chunk.size >= chunkSize) {
                             val spannableChunk = buildSpannableForChunk(chunk)
-                            withContext(Dispatchers.Main) {
+                            withContext(dispatcherProvider.main) {
                                 binding.csvFileContent.append(spannableChunk)
                             }
                             chunk.clear()
@@ -75,18 +81,18 @@ class CSVViewerActivity : AppCompatActivity() {
 
                     if (chunk.isNotEmpty()) {
                         val spannableChunk = buildSpannableForChunk(chunk)
-                        withContext(Dispatchers.Main) {
+                        withContext(dispatcherProvider.main) {
                             binding.csvFileContent.append(spannableChunk)
                         }
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     binding.csvFileContent.text = "Error reading file: ${e.message}"
                 }
             } finally {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     binding.csvProgressBar.visibility = View.GONE
                 }
             }

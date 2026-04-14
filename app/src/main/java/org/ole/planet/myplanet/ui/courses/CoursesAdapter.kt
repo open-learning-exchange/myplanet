@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
@@ -57,6 +58,7 @@ class CoursesAdapter(
         submitList(currentList.toList())
     }
 
+    private val externalFilesBaseUrl = "file://${FileUtils.getExternalFilesDir(context)}/ole/"
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -340,7 +342,7 @@ class CoursesAdapter(
                 text = course.description
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     course.description,
-                    "file://${context.getExternalFilesDir(null)}/ole/",
+                    externalFilesBaseUrl,
                     150,
                     100
                 )

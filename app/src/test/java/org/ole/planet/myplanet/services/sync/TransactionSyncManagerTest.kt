@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -45,14 +46,25 @@ class TransactionSyncManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk()
     private val teamsRepository: Lazy<TeamsRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
+    private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository = mockk()
+    private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository = mockk()
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository = mockk()
+    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository = mockk()
+    private val communityRepository: org.ole.planet.myplanet.repository.CommunityRepository = mockk()
+    private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository = mockk()
+    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository = mockk()
+    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = mockk()
 
     @Before
     fun setup() {
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockHeader"
+        every { dispatcherProvider.io } returns testDispatcher
+        every { dispatcherProvider.main } returns testDispatcher
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
@@ -66,7 +78,16 @@ class TransactionSyncManagerTest {
             activitiesRepository,
 			teamsRepository,
 			notificationsRepository,
-            testScope
+            tagsRepository,
+            ratingsRepository,
+            submissionsRepository,
+            coursesRepository,
+            communityRepository,
+            healthRepository,
+            progressRepository,
+            surveysRepository,
+            testScope,
+            dispatcherProvider
         )
     }
 

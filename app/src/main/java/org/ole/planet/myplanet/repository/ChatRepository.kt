@@ -9,4 +9,5 @@ interface ChatRepository {
     suspend fun saveNewChat(chat: JsonObject)
     suspend fun continueConversation(id: String, query: String, response: String, rev: String)
     suspend fun insertChatHistoryList(chats: List<JsonObject>)
+    fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }
