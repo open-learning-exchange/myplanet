@@ -35,17 +35,6 @@ class CoursesViewModel @Inject constructor(
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState
 
-    fun processCourses(
-        isMyCourseLib: Boolean,
-        userId: String?,
-        validCourses: List<RealmMyCourse>,
-        myCourses: List<RealmMyCourse>,
-        map: HashMap<String?, JsonObject>,
-        progressMap: HashMap<String?, JsonObject>?
-    ) {
-        processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, emptyMap())
-    }
-
     private fun processCourses(
         isMyCourseLib: Boolean,
         userId: String?,
@@ -69,29 +58,31 @@ class CoursesViewModel @Inject constructor(
 
     fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
         viewModelScope.launch {
-            try {
-                val allCourses = coursesRepository.getAllCourses()
-                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+            withContext(dispatcherProvider.io) {
+                try {
+                    val allCourses = coursesRepository.getAllCourses()
+                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
 
-                val myCourses = if (isMyCourseLib) {
-                    coursesRepository.getMyCourses(userId, validCourses)
-                } else {
-                    emptyList()
+                    val myCourses = if (isMyCourseLib) {
+                        coursesRepository.getMyCourses(userId, validCourses)
+                    } else {
+                        emptyList()
+                    }
+
+                    val (map, progressMap) = coroutineScope {
+                        val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
+                        val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+                        Pair(ratingsDeferred.await(), progressDeferred.await())
+                    }
+
+                    val allCourseIds = validCourses.mapNotNull { it.courseId }
+                    val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
+                        .mapValues { entry -> entry.value.map { it.toTag() } }
+
+                    processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-
-                val (map, progressMap) = coroutineScope {
-                    val ratingsDeferred = async(dispatcherProvider.io) { coursesRepository.getCourseRatings(userId) }
-                    val progressDeferred = async(dispatcherProvider.io) { coursesRepository.getCourseProgress(userId) }
-                    Pair(ratingsDeferred.await(), progressDeferred.await())
-                }
-
-                val allCourseIds = validCourses.mapNotNull { it.courseId }
-                val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
-                    .mapValues { entry -> entry.value.map { it.toTag() } }
-
-                processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }
@@ -101,8 +92,15 @@ class CoursesViewModel @Inject constructor(
             withContext(dispatcherProvider.io) {
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
+
+                val (map, progressMap) = coroutineScope {
+                    val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
+                    val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+                    Pair(ratingsDeferred.await(), progressDeferred.await())
+                }
+
                 val tagsMap = _coursesState.value.tagsMap
-                processCourses(isMyCourseLib, userId, filteredCourses, myCourses, _coursesState.value.map, _coursesState.value.progressMap, tagsMap)
+                processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap, tagsMap)
             }
         }
     }
