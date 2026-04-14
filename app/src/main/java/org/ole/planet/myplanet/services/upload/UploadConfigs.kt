@@ -217,7 +217,7 @@ class UploadConfigs @Inject constructor(
                 .endGroup()
         },
         serializer = UploadSerializer.Full { realm, submission, context ->
-            RealmSubmission.serialize(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+            submissionsRepository.serializeSubmission(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic

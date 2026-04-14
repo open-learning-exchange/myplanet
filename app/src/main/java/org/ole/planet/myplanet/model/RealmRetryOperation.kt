@@ -87,35 +87,5 @@ open class RealmRetryOperation : RealmObject() {
             val delay = minOf(BASE_DELAY_MS * (1L shl attemptCount), MAX_DELAY_MS)
             return System.currentTimeMillis() + delay
         }
-
-        @JvmStatic
-        fun getPendingOperations(realm: Realm): List<RealmRetryOperation> {
-            val results = realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", STATUS_PENDING)
-                .lessThanOrEqualTo("nextRetryTime", System.currentTimeMillis())
-                .findAll()
-
-            return results.filter { it.attemptCount < it.maxAttempts }
-                .let { realm.copyFromRealm(it) }
-        }
-
-        @JvmStatic
-        fun getFailedOperationsCount(realm: Realm): Long {
-            return realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", STATUS_PENDING)
-                .or()
-                .equalTo("status", STATUS_IN_PROGRESS)
-                .count()
-        }
-
-        @JvmStatic
-        fun cleanupCompletedOperations(realm: Realm, olderThanMs: Long = 24 * 60 * 60 * 1000L) {
-            val cutoffTime = System.currentTimeMillis() - olderThanMs
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", STATUS_COMPLETED)
-                .lessThan("lastAttemptTime", cutoffTime)
-                .findAll()
-                .deleteAllFromRealm()
-        }
     }
 }

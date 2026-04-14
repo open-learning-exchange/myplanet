@@ -95,19 +95,34 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun getPending(): List<RealmRetryOperation> {
         return withRealmAsync { realm ->
-            RealmRetryOperation.getPendingOperations(realm)
+            val results = realm.where(RealmRetryOperation::class.java)
+                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
+                .lessThanOrEqualTo("nextRetryTime", System.currentTimeMillis())
+                .findAll()
+
+            results.filter { it.attemptCount < it.maxAttempts }
+                .let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getPendingCount(): Long {
         return withRealmAsync { realm ->
-            RealmRetryOperation.getFailedOperationsCount(realm)
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
+                .or()
+                .equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS)
+                .count()
         }
     }
 
     override suspend fun cleanup() {
         executeTransaction { realm ->
-            RealmRetryOperation.cleanupCompletedOperations(realm)
+            val cutoffTime = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+            realm.where(RealmRetryOperation::class.java)
+                .equalTo("status", RealmRetryOperation.STATUS_COMPLETED)
+                .lessThan("lastAttemptTime", cutoffTime)
+                .findAll()
+                .deleteAllFromRealm()
         }
     }
 
