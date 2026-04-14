@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
@@ -98,6 +99,7 @@ class VoicesAdapter(
         }
     )
 ) {
+    private val externalFilesDir = FileUtils.getExternalFilesDir(context)
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -287,7 +289,7 @@ class VoicesAdapter(
     private fun setMessageAndDate(holder: VoicesViewHolder, news: RealmNews, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
-            "file://" + context.getExternalFilesDir(null) + "/ole/",
+            "file://$externalFilesDir/ole/",
             600,
             350
         )
@@ -726,7 +728,7 @@ class VoicesAdapter(
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
-            val basePath = context.getExternalFilesDir(null)
+            val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val request = Glide.with(binding.imgNews.context)
@@ -750,7 +752,7 @@ class VoicesAdapter(
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
-            val basePath = context.getExternalFilesDir(null)
+            val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val imageView = ImageView(context)

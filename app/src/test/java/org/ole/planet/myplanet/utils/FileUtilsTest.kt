@@ -63,7 +63,8 @@ class FileUtilsTest {
 
     @Test
     fun checkFileExist_returnsTrueWhenFileExists() {
-        val testFile = File(context.getExternalFilesDir(null), "ole/123/test_file.txt")
+        FileUtils.warmUp(context)
+        val testFile = File(FileUtils.getExternalFilesDir(context), "ole/123/test_file.txt")
         testFile.parentFile?.mkdirs()
         testFile.createNewFile()
 
