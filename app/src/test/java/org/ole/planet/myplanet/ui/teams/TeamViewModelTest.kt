@@ -15,6 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamMemberStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -109,5 +110,13 @@ class TeamViewModelTest {
 
         coVerify(exactly = 0) { teamsRepository.getRecentVisitCounts(any()) }
         coVerify(exactly = 0) { teamsRepository.getTeamMemberStatuses(any(), any()) }
+    }
+
+    @Test
+    fun `taskList state is retained across simulated rotation`() {
+        val tasks = listOf(RealmTeamTask().apply { id = "task1" })
+        viewModel.taskList.value = tasks
+        assertEquals(1, viewModel.taskList.value.size)
+        assertEquals("task1", viewModel.taskList.value[0].id)
     }
 }
