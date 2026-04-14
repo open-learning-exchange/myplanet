@@ -225,8 +225,8 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
     }
 
-    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
-        val documentList = mutableListOf<JsonObject>()
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
