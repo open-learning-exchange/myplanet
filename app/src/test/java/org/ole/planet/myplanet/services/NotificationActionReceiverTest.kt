@@ -1,12 +1,15 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.runs
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
@@ -18,13 +21,18 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28], application = Application::class)
 class NotificationActionReceiverTest {
 
     private lateinit var receiver: NotificationActionReceiver
@@ -36,6 +44,12 @@ class NotificationActionReceiverTest {
 
     @Before
     fun setUp() {
+        try {
+            mockkStatic("io.realm.Realm")
+            every { io.realm.Realm.init(any()) } just runs
+        } catch (e: Throwable) {
+        }
+
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
         MainApplication.applicationScope = testScope
@@ -50,7 +64,6 @@ class NotificationActionReceiverTest {
         every { getBroadcastService(any()) } returns mockk(relaxed = true)
 
         mockPendingResult = mockk(relaxed = true)
-
         receiver = NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = object : DispatcherProvider {
@@ -69,20 +82,11 @@ class NotificationActionReceiverTest {
     }
 
     @Test
-    fun `test markNotificationAsRead calls repository`() = testScope.runTest {
-        val mockContext = mockk<Context>(relaxed = true)
-        val notificationId = "test_notification_id"
-        receiver.markNotificationAsRead(mockContext, notificationId)
-        advanceUntilIdle()
-        coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
-    }
-
-    @Test
     fun `onReceive with ACTION_MARK_AS_READ should mark as read and clear notification`() = testScope.runTest {
         val mockContext = mockk<Context>(relaxed = true)
-        val intent = mockk<Intent>(relaxed = true)
-        every { intent.action } returns NotificationUtils.ACTION_MARK_AS_READ
-        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns "test_id"
+        val intent = Intent(NotificationUtils.ACTION_MARK_AS_READ).apply {
+            putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, "test_id")
+        }
 
         receiver.onReceive(mockContext, intent)
         advanceUntilIdle()
@@ -95,9 +99,9 @@ class NotificationActionReceiverTest {
     @Test
     fun `onReceive with ACTION_STORAGE_SETTINGS should mark as read, start activity and clear notification`() = testScope.runTest {
         val mockContext = mockk<Context>(relaxed = true)
-        val intent = mockk<Intent>(relaxed = true)
-        every { intent.action } returns NotificationUtils.ACTION_STORAGE_SETTINGS
-        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns "test_id"
+        val intent = Intent(NotificationUtils.ACTION_STORAGE_SETTINGS).apply {
+            putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, "test_id")
+        }
 
         receiver.onReceive(mockContext, intent)
         advanceUntilIdle()
@@ -111,11 +115,11 @@ class NotificationActionReceiverTest {
     @Test
     fun `onReceive with ACTION_OPEN_NOTIFICATION should mark as read, start activity and clear notification`() = testScope.runTest {
         val mockContext = mockk<Context>(relaxed = true)
-        val intent = mockk<Intent>(relaxed = true)
-        every { intent.action } returns NotificationUtils.ACTION_OPEN_NOTIFICATION
-        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns "test_id"
-        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE) } returns "type"
-        every { intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID) } returns "related"
+        val intent = Intent(NotificationUtils.ACTION_OPEN_NOTIFICATION).apply {
+            putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, "test_id")
+            putExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE, "test_type")
+            putExtra(NotificationUtils.EXTRA_RELATED_ID, "related_id")
+        }
 
         receiver.onReceive(mockContext, intent)
         advanceUntilIdle()
@@ -129,8 +133,7 @@ class NotificationActionReceiverTest {
     @Test
     fun `onReceive with null action should just finish pending result`() = testScope.runTest {
         val mockContext = mockk<Context>(relaxed = true)
-        val intent = mockk<Intent>(relaxed = true)
-        every { intent.action } returns null
+        val intent = Intent()
 
         receiver.onReceive(mockContext, intent)
         advanceUntilIdle()
@@ -142,8 +145,7 @@ class NotificationActionReceiverTest {
     @Test
     fun `onReceive with unknown action should just finish pending result`() = testScope.runTest {
         val mockContext = mockk<Context>(relaxed = true)
-        val intent = mockk<Intent>(relaxed = true)
-        every { intent.action } returns "UNKNOWN"
+        val intent = Intent("UNKNOWN_ACTION")
 
         receiver.onReceive(mockContext, intent)
         advanceUntilIdle()
@@ -153,11 +155,9 @@ class NotificationActionReceiverTest {
     }
 
     @Test
-    fun `onReceive with null notificationId should work but not clear notification`() = testScope.runTest {
+    fun `onReceive with null notificationId should still work but not clear notification`() = testScope.runTest {
         val mockContext = mockk<Context>(relaxed = true)
-        val intent = mockk<Intent>(relaxed = true)
-        every { intent.action } returns NotificationUtils.ACTION_MARK_AS_READ
-        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns null
+        val intent = Intent(NotificationUtils.ACTION_MARK_AS_READ)
 
         receiver.onReceive(mockContext, intent)
         advanceUntilIdle()
