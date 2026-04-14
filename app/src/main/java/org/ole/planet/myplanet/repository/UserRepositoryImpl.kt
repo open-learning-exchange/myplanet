@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
