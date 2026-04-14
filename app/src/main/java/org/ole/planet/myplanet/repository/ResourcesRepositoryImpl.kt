@@ -605,11 +605,10 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
         val allRatings = ratingsRepository.getResourceRatings(userId)
-        val filteredRatings = HashMap<String?, JsonObject>(ids.size)
+        val filteredRatings = HashMap<String?, JsonObject>(Math.ceil(ids.size / 0.75).toInt())
         for (id in ids) {
-            val rating = allRatings[id]
-            if (rating != null) {
-                filteredRatings[id] = rating
+            allRatings[id]?.let {
+                filteredRatings[id] = it
             }
         }
         return filteredRatings
