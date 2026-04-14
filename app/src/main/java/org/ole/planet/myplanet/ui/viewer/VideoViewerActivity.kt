@@ -103,7 +103,11 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun onError(s: String) {
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) { Utilities.toast(this@VideoViewerActivity, getString(R.string.connection_failed_reason) + s) }
+        runOnUiThread {
+            if (!isFinishing) {
+                Utilities.toast(this@VideoViewerActivity, getString(R.string.connection_failed_reason) + s)
+            }
+        }
     }
 
     override fun onStart() {
