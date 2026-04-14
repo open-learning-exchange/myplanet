@@ -40,9 +40,12 @@ class InlineResourceAdapter(
     )
 ) {
 
+    private var externalFilesDir: java.io.File? = null
+
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (externalFilesDir == null) externalFilesDir = FileUtils.getExternalFilesDir(parent.context)
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
@@ -73,7 +76,7 @@ class InlineResourceAdapter(
             binding.ivStatus.setImageResource(R.drawable.ic_eye)
 
             val resourceFile = File(
-                context.getExternalFilesDir(null),
+                externalFilesDir,
                 "ole/${resource.id}/${resource.resourceLocalAddress}"
             )
 
