@@ -41,7 +41,6 @@
                 app:layout_constraintEnd_toStartOf="@id/sharedIcon"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
-
         <ImageView
                 android:id="@+id/sharedIcon"
                 android:layout_width="24dp"
