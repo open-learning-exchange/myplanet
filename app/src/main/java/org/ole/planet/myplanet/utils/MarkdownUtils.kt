@@ -35,19 +35,29 @@ import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.network.NetworkSchemeHandler
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
-import java.util.WeakHashMap
 import java.util.regex.Pattern
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
 
 object MarkdownUtils {
     private var currentZoomDialog: Dialog? = null
-    private val markwonCache = WeakHashMap<Context, Markwon>()
+    @Volatile private var markwonInstance: Markwon? = null
     private val imagePattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
+    fun warmUp(context: Context) {
+        if (markwonInstance == null) {
+            create(context)
+        }
+    }
+
     fun create(context: Context): Markwon {
-        return markwonCache.getOrPut(context) {
-            Markwon.builder(context)
+        return markwonInstance ?: synchronized(this) {
+            markwonInstance ?: buildMarkwon(context.applicationContext).also { markwonInstance = it }
+        }
+    }
+
+    private fun buildMarkwon(context: Context): Markwon {
+        return Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
             .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
@@ -69,7 +79,6 @@ object MarkdownUtils {
                     }
                 }
             }).build()
-        }
     }
 
     fun setMarkdownText(textView: TextView, markdown: String) {
