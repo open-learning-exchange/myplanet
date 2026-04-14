@@ -88,7 +88,7 @@ class TeamsRepositoryImplTest {
 
         coEvery { uploadManager.uploadResource(any()) } returns Unit
         coEvery { uploadManager.uploadTeams() } returns Unit
-        coEvery { uploadManager.uploadTeamActivities(any()) } returns Unit
+        coEvery { uploadManager.uploadTeamActivities() } returns Unit
 
         teamsRepository.syncTeamActivities()
 
@@ -97,7 +97,7 @@ class TeamsRepositoryImplTest {
         // Verify that the methods on uploadManager were called
         coVerify { uploadManager.uploadResource(null) }
         coVerify { uploadManager.uploadTeams() }
-        coVerify { uploadManager.uploadTeamActivities(apiInterfaceMock) }
+        coVerify { uploadManager.uploadTeamActivities() }
 
         // Unmock static objects
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)

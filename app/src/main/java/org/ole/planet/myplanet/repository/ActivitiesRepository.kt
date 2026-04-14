@@ -4,26 +4,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 
-data class TeamLogData(
-    val id: String?,
-    val time: Long?,
-    val user: String?,
-    val type: String?,
-    val serialized: JsonObject
-)
-
-data class TeamLogUploadResult(
-    val id: String?,
-    val time: Long?,
-    val user: String?,
-    val type: String?,
-    val _id: String,
-    val _rev: String
-)
-
 interface ActivitiesRepository {
-    suspend fun getUnuploadedTeamLogs(): List<TeamLogData>
-    suspend fun markTeamLogsUploaded(results: List<TeamLogUploadResult>)
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity>
     suspend fun getOfflineVisitCount(userId: String): Int
     suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>>

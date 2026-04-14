@@ -91,7 +91,6 @@ interface TeamsRepository {
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
         userParentCode: String?, teamType: String?
     )
-
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String>
     suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
         rules: String, updatedBy: String?
@@ -121,27 +120,14 @@ interface TeamsRepository {
     suspend fun createEnterprise(name: String, description: String, services: String,
         rules: String, isPublic: Boolean, user: RealmUser
     ): Result<String>
-
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 
-    /**
-     * Inserts a team log into the Realm.
-     * The [Realm] instance is passed explicitly to allow this operation to participate
-     * in a shared transaction during the sync process.
-     */
     fun insertTeamLog(realm: Realm, json: JsonObject)
-
-    /**
-     * Retrieves the last visit timestamp for a user in a specific team.
-     * The [Realm] instance is passed explicitly so that callers can manage the Realm
-     * lifecycle or execute this within an existing Realm context.
-     */
     fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long?
-
     fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
     fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)

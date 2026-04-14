@@ -1013,7 +1013,7 @@ class TeamsRepositoryImpl @Inject constructor(
             withContext(dispatcherProvider.io) {
                 uploadManager.uploadResource(null)
                 uploadManager.uploadTeams()
-                uploadManager.uploadTeamActivities(apiInterface)
+                uploadManager.uploadTeamActivities()
             }
         } catch (e: Exception) {
             e.printStackTrace()
