@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.mockk.coVerify
@@ -7,8 +8,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.unmockkConstructor
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,6 +33,7 @@ class NotificationActionReceiverTest {
     private lateinit var receiver: NotificationActionReceiver
     private lateinit var mockContext: Context
     private lateinit var mockNotificationsRepository: NotificationsRepository
+    private lateinit var mockPendingResult: BroadcastReceiver.PendingResult
     private lateinit var testDispatcher: CoroutineDispatcher
     private lateinit var mockDispatcherProvider: DispatcherProvider
     private lateinit var testScope: TestScope
@@ -66,11 +70,12 @@ class NotificationActionReceiverTest {
         mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
         every { getBroadcastService(any()) } returns mockk(relaxed = true)
 
-
-        receiver = NotificationActionReceiver().apply {
+        mockPendingResult = mockk(relaxed = true)
+        receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = mockDispatcherProvider
-        }
+        })
+        every { receiver.goAsync() } returns mockPendingResult
     }
 
     @After
@@ -88,5 +93,94 @@ class NotificationActionReceiverTest {
         advanceUntilIdle()
 
         coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+    }
+
+    @Test
+    fun `onReceive with ACTION_MARK_AS_READ should mark as read and clear notification`() = testScope.runTest {
+        val intent = mockk<Intent>()
+        val notificationId = "test_id"
+        every { intent.action } returns NotificationUtils.ACTION_MARK_AS_READ
+        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns notificationId
+
+        receiver.onReceive(mockContext, intent)
+        advanceUntilIdle()
+
+        coVerify { receiver.markNotificationAsRead(mockContext, notificationId) }
+        verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { mockPendingResult.finish() }
+    }
+
+    @Test
+    fun `onReceive with ACTION_STORAGE_SETTINGS should mark as read, start activity and clear notification`() = testScope.runTest {
+        val intent = mockk<Intent>()
+        val notificationId = "test_id"
+        every { intent.action } returns NotificationUtils.ACTION_STORAGE_SETTINGS
+        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns notificationId
+
+        receiver.onReceive(mockContext, intent)
+        advanceUntilIdle()
+
+        coVerify { receiver.markNotificationAsRead(mockContext, notificationId) }
+        verify { mockContext.startActivity(any()) }
+        verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { mockPendingResult.finish() }
+    }
+
+    @Test
+    fun `onReceive with ACTION_OPEN_NOTIFICATION should mark as read, start activity and clear notification`() = testScope.runTest {
+        val intent = mockk<Intent>()
+        val notificationId = "test_id"
+        val notificationType = "test_type"
+        val relatedId = "related_id"
+        every { intent.action } returns NotificationUtils.ACTION_OPEN_NOTIFICATION
+        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns notificationId
+        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE) } returns notificationType
+        every { intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID) } returns relatedId
+
+        receiver.onReceive(mockContext, intent)
+        advanceUntilIdle()
+
+        coVerify { receiver.markNotificationAsRead(mockContext, notificationId) }
+        verify { mockContext.startActivity(any()) }
+        verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { mockPendingResult.finish() }
+    }
+
+    @Test
+    fun `onReceive with null action should just finish pending result`() = testScope.runTest {
+        val intent = mockk<Intent>()
+        every { intent.action } returns null
+
+        receiver.onReceive(mockContext, intent)
+        advanceUntilIdle()
+
+        verify { mockPendingResult.finish() }
+        coVerify(exactly = 0) { receiver.markNotificationAsRead(any(), any()) }
+    }
+
+    @Test
+    fun `onReceive with unknown action should just finish pending result`() = testScope.runTest {
+        val intent = mockk<Intent>()
+        every { intent.action } returns "UNKNOWN_ACTION"
+
+        receiver.onReceive(mockContext, intent)
+        advanceUntilIdle()
+
+        verify { mockPendingResult.finish() }
+        coVerify(exactly = 0) { receiver.markNotificationAsRead(any(), any()) }
+    }
+
+    @Test
+    fun `onReceive with null notificationId should still work but not clear notification`() = testScope.runTest {
+        val intent = mockk<Intent>()
+        every { intent.action } returns NotificationUtils.ACTION_MARK_AS_READ
+        every { intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns null
+
+        receiver.onReceive(mockContext, intent)
+        advanceUntilIdle()
+
+        coVerify { receiver.markNotificationAsRead(mockContext, null) }
+        verify(exactly = 0) { mockNotificationUtils.clearNotification(any()) }
+        verify { mockPendingResult.finish() }
     }
 }
