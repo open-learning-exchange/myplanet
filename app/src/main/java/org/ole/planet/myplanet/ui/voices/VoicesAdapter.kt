@@ -136,17 +136,6 @@ class VoicesAdapter(
         this.imageList = imageList
     }
 
-    fun addItem(news: RealmNews?) {
-        val currentList = currentList.toMutableList()
-        currentList.add(0, news)
-        submitListSafely(currentList) {
-            recyclerView?.post {
-                recyclerView?.scrollToPosition(0)
-                recyclerView?.smoothScrollToPosition(0)
-            }
-        }
-    }
-
     fun setFromLogin(fromLogin: Boolean) {
         this.fromLogin = fromLogin
     }
@@ -327,7 +316,7 @@ class VoicesAdapter(
                             newsToDelete?.id?.let { id ->
                                 deletePostFn(id) {
                                     val newList = snapshotList.toMutableList().apply { removeAt(adjustedPos) }
-                                    submitListSafely(newList)
+                                    submitList(newList)
                                     parentNews?.id?.let { pid ->
                                         val current = replyCountCache[pid]
                                         replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
@@ -426,23 +415,11 @@ class VoicesAdapter(
         return null
     }
 
-    fun updateList(newList: List<RealmNews?>) {
-        submitListSafely(newList)
-    }
-
     fun updateParentNews(news: RealmNews?) {
         val contentChanged = parentNews?.message != news?.message ||
             parentNews?.isEdited != news?.isEdited
         parentNews = news
         if (contentChanged) notifyItemChanged(0)
-    }
-
-    fun refreshCurrentItems() {
-        submitListSafely(currentList.toList())
-    }
-
-    private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
-        submitList(list, commitCallback)
     }
 
     private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUser?, currentLeader: RealmUser?) {
