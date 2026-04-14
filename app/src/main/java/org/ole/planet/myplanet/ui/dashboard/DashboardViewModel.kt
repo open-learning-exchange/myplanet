@@ -174,6 +174,10 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    suspend fun getTeamType(teamId: String): String? {
+        return teamsRepository.getTeamType(teamId)
+    }
+
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return activitiesRepository.getOfflineActivities(userName, type)
     }

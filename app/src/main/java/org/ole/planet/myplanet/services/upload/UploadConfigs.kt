@@ -62,15 +62,32 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id }
     )
 
-    val TeamActivitiesRefactored = UploadConfig(
+    val TeamActivities = UploadConfig(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.WithContext { log, context ->
-            teamsRepository.get().serializeTeamActivities(log, context)
-        },
-        idExtractor = { it._id }
+        serializer = UploadSerializer.WithContext { log, context -> serializeTeamActivities(log, context) },
+        idExtractor = { it.id }
     )
+
+    private fun serializeTeamActivities(log: RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject {
+        val ob = com.google.gson.JsonObject()
+        ob.addProperty("user", log.user)
+        ob.addProperty("type", log.type)
+        ob.addProperty("createdOn", log.createdOn)
+        ob.addProperty("parentCode", log.parentCode)
+        ob.addProperty("teamType", log.teamType)
+        ob.addProperty("time", log.time)
+        ob.addProperty("teamId", log.teamId)
+        ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+        ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+        ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+        if (!android.text.TextUtils.isEmpty(log._rev)) {
+            ob.addProperty("_rev", log._rev)
+            ob.addProperty("_id", log._id)
+        }
+        return ob
+    }
 
     val SearchActivity = UploadConfig(
         modelClass = RealmSearchActivity::class,
@@ -200,7 +217,7 @@ class UploadConfigs @Inject constructor(
                 .endGroup()
         },
         serializer = UploadSerializer.Full { realm, submission, context ->
-            RealmSubmission.serialize(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+            submissionsRepository.serializeSubmission(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
@@ -223,14 +240,5 @@ class UploadConfigs @Inject constructor(
         additionalUpdates = { _, rating, _ ->
             rating.isUpdated = false
         }
-    )
-
-    val News = UploadConfig(
-        modelClass = RealmNews::class,
-        endpoint = "news",
-        queryBuilder = { query -> query },  // Upload all news items
-        serializer = UploadSerializer.Simple(voicesRepository::serializeNews),
-        idExtractor = { it.id },
-        dbIdExtractor = { it._id }  // Enables POST/PUT logic
     )
 }

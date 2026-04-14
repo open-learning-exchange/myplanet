@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.utils.CourseRatingUtils
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
@@ -89,12 +89,19 @@ class CoursesAdapter(
 
     fun setTagsMap(tagsMap: Map<String, List<Tag>>) {
         this.tagsMap = tagsMap
-        notifyItemRangeChanged(0, itemCount)
+        notifyItemRangeChanged(0, itemCount, TAG_PAYLOAD)
     }
 
     fun removeCourses(courseIds: List<String>) {
         val updated = currentList.filter { it.courseId !in courseIds }
         submitList(updated)
+    }
+
+    private fun dispatchPayloadByCourseId(courseId: String?, payload: Any) {
+        val index = currentList.indexOfFirst { it.courseId == courseId }
+        if (index != -1) {
+            notifyItemChanged(index, payload)
+        }
     }
 
     fun updateData(
