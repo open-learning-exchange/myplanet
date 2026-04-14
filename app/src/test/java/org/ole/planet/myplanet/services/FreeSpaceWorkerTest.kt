@@ -86,4 +86,13 @@ class FreeSpaceWorkerTest {
         assertEquals(0, outputData.getInt("deletedFiles", -1))
         assertEquals(0L, outputData.getLong("freedBytes", -1L))
     }
+
+    @Test
+    fun `doWork should return failure on exception`() = runTest(testDispatcher) {
+        coEvery { resourcesRepository.markAllResourcesOffline(false) } throws RuntimeException("Simulated exception")
+
+        val result = worker.doWork()
+
+        assertTrue(result is Result.Failure)
+    }
 }
