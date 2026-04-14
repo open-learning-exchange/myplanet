@@ -1,0 +1,104 @@
+--- app/src/main/java/org/ole/planet/myplanet/services/SharedPrefManager.kt
++++ app/src/main/java/org/ole/planet/myplanet/services/SharedPrefManager.kt
+@@ -101,6 +101,12 @@
+     fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
+     fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
+
++    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
++    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
++
++    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
++    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
++
+     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
+     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
+
+--- app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/sync/LoginActivity.kt
+@@ -37,6 +37,7 @@
+ import org.ole.planet.myplanet.model.User
+ import org.ole.planet.myplanet.repository.TeamsRepository
+ import org.ole.planet.myplanet.services.ThemeManager
++import org.ole.planet.myplanet.services.SharedPrefManager
+ import org.ole.planet.myplanet.services.sync.LoginSyncManager
+ import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
+ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+@@ -62,6 +63,8 @@
+     lateinit var teamsRepository: TeamsRepository
+     @Inject
+     lateinit var loginSyncManager: LoginSyncManager
++    @Inject
++    lateinit var sharedPrefManager: SharedPrefManager
+
+     private lateinit var binding: ActivityLoginBinding
+     private lateinit var nameWatcher2: TextWatcher
+@@ -148,15 +151,19 @@
+         }
+
+         guest = intent.getBooleanExtra("guest", false)
+-        val username = intent.getStringExtra("username")
+-        val password = intent.getStringExtra("password")
+-        val autoLogin = intent.getBooleanExtra("auto_login", false)
+
+-        if (guest) {
++        val encryptedUsername = sharedPrefManager.getNewLoginUsername()
++        val username = if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedUsername) else null
++        val encryptedPassword = sharedPrefManager.getNewLoginPassword()
++        val password = if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedPassword) else null
++
++        if (guest && username != null) {
+             resetGuestAsMember(username)
+         }
+
+-        if (autoLogin && username != null && password != null) {
++        if (username != null && password != null) {
++            sharedPrefManager.setNewLoginUsername(null)
++            sharedPrefManager.setNewLoginPassword(null)
+             lifecycleScope.launch {
+                 delay(500)
+                 submitForm(username, password)
+--- app/src/main/java/org/ole/planet/myplanet/ui/user/BecomeMemberActivity.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/user/BecomeMemberActivity.kt
+@@ -19,6 +19,7 @@
+ import org.ole.planet.myplanet.MainApplication
+ import org.ole.planet.myplanet.R
+ import org.ole.planet.myplanet.base.BaseActivity
++import org.ole.planet.myplanet.services.SharedPrefManager
+ import org.ole.planet.myplanet.callback.OnSecurityDataListener
+ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
+ import org.ole.planet.myplanet.ui.sync.LoginActivity
+@@ -22,6 +23,7 @@
+ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
+ import org.ole.planet.myplanet.ui.sync.LoginActivity
+ import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
++import org.ole.planet.myplanet.utils.SecurePrefs
+ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+ import org.ole.planet.myplanet.utils.NetworkUtils
+ import org.ole.planet.myplanet.utils.Utilities
+@@ -29,6 +31,10 @@
+
+ @AndroidEntryPoint
+ class BecomeMemberActivity : BaseActivity() {
++
++    @javax.inject.Inject
++    lateinit var sharedPrefManager: SharedPrefManager
++
+     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
+     var dob: String = ""
+     var guest: Boolean = false
+@@ -232,10 +238,12 @@
+     private fun autoLoginNewMember(username: String, password: String) {
+         lifecycleScope.launch {
+             userRepository.cleanupDuplicateUsers()
++
++            sharedPrefManager.setNewLoginUsername(SecurePrefs.encryptString(this@BecomeMemberActivity, username))
++            sharedPrefManager.setNewLoginPassword(SecurePrefs.encryptString(this@BecomeMemberActivity, password))
++
+             val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+-            intent.putExtra("username", username)
+-            intent.putExtra("password", password)
+-            intent.putExtra("auto_login", true)
++
+             if (guest) {
+                 intent.putExtra("guest", guest)
+             }
