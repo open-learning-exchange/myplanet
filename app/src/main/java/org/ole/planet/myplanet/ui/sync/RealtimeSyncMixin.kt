@@ -53,7 +53,6 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
             when (adapter) {
                 is OnDiffRefreshListener -> adapter.refreshWithDiff()
                 is ListAdapter<*, *> -> {
-                    if (update.newItemsCount == 0 && update.updatedItemsCount == 0) return@launch
                     @Suppress("UNCHECKED_CAST")
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
