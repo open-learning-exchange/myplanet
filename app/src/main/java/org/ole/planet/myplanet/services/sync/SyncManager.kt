@@ -47,7 +47,6 @@ import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -72,7 +71,8 @@ class SyncManager @Inject constructor(
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -1028,7 +1028,7 @@ class SyncManager @Inject constructor(
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> insertMyTeams(doc, realmTx)
+                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++
                                     } catch (e: Exception) {
