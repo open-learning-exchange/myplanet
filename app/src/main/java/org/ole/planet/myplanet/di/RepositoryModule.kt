@@ -47,8 +47,8 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
-import org.ole.planet.myplanet.repository.retry.RetryRepository
-import org.ole.planet.myplanet.repository.retry.RetryRepositoryImpl
+import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.repository.RetryRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
