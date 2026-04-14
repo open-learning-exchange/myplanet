@@ -4,13 +4,13 @@ import android.util.Base64
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
     private fun spm(): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
 
     val header: String
         get() {

@@ -143,9 +143,10 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
 
     private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: RecyclerView) {
         val names = libraries.map { it.title ?: "" }
-        val adapter = CheckboxAdapter(names) {
+        val adapter = CheckboxAdapter {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
         }
+        adapter.submitList(names)
         lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
         alertDialog.show()
