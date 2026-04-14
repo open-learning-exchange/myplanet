@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import org.ole.planet.myplanet.callback.OnSuccessListener
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
