@@ -20,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
+
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -63,8 +64,9 @@ class NotificationActionReceiverTest {
         mockkStatic(NotificationUtils::class)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
-        mockkStatic("org.ole.planet.myplanet.di.BroadcastServiceEntryPointKt")
+        mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
         every { getBroadcastService(any()) } returns mockk(relaxed = true)
+
 
         receiver = NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
