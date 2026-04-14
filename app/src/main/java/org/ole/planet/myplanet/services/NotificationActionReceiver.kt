@@ -22,8 +22,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var notificationsRepository: NotificationsRepository
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+
+    internal var pendingResultProvider: () -> BroadcastReceiver.PendingResult? = { goAsync() }
+
     override fun onReceive(context: Context, intent: Intent) {
-        val pendingResult = goAsync()
+        val pendingResult = pendingResultProvider()
         MainApplication.applicationScope.launch {
             try {
                 val action = intent.action
@@ -67,7 +70,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
                 }
             } finally {
-                pendingResult.finish()
+                try {
+                    pendingResult?.finish()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }

@@ -21,6 +21,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -28,6 +30,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
 class NotificationActionReceiverTest {
 
     private lateinit var receiver: NotificationActionReceiver
@@ -74,8 +77,8 @@ class NotificationActionReceiverTest {
         receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = mockDispatcherProvider
+            pendingResultProvider = { mockPendingResult }
         })
-        every { receiver.goAsync() } returns mockPendingResult
     }
 
     @After
