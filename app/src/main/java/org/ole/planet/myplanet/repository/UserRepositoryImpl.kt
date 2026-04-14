@@ -33,6 +33,9 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
+import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -1053,7 +1056,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
@@ -1063,11 +1066,33 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmAchievement.insert(realm, jsonDoc)
+            insertAchievement(realm, jsonDoc)
         }
     }
+
+    private fun insertAchievement(mRealm: io.realm.Realm, act: com.google.gson.JsonObject?) {
+        var achievement = mRealm.where(org.ole.planet.myplanet.model.RealmAchievement::class.java)
+            .equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
+        if (achievement == null) {
+            achievement = mRealm.createObject(org.ole.planet.myplanet.model.RealmAchievement::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
+        }
+        achievement?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
+        achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
+        achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
+        achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
+        achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+        achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
+        achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
+        achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)
+        achievement?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", act)
+        achievement?.isUpdated = false
+        achievement?.setReferences(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("references", act))
+        achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
+        achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
+        achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
+    }
     override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
-        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
@@ -1079,5 +1104,32 @@ class UserRepositoryImpl @Inject constructor(
         documentList.forEach { jsonDoc ->
             populateUser(jsonDoc, realm, settings)
         }
+    }
+
+    override suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
+        return withRealm { realm ->
+            val myMeetups = getMyMeetUpIds(realm, userId)
+            val removedResources = listOf(*removedIds(realm, "resources", userId))
+            val removedCourses = listOf(*removedIds(realm, "courses", userId))
+            val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
+            val mergedCourseIds = mergeJsonArray(myCourseIds, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
+            val `object` = JsonObject()
+            `object`.addProperty("_id", sharedPrefManager.getUserId())
+            `object`.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
+            `object`.add("resourceIds", mergedResourceIds)
+            `object`.add("courseIds", mergedCourseIds)
+            `object`
+        }
+    }
+
+    private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
+        val array = JsonArray()
+        array.addAll(array1)
+        for (e in array2) {
+            if (!array.contains(e) && !removedIds.contains(e.asString)) {
+                array.add(e)
+            }
+        }
+        return array
     }
 }

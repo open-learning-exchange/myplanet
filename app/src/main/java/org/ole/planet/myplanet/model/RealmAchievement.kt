@@ -6,7 +6,6 @@ import android.widget.EditText
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
@@ -132,27 +131,5 @@ open class RealmAchievement : RealmObject() {
             return ob
         }
 
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject?) {
-            var achievement = mRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (achievement == null) {
-                achievement = mRealm.createObject(RealmAchievement::class.java, JsonUtils.getString("_id", act))
-            }
-            achievement?._rev = JsonUtils.getString("_rev", act)
-            achievement?.purpose = JsonUtils.getString("purpose", act)
-            achievement?.goals = JsonUtils.getString("goals", act)
-            achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
-            achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
-            achievement?.dateSortOrder = JsonUtils.getString("dateSortOrder", act)
-            achievement?.createdOn = JsonUtils.getString("createdOn", act)
-            achievement?.username = JsonUtils.getString("username", act)
-            achievement?.parentCode = JsonUtils.getString("parentCode", act)
-            achievement?.isUpdated = false
-            achievement?.setReferences(JsonUtils.getJsonArray("references", act))
-            achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
-            achievement?.setLinks(JsonUtils.getJsonArray("links", act))
-            achievement?.setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
-        }
     }
 }
