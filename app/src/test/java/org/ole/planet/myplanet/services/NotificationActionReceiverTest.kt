@@ -7,6 +7,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.verify
+import android.content.BroadcastReceiver
 import io.mockk.unmockkAll
 import io.mockk.unmockkConstructor
 import kotlinx.coroutines.CoroutineDispatcher
@@ -23,6 +26,7 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
+import dagger.hilt.internal.GeneratedComponentManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationActionReceiverTest {
@@ -43,6 +47,14 @@ class NotificationActionReceiverTest {
         MainApplication.applicationScope = testScope
 
         mockContext = mockk<Context>(relaxed = true)
+
+        abstract class MockAppContext : android.app.Application(), dagger.hilt.internal.GeneratedComponentManager<Any>
+        val mockApplication = mockk<MockAppContext>(relaxed = true)
+        every { mockContext.applicationContext } returns mockApplication
+        every { mockApplication.generatedComponent() } returns mockk<NotificationActionReceiver_GeneratedInjector>(relaxed = true)
+
+
+
         mockNotificationsRepository = mockk(relaxed = true)
 
         mockDispatcherProvider = object : DispatcherProvider {
@@ -53,11 +65,13 @@ class NotificationActionReceiverTest {
         }
 
         mockkConstructor(Intent::class)
-        every { anyConstructed<Intent>().setPackage(any()) } answers { mockk() }
-        every { anyConstructed<Intent>().putExtra(any<String>(), any<String>()) } answers { mockk() }
-        every { anyConstructed<Intent>().putExtra(any<String>(), any<Boolean>()) } answers { mockk() }
-        every { anyConstructed<Intent>().flags = any() } returns Unit
-        every { anyConstructed<Intent>().action = any() } returns Unit
+        every { anyConstructed<Intent>().setPackage(any()) } answers { call.invocation.self as Intent }
+        every { anyConstructed<Intent>().putExtra(any<String>(), any<String>()) } answers { call.invocation.self as Intent }
+        every { anyConstructed<Intent>().putExtra(any<String>(), any<Boolean>()) } answers { call.invocation.self as Intent }
+        every { anyConstructed<Intent>().setFlags(any()) } answers { call.invocation.self as Intent }
+        every { anyConstructed<Intent>().setAction(any()) } answers { call.invocation.self as Intent }
+        // Property setters in mockk
+        // No need to mock property setters if we mock the underlying methods
 
         mockNotificationUtils = mockk(relaxed = true)
         mockkStatic(NotificationUtils::class)
@@ -67,10 +81,11 @@ class NotificationActionReceiverTest {
         every { getBroadcastService(any()) } returns mockk(relaxed = true)
 
 
-        receiver = NotificationActionReceiver().apply {
+        receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = mockDispatcherProvider
-        }
+        })
+        every { receiver.goAsync() } returns mockk<BroadcastReceiver.PendingResult>(relaxed = true)
     }
 
     @After
@@ -88,5 +103,66 @@ class NotificationActionReceiverTest {
         advanceUntilIdle()
 
         coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+    }
+
+    @Test
+    fun `test onReceive ACTION_MARK_AS_READ`() = testScope.runTest {
+        val notificationId = "test_id"
+        val mockIntent = mockk<Intent>(relaxed = true)
+        every { mockIntent.action } returns NotificationUtils.ACTION_MARK_AS_READ
+        every { mockIntent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns notificationId
+
+        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+        every { receiver.goAsync() } returns pendingResult
+
+        receiver.onReceive(mockContext, mockIntent)
+        advanceUntilIdle()
+
+        coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+        verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test onReceive ACTION_STORAGE_SETTINGS`() = testScope.runTest {
+        val notificationId = "test_id"
+        val mockIntent = mockk<Intent>(relaxed = true)
+        every { mockIntent.action } returns NotificationUtils.ACTION_STORAGE_SETTINGS
+        every { mockIntent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns notificationId
+
+        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+        every { receiver.goAsync() } returns pendingResult
+
+        receiver.onReceive(mockContext, mockIntent)
+        advanceUntilIdle()
+
+        coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+        verify { mockContext.startActivity(any()) }
+        verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test onReceive ACTION_OPEN_NOTIFICATION`() = testScope.runTest {
+        val notificationId = "test_id"
+        val notificationType = "type"
+        val relatedId = "related_id"
+
+        val mockIntent = mockk<Intent>(relaxed = true)
+        every { mockIntent.action } returns NotificationUtils.ACTION_OPEN_NOTIFICATION
+        every { mockIntent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID) } returns notificationId
+        every { mockIntent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE) } returns notificationType
+        every { mockIntent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID) } returns relatedId
+
+        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+        every { receiver.goAsync() } returns pendingResult
+
+        receiver.onReceive(mockContext, mockIntent)
+        advanceUntilIdle()
+
+        coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+        verify { mockContext.startActivity(any()) }
+        verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { pendingResult.finish() }
     }
 }
