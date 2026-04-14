@@ -26,10 +26,11 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun setupRealtimeSync() {
+        val watchedTablesSet = mixin.getWatchedTables().toSet()
         fragment.lifecycleScope.launch {
             fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 syncManagerInstance.dataUpdateFlow
-                    .filter { update -> mixin.getWatchedTables().contains(update.table) }
+                    .filter { update -> watchedTablesSet.contains(update.table) }
                     .distinctUntilChanged { old, new ->
                         old.table == new.table &&
                         old.newItemsCount == new.newItemsCount &&
@@ -39,19 +40,20 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
                     .collect { update ->
                         mixin.onDataUpdated(update.table, update)
                         if (mixin.shouldAutoRefresh(update.table)) {
-                            refreshRecyclerView()
+                            refreshRecyclerView(update)
                         }
                     }
             }
         }
     }
 
-    private fun refreshRecyclerView() {
+    private fun refreshRecyclerView(update: TableDataUpdate) {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
             when (adapter) {
                 is OnDiffRefreshListener -> adapter.refreshWithDiff()
                 is ListAdapter<*, *> -> {
+                    if (update.newItemsCount == 0 && update.updatedItemsCount == 0) return@launch
                     @Suppress("UNCHECKED_CAST")
                     (adapter as ListAdapter<Any, *>).let { listAdapter ->
                         listAdapter.submitList(listAdapter.currentList.toList())
