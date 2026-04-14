@@ -11,8 +11,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
-import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 
 object SyncTimeLogger {
@@ -73,11 +72,11 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        val spm = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             MainApplication.createLog("sync summary", summary)
             val updateUrl = spm.getServerUrl()
-            val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, ServerUrlMapperEntryPoint::class.java)
+            val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 

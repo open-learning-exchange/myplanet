@@ -605,19 +605,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onSelectedListChange(list: MutableList<Course?>) {
-        val dummyCourses = list.mapNotNull { course ->
-            course?.let {
-                val rc = RealmMyCourse()
-                rc.courseId = it.courseId
-                rc.courseTitle = it.courseTitle
-                rc.isMyCourse = it.isMyCourse
-                rc
-            }
-        }.toMutableList<RealmMyCourse?>()
-        selectedItems = dummyCourses
-        changeButtonStatus()
-        hideButtons()
-
         selectionJob?.cancel()
         selectionJob = viewLifecycleOwner.lifecycleScope.launch {
             val realmCourses = list.mapNotNull { course ->
