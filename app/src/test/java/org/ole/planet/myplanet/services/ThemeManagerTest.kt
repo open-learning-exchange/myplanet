@@ -12,13 +12,13 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 
 class ThemeManagerTest {
     private lateinit var mockContext: Context
     private lateinit var mockSpm: SharedPrefManager
-    private lateinit var mockEntryPoint: AutoSyncEntryPoint
+    private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
 
     @Before
     fun setUp() {
@@ -32,7 +32,7 @@ class ThemeManagerTest {
         mockkStatic(EntryPointAccessors::class)
         mockkStatic(AppCompatDelegate::class)
 
-        every { EntryPointAccessors.fromApplication(any(), AutoSyncEntryPoint::class.java) } returns mockEntryPoint
+        every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
         every { mockEntryPoint.sharedPrefManager() } returns mockSpm
     }
 
