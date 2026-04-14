@@ -18,12 +18,12 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.SecurePrefs
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -31,6 +31,9 @@ import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
+
+    @javax.inject.Inject
+    lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
@@ -236,9 +239,8 @@ class BecomeMemberActivity : BaseActivity() {
         lifecycleScope.launch {
             userRepository.cleanupDuplicateUsers()
 
-            val spm = dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-            spm.setNewLoginUsername(username)
-            spm.setNewLoginPassword(SecurePrefs.encryptString(this@BecomeMemberActivity, password))
+            sharedPrefManager.setNewLoginUsername(SecurePrefs.encryptString(this@BecomeMemberActivity, username))
+            sharedPrefManager.setNewLoginPassword(SecurePrefs.encryptString(this@BecomeMemberActivity, password))
 
             val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
 
