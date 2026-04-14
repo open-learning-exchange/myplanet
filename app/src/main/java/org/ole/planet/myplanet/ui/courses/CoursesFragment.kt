@@ -551,12 +551,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = model?.id
-            val (filteredCourses, map, progressMap) = withContext(dispatcherProvider.io) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = coursesRepository.getCourseRatings(userId)
-                val progress = coursesRepository.getCourseProgress(userId)
-                Triple(courses, ratings, progress)
+            val filteredCourses = withContext(dispatcherProvider.io) {
+                coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
             }
+            val map = viewModel.coursesState.value.map
+            val progressMap = viewModel.coursesState.value.progressMap
             viewModel.processCourses(isMyCourseLib, userId, filteredCourses, filteredCourses.filter { it.userId?.contains(userId) == true }, map, progressMap)
             scrollToTop()
         }
