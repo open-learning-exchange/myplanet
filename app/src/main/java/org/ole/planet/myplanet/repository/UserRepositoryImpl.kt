@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -11,7 +12,6 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.regex.Pattern
 import javax.inject.Inject
-import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ensureActive
@@ -28,13 +28,13 @@ import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter

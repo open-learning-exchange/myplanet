@@ -8,7 +8,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
 import java.io.IOException
 import java.util.Date
 import javax.inject.Inject

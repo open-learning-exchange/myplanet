@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -52,7 +51,7 @@ interface TeamsRepository {
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
-    suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
+    suspend fun getTeamCourseIds(teamId: String): List<String>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam?

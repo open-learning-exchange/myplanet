@@ -35,9 +35,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
