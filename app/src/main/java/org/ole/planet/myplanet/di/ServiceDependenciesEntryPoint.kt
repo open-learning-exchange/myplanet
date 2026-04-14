@@ -9,14 +9,14 @@ import org.ole.planet.myplanet.services.BroadcastService
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface BroadcastServiceEntryPoint {
+interface ServiceDependenciesEntryPoint {
     fun broadcastService(): BroadcastService
 }
 
 fun getBroadcastService(context: Context): BroadcastService {
     val hiltEntryPoint = EntryPointAccessors.fromApplication(
         context.applicationContext,
-        BroadcastServiceEntryPoint::class.java
+        ServiceDependenciesEntryPoint::class.java
     )
     return hiltEntryPoint.broadcastService()
 }
