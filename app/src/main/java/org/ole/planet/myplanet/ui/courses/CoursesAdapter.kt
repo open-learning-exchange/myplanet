@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
@@ -57,6 +58,7 @@ class CoursesAdapter(
         submitList(currentList.toList())
     }
 
+    private val externalFilesBaseUrl = "file://${FileUtils.getExternalFilesDir(context)}/ole/"
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -87,12 +89,19 @@ class CoursesAdapter(
 
     fun setTagsMap(tagsMap: Map<String, List<Tag>>) {
         this.tagsMap = tagsMap
-        notifyItemRangeChanged(0, itemCount)
+        notifyItemRangeChanged(0, itemCount, TAG_PAYLOAD)
     }
 
     fun removeCourses(courseIds: List<String>) {
         val updated = currentList.filter { it.courseId !in courseIds }
         submitList(updated)
+    }
+
+    private fun dispatchPayloadByCourseId(courseId: String?, payload: Any) {
+        val index = currentList.indexOfFirst { it.courseId == courseId }
+        if (index != -1) {
+            notifyItemChanged(index, payload)
+        }
     }
 
     fun updateData(
@@ -333,7 +342,7 @@ class CoursesAdapter(
                 text = course.description
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     course.description,
-                    "file://${context.getExternalFilesDir(null)}/ole/",
+                    externalFilesBaseUrl,
                     150,
                     100
                 )
