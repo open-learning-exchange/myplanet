@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.any
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -25,7 +25,7 @@ import org.robolectric.annotation.Config
 class UrlUtilsTest {
 
     private lateinit var mockSpm: SharedPrefManager
-    private lateinit var mockEntryPoint: AutoSyncEntryPoint
+    private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
     private lateinit var sharedPrefManager: SharedPrefManager
 
     @Before
@@ -35,7 +35,7 @@ class UrlUtilsTest {
         every { mockEntryPoint.sharedPrefManager() } returns mockSpm
 
         mockkStatic(EntryPointAccessors::class)
-        every { EntryPointAccessors.fromApplication(any(), AutoSyncEntryPoint::class.java) } returns mockEntryPoint
+        every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
 
         mockkObject(MainApplication.Companion)
         val mockContext = mockk<Context>()

@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -66,6 +67,9 @@ class UploadManagerTest {
     @Before
     fun setup() {
         mockkStatic(Log::class)
+        io.mockk.mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mockHeader"
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
@@ -96,6 +100,7 @@ class UploadManagerTest {
     @After
     fun tearDown() {
         unmockkAll()
+        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
     }
 
     @Test
@@ -190,5 +195,65 @@ class UploadManagerTest {
         uploadManager.uploadRating()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Rating) }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos notifies listener when no photos to upload`() = testScope.runTest {
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns emptyList()
+        val listener: OnSuccessListener = mockk(relaxed = true)
+
+        uploadManager.uploadSubmitPhotos(listener)
+        advanceUntilIdle()
+
+        coVerify { listener.onSuccess("No photos to upload") }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos uploads photos successfully`() = testScope.runTest {
+        val photoId = "photo123"
+        val mockSerialized = com.google.gson.JsonObject().apply {
+            addProperty("test", "data")
+        }
+        val mockPhotosList = listOf(Pair(photoId, mockSerialized))
+
+        val mockResponseObject = com.google.gson.JsonObject().apply {
+            addProperty("id", "uploaded123")
+            addProperty("rev", "rev123")
+        }
+
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
+        coEvery { apiInterface.postDoc(any(), any(), any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
+
+        val listener: OnSuccessListener = mockk(relaxed = true)
+
+        uploadManager.uploadSubmitPhotos(listener)
+        advanceUntilIdle()
+
+        coVerify { submissionsRepository.markPhotoUploaded(photoId, "rev123", "uploaded123") }
+    }
+
+    @Test
+    fun `uploadResource returns early when no resources to upload`() = testScope.runTest {
+        coEvery { userRepository.getUserModelSuspending() } returns null
+        coEvery { resourcesRepository.getUnuploadedResources(any()) } returns emptyList()
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify { listener.onSuccess("No resources to upload") }
+    }
+
+    @Test
+    fun `uploadResource notifies listener on failure`() = testScope.runTest {
+        val errorMessage = "Test error"
+        coEvery { userRepository.getUserModelSuspending() } throws Exception(errorMessage)
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify { listener.onSuccess("Resource upload failed: $errorMessage") }
     }
 }
