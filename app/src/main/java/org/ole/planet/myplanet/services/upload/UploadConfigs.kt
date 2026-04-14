@@ -241,13 +241,4 @@ class UploadConfigs @Inject constructor(
             rating.isUpdated = false
         }
     )
-
-    val News = UploadConfig(
-        modelClass = RealmNews::class,
-        endpoint = "news",
-        queryBuilder = { query -> query },  // Upload all news items
-        serializer = UploadSerializer.Simple(voicesRepository::serializeNews),
-        idExtractor = { it.id },
-        dbIdExtractor = { it._id }  // Enables POST/PUT logic
-    )
 }

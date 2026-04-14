@@ -36,7 +36,7 @@ class VoicesRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
-    override suspend fun getNewsForUpload(serializeNews: (RealmNews) -> JsonObject): List<NewsUploadData> {
+    override suspend fun getNewsForUpload(): List<NewsUploadData> {
         return withRealm { realm ->
             realm.where(RealmNews::class.java)
                 .findAll()
@@ -570,7 +570,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
     }
 
-    override fun serializeNews(news: RealmNews): JsonObject {
+    private fun serializeNews(news: RealmNews): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("chat", news.chat)
         `object`.addProperty("message", news.message)
