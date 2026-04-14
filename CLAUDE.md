@@ -237,15 +237,15 @@ Activities, Chat, Configurations, Courses, Events, Feedback, Life, Notifications
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
 
 **Entry Points for Workers (11 entry point files):**
-- `AutoSyncEntryPoint`, `ApiClientEntryPoint`, `ApiInterfaceEntryPoint`
+- `NetworkDependenciesEntryPoint`, `NetworkDependenciesEntryPoint`, `NetworkDependenciesEntryPoint`
 - `ApplicationScopeEntryPoint`, `BroadcastServiceEntryPoint`, `DatabaseServiceEntryPoint`
 - `RepositoryEntryPoint`, `RetryQueueEntryPoint`, `ServiceEntryPoint`
-- `TeamsRepositoryEntryPoint`, `WorkerDependenciesEntryPoint`
+- `RepositoryDependenciesEntryPoint`, `CoreDependenciesEntryPoint`
 
 ```kotlin
 @EntryPoint
 @InstallIn(SingletonComponent::class)
-interface AutoSyncEntryPoint {
+interface NetworkDependenciesEntryPoint {
     fun apiInterface(): ApiInterface
     fun sharedPreferences(): SharedPreferences
 }
@@ -543,7 +543,7 @@ class AutoSyncWorker(
     override suspend fun doWork(): Result {
         val entryPoint = EntryPointAccessors.fromApplication(
             applicationContext,
-            AutoSyncEntryPoint::class.java
+            NetworkDependenciesEntryPoint::class.java
         )
         val apiInterface = entryPoint.apiInterface()
         // ... use injected dependencies

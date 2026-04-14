@@ -124,9 +124,10 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
     private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<RealmMyCourse>, lv: RecyclerView) {
         val names = courses.map { it.courseTitle ?: getString(R.string.untitled_course) }
-        val adapter = CheckboxAdapter(names) {
+        val adapter = CheckboxAdapter {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
         }
+        adapter.submitList(names)
         lv.layoutManager = LinearLayoutManager(requireActivity())
         lv.adapter = adapter
         alertDialog.show()

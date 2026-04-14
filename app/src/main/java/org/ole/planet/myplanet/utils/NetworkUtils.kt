@@ -25,20 +25,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 object NetworkUtils {
     private val coroutineScope: CoroutineScope by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(context, NetworkUtilsEntryPoint::class.java)
+        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
         entryPoint.applicationScope()
     }
 
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface NetworkUtilsEntryPoint {
-        @ApplicationScope
-        fun applicationScope(): CoroutineScope
-    }
+
 
     private val connectivityManager: ConnectivityManager by lazy {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -186,7 +181,7 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = EntryPointAccessors.fromApplication(context.applicationContext, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        val spm = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
         return spm.getCustomDeviceName()
     }
 
