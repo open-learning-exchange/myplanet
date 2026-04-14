@@ -8,6 +8,9 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import android.util.Log
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -40,6 +43,9 @@ class UserSessionManagerTest {
 
     @Before
     fun setup() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
+
         every { sharedPrefManager.getUserName() } returns "test_user"
 
         userSessionManager = UserSessionManager(
@@ -50,6 +56,11 @@ class UserSessionManagerTest {
             activitiesRepository = activitiesRepository,
             dispatcherProvider = dispatcherProvider
         )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
     }
 
     @Test
