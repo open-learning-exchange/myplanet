@@ -57,6 +57,13 @@ class FreeSpaceWorkerTest {
 
         // Mock application context for getOlePath
         every { context.applicationContext } returns context
+
+        // Ensure File.delete() returns true to allow code path
+        val mockFile = mockk<File>(relaxed = true)
+        every { mockFile.exists() } returns false
+        every { mockFile.isDirectory } returns false
+        every { mockFile.delete() } returns true
+        every { mockFile.length() } returns 0L
     }
 
     @After
