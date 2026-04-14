@@ -92,6 +92,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     fun checkDownloadResult(download: Download?) {
         lifecycleScope.launch(Dispatchers.Main.immediate) {
+            if (isFinishing || isDestroyed) return@launch
             customProgressDialog.show()
             customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
             customProgressDialog.setProgress(download?.progress ?: 0)
