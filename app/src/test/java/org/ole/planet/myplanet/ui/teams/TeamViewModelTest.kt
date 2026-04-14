@@ -40,12 +40,14 @@ class TeamViewModelTest {
     }
 
     @Test
-    fun `prepareTeamData sorts teams correctly leader then member then neither`() = runTest(testDispatcher) {
+    fun `loadTeams sorts teams correctly leader then member then neither`() = runTest(testDispatcher) {
         val teams = listOf(
             TeamSummary(_id = "team1", name = "Team 1", teamType = null, teamPlanetCode = null, createdDate = null, type = null, status = "active", teamId = null, description = null, services = null, rules = null),
             TeamSummary(_id = "team2", name = "Team 2", teamType = null, teamPlanetCode = null, createdDate = null, type = null, status = "active", teamId = null, description = null, services = null, rules = null),
             TeamSummary(_id = "team3", name = "Team 3", teamType = null, teamPlanetCode = null, createdDate = null, type = null, status = "active", teamId = null, description = null, services = null, rules = null)
         )
+
+        coEvery { teamsRepository.getTeamSummaries(any()) } returns teams
 
         coEvery { teamsRepository.getRecentVisitCounts(any()) } returns mapOf(
             "team1" to 0L,
@@ -60,7 +62,7 @@ class TeamViewModelTest {
             "team3" to TeamMemberStatus(isMember = true, isLeader = true, hasPendingRequest = false)
         )
 
-        viewModel.prepareTeamData(teams, "user1")
+        viewModel.loadTeams(fromDashboard = false, type = "team", userId = "user1")
         advanceUntilIdle()
 
         val data = viewModel.teamData.value
@@ -71,11 +73,13 @@ class TeamViewModelTest {
     }
 
     @Test
-    fun `prepareTeamData removes archived teams`() = runTest(testDispatcher) {
+    fun `loadTeams removes archived teams`() = runTest(testDispatcher) {
         val teams = listOf(
             TeamSummary(_id = "team1", name = "Team 1", teamType = null, teamPlanetCode = null, createdDate = null, type = null, status = "archived", teamId = null, description = null, services = null, rules = null),
             TeamSummary(_id = "team2", name = "Team 2", teamType = null, teamPlanetCode = null, createdDate = null, type = null, status = "active", teamId = null, description = null, services = null, rules = null)
         )
+
+        coEvery { teamsRepository.getTeamSummaries(any()) } returns teams
 
         coEvery { teamsRepository.getRecentVisitCounts(any()) } returns mapOf(
             "team2" to 0L
@@ -85,7 +89,7 @@ class TeamViewModelTest {
             "team2" to TeamMemberStatus(isMember = false, isLeader = false, hasPendingRequest = false)
         )
 
-        viewModel.prepareTeamData(teams, "user1")
+        viewModel.loadTeams(fromDashboard = false, type = "team", userId = "user1")
         advanceUntilIdle()
 
         val data = viewModel.teamData.value
@@ -94,8 +98,10 @@ class TeamViewModelTest {
     }
 
     @Test
-    fun `prepareTeamData with empty list returns empty without hitting repository`() = runTest(testDispatcher) {
-        viewModel.prepareTeamData(emptyList(), "user1")
+    fun `loadTeams with empty list returns empty without hitting details repository`() = runTest(testDispatcher) {
+        coEvery { teamsRepository.getTeamSummaries(any()) } returns emptyList()
+
+        viewModel.loadTeams(fromDashboard = false, type = "team", userId = "user1")
         advanceUntilIdle()
 
         val data = viewModel.teamData.value

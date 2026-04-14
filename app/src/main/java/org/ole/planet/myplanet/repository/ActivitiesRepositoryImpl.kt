@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -25,7 +24,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val userRepository: Lazy<UserRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -68,6 +68,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
+        val user = userRepository.get().getUserByName(userId)
+        val parentCode = user?.parentCode
+        val createdOn = user?.planetCode
+
         executeTransaction { realm ->
             val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
             activity.type = "visit"
@@ -76,10 +80,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
             activity.time = Date().time
             activity.user = userId
 
-            val user = realm.where(RealmUser::class.java).equalTo("name", userId).findFirst()
             if (user != null) {
-                activity.parentCode = user.parentCode
-                activity.createdOn = user.planetCode
+                activity.parentCode = parentCode
+                activity.createdOn = createdOn
             }
         }
     }
@@ -107,7 +110,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun logLogout(userName: String?) {
         executeTransaction { realm ->
-            getRecentLogin(realm)
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", io.realm.Sort.DESCENDING)
+                .findFirst()
                 ?.logoutTime = Date().time
         }
     }
@@ -284,23 +289,33 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun recordSyncActivity(userId: String) {
+        val user = userRepository.get().getUserById(userId)
+        if (user == null || user.id?.startsWith("guest") == true) {
+            return
+        }
+        val userName = user.name
+        val parentCode = user.parentCode
+        val createdOn = user.planetCode
+
         executeTransaction { realm ->
-            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            if (user == null || user.id?.startsWith("guest") == true) {
-                return@executeTransaction
-            }
             val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
-            activities.user = user.name
+            activities.user = userName
             activities._rev = null
             activities._id = null
-            activities.parentCode = user.parentCode
-            activities.createdOn = user.planetCode
+            activities.parentCode = parentCode
+            activities.createdOn = createdOn
             activities.type = "sync"
             activities.time = Date().time
         }
     }
 
-    override fun insertActivity(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
+    override suspend fun insertActivity(json: com.google.gson.JsonObject) {
+        executeTransaction { realm ->
+            insertActivityInternal(realm, json)
+        }
+    }
+
+    private fun insertActivityInternal(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
         val serverIdStr = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
         val loginTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", json)
         val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
@@ -332,10 +347,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getRecentLogin(realm: io.realm.Realm): RealmOfflineActivity? {
-        return realm.where(RealmOfflineActivity::class.java)
-            .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", io.realm.Sort.DESCENDING)
-            .findFirst()
+    override suspend fun getRecentLogin(): RealmOfflineActivity? {
+        return withRealm { realm ->
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", io.realm.Sort.DESCENDING)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): com.google.gson.JsonObject {
@@ -359,7 +376,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
@@ -369,7 +386,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            insertActivity(realm, jsonDoc)
+            insertActivityInternal(realm, jsonDoc)
         }
     }
 }
