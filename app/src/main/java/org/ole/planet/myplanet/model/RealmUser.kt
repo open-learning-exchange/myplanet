@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import android.content.SharedPreferences
 import android.util.Base64
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
@@ -15,15 +13,10 @@ import io.realm.annotations.RealmClass
 import java.io.File
 import java.io.InputStream
 import java.util.Locale
-import java.util.UUID
 import org.apache.commons.lang3.StringUtils
-import org.json.JSONException
-import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
 @RealmClass(name = "RealmUserModel")

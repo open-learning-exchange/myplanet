@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation

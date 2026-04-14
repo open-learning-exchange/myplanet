@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.utils.CourseRatingUtils
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText

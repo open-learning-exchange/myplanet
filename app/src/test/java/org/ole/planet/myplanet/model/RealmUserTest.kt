@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import io.mockk.MockKAnnotations
-import io.mockk.Runs
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.just

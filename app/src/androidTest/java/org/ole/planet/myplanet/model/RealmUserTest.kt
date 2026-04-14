@@ -16,8 +16,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.services.SharedPrefManager

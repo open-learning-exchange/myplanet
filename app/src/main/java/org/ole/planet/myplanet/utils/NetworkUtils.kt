@@ -11,10 +11,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +21,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 object NetworkUtils {
