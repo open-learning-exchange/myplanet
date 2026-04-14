@@ -148,21 +148,24 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
 
         guest = intent.getBooleanExtra("guest", false)
-        val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("auto_login", false)
 
-        if (guest) {
+        val spm = dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+        val username = spm.getNewLoginUsername()
+        val encryptedPassword = spm.getNewLoginPassword()
+        val password = if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedPassword) else null
+
+        if (guest && username != null) {
             resetGuestAsMember(username)
         }
 
-        if (autoLogin && username != null && password != null) {
+        if (username != null && password != null) {
+            spm.setNewLoginUsername(null)
+            spm.setNewLoginPassword(null)
             lifecycleScope.launch {
                 delay(500)
                 submitForm(username, password)
             }
         }
-
         getTeamMembers()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
