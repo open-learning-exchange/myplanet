@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.callback.OnSuccessListener
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
@@ -190,5 +191,29 @@ class UploadManagerTest {
         uploadManager.uploadRating()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Rating) }
+    }
+
+    @Test
+    fun `uploadResource returns early when no resources to upload`() = testScope.runTest {
+        coEvery { userRepository.getUserModelSuspending() } returns null
+        coEvery { resourcesRepository.getUnuploadedResources(any()) } returns emptyList()
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify { listener.onSuccess("No resources to upload") }
+    }
+
+    @Test
+    fun `uploadResource notifies listener on failure`() = testScope.runTest {
+        val errorMessage = "Test error"
+        coEvery { userRepository.getUserModelSuspending() } throws Exception(errorMessage)
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify { listener.onSuccess("Resource upload failed: $errorMessage") }
     }
 }
