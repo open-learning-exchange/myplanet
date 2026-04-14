@@ -13,7 +13,6 @@
         android:paddingTop="10dp"
         android:paddingBottom="10dp"
         android:layout_centerVertical="true" />
-
     <ImageView
         android:id="@+id/sharedIcon"
         android:layout_width="24dp"
@@ -25,5 +24,4 @@
         android:contentDescription="@string/already_shared"
         android:visibility="gone"
         app:tint="@color/mainColor" />
-
 </RelativeLayout>
