@@ -91,18 +91,16 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun checkDownloadResult(download: Download?) {
-        runOnUiThread {
-            if (!isFinishing && !isDestroyed) {
-                customProgressDialog.show()
-                customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
-                customProgressDialog.setProgress(download?.progress ?: 0)
-                if (download?.completeAll == true) {
-                    safelyDismissDialog()
-                    installApk(this, download.fileUrl)
-                } else {
-                    safelyDismissDialog()
-                    showError(customProgressDialog, download?.message)
-                }
+        lifecycleScope.launch(Dispatchers.Main.immediate) {
+            customProgressDialog.show()
+            customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
+            customProgressDialog.setProgress(download?.progress ?: 0)
+            if (download?.completeAll == true) {
+                safelyDismissDialog()
+                installApk(this@ProcessUserDataActivity, download.fileUrl)
+            } else {
+                safelyDismissDialog()
+                showError(customProgressDialog, download?.message)
             }
         }
     }
