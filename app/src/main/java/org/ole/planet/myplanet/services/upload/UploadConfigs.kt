@@ -196,8 +196,8 @@ class UploadConfigs @Inject constructor(
                 .isNull("_id").or().isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full { realm, submission, context ->
-            submissionsRepository.serializeExamResult(realm, submission, context, sharedPrefManager)
+        serializer = UploadSerializer.Async { submission ->
+            submissionsRepository.getExamUploadPayload(submission)
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services
 
 import android.app.Activity
 import android.app.ActivityManager
+import android.util.Log
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -208,7 +209,7 @@ class DownloadService : Service() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Download initialization failed", e)
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
         }
     }
@@ -388,6 +389,7 @@ class DownloadService : Service() {
     }
 
     companion object {
+        private const val TAG = "DownloadService"
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
@@ -416,7 +418,7 @@ class DownloadService : Service() {
                     try {
                         ContextCompat.startForegroundService(context, intent)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to start foreground service", e)
                         handleForegroundServiceError(context, urlsKey, fromSync)
                     }
                 } else {
@@ -426,7 +428,7 @@ class DownloadService : Service() {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
             }
@@ -446,7 +448,7 @@ class DownloadService : Service() {
                 }
                 context.startService(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to start service", e)
                 startDownloadWork(context, urlsKey, fromSync)
             }
         }

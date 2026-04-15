@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.ThemeManager
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -63,6 +64,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var loginSyncManager: LoginSyncManager
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var nameWatcher2: TextWatcher
@@ -148,15 +151,19 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
 
         guest = intent.getBooleanExtra("guest", false)
-        val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("auto_login", false)
 
-        if (guest) {
+        val encryptedUsername = sharedPrefManager.getNewLoginUsername()
+        val username = if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedUsername) else null
+        val encryptedPassword = sharedPrefManager.getNewLoginPassword()
+        val password = if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedPassword) else null
+
+        if (guest && username != null) {
             resetGuestAsMember(username)
         }
 
-        if (autoLogin && username != null && password != null) {
+        if (username != null && password != null) {
+            sharedPrefManager.setNewLoginUsername(null)
+            sharedPrefManager.setNewLoginPassword(null)
             lifecycleScope.launch {
                 delay(500)
                 submitForm(username, password)
