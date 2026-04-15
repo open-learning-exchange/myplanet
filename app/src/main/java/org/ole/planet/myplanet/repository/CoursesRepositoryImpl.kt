@@ -35,7 +35,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
-    private val ratingsRepository: RatingsRepository
+    private val ratingsRepository: RatingsRepository,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -55,12 +56,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-        val libraries: MutableList<RealmMyCourse> = ArrayList()
-        for (item in libs) {
-            item.isMyCourse = item.userId?.contains(userId) == true
-            libraries.add(item)
-        }
-        return libraries
+        return libs.onEach { it.isMyCourse = it.userId?.contains(userId) == true }
     }
 
     override fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
@@ -68,24 +64,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-        val libraries: MutableList<RealmMyCourse> = ArrayList()
-        for (item in libs) {
-            if (item.userId?.contains(userId) != true) {
-                libraries.add(item)
-            }
-        }
-        return libraries
+        return libs.filter { it.userId?.contains(userId) != true }
     }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
-        val myCourses: MutableList<RealmMyCourse> = ArrayList()
-        if (userId == null) return myCourses
-        for (course in courses) {
-            if (course.userId?.contains(userId) == true) {
-                myCourses.add(course)
-            }
-        }
-        return myCourses
+        if (userId == null) return emptyList()
+        return courses.filter { it.userId?.contains(userId) == true }
     }
 
     override suspend fun getMyCourses(userId: String): List<RealmMyCourse> {
@@ -115,6 +99,14 @@ class CoursesRepositoryImpl @Inject constructor(
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             course?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) return emptyList()
+        return withRealm { realm ->
+            val courses = realm.where(RealmMyCourse::class.java).`in`("courseId", courseIds.toTypedArray()).findAll()
+            realm.copyFromRealm(courses)
         }
     }
 
@@ -619,9 +611,30 @@ class CoursesRepositoryImpl @Inject constructor(
         userId: String?
     ): List<RealmMyCourse> {
         return withRealm { realm ->
-            val data = realm.where(RealmMyCourse::class.java).findAll()
+            var realmQuery = realm.where(RealmMyCourse::class.java)
 
-            var list: List<RealmMyCourse> = if (query.isEmpty()) {
+            if (tags.isNotEmpty()) {
+                val tagIds = tags.mapNotNull { it.id }.toTypedArray()
+                val linkedCourseIds = realm.where(RealmTag::class.java)
+                    .equalTo("db", "courses")
+                    .`in`("tagId", tagIds)
+                    .findAll()
+                    .mapNotNull { it.linkId }
+                    .toTypedArray()
+
+                if (linkedCourseIds.isEmpty()) {
+                    return@withRealm emptyList()
+                }
+                realmQuery = realmQuery.`in`("courseId", linkedCourseIds)
+            }
+
+            if (isMyCourseLib && !userId.isNullOrBlank()) {
+                realmQuery = realmQuery.equalTo("userId", userId)
+            }
+
+            val data = realmQuery.findAll()
+
+            val list: List<RealmMyCourse> = if (query.isEmpty()) {
                 realm.copyFromRealm(data)
             } else {
                 val queryParts = query.split(" ").filterNot { it.isEmpty() }
@@ -643,25 +656,50 @@ class CoursesRepositoryImpl @Inject constructor(
                 realm.copyFromRealm(filteredData)
             }
 
-            list = if (isMyCourseLib) {
-                getMyCourses(userId, list)
-            } else {
-                getAllCourses(userId, list)
+            if (!isMyCourseLib) {
+                list.forEach { it.isMyCourse = it.userId?.contains(userId) == true }
             }
 
-            if (tags.isEmpty()) {
-                return@withRealm list
-            }
-
-            val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-            val linkedCourseIds = realm.where(RealmTag::class.java)
-                .equalTo("db", "courses")
-                .`in`("tagId", tagIds)
-                .findAll()
-                .mapNotNull { it.linkId }
-                .toSet()
-
-            list.filter { linkedCourseIds.contains(it.courseId) }.distinct()
+            list.distinctBy { it.courseId }
         }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
+        }
+    }
+    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            insertCertification(realm, jsonDoc)
+        }
+    }
+
+    override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+        var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
+        if (certification == null) {
+            certification = realm.createObject(RealmCertification::class.java, id)
+        }
+        certification?.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", doc)
+        certification?.setCourseIds(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("courseIds", doc))
     }
 }

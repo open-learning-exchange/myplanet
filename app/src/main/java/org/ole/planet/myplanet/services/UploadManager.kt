@@ -19,8 +19,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
@@ -48,6 +46,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
             action(item)
         }
     }
+
 }
 
 @Singleton
@@ -75,46 +74,38 @@ class UploadManager @Inject constructor(
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
     }
 
-    fun uploadActivities(listener: OnSuccessListener?) {
-        val apiInterface = client.create(ApiInterface::class.java)
+    private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
+        withContext(dispatcherProvider.main) {
+            listener?.onSuccess(message)
+        }
+    }
 
+    fun uploadActivities(listener: OnSuccessListener?) {
         scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
-                withContext(dispatcherProvider.main) {
-                    listener?.onSuccess("Cannot upload activities: user model is null")
-                }
+                notifyListener(listener, "Cannot upload activities: user model is null")
                 return@launch
             }
 
             if (model.isManager()) {
-                withContext(dispatcherProvider.main) {
-                    listener?.onSuccess("Skipping activities upload for manager")
-                }
+                notifyListener(listener, "Skipping activities upload for manager")
                 return@launch
             }
 
             try {
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                apiInterface.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/myplanet_activities",
+                    MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
+                )
 
-                val response = try {
-                    apiInterface.getJsonObject(
-                        UrlUtils.header,
-                        "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
-                    )
-                } catch (e: Exception) {
-                    null
-                }
+                val response = apiInterface.getJsonObject(
+                    UrlUtils.header,
+                    "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
+                )
 
-                var `object` = response?.body()
+                var `object` = response.body()
 
                 if (`object` != null) {
                     val usages = `object`.getAsJsonArray("usages")
@@ -124,26 +115,16 @@ class UploadManager @Inject constructor(
                     `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, model)
                 }
 
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        `object`
-                    )
-                    withContext(dispatcherProvider.main) {
-                        listener?.onSuccess("My planet activities uploaded successfully")
-                    }
-                } catch (e: Exception) {
-                    withContext(dispatcherProvider.main) {
-                        listener?.onSuccess("Failed to upload activities: ${e.message}")
-                    }
-                }
+                apiInterface.postDoc(
+                    UrlUtils.header,
+                    "application/json",
+                    "${UrlUtils.getUrl()}/myplanet_activities",
+                    `object`
+                )
+                notifyListener(listener, "My planet activities uploaded successfully")
             } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(dispatcherProvider.main) {
-                    listener?.onSuccess("Failed to upload activities: ${e.message}")
-                }
+                Log.e(TAG, "Exception in UploadManager", e)
+                notifyListener(listener, "Failed to upload activities: ${e.message}")
             }
         }
     }
@@ -161,14 +142,10 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess(message)
-                }
+                notifyListener(listener, message)
             } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Error during result sync: ${e.message}")
-                }
+                Log.e(TAG, "Exception in UploadManager", e)
+                notifyListener(listener, "Error during result sync: ${e.message}")
             }
         }
     }
@@ -205,7 +182,7 @@ class UploadManager @Inject constructor(
                         userRepository.markAchievementUploaded(id, rev)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Exception in UploadManager", e)
                 }
             }
         }
@@ -225,13 +202,10 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         val photosToUpload = submissionsRepository.getUnuploadedPhotos()
 
         if (photosToUpload.isEmpty()) {
-            listener?.onSuccess("No photos to upload")
+            notifyListener(listener, "No photos to upload")
             return
         }
 
@@ -259,7 +233,7 @@ class UploadManager @Inject constructor(
                             }
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
@@ -279,16 +253,13 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         try {
             val user = userRepository.getUserModelSuspending()
 
             val resourcesToUpload = resourcesRepository.getUnuploadedResources(user)
 
             if (resourcesToUpload.isEmpty()) {
-                listener?.onSuccess("No resources to upload")
+                notifyListener(listener, "No resources to upload")
                 return
             }
 
@@ -307,7 +278,7 @@ class UploadManager @Inject constructor(
                                 successfulUpdates.add(Pair(resourceData, `object`))
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Exception in UploadManager", e)
                         }
                     }
 
@@ -342,7 +313,7 @@ class UploadManager @Inject constructor(
                             // We catch it here to prevent crashing the batch loop and prevent
                             // `isTransactionSuccessful` from being set to true, so we don't upload
                             // attachments for failed DB writes.
-                            e.printStackTrace()
+                            Log.e(TAG, "Exception in UploadManager", e)
                         }
 
                         if (isTransactionSuccessful) {
@@ -363,7 +334,7 @@ class UploadManager @Inject constructor(
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Log.e("UploadManager", "Error uploading attachments", e)
                                 }
                             }
                         }
@@ -371,15 +342,12 @@ class UploadManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            listener?.onSuccess("Resource upload failed: ${e.message}")
+            Log.e("UploadManager", "Resource upload failed", e)
+            notifyListener(listener, "Resource upload failed: ${e.message}")
         }
     }
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
@@ -403,7 +371,7 @@ class UploadManager @Inject constructor(
                         "Failed to upload personal resource: No response"
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Exception in UploadManager", e)
                     "Unable to upload resource: ${e.message}"
                 }
             }
@@ -446,9 +414,6 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
@@ -467,7 +432,7 @@ class UploadManager @Inject constructor(
                             teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
                         }
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
             }
@@ -475,19 +440,13 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("Cannot upload user activities: user model is null")
-            }
+            notifyListener(listener, "Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("Skipping user activities upload for manager")
-            }
+            notifyListener(listener, "Skipping user activities upload for manager")
             return
         }
 
@@ -506,7 +465,7 @@ class UploadManager @Inject constructor(
 
                         successfulUpdates[activityData.id] = `object`
                     } catch (e: java.io.IOException) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
@@ -516,48 +475,17 @@ class UploadManager @Inject constructor(
                 }
             }
 
-            uploadTeamActivitiesRefactored()
+            uploadTeamActivities()
 
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("User activities sync completed successfully")
-            }
+            notifyListener(listener, "User activities sync completed successfully")
         } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(dispatcherProvider.main) {
-                listener.onSuccess("Failed to upload user activities: ${e.message}")
-            }
+            Log.e(TAG, "Exception in UploadManager", e)
+            notifyListener(listener, "Failed to upload user activities: ${e.message}")
         }
     }
 
-    private suspend fun uploadTeamActivitiesRefactored() {
-        uploadCoordinator.upload(uploadConfigs.TeamActivitiesRefactored)
-    }
-
-    suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        val logsData = activitiesRepository.getUnuploadedTeamLogs()
-
-        val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
-
-        logsData.forEach { logData ->
-            try {
-                val `object` = apiInterface.postDoc(
-                    UrlUtils.header, "application/json",
-                    "${UrlUtils.getUrl()}/team_activities", logData.serialized
-                ).body()
-
-                if (`object` != null) {
-                    val id = getString("id", `object`)
-                    val rev = getString("rev", `object`)
-                    successfulUploads.add(org.ole.planet.myplanet.repository.TeamLogUploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (successfulUploads.isNotEmpty()) {
-            activitiesRepository.markTeamLogsUploaded(successfulUploads)
-        }
+    suspend fun uploadTeamActivities() {
+        uploadCoordinator.upload(uploadConfigs.TeamActivities)
     }
 
     suspend fun uploadRating() {
@@ -569,12 +497,8 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
-
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
-
-        val newsItems = voicesRepository.getNewsForUpload { voicesRepository.serializeNews(it) }
+        val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
@@ -655,7 +579,7 @@ class UploadManager @Inject constructor(
                             ))
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
@@ -694,5 +618,9 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadAdoptedSurveys() {
         uploadCoordinator.upload(uploadConfigs.AdoptedSurveys)
+    }
+
+    companion object {
+        private const val TAG = "UploadManager"
     }
 }

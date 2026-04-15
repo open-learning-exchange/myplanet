@@ -81,7 +81,9 @@ class AutoSyncWorker @AssistedInject constructor(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                configurationsRepository.checkHealth {
+                MainApplication.applicationScope.launch {
+                    val status = configurationsRepository.checkHealth()
+                    Log.d("AutoSyncWorker", "Health check completed with status: $status")
                     uploadToShelfService.uploadHealth()
                 }
             }

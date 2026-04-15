@@ -13,4 +13,5 @@ interface HealthRepository {
     suspend fun getUpdatedHealthForUser(userId: String): List<RealmHealthExamination>
     suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>)
     suspend fun updateExaminationUserId(id: String, userId: String)
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }
