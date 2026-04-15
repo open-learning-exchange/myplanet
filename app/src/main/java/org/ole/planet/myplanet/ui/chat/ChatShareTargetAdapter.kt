@@ -11,7 +11,12 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
 
-class ChatShareTargetAdapter(private val context: Context, private val expandableTitleList: List<String>, private val expandableDetailList: HashMap<String, List<String>>) : BaseExpandableListAdapter() {
+class ChatShareTargetAdapter(
+    private val context: Context,
+    private val expandableTitleList: List<String>,
+    private val expandableDetailList: HashMap<String, List<String>>,
+    private val sharedChildren: Set<String> = emptySet()
+) : BaseExpandableListAdapter() {
     override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
         return expandableDetailList[expandableTitleList[lstPosn]]?.get(expandedListPosition) ?: ""
     }
@@ -28,9 +33,11 @@ class ChatShareTargetAdapter(private val context: Context, private val expandabl
             reusedView = layoutInflater.inflate(R.layout.expandable_list_item, parent, false)
         }
         val expandedListTextView = reusedView.findViewById<View>(R.id.expandedListItem) as TextView
+        val sharedIcon = reusedView.findViewById<ImageView>(R.id.sharedIcon)
         expandedListTextView.text = expandedListText
         reusedView.setBackgroundColor(ContextCompat.getColor(parent.context, R.color.multi_select_grey))
         expandedListTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
+        sharedIcon?.visibility = if (expandedListText in sharedChildren) View.VISIBLE else View.GONE
         return reusedView
     }
 
