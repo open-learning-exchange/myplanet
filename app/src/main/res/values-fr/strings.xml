@@ -1216,5 +1216,6 @@
     <string name="no_achievement_added">Résumé des réalisations</string>
     <string name="no_references_added">Aucune référence ajoutée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
+    <string name="already_shared">Déjà partagé</string>
 
 </resources>

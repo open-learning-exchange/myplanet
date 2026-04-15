@@ -668,14 +668,12 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun leaveTeam(teamId: String, userId: String?) {
         if (teamId.isBlank() || userId.isNullOrBlank()) return
         executeTransaction { realm ->
-            val memberships = realm.where(RealmMyTeam::class.java)
+            realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
                 .equalTo("teamId", teamId)
                 .equalTo("docType", "membership")
                 .findAll()
-            memberships.forEach { member ->
-                member?.deleteFromRealm()
-            }
+                .deleteAllFromRealm()
         }
     }
 
