@@ -11,7 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.TableRow
+import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
@@ -349,14 +349,10 @@ class ChatDetailFragment : Fragment() {
 
         if (providersMap.isEmpty()) return
 
-        providersMap.keys.forEachIndexed { index, providerName ->
+        providersMap.keys.forEach { providerName ->
             val modelName = modelsMap[providerName.lowercase()] ?: "default-model"
 
             aiTableRow.addView(createProviderButton(currentContext, providerName, modelName))
-
-            if (index < providersMap.size - 1) {
-                aiTableRow.addView(createDivider(currentContext))
-            }
         }
         aiTableRow.getChildAt(0)?.performClick()
         isAiUnavailable = false
@@ -365,6 +361,9 @@ class ChatDetailFragment : Fragment() {
 
     private fun createProviderButton(context: Context, providerName: String, modelName: String): Button =
         Button(context).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(6, 0, 6, 0)
+            }
             text = providerName.lowercase(Locale.getDefault())
             setTextColor(ContextCompat.getColor(context, R.color.md_black_1000))
             textSize = 18f
@@ -373,14 +372,6 @@ class ChatDetailFragment : Fragment() {
             isAllCaps = false
             setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
             setOnClickListener { selectAI(this, providerName, modelName) }
-        }
-
-    private fun createDivider(context: Context): View =
-        View(context).apply {
-            layoutParams = TableRow.LayoutParams(1, TableRow.LayoutParams.MATCH_PARENT).apply {
-                setMargins(8, 0, 8, 0)
-            }
-            setBackgroundColor(ContextCompat.getColor(context, R.color.hint_color))
         }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
@@ -403,7 +394,7 @@ class ChatDetailFragment : Fragment() {
         binding.textGchatIndicator.visibility = View.GONE
     }
 
-    private fun updateButtonStyles(selectedButton: Button, aiTableRow: TableRow, context: Context) {
+    private fun updateButtonStyles(selectedButton: Button, aiTableRow: LinearLayout, context: Context) {
         for (i in 0 until aiTableRow.childCount) {
             val view = aiTableRow.getChildAt(i)
             if (view is Button) {
