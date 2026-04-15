@@ -10,8 +10,10 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
+import io.mockk.clearAllMocks
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import android.util.Log
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -57,10 +59,14 @@ class FreeSpaceWorkerTest {
 
         // Mock application context for getOlePath
         every { context.applicationContext } returns context
+
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
     }
 
     @After
     fun tearDown() {
+        clearAllMocks()
         unmockkAll()
     }
 
