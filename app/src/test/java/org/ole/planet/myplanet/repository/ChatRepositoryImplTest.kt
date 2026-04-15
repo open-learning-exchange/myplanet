@@ -19,15 +19,18 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import okhttp3.RequestBody
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
+import retrofit2.Response
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 class ChatRepositoryImplTest {
-
     private lateinit var chatRepository: ChatRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val mockRealm: Realm = mockk(relaxed = true)
@@ -162,5 +165,37 @@ class ChatRepositoryImplTest {
         chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2))
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
+    }
+
+    @Test
+    fun sendNewChatRequest_callsChatApiService() = runTest {
+        val query = "test query"
+        val user = "testUser"
+        val aiProvider = AiProvider("OpenAI", "GPT-4")
+        val mockResponse = Response.success(ChatResponse())
+
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendNewChatRequest(query, user, aiProvider)
+
+        assertEquals(mockResponse, result)
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<RequestBody>()) }
+    }
+
+    @Test
+    fun sendContinueChatRequest_callsChatApiService() = runTest {
+        val message = "test message"
+        val user = "testUser"
+        val aiProvider = AiProvider("OpenAI", "GPT-4")
+        val id = "chat-123"
+        val rev = "1-rev"
+        val mockResponse = Response.success(ChatResponse())
+
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendContinueChatRequest(message, user, aiProvider, id, rev)
+
+        assertEquals(mockResponse, result)
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<RequestBody>()) }
     }
 }
