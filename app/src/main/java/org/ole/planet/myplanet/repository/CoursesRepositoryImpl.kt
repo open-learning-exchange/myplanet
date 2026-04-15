@@ -56,12 +56,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-        val libraries: MutableList<RealmMyCourse> = ArrayList()
-        for (item in libs) {
-            item.isMyCourse = item.userId?.contains(userId) == true
-            libraries.add(item)
-        }
-        return libraries
+        return libs.onEach { it.isMyCourse = it.userId?.contains(userId) == true }
     }
 
     override fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
@@ -69,24 +64,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-        val libraries: MutableList<RealmMyCourse> = ArrayList()
-        for (item in libs) {
-            if (item.userId?.contains(userId) != true) {
-                libraries.add(item)
-            }
-        }
-        return libraries
+        return libs.filter { it.userId?.contains(userId) != true }
     }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
-        val myCourses: MutableList<RealmMyCourse> = ArrayList()
-        if (userId == null) return myCourses
-        for (course in courses) {
-            if (course.userId?.contains(userId) == true) {
-                myCourses.add(course)
-            }
-        }
-        return myCourses
+        if (userId == null) return emptyList()
+        return courses.filter { it.userId?.contains(userId) == true }
     }
 
     override suspend fun getMyCourses(userId: String): List<RealmMyCourse> {
@@ -628,9 +611,30 @@ class CoursesRepositoryImpl @Inject constructor(
         userId: String?
     ): List<RealmMyCourse> {
         return withRealm { realm ->
-            val data = realm.where(RealmMyCourse::class.java).findAll()
+            var realmQuery = realm.where(RealmMyCourse::class.java)
 
-            var list: List<RealmMyCourse> = if (query.isEmpty()) {
+            if (tags.isNotEmpty()) {
+                val tagIds = tags.mapNotNull { it.id }.toTypedArray()
+                val linkedCourseIds = realm.where(RealmTag::class.java)
+                    .equalTo("db", "courses")
+                    .`in`("tagId", tagIds)
+                    .findAll()
+                    .mapNotNull { it.linkId }
+                    .toTypedArray()
+
+                if (linkedCourseIds.isEmpty()) {
+                    return@withRealm emptyList()
+                }
+                realmQuery = realmQuery.`in`("courseId", linkedCourseIds)
+            }
+
+            if (isMyCourseLib && !userId.isNullOrBlank()) {
+                realmQuery = realmQuery.equalTo("userId", userId)
+            }
+
+            val data = realmQuery.findAll()
+
+            val list: List<RealmMyCourse> = if (query.isEmpty()) {
                 realm.copyFromRealm(data)
             } else {
                 val queryParts = query.split(" ").filterNot { it.isEmpty() }
@@ -652,25 +656,11 @@ class CoursesRepositoryImpl @Inject constructor(
                 realm.copyFromRealm(filteredData)
             }
 
-            list = if (isMyCourseLib) {
-                getMyCourses(userId, list)
-            } else {
-                getAllCourses(userId, list)
+            if (!isMyCourseLib) {
+                list.forEach { it.isMyCourse = it.userId?.contains(userId) == true }
             }
 
-            if (tags.isEmpty()) {
-                return@withRealm list
-            }
-
-            val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-            val linkedCourseIds = realm.where(RealmTag::class.java)
-                .equalTo("db", "courses")
-                .`in`("tagId", tagIds)
-                .findAll()
-                .mapNotNull { it.linkId }
-                .toSet()
-
-            list.filter { linkedCourseIds.contains(it.courseId) }.distinct()
+            list.distinctBy { it.courseId }
         }
     }
 
