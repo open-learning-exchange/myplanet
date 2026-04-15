@@ -52,4 +52,5 @@ interface SubmissionsRepository {
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun insertSubmission(mRealm: io.realm.Realm, submission: com.google.gson.JsonObject)
     suspend fun getExamUploadPayload(submission: org.ole.planet.myplanet.model.RealmSubmission): com.google.gson.JsonObject
+    fun serializeSubmission(mRealm: io.realm.Realm, submission: org.ole.planet.myplanet.model.RealmSubmission, context: android.content.Context, source: String, parentCode: String): com.google.gson.JsonObject
 }
