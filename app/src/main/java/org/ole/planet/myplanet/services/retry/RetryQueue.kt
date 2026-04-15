@@ -10,7 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.repository.retry.RetryRepository
+import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @Singleton

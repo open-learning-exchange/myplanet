@@ -9,6 +9,7 @@ import retrofit2.Response
 interface ChatRepository {
     suspend fun sendNewChatRequest(query: String, user: String?, aiProvider: AiProvider): Response<ChatResponse>
     suspend fun sendContinueChatRequest(message: String, user: String?, aiProvider: AiProvider, id: String, rev: String): Response<ChatResponse>
+    suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>?
     suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun saveNewChat(chat: JsonObject)

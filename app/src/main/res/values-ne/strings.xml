@@ -1212,5 +1212,6 @@
     <string name="no_achievement_added">उपलब्धिहरूको सारांश</string>
     <string name="no_references_added">कुनै सन्दर्भ थपिएको छैन</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
+    <string name="already_shared">पहिले नै साझा गरिएको</string>
 
 </resources>

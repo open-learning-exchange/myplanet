@@ -20,13 +20,17 @@ import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
 import retrofit2.Response
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val chatApiService: ChatApiService
+    private val chatApiService: ChatApiService,
+    private val serverUrlMapper: ServerUrlMapper,
+    private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
 
     override suspend fun sendNewChatRequest(
@@ -51,6 +55,14 @@ class ChatRepositoryImpl @Inject constructor(
         val jsonContent = JsonUtils.gson.toJson(continueChatData)
         val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
         return chatApiService.sendChatRequest(requestBody)
+    }
+
+    override suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>? {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+            isServerReachable(url)
+        }
+        return chatApiService.fetchAiProviders()
     }
 
     override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {

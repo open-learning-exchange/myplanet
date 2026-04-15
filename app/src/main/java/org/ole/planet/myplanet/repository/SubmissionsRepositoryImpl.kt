@@ -30,7 +30,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val teamsRepositoryProvider: Provider<TeamsRepository>
+    private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
@@ -703,7 +705,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = mutableListOf<com.google.gson.JsonObject>()
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
@@ -858,53 +860,104 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override fun serializeExamResult(mRealm: io.realm.Realm, sub: RealmSubmission, context: android.content.Context, spm: org.ole.planet.myplanet.services.SharedPrefManager): JsonObject {
+    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
         val `object` = JsonObject()
-        val user = mRealm.where(RealmUser::class.java).equalTo("id", sub.userId).findFirst()
-        var examId = sub.parentId
-        if (sub.parentId?.contains("@") == true) {
-            examId = sub.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
+        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+        var examId = submission.parentId
+        if (submission.parentId?.contains("@") == true) {
+            examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
         }
         val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
-        if (!android.text.TextUtils.isEmpty(sub._id)) {
-            `object`.addProperty("_id", sub._id)
+        if (!android.text.TextUtils.isEmpty(submission._id)) {
+            `object`.addProperty("_id", submission._id)
         }
-        if (!android.text.TextUtils.isEmpty(sub._rev)) {
-            `object`.addProperty("_rev", sub._rev)
+        if (!android.text.TextUtils.isEmpty(submission._rev)) {
+            `object`.addProperty("_rev", submission._rev)
         }
-        `object`.addProperty("parentId", sub.parentId)
-        `object`.addProperty("type", sub.type)
+        `object`.addProperty("parentId", submission.parentId)
+        `object`.addProperty("type", submission.type)
 
-        if (sub.teamObject != null) {
+        if (submission.teamObject != null) {
             val teamJson = JsonObject()
-            teamJson.addProperty("_id", sub.teamObject?._id)
-            teamJson.addProperty("name", sub.teamObject?.name)
-            teamJson.addProperty("type", sub.teamObject?.type)
+            teamJson.addProperty("_id", submission.teamObject?._id)
+            teamJson.addProperty("name", submission.teamObject?.name)
+            teamJson.addProperty("type", submission.teamObject?.type)
             `object`.add("team", teamJson)
         }
 
-        `object`.addProperty("grade", sub.grade)
-        `object`.addProperty("startTime", sub.startTime)
-        `object`.addProperty("lastUpdateTime", sub.lastUpdateTime)
-        `object`.addProperty("status", sub.status)
+        `object`.addProperty("grade", submission.grade)
+        `object`.addProperty("startTime", submission.startTime)
+        `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
+        `object`.addProperty("status", submission.status)
         `object`.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
         `object`.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
         `object`.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
-        `object`.addProperty("sender", sub.sender)
-        `object`.addProperty("source", spm.getPlanetCode())
-        `object`.addProperty("parentCode", spm.getParentCode())
-        `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: io.realm.RealmList()))
+        `object`.addProperty("sender", submission.sender)
+        `object`.addProperty("source", sharedPrefManager.getPlanetCode())
+        `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
+        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
         if (exam != null) {
             `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
         } else {
-            val parent = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(sub.parent, JsonObject::class.java)
+            val parent = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        if (android.text.TextUtils.isEmpty(sub.user)) {
+        if (android.text.TextUtils.isEmpty(submission.user)) {
             `object`.add("user", user?.serialize())
         } else {
-            `object`.add("user", com.google.gson.JsonParser.parseString(sub.user))
+            `object`.add("user", com.google.gson.JsonParser.parseString(submission.user))
         }
-        return `object`
+        `object`
+    }
+
+    override fun serializeSubmission(mRealm: io.realm.Realm, submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject {
+        val jsonObject = JsonObject()
+
+        try {
+            var examId = submission.parentId
+            if (submission.parentId?.contains("@") == true) {
+                examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
+            }
+            val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+
+            if (!submission._id.isNullOrEmpty()) {
+                jsonObject.addProperty("_id", submission._id)
+            }
+            if (!submission._rev.isNullOrEmpty()) {
+                jsonObject.addProperty("_rev", submission._rev)
+            }
+
+            jsonObject.addProperty("parentId", submission.parentId ?: "")
+            jsonObject.addProperty("type", submission.type ?: "survey")
+            jsonObject.addProperty("grade", submission.grade)
+            jsonObject.addProperty("startTime", submission.startTime)
+            jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
+            jsonObject.addProperty("status", submission.status ?: "pending")
+            jsonObject.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+            jsonObject.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+            jsonObject.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+            jsonObject.addProperty("sender", submission.sender)
+            jsonObject.addProperty("source", source)
+            jsonObject.addProperty("parentCode", parentCode)
+            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+            if (exam != null) {
+                jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+            } else if (!submission.parent.isNullOrEmpty()) {
+                jsonObject.add("parent", com.google.gson.JsonParser.parseString(submission.parent))
+            }
+
+            if (!submission.user.isNullOrEmpty()) {
+                val userJson = com.google.gson.JsonParser.parseString(submission.user).asJsonObject
+                if (submission.membershipDoc != null) {
+                    val membershipJson = JsonObject()
+                    membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
+                    userJson.add("membershipDoc", membershipJson)
+                }
+                jsonObject.add("user", userJson)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return jsonObject
     }
 }
