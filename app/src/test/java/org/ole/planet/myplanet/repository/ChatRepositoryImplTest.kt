@@ -31,10 +31,8 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 class ChatRepositoryImplTest {
-
     private lateinit var chatRepository: ChatRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
-    private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val mockRealm: Realm = mockk(relaxed = true)
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
