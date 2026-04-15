@@ -150,10 +150,8 @@ class BecomeMemberActivity : BaseActivity() {
                     val userName = obj["name"].asString
                     val securityCallback = object : OnSecurityDataListener {
                         override fun onSecurityDataUpdated() {
-                            runOnUiThread {
-                                customProgressDialog.dismiss()
-                                autoLoginNewMember(info.username, info.password)
-                            }
+                            customProgressDialog.dismiss()
+                            autoLoginNewMember(info.username, info.password)
                         }
                     }
                     startUpload("becomeMember", userName, securityCallback)
