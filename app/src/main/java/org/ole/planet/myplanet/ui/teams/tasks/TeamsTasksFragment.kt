@@ -13,6 +13,7 @@ import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.fragment.app.viewModels
+import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -35,7 +36,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
-import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
@@ -242,6 +242,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             updateTasks()
         }
 
+        teamViewModel.loadTasks(teamId)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -255,8 +257,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     }
                 }
                 launch {
-                    teamsRepository.getTasksByTeamId(teamId).collect { tasks ->
-                        teamViewModel.taskList.value = tasks
+                    teamViewModel.taskList.collectLatest { tasks ->
                         updateTasks()
                     }
                 }

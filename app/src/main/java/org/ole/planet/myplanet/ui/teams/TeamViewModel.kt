@@ -33,7 +33,18 @@ class TeamViewModel @Inject constructor(
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
 
-    val taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
+    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
+    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
+
+    fun loadTasks(teamId: String) {
+        viewModelScope.launch {
+            withContext(dispatcherProvider.io) {
+                teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+                    _taskList.value = tasks
+                }
+            }
+        }
+    }
 
     private var currentTeams: List<TeamSummary> = emptyList()
     private var currentSearchQuery: String = ""

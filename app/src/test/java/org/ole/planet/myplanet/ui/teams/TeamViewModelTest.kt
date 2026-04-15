@@ -15,6 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamMemberStatus
@@ -112,10 +113,15 @@ class TeamViewModelTest {
         coVerify(exactly = 0) { teamsRepository.getTeamMemberStatuses(any(), any()) }
     }
 
+
     @Test
-    fun `taskList state is retained across simulated rotation`() {
+    fun `taskList state is updated when loadTasks is called`() = runTest(testDispatcher) {
         val tasks = listOf(RealmTeamTask().apply { id = "task1" })
-        viewModel.taskList.value = tasks
+        coEvery { teamsRepository.getTasksByTeamId("team1") } returns flowOf(tasks)
+
+        viewModel.loadTasks("team1")
+        advanceUntilIdle()
+
         assertEquals(1, viewModel.taskList.value.size)
         assertEquals("task1", viewModel.taskList.value[0].id)
     }
