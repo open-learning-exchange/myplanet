@@ -10,12 +10,12 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -24,7 +24,8 @@ class UploadCoordinator @Inject constructor(
     private val databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
-    private val retryQueue: RetryQueue
+    private val retryQueue: RetryQueue,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     companion object {
@@ -33,7 +34,7 @@ class UploadCoordinator @Inject constructor(
 
     suspend fun <T : RealmObject> upload(
         config: UploadConfig<T>
-    ): UploadResult<Int> = withContext(Dispatchers.IO) {
+    ): UploadResult<Int> = withContext(dispatcherProvider.io) {
         try {
             val itemsToUpload = queryItemsToUpload(config)
 
