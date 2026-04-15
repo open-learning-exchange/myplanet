@@ -11,18 +11,17 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.async
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.sync.Mutex
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.repository.retry.RetryRepository
+import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @OptIn(ExperimentalCoroutinesApi::class)

@@ -119,6 +119,14 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
+        if (courseIds.isEmpty()) return emptyList()
+        return withRealm { realm ->
+            val courses = realm.where(RealmMyCourse::class.java).`in`("courseId", courseIds.toTypedArray()).findAll()
+            realm.copyFromRealm(courses)
+        }
+    }
+
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
         return getCourseResources(courseId, isOffline = false)
     }
@@ -691,7 +699,17 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmCertification.insert(realm, jsonDoc)
+            insertCertification(realm, jsonDoc)
         }
+    }
+
+    override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+        var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
+        if (certification == null) {
+            certification = realm.createObject(RealmCertification::class.java, id)
+        }
+        certification?.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", doc)
+        certification?.setCourseIds(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("courseIds", doc))
     }
 }

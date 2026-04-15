@@ -51,9 +51,10 @@ object ServiceModule {
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
         @ApplicationScope scope: CoroutineScope,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository)
     }
 
     @Provides

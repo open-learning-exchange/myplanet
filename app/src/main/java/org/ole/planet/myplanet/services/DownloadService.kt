@@ -25,7 +25,6 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
@@ -35,9 +34,9 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.services.DownloadWorker
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
