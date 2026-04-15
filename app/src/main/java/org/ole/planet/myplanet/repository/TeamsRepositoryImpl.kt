@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -53,7 +52,6 @@ class TeamsRepositoryImpl @Inject constructor(
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
-    private val apiInterface: ApiInterface,
     private val userRepository: UserRepository,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
     override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
@@ -1386,23 +1384,23 @@ class TeamsRepositoryImpl @Inject constructor(
             val concatenatedLink = "$baseUrl/$link"
             concatenatedLinks.add(concatenatedLink)
         }
-        org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(org.ole.planet.myplanet.MainApplication.context, ArrayList(concatenatedLinks), true)
+        org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
     }
 
-    override fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
-        val status = org.ole.planet.myplanet.utils.JsonUtils.getString("status", doc)
+    override fun insertMyTeam(realm: Realm, doc: JsonObject) {
+        val status = JsonUtils.getString("status", doc)
         if (status == "archived") {
             return
         }
 
-        val teamId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
-        val docType = org.ole.planet.myplanet.utils.JsonUtils.getString("docType", doc)
-        val userId = org.ole.planet.myplanet.utils.JsonUtils.getString("userId", doc)
-        val teamIdField = org.ole.planet.myplanet.utils.JsonUtils.getString("teamId", doc)
+        val teamId = JsonUtils.getString("_id", doc)
+        val docType = JsonUtils.getString("docType", doc)
+        val userId = JsonUtils.getString("userId", doc)
+        val teamIdField = JsonUtils.getString("teamId", doc)
 
         if (docType == "membership" && userId.isNotBlank() && teamIdField.isNotBlank()) {
             // Server accepted the request (possibly as a new doc); remove any stale request records
-            realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+            realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamIdField)
                 .equalTo("userId", userId)
                 .equalTo("docType", "request")
@@ -1410,7 +1408,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 .deleteAllFromRealm()
         } else if (docType == "request" && userId.isNotBlank() && teamIdField.isNotBlank()) {
             // Skip stale request record if the user is already a member
-            val alreadyMember = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java)
+            val alreadyMember = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamIdField)
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
@@ -1418,22 +1416,22 @@ class TeamsRepositoryImpl @Inject constructor(
             if (alreadyMember) return
         }
 
-        var myTeams = realm.where(org.ole.planet.myplanet.model.RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        var myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
         if (myTeams == null) {
-            myTeams = realm.createObject(org.ole.planet.myplanet.model.RealmMyTeam::class.java, teamId)
+            myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
         }
         myTeams?.let {
-            org.ole.planet.myplanet.model.RealmMyTeam.populateTeamFields(doc, it, true)
+            RealmMyTeam.populateTeamFields(doc, it, true)
             processDescription(it.description)
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -1442,32 +1440,47 @@ class TeamsRepositoryImpl @Inject constructor(
             insertMyTeam(realm, jsonDoc)
         }
     }
-    override fun bulkInsertTasksFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmTeamTask.insert(realm, jsonDoc)
+            RealmTeamTask.insert(realm, jsonDoc)
         }
     }
-    override fun bulkInsertTeamActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertTeamActivitiesFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertTeamLog(realm, jsonDoc)
+        for (json in documentList) {
+            var tag = realm.where(RealmTeamLog::class.java)
+                .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
+            if (tag == null) {
+                tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
+            }
+            if (tag != null) {
+                tag._rev = JsonUtils.getString("_rev", json)
+                tag._id = JsonUtils.getString("_id", json)
+                tag.type = JsonUtils.getString("type", json)
+                tag.user = JsonUtils.getString("user", json)
+                tag.createdOn = JsonUtils.getString("createdOn", json)
+                tag.parentCode = JsonUtils.getString("parentCode", json)
+                tag.time = JsonUtils.getLong("time", json)
+                tag.teamId = JsonUtils.getString("teamId", json)
+                tag.teamType = JsonUtils.getString("teamType", json)
+            }
         }
     }
 }
