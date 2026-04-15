@@ -9,6 +9,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.JsonArray
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
@@ -201,54 +202,67 @@ class ChatHistoryAdapter(
             )
         }
 
-        val isInNewsList = newsList.any { newsItem ->
-            newsItem.newsId == item._id
-        }
+        holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
 
-        if (isInNewsList) {
-            holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)
-        } else {
-            holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
-            holder.rowChatHistoryBinding.shareChat.setOnClickListener {
-                val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
-                var dialog: AlertDialog? = null
+        holder.rowChatHistoryBinding.shareChat.setOnClickListener {
+            val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
+            var dialog: AlertDialog? = null
 
-                expandableDetailList = getData() as HashMap<String, List<String>>
-                expandableTitleList = ArrayList(expandableDetailList.keys)
-                expandableListAdapter = ChatShareTargetAdapter(context, expandableTitleList, expandableDetailList)
-                chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
+            val sharedIds = getSharedViewInIds(item._id)
+            val isCommunityShared = shareTargets.community?._id?.let { it in sharedIds } == true
+            val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
+            expandableDetailList = getData() as HashMap<String, List<String>>
+            expandableTitleList = ArrayList(expandableDetailList.keys)
+            expandableListAdapter = ChatShareTargetAdapter(context, expandableTitleList, expandableDetailList, sharedChildren)
+            chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
 
-                chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
-                    if (expandableTitleList[groupPosition] == context.getString(R.string.share_with_team_enterprise)) {
-                        val section = expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition)
-                        if (section == context.getString(R.string.teams)) {
-                            showGrandChildRecyclerView(shareTargets.teams, context.getString(R.string.teams), item)
-                        } else {
-                            showGrandChildRecyclerView(shareTargets.enterprises, context.getString(R.string.enterprises), item)
-                        }
+            chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
+                if (expandableTitleList[groupPosition] == context.getString(R.string.share_with_team_enterprise)) {
+                    val section = expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition)
+                    if (section == context.getString(R.string.teams)) {
+                        showGrandChildRecyclerView(shareTargets.teams, context.getString(R.string.teams), item, sharedIds)
                     } else {
-                        showEditTextAndShareButton(shareTargets.community, context.getString(R.string.community), item)
+                        showGrandChildRecyclerView(shareTargets.enterprises, context.getString(R.string.enterprises), item, sharedIds)
                     }
-                    dialog?.dismiss()
-                    false
+                } else if (!isCommunityShared) {
+                    showEditTextAndShareButton(shareTargets.community, context.getString(R.string.community), item)
                 }
-
-                val builder = AlertDialog.Builder(context)
-                builder.setView(chatShareDialogBinding.root)
-                builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
-                    dialog?.dismiss()
-                }
-                dialog = builder.create()
-
-                val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
-                dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
-
-                dialog.show()
+                dialog?.dismiss()
+                false
             }
+
+            val builder = AlertDialog.Builder(context)
+            builder.setView(chatShareDialogBinding.root)
+            builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
+                dialog?.dismiss()
+            }
+            dialog = builder.create()
+
+            val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
+            dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
+
+            dialog.show()
         }
     }
 
-    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory) {
+    private fun getSharedViewInIds(chatId: String?): Set<String> {
+        if (chatId == null) return emptySet()
+        return newsList
+            .filter { it.newsId == chatId }
+            .flatMap { news ->
+                try {
+                    val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                    array.mapNotNull { elem ->
+                        if (elem.isJsonObject) elem.asJsonObject.get("_id")?.asString else null
+                    }
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }
+            .toSet()
+    }
+
+    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory, sharedIds: Set<String> = emptySet()) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 
@@ -258,7 +272,7 @@ class ChatHistoryAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val teamSelectionAdapter = TeamsSelectionAdapter(section) { selectedItem ->
+        val teamSelectionAdapter = TeamsSelectionAdapter(section, sharedIds) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }
@@ -321,14 +335,12 @@ class ChatHistoryAdapter(
 
     private fun getData(): Map<String, List<String>> {
         val expandableListDetail: MutableMap<String, List<String>> = HashMap()
-        val community: MutableList<String> = ArrayList()
-        community.add(context.getString(R.string.community))
+        expandableListDetail[context.getString(R.string.share_with_community)] = listOf(context.getString(R.string.community))
 
         val teams: MutableList<String> = ArrayList()
         teams.add(context.getString(R.string.teams))
         teams.add(context.getString(R.string.enterprises))
 
-        expandableListDetail[context.getString(R.string.share_with_community)] = community
         expandableListDetail[context.getString(R.string.share_with_team_enterprise)] = teams
         return expandableListDetail
     }
