@@ -12,6 +12,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
+import android.util.Log
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -77,7 +78,7 @@ class UserSessionManager @Inject constructor(
                 val model = getUserModel()
                 activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in logoutAsync", e)
             }
         }
     }
@@ -125,7 +126,7 @@ class UserSessionManager @Inject constructor(
                 )
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in setResourceOpenCount", e)
             }
         }
     }
@@ -145,6 +146,7 @@ class UserSessionManager @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "UserSessionManager"
         const val KEY_LOGIN = "login"
         const val KEY_RESOURCE_OPEN = "visit"
         const val KEY_RESOURCE_DOWNLOAD = "download"

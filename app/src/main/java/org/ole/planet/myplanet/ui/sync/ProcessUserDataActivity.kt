@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -46,11 +45,15 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
 import org.ole.planet.myplanet.utils.SecurePrefs
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     @Inject
     lateinit var prefData: SharedPrefManager
 
@@ -214,7 +217,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
         }
     }
@@ -223,14 +226,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
             val activity = this@ProcessUserDataActivity
 
             suspend fun checkAllOperationsComplete() {
                 if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()
                             Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
@@ -274,14 +277,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 }
             })
 
-            applicationScope.launch(Dispatchers.IO) {
+            applicationScope.launch(dispatcherProvider.io) {
                 val success = uploadManager.uploadFeedback()
                 checkAllOperationsComplete()
             }
 
             uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    applicationScope.launch(Dispatchers.IO) {
+                    applicationScope.launch(dispatcherProvider.io) {
                         uploadManager.uploadTeams()
                         checkAllOperationsComplete()
                     }
@@ -312,7 +315,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             SecurePrefs.saveCredentials(this@ProcessUserDataActivity, settings, user?.name, password)
         }
         this.settings = settings
@@ -358,7 +361,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     securityCallback?.onSecurityDataUpdated()
                 }
             }
