@@ -166,7 +166,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
                 }
 
-                applyFiltersAndUpdateUI()
+                applyFiltersAndUpdateUI(scrollToTop = false)
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -319,6 +319,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 searchJob?.cancel()
                 searchJob = viewLifecycleOwner.lifecycleScope.launch {
                     delay(300)
+                    if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@launch
                     applyFiltersAndUpdateUI()
                 }
             }
@@ -328,18 +329,23 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         etSearch.addTextChangedListener(searchTextWatcher)
     }
 
-    private fun applyFiltersAndUpdateUI() {
+    private suspend fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {
         if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-        viewLifecycleOwner.lifecycleScope.launch {
-            val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-            val filteredList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
+
+        val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+        val filteredList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
+
+        if (scrollToTop) {
             adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() }) {
                 recyclerView.scrollToPosition(0)
             }
-            checkList(filteredList.size)
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        } else {
+            adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() })
         }
+
+        checkList(filteredList.size)
+        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     private fun setupCollectionsButton() {
@@ -475,7 +481,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             mediums.clear()
             subjects.clear()
             languages.clear()
-            applyFiltersAndUpdateUI()
+            viewLifecycleOwner.lifecycleScope.launch {
+                applyFiltersAndUpdateUI()
+            }
         }
     }
 
@@ -511,7 +519,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         chipCloud.addChips(searchTags)
         showTagText(searchTags, tvSelected)
-        applyFiltersAndUpdateUI()
+        viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
+        }
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -520,13 +530,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
-        applyFiltersAndUpdateUI()
+        viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
+        }
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            applyFiltersAndUpdateUI()
+            viewLifecycleOwner.lifecycleScope.launch {
+                applyFiltersAndUpdateUI()
+            }
         } else {
             for (tag in list ?: emptyList()) {
                 onTagClicked(tag)
@@ -547,7 +561,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
-        applyFiltersAndUpdateUI()
+        viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
+        }
     }
 
     override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
@@ -555,7 +571,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
-        applyFiltersAndUpdateUI()
+        viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
+        }
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
