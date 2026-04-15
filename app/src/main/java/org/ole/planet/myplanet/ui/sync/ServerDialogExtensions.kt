@@ -154,8 +154,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     serverAddressAdapter = ServerAddressAdapter(
         { serverListAddress ->
             val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
-            binding.inputServerUrl.setText(actualUrl)
-            binding.inputServerPassword.setText(ServerConfigUtils.getPinForUrl(actualUrl))
+            val pin = ServerConfigUtils.getPinForUrl(actualUrl)
             val protocol = if (
                 actualUrl == BuildConfig.PLANET_XELA_URL ||
                 actualUrl == BuildConfig.PLANET_SANPABLO_URL ||
@@ -163,9 +162,11 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
                 isLocalNetwork(actualUrl)
             ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
             prefData.setServerProtocol(protocol)
-            if (serverCheck) {
-                performSync(dialog)
+            val fullUrl = protocol + actualUrl
+            if (isUrlValid(fullUrl)) {
+                setUrlParts(fullUrl, pin)
             }
+            dialog.dismiss()
         },
         { _, _ ->
             clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false) {

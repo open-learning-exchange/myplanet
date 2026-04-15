@@ -4,13 +4,11 @@ import android.content.Context
 import android.util.Base64
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -169,22 +167,9 @@ class LoginSyncManager @Inject constructor(
     }
 
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
-        if (!isManager(jsonDoc)) {
-            withContext(dispatcherProvider.main) {
-                listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
-            }
-            return
-        }
-
         userRepository.saveUser(jsonDoc, sharedPrefManager.rawPreferences)
         withContext(dispatcherProvider.main) {
             listener.onSyncComplete()
         }
-    }
-
-    private fun isManager(jsonDoc: JsonObject?): Boolean {
-        val roles = jsonDoc?.get("roles")?.asJsonArray
-        val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
-        return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
     }
 }

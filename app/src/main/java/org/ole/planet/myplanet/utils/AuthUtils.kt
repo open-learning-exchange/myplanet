@@ -62,7 +62,7 @@ object AuthUtils {
         }
 
         if (syncResult) {
-            val log = activity.authenticateUser(activity.settings, name, password, true)
+            val log = activity.authenticateUser(activity.settings, name, password, false)
             if (log) {
                 Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                 activity.onLogin()
