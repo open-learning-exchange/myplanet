@@ -141,30 +141,35 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun setWebClient() {
-        val resourceId = intent.getStringExtra("RESOURCE_ID")
-        var assetLoader: androidx.webkit.WebViewAssetLoader? = null
-        if (resourceId != null) {
-            val directory = File(getExternalFilesDir(null), "ole/$resourceId")
-            val externalPathHandler = androidx.webkit.WebViewAssetLoader.PathHandler { path ->
-                try {
-                    val file = File(directory, path)
-                    if (file.exists() && file.canonicalPath.startsWith(directory.canonicalPath)) {
-                        val mimeType = java.net.URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
-                        return@PathHandler WebResourceResponse(mimeType, "utf-8", java.io.FileInputStream(file))
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                null
-            }
 
-            assetLoader = androidx.webkit.WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", externalPathHandler)
-                .build()
+    private fun setWebClient() {
+        val assetLoader = setupAssetLoader()
+        activityWebViewBinding.contentWebView.wv.webViewClient = createWebViewClient(assetLoader)
+    }
+
+    private fun setupAssetLoader(): androidx.webkit.WebViewAssetLoader? {
+        val resourceId = intent.getStringExtra("RESOURCE_ID") ?: return null
+        val directory = File(getExternalFilesDir(null), "ole/$resourceId")
+        val externalPathHandler = androidx.webkit.WebViewAssetLoader.PathHandler { path ->
+            try {
+                val file = File(directory, path)
+                if (file.exists() && file.canonicalPath.startsWith(directory.canonicalPath)) {
+                    val mimeType = java.net.URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
+                    return@PathHandler WebResourceResponse(mimeType, "utf-8", java.io.FileInputStream(file))
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            null
         }
 
-        activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
+        return androidx.webkit.WebViewAssetLoader.Builder()
+            .addPathHandler("/assets/", externalPathHandler)
+            .build()
+    }
+
+    private fun createWebViewClient(assetLoader: androidx.webkit.WebViewAssetLoader?): WebViewClient {
+        return object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 
@@ -195,43 +200,7 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-
-                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-                if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
-                    view.evaluateJavascript(
-                        """
-                            (function() {
-                                document.documentElement.setAttribute('dark', 'true');
-                                document.documentElement.style.backgroundColor = '#000';
-                                document.documentElement.style.color = '#FFF';
-                                const elements = document.querySelectorAll('*');
-                                elements.forEach(el => {
-                                    if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
-                                        el.style.color = '#FFF';
-                                    }
-                                });
-                            })();
-                            """.trimIndent(),
-                        null
-                    )
-                } else {
-                    view.evaluateJavascript(
-                        """
-                            (function() {
-                                document.documentElement.removeAttribute('dark');
-                                document.documentElement.style.backgroundColor = '#FFF';
-                                document.documentElement.style.color = '#000';
-                                const elements = document.querySelectorAll('*');
-                                elements.forEach(el => {
-                                    if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
-                                        el.style.color = '#000';
-                                    }
-                                });
-                            })();
-                            """.trimIndent(),
-                        null
-                    )
-                }
+                applyNightMode(view)
             }
 
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
@@ -250,6 +219,44 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
+    private fun applyNightMode(view: WebView) {
+        val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+            view.evaluateJavascript(
+                """
+                    (function() {
+                        document.documentElement.setAttribute('dark', 'true');
+                        document.documentElement.style.backgroundColor = '#000';
+                        document.documentElement.style.color = '#FFF';
+                        const elements = document.querySelectorAll('*');
+                        elements.forEach(el => {
+                            if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
+                                el.style.color = '#FFF';
+                            }
+                        });
+                    })();
+                """.trimIndent(),
+                null
+            )
+        } else {
+            view.evaluateJavascript(
+                """
+                    (function() {
+                        document.documentElement.removeAttribute('dark');
+                        document.documentElement.style.backgroundColor = '#FFF';
+                        document.documentElement.style.color = '#000';
+                        const elements = document.querySelectorAll('*');
+                        elements.forEach(el => {
+                            if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
+                                el.style.color = '#000';
+                            }
+                        });
+                    })();
+                """.trimIndent(),
+                null
+            )
+        }
+    }
     private fun clearCookie() {
         val cookieManager = CookieManager.getInstance()
         cookieManager.removeAllCookies(null)
