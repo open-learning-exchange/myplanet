@@ -63,8 +63,9 @@ class NotificationActionReceiverTest {
         mockkStatic(NotificationUtils::class)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
-        mockkStatic("org.ole.planet.myplanet.di.BroadcastServiceEntryPointKt")
+        mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
         every { getBroadcastService(any()) } returns mockk(relaxed = true)
+
 
         receiver = NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository

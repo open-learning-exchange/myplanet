@@ -93,8 +93,32 @@ object SecurePrefs {
             }
             encryptedPrefs
         } catch (e: Exception) {
-            android.util.Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, falling back to plain text", e)
-            context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+            android.util.Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(ENCRYPTED_PREFS_FILE_NAME)
+                }
+                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                keyStore.load(null)
+                keyStore.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+            } catch (cleanupEx: Exception) {
+                android.util.Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
+            }
+
+            try {
+                val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+                EncryptedSharedPreferences.create(
+                    context,
+                    ENCRYPTED_PREFS_FILE_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            } catch (retryEx: Exception) {
+                throw IllegalStateException("Unable to initialize secure storage after retry", retryEx)
+            }
         }
     }
 

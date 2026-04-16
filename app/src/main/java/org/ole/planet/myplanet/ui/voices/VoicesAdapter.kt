@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
@@ -66,7 +67,8 @@ class VoicesAdapter(
     private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> (() -> Unit),
     private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val userRepository: org.ole.planet.myplanet.repository.UserRepository
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -98,6 +100,7 @@ class VoicesAdapter(
         }
     )
 ) {
+    private val externalFilesDir = FileUtils.getExternalFilesDir(context)
     private var listener: OnNewsItemClickListener? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -111,12 +114,13 @@ class VoicesAdapter(
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
         val raw = sharedPrefManager.getCommunityLeaders()
-        RealmUser.parseLeadersJson(raw)
+        userRepository.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
 
     init {
         fetchTeamLeaderStatus()
+        preParseNews(parentNews)
     }
 
     private fun fetchTeamLeaderStatus() {
@@ -209,13 +213,12 @@ class VoicesAdapter(
     }
 
     private fun extractSharedTeamName(news: RealmNews): String {
-        if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-            if (ar.size() > 1) {
-                val ob = ar[0].asJsonObject
-                if (ob.has("name") && !ob.get("name").isJsonNull) {
-                    return ob.get("name").asString
-                }
+        val ar = news.parsedViewIn
+
+        if (ar != null && ar.size() > 1) {
+            val ob = ar[0].asJsonObject
+            if (ob.has("name") && !ob.get("name").isJsonNull) {
+                return ob.get("name").asString
             }
         }
         return ""
@@ -287,7 +290,7 @@ class VoicesAdapter(
     private fun setMessageAndDate(holder: VoicesViewHolder, news: RealmNews, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
-            "file://" + context.getExternalFilesDir(null) + "/ole/",
+            "file://$externalFilesDir/ole/",
             600,
             350
         )
@@ -366,7 +369,7 @@ class VoicesAdapter(
 
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = JsonUtils.gson.fromJson(news.conversations, Array<RealmConversation>::class.java).toList()
+            val conversations = news.parsedConversations!!
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
                 val cancelJob = launchCoroutine {
                     var currentIndex = 0
@@ -431,11 +434,85 @@ class VoicesAdapter(
         val contentChanged = parentNews?.message != news?.message ||
             parentNews?.isEdited != news?.isEdited
         parentNews = news
+        preParseNews(parentNews)
         if (contentChanged) notifyItemChanged(0)
     }
 
     fun refreshCurrentItems() {
         submitListSafely(currentList.toList())
+    }
+
+    private fun parseViewIn(viewIn: String?): JsonArray? {
+        if (TextUtils.isEmpty(viewIn)) return null
+        return try {
+            JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun parseConversations(conversations: String?): List<RealmConversation>? {
+        if (conversations.isNullOrEmpty()) return null
+        return try {
+            JsonUtils.gson.fromJson(conversations, Array<RealmConversation>::class.java).toList()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
+        if (imageUrls.isNullOrEmpty()) return null
+        return try {
+            imageUrls.map { JsonUtils.gson.fromJson(it, JsonObject::class.java) }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun preParseNews(news: RealmNews?) {
+        news?.let {
+            try {
+                if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
+                    val parsed = parseViewIn(it.viewIn)
+                    if (parsed != null) {
+                        it.parsedViewIn = parsed
+                        it.rawViewIn = it.viewIn
+                    }
+                }
+                if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
+                    val parsed = parseConversations(it.conversations)
+                    if (parsed != null) {
+                        it.parsedConversations = parsed
+                        it.rawConversations = it.conversations
+                    }
+                }
+
+                val currentImageUrls = it.imageUrls?.toList()
+                if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
+                    val parsed = parseImageUrls(currentImageUrls)
+                    if (parsed != null) {
+                        it.parsedImageUrls = parsed
+                        it.rawImageUrls = currentImageUrls
+                    }
+                }
+            } catch (e: IllegalStateException) {
+                // If Realm manages the object and we are on a different thread, mutating @Ignore fields might throw.
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun submitList(list: List<RealmNews?>?) {
+        list?.forEach { preParseNews(it) }
+        super.submitList(list)
+    }
+
+    override fun submitList(list: List<RealmNews?>?, commitCallback: Runnable?) {
+        list?.forEach { preParseNews(it) }
+        super.submitList(list, commitCallback)
     }
 
     private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
@@ -634,22 +711,25 @@ class VoicesAdapter(
         }
     }
 
+    private fun getParsedImageUrls(news: RealmNews?): List<JsonObject>? {
+        return news?.parsedImageUrls
+    }
+
     private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
 
-        val imageUrls = news?.imageUrls
-        if (!imageUrls.isNullOrEmpty()) {
+        val parsedImageUrls = getParsedImageUrls(news)
+
+        if (!parsedImageUrls.isNullOrEmpty()) {
             try {
-                if (imageUrls.size == 1) {
-                    val imgObject = JsonUtils.gson.fromJson(imageUrls[0], JsonObject::class.java)
-                    val path = JsonUtils.getString("imageUrl", imgObject)
+                if (parsedImageUrls.size == 1) {
+                    val path = JsonUtils.getString("imageUrl", parsedImageUrls[0])
                     loadSingleImage(binding, path)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
-                    for (imageUrl in imageUrls) {
-                        val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    for (imgObject in parsedImageUrls) {
                         val path = JsonUtils.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
                     }
@@ -726,7 +806,7 @@ class VoicesAdapter(
     private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
-            val basePath = context.getExternalFilesDir(null)
+            val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val request = Glide.with(binding.imgNews.context)
@@ -750,7 +830,7 @@ class VoicesAdapter(
     private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
-            val basePath = context.getExternalFilesDir(null)
+            val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val imageView = ImageView(context)

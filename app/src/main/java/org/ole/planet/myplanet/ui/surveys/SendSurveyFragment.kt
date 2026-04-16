@@ -61,7 +61,8 @@ class SendSurveyFragment : BaseDialogFragment() {
 
     private fun initListView(users: List<RealmUser>) {
         val names = users.map { it.toString() }
-        val adapter = CheckboxAdapter(names)
+        val adapter = CheckboxAdapter()
+        adapter.submitList(names)
         fragmentSendSurveyBinding.listUsers.layoutManager = LinearLayoutManager(requireActivity())
         fragmentSendSurveyBinding.listUsers.adapter = adapter
     }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services
 
 import android.app.Activity
 import android.app.ActivityManager
+import android.util.Log
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -25,7 +26,6 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.services.DownloadWorker
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
@@ -44,6 +45,9 @@ import org.ole.planet.myplanet.utils.UrlUtils.header
 
 @AndroidEntryPoint
 class DownloadService : Service() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     @Inject
     lateinit var downloadRepository: DownloadRepository
 
@@ -65,9 +69,14 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
 
     private val downloadJob = SupervisorJob()
-    private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
+    private lateinit var downloadScope: CoroutineScope
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+    }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -200,7 +209,7 @@ class DownloadService : Service() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Download initialization failed", e)
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
         }
     }
@@ -380,6 +389,7 @@ class DownloadService : Service() {
     }
 
     companion object {
+        private const val TAG = "DownloadService"
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
@@ -408,7 +418,7 @@ class DownloadService : Service() {
                     try {
                         ContextCompat.startForegroundService(context, intent)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to start foreground service", e)
                         handleForegroundServiceError(context, urlsKey, fromSync)
                     }
                 } else {
@@ -418,7 +428,7 @@ class DownloadService : Service() {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
             }
@@ -438,7 +448,7 @@ class DownloadService : Service() {
                 }
                 context.startService(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to start service", e)
                 startDownloadWork(context, urlsKey, fromSync)
             }
         }
