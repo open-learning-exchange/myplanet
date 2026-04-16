@@ -69,7 +69,6 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            apiInterfaceMock,
             mockUserRepository
         )
     }

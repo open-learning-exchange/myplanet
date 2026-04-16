@@ -329,10 +329,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun markAllResourcesOffline(isOffline: Boolean) {
         executeTransaction { realm ->
-            val libraries = realm.where(RealmMyLibrary::class.java).findAll()
-            for (library in libraries) {
-                library.resourceOffline = isOffline
-            }
+            realm.where(RealmMyLibrary::class.java).findAll().setValue("resourceOffline", isOffline)
         }
     }
 
@@ -613,7 +610,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
         val allRatings = ratingsRepository.getResourceRatings(userId)
-        val filteredRatings = HashMap<String?, JsonObject>()
+        val filteredRatings = HashMap<String?, JsonObject>(Math.ceil(ids.size / 0.75).toInt())
         for (id in ids) {
             allRatings[id]?.let {
                 filteredRatings[id] = it

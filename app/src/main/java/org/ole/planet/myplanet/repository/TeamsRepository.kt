@@ -126,8 +126,9 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 
-    fun insertTeamLog(realm: Realm, json: JsonObject)
-    fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long?
+    suspend fun insertTeamLog(json: JsonObject)
+    suspend fun insertTeamLogs(logs: List<JsonObject>)
+    suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
     fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)

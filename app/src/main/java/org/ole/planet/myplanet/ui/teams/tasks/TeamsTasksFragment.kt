@@ -12,6 +12,8 @@ import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
+import androidx.fragment.app.viewModels
+import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
@@ -45,8 +47,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
-    var list: List<RealmTeamTask> = emptyList()
     private var currentTab = R.id.btn_all
+
+    private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
 
     private lateinit var adapterTask: TeamsTasksAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
@@ -239,6 +242,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             updateTasks()
         }
 
+        teamViewModel.loadTasks(teamId)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -252,8 +257,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     }
                 }
                 launch {
-                    teamsRepository.getTasksByTeamId(teamId).collect { tasks ->
-                        list = tasks
+                    teamViewModel.taskList.collectLatest { tasks ->
                         updateTasks()
                     }
                 }
@@ -262,15 +266,15 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     }
 
     private fun allTasks(): List<RealmTeamTask> {
-        return list.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
+        return teamViewModel.taskList.value.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
     }
 
     private fun completedTasks(): List<RealmTeamTask> {
-        return list.filter { it.completed }.sortedByDescending { it.deadline }
+        return teamViewModel.taskList.value.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
     private fun myTasks(): List<RealmTeamTask> {
-        return list.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
+        return teamViewModel.taskList.value.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

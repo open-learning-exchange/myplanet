@@ -11,6 +11,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.android.asCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -29,9 +30,10 @@ object DatabaseModule {
     @Singleton
     @RealmDispatcher
     fun provideRealmDispatcher(): CoroutineDispatcher {
-        val handlerThread = HandlerThread("RealmQueryThread")
-        handlerThread.start()
-        return Handler(handlerThread.looper).asCoroutineDispatcher()
+        // App-level shutdown hook ownership
+        return java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+            Thread(r, "RealmQueryThread")
+        }.asCoroutineDispatcher()
     }
 
     // Realm initialization is handled in DatabaseService
