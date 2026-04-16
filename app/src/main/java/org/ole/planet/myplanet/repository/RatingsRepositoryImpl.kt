@@ -23,7 +23,7 @@ class RatingsRepositoryImpl @Inject constructor(
             equalTo("type", type)
         }
         val aggregated = aggregateRatings(ratings, userId)
-        val map = HashMap<String?, JsonObject>()
+        val map = HashMap<String?, JsonObject>(Math.ceil(aggregated.size / 0.75).toInt())
         for ((item, aggregation) in aggregated) {
             map[item] = aggregation.toJson()
         }
