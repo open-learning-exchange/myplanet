@@ -8,15 +8,62 @@ import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatRequest
+import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.model.ContentData
+import org.ole.planet.myplanet.model.ContinueChatRequest
+import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
+import retrofit2.Response
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val chatApiService: ChatApiService,
+    private val serverUrlMapper: ServerUrlMapper,
+    private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
+
+    override suspend fun sendNewChatRequest(
+        query: String,
+        user: String?,
+        aiProvider: AiProvider
+    ): Response<ChatResponse> {
+        val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
+        val jsonContent = JsonUtils.gson.toJson(chatData)
+        val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+        return chatApiService.sendChatRequest(requestBody)
+    }
+
+    override suspend fun sendContinueChatRequest(
+        message: String,
+        user: String?,
+        aiProvider: AiProvider,
+        id: String,
+        rev: String
+    ): Response<ChatResponse> {
+        val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
+        val jsonContent = JsonUtils.gson.toJson(continueChatData)
+        val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+        return chatApiService.sendChatRequest(requestBody)
+    }
+
+    override suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>? {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+            isServerReachable(url)
+        }
+        return chatApiService.fetchAiProviders()
+    }
 
     override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
         if (userName.isNullOrEmpty()) {

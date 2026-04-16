@@ -1,22 +1,35 @@
 package org.ole.planet.myplanet.model
 
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import dagger.Lazy
+import io.mockk.mockk
 import io.realm.Realm
 import io.realm.RealmConfiguration
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.UserRepositoryImpl
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @RunWith(AndroidJUnit4::class)
 class RealmUserTest {
 
     private lateinit var realmConfiguration: RealmConfiguration
+    private lateinit var userRepository: UserRepositoryImpl
+    private lateinit var databaseService: DatabaseService
 
     @Before
     fun setUp() {
@@ -31,6 +44,45 @@ class RealmUserTest {
                 .build()
             Realm.setDefaultConfiguration(realmConfiguration)
         }
+
+        databaseService = object : DatabaseService {
+            override val realm: Realm
+                get() = Realm.getInstance(realmConfiguration)
+
+            override fun executeTransaction(transaction: Realm.Transaction) {
+                realm.executeTransaction(transaction)
+            }
+
+            override fun executeTransactionAsync(
+                transaction: Realm.Transaction,
+                onSuccess: Realm.Transaction.OnSuccess,
+                onError: Realm.Transaction.OnError
+            ) {
+                realm.executeTransactionAsync(transaction, onSuccess, onError)
+            }
+        }
+
+        val mockSettings = mockk<SharedPreferences>(relaxed = true)
+        val mockSharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
+        val mockApiInterface = mockk<ApiInterface>(relaxed = true)
+        val mockUploadToShelfService = mockk<Lazy<UploadToShelfService>>(relaxed = true)
+        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val mockConfigurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
+        val mockAppScope = CoroutineScope(Dispatchers.Unconfined)
+        val mockDispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
+
+        userRepository = UserRepositoryImpl(
+            databaseService,
+            Dispatchers.Unconfined,
+            mockSettings,
+            mockSharedPrefManager,
+            mockApiInterface,
+            mockUploadToShelfService,
+            mockContext,
+            mockConfigurationsRepository,
+            mockAppScope,
+            mockDispatcherProvider
+        )
     }
 
     @After
@@ -43,8 +95,7 @@ class RealmUserTest {
     }
 
     @Test
-    fun cleanupDuplicateUsers_removesGuestWhenCouchDbUserExists() {
-        val latch = CountDownLatch(1)
+    fun cleanupDuplicateUsers_removesGuestWhenCouchDbUserExists() = runBlocking {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
@@ -57,14 +108,10 @@ class RealmUserTest {
                     name = "testuser"
                 }
             }
-
-            RealmUser.cleanupDuplicateUsers(realm) {
-                latch.countDown()
-                realm.close() // Close the realm after async transaction finishes
-            }
+            realm.close()
         }
 
-        latch.await(5, TimeUnit.SECONDS)
+        userRepository.cleanupDuplicateUsers()
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
@@ -76,8 +123,7 @@ class RealmUserTest {
     }
 
     @Test
-    fun cleanupDuplicateUsers_keepsCouchDbUserWhenGuestExists() {
-        val latch = CountDownLatch(1)
+    fun cleanupDuplicateUsers_keepsCouchDbUserWhenGuestExists() = runBlocking {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
@@ -90,14 +136,10 @@ class RealmUserTest {
                     name = "testuser"
                 }
             }
-
-            RealmUser.cleanupDuplicateUsers(realm) {
-                latch.countDown()
-                realm.close()
-            }
+            realm.close()
         }
 
-        latch.await(5, TimeUnit.SECONDS)
+        userRepository.cleanupDuplicateUsers()
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
@@ -109,8 +151,7 @@ class RealmUserTest {
     }
 
     @Test
-    fun cleanupDuplicateUsers_keepsAllUsersWhenNoDuplicates() {
-        val latch = CountDownLatch(1)
+    fun cleanupDuplicateUsers_keepsAllUsersWhenNoDuplicates() = runBlocking {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
@@ -123,14 +164,10 @@ class RealmUserTest {
                     name = "testuser2"
                 }
             }
-
-            RealmUser.cleanupDuplicateUsers(realm) {
-                latch.countDown()
-                realm.close()
-            }
+            realm.close()
         }
 
-        latch.await(5, TimeUnit.SECONDS)
+        userRepository.cleanupDuplicateUsers()
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)

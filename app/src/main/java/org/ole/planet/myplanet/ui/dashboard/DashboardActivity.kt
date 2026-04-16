@@ -89,6 +89,7 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
 
     private var isReady = false
+    private var isFirstLaunch = false
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUser? = null
@@ -141,17 +142,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         updateAppTitle()
         if (handleGuestAccess()) return
 
-        handleInitialFragment()
+        isFirstLaunch = savedInstanceState == null
+        if (isFirstLaunch) handleInitialFragment()
         addBackPressCallback()
         collectUiState()
 
         lifecycleScope.launch {
-            notificationManager = withContext(Dispatchers.IO) {
-                NotificationUtils.getInstance(this@DashboardActivity)
-            }
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
+            notificationManager = withContext(Dispatchers.IO) {
+                NotificationUtils.getInstance(this@DashboardActivity)
+            }
         }
     }
 
@@ -331,13 +333,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         dl = result?.drawerLayout
         topbarSetting()
 
-        lifecycleScope.launch {
-            delay(50)
-            val offlineVisits = userSessionManager.getOfflineVisits(user)
-            if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
-                resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-            ) {
-                result?.openDrawer()
+        if (isFirstLaunch) {
+            lifecycleScope.launch {
+                delay(50)
+                val offlineVisits = userSessionManager.getOfflineVisits(user)
+                if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
+                    resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+                ) {
+                    result?.openDrawer()
+                }
             }
         }
     }

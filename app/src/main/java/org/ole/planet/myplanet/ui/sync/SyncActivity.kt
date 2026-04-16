@@ -816,7 +816,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         lateinit var cal_last_Sync: Calendar
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
-
         fun restartApp() {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)

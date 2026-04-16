@@ -35,6 +35,8 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
+import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.repository.RetryRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepositoryImpl
 import org.ole.planet.myplanet.repository.SurveysRepository
@@ -47,8 +49,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
-import org.ole.planet.myplanet.repository.retry.RetryRepository
-import org.ole.planet.myplanet.repository.retry.RetryRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)

@@ -171,6 +171,12 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
     fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
 
+    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
+    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
+
+    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
+    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
+
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
 

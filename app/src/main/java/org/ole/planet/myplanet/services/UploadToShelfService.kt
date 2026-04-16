@@ -8,7 +8,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
 import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
@@ -22,8 +21,6 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -32,7 +29,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -355,9 +351,7 @@ class UploadToShelfService @Inject constructor(
                         val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
                         val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                         val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                        val shelfData = dbService.withRealm { backgroundRealm ->
-                            getShelfData(backgroundRealm, model.id, jsonDoc, myLibs, myCourseIds)
-                        }
+                        val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
                         shelfData.addProperty("_rev", getString("_rev", jsonDoc))
                         apiInterface.putDoc(
                             UrlUtils.header,
@@ -391,9 +385,7 @@ class UploadToShelfService @Inject constructor(
                     val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
                     val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                     val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                    val shelfObject = dbService.withRealm { realm ->
-                        getShelfData(realm, model.id, jsonDoc, myLibs, myCourseIds)
-                    }
+                    val shelfObject = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
                     shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
                     val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}"
@@ -409,31 +401,6 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }
-    }
-
-    private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
-        val myMeetups = getMyMeetUpIds(realm, userId)
-        val removedResources = listOf(*removedIds(realm, "resources", userId))
-        val removedCourses = listOf(*removedIds(realm, "courses", userId))
-        val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCourseIds = mergeJsonArray(myCourseIds, getJsonArray("courseIds", jsonDoc), removedCourses)
-        val `object` = JsonObject()
-        `object`.addProperty("_id", sharedPrefManager.getUserId())
-        `object`.add("meetupIds", mergeJsonArray(myMeetups, getJsonArray("meetupIds", jsonDoc), removedResources))
-        `object`.add("resourceIds", mergedResourceIds)
-        `object`.add("courseIds", mergedCourseIds)
-        return `object`
-    }
-
-    private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
-        val array = JsonArray()
-        array.addAll(array1)
-        for (e in array2) {
-            if (!array.contains(e) && !removedIds.contains(e.asString)) {
-                array.add(e)
-            }
-        }
-        return array
     }
 
     private suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
