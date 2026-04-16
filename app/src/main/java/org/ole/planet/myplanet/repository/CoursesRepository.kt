@@ -20,6 +20,7 @@ interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
     suspend fun getCourseById(courseId: String): RealmMyCourse?
     suspend fun getCourseByCourseId(courseId: String): RealmMyCourse?
+    suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse>
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary>
@@ -66,4 +67,5 @@ interface CoursesRepository {
     suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
 }

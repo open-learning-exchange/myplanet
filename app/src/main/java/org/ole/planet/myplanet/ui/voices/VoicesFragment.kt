@@ -260,7 +260,8 @@ class VoicesFragment : BaseVoicesFragment() {
                     return@VoicesAdapter { job.cancel() }
                 },
                 labelManager = labelManager,
-                voicesRepository = voicesRepository
+                voicesRepository = voicesRepository,
+                userRepository = userRepository
             )
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
@@ -136,42 +137,47 @@ class DashboardViewModel @Inject constructor(
                 resourcesRepository.getMyLibrary(userId)
             }
 
-            val coursesFlowJob = launch(dispatcherProvider.io) {
-                coursesRepository.getMyCoursesFlow(userId).collect { courses ->
-                    withContext(dispatcherProvider.main) {
+            launch(dispatcherProvider.main) {
+                coursesRepository.getMyCoursesFlow(userId)
+                    .flowOn(dispatcherProvider.io)
+                    .collect { courses ->
                         _uiState.update { it.copy(courses = courses) }
                     }
-                }
             }
 
-            val teamsFlowJob = launch(dispatcherProvider.io) {
-                teamsRepository.getMyTeamsFlow(userId).collect { teams ->
-                    withContext(dispatcherProvider.main) {
+            launch(dispatcherProvider.main) {
+                teamsRepository.getMyTeamsFlow(userId)
+                    .flowOn(dispatcherProvider.io)
+                    .collect { teams ->
                         _uiState.update { it.copy(teams = teams) }
                     }
-                }
             }
 
-            launch(dispatcherProvider.io) {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-                withContext(dispatcherProvider.main) {
-                    _uiState.update { it.copy(fullName = fullName) }
+            launch(dispatcherProvider.main) {
+                val (userName, fullName) = withContext(dispatcherProvider.io) {
+                    val user = userRepository.getUserById(userId)
+                    val userName = user?.name
+                    val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+                    Pair(userName, fullName)
                 }
+                _uiState.update { it.copy(fullName = fullName) }
 
                 if (userName != null) {
-                    activitiesRepository.getOfflineLogins(userName).collect { logins ->
-                        withContext(dispatcherProvider.main) {
+                    activitiesRepository.getOfflineLogins(userName)
+                        .flowOn(dispatcherProvider.io)
+                        .collect { logins ->
                             _uiState.update { it.copy(offlineLogins = logins.size) }
                         }
-                    }
                 }
             }
 
             val myLibrary = libraryDeferred.await()
             _uiState.update { it.copy(library = myLibrary) }
         }
+    }
+
+    suspend fun getTeamType(teamId: String): String? {
+        return teamsRepository.getTeamType(teamId)
     }
 
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {

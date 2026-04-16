@@ -3,14 +3,15 @@ package org.ole.planet.myplanet.ui.components
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.CheckedTextView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class CheckboxAdapter(
-    private val items: List<String>,
     private val initialSelectedItems: List<Int> = emptyList(),
     private val checkChangeListener: CheckChangeListener? = null
-) : RecyclerView.Adapter<CheckboxAdapter.ViewHolder>() {
+) : ListAdapter<String, CheckboxAdapter.ViewHolder>(DiffUtils.itemCallback<String>({ old, new -> old == new }, { old, new -> old == new })) {
 
     val selectedItemsList = ArrayList<Int>()
 
@@ -28,23 +29,27 @@ class CheckboxAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val isChecked = selectedItemsList.contains(position)
-        holder.checkedTextView.text = items[position]
+        val bindingAdapterPosition = holder.bindingAdapterPosition
+        if (bindingAdapterPosition == RecyclerView.NO_POSITION) return
+
+        val isChecked = selectedItemsList.contains(bindingAdapterPosition)
+        holder.checkedTextView.text = getItem(bindingAdapterPosition)
         holder.checkedTextView.isChecked = isChecked
 
         holder.checkedTextView.setOnClickListener {
-            if (selectedItemsList.contains(position)) {
-                selectedItemsList.remove(position)
+            val currentPos = holder.bindingAdapterPosition
+            if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
+
+            if (selectedItemsList.contains(currentPos)) {
+                selectedItemsList.remove(Integer.valueOf(currentPos))
                 holder.checkedTextView.isChecked = false
             } else {
-                selectedItemsList.add(position)
+                selectedItemsList.add(currentPos)
                 holder.checkedTextView.isChecked = true
             }
             checkChangeListener?.onCheckChange()
         }
     }
-
-    override fun getItemCount(): Int = items.size
 
     class ViewHolder(val checkedTextView: CheckedTextView) : RecyclerView.ViewHolder(checkedTextView)
 }

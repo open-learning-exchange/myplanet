@@ -18,10 +18,12 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -29,6 +31,10 @@ import org.ole.planet.myplanet.utils.VersionUtils
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
+
+    @javax.inject.Inject
+    lateinit var sharedPrefManager: SharedPrefManager
+
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
@@ -150,10 +156,8 @@ class BecomeMemberActivity : BaseActivity() {
                     val userName = obj["name"].asString
                     val securityCallback = object : OnSecurityDataListener {
                         override fun onSecurityDataUpdated() {
-                            runOnUiThread {
-                                customProgressDialog.dismiss()
-                                autoLoginNewMember(info.username, info.password)
-                            }
+                            customProgressDialog.dismiss()
+                            autoLoginNewMember(info.username, info.password)
                         }
                     }
                     startUpload("becomeMember", userName, securityCallback)
@@ -232,10 +236,12 @@ class BecomeMemberActivity : BaseActivity() {
     private fun autoLoginNewMember(username: String, password: String) {
         lifecycleScope.launch {
             userRepository.cleanupDuplicateUsers()
+
+            sharedPrefManager.setNewLoginUsername(SecurePrefs.encryptString(this@BecomeMemberActivity, username))
+            sharedPrefManager.setNewLoginPassword(SecurePrefs.encryptString(this@BecomeMemberActivity, password))
+
             val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
-            intent.putExtra("username", username)
-            intent.putExtra("password", password)
-            intent.putExtra("auto_login", true)
+
             if (guest) {
                 intent.putExtra("guest", guest)
             }
