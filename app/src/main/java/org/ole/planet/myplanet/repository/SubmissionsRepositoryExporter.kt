@@ -75,6 +75,8 @@ class SubmissionsRepositoryExporter @Inject constructor(
                     .equalTo("examId", examId)
                     .findAll()
 
+                val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
+
                 questions.forEachIndexed { index, question ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
                         document.finishPage(page)
@@ -89,7 +91,7 @@ class SubmissionsRepositoryExporter @Inject constructor(
                     yPosition = drawMultilineText(canvas, questionText, MARGIN, yPosition, headerPaint, PAGE_WIDTH - (2 * MARGIN))
                     yPosition += LINE_HEIGHT / 2
 
-                    val answer = submission.answers?.find { it.questionId == question.id }
+                    val answer = answersMap[question.id]
                     val answerText = formatAnswer(answer)
                     canvas.drawText("A: $answerText", MARGIN + 20, yPosition, normalPaint)
                     yPosition += LINE_HEIGHT * 2
@@ -181,6 +183,8 @@ class SubmissionsRepositoryExporter @Inject constructor(
                     canvas.drawText("Status: ${submission.status}", MARGIN + 20, yPosition, normalPaint)
                     yPosition += LINE_HEIGHT * 2
 
+                    val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
+
                     questions.forEachIndexed { index, question ->
                         if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
                             document.finishPage(page)
@@ -195,7 +199,7 @@ class SubmissionsRepositoryExporter @Inject constructor(
                         yPosition = drawMultilineText(canvas, questionText, MARGIN + 20, yPosition, normalPaint, PAGE_WIDTH - (2 * MARGIN) - 20)
                         yPosition += LINE_HEIGHT / 2
 
-                        val answer = submission.answers?.find { it.questionId == question.id }
+                        val answer = answersMap[question.id]
                         val answerText = formatAnswer(answer)
                         yPosition = drawMultilineText(canvas, "A: $answerText", MARGIN + 40, yPosition, normalPaint, PAGE_WIDTH - (2 * MARGIN) - 40)
                         yPosition += LINE_HEIGHT * 1.5f
