@@ -13,6 +13,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -172,18 +174,23 @@ class UploadManager @Inject constructor(
         val list = userRepository.getAchievementsForUpload()
         if (list.isEmpty()) return
         withContext(dispatcherProvider.io) {
-            list.forEach { achievement ->
-                val id = achievement.get("_id")?.asString ?: return@forEach
-                val url = "${UrlUtils.getUrl()}/achievements/$id"
-                try {
-                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
-                    if (response.isSuccessful) {
-                        val rev = response.body()?.get("rev")?.asString
-                        userRepository.markAchievementUploaded(id, rev)
+            list.chunked(BATCH_SIZE).forEach { batch ->
+                val jobs = batch.map { achievement ->
+                    async {
+                        val id = achievement.get("_id")?.asString ?: return@async
+                        val url = "${UrlUtils.getUrl()}/achievements/$id"
+                        try {
+                            val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
+                            if (response.isSuccessful) {
+                                val rev = response.body()?.get("rev")?.asString
+                                userRepository.markAchievementUploaded(id, rev)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Exception in UploadManager", e)
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager", e)
                 }
+                jobs.awaitAll()
             }
         }
     }
