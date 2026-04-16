@@ -99,6 +99,7 @@ class ChatDetailFragment : Fragment() {
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
         observeAiProviders()
+        checkAiProviders()
         setupSendButton()
         setupMessageInputListeners()
         if (newsId != null) {
@@ -258,7 +259,12 @@ class ChatDetailFragment : Fragment() {
                 launch {
                     sharedViewModel.aiProvidersError.collect { hasError ->
                         if (hasError && sharedViewModel.aiProviders.value == null) {
-                            onFailError()
+                            val cachedProviders = getCachedProviderAvailability()
+                            if (cachedProviders != null) {
+                                updateAIButtons(cachedProviders)
+                            } else {
+                                onFailError()
+                            }
                         }
                     }
                 }
@@ -329,8 +335,14 @@ class ChatDetailFragment : Fragment() {
             val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
-                sharedViewModel.setAiProvidersError(true)
-                sharedViewModel.setAiProviders(null)
+                val cachedProviders = getCachedProviderAvailability()
+                if (cachedProviders != null) {
+                    sharedViewModel.setAiProvidersError(false)
+                    sharedViewModel.setAiProviders(cachedProviders)
+                } else {
+                    sharedViewModel.setAiProvidersError(true)
+                    sharedViewModel.setAiProviders(null)
+                }
             } else {
                 sharedViewModel.setAiProviders(providers)
             }
@@ -484,6 +496,16 @@ class ChatDetailFragment : Fragment() {
         } else {
             emptyMap()
         }
+    }
+
+    private fun getCachedProviderAvailability(): Map<String, Boolean>? {
+        val modelsMap = getModelsMap()
+        if (modelsMap.isEmpty()) return null
+        return modelsMap.keys
+            .mapNotNull { key -> key.takeIf { it.isNotBlank() } }
+            .distinct()
+            .associateWith { true }
+            .takeIf { it.isNotEmpty() }
     }
 
     private suspend fun getLatestRev(id: String): String? {
