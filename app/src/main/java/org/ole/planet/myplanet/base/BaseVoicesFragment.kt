@@ -69,13 +69,13 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.refreshCurrentItems()
+                adapterNews?.submitList(adapterNews?.currentList?.toList())
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.refreshCurrentItems()
+        adapterNews?.submitList(adapterNews?.currentList?.toList())
     }
 
     override fun onReplyPosted(newsId: String?) {

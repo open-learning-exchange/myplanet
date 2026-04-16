@@ -165,7 +165,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             } else {
                 newsAdapter.updateParentNews(news)
             }
-            newsAdapter.updateList(list)
+            newsAdapter.submitList(list)
         }
     }
 
