@@ -146,12 +146,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         collectUiState()
 
         lifecycleScope.launch {
-            notificationManager = withContext(Dispatchers.IO) {
-                NotificationUtils.getInstance(this@DashboardActivity)
-            }
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
+            notificationManager = withContext(Dispatchers.IO) {
+                NotificationUtils.getInstance(this@DashboardActivity)
+            }
         }
     }
 
