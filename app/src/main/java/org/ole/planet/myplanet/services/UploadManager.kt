@@ -46,6 +46,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
             action(item)
         }
     }
+
 }
 
 @Singleton
@@ -122,7 +123,7 @@ class UploadManager @Inject constructor(
                 )
                 notifyListener(listener, "My planet activities uploaded successfully")
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Exception in UploadManager", e)
                 notifyListener(listener, "Failed to upload activities: ${e.message}")
             }
         }
@@ -143,7 +144,7 @@ class UploadManager @Inject constructor(
                 uploadCourseProgress()
                 notifyListener(listener, message)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Exception in UploadManager", e)
                 notifyListener(listener, "Error during result sync: ${e.message}")
             }
         }
@@ -181,7 +182,7 @@ class UploadManager @Inject constructor(
                         userRepository.markAchievementUploaded(id, rev)
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Exception in UploadManager", e)
                 }
             }
         }
@@ -232,7 +233,7 @@ class UploadManager @Inject constructor(
                             }
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
@@ -277,7 +278,7 @@ class UploadManager @Inject constructor(
                                 successfulUpdates.add(Pair(resourceData, `object`))
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Exception in UploadManager", e)
                         }
                     }
 
@@ -312,7 +313,7 @@ class UploadManager @Inject constructor(
                             // We catch it here to prevent crashing the batch loop and prevent
                             // `isTransactionSuccessful` from being set to true, so we don't upload
                             // attachments for failed DB writes.
-                            e.printStackTrace()
+                            Log.e(TAG, "Exception in UploadManager", e)
                         }
 
                         if (isTransactionSuccessful) {
@@ -370,7 +371,7 @@ class UploadManager @Inject constructor(
                         "Failed to upload personal resource: No response"
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Exception in UploadManager", e)
                     "Unable to upload resource: ${e.message}"
                 }
             }
@@ -431,7 +432,7 @@ class UploadManager @Inject constructor(
                             teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
                         }
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
             }
@@ -464,7 +465,7 @@ class UploadManager @Inject constructor(
 
                         successfulUpdates[activityData.id] = `object`
                     } catch (e: java.io.IOException) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
@@ -478,7 +479,7 @@ class UploadManager @Inject constructor(
 
             notifyListener(listener, "User activities sync completed successfully")
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Exception in UploadManager", e)
             notifyListener(listener, "Failed to upload user activities: ${e.message}")
         }
     }
@@ -578,7 +579,7 @@ class UploadManager @Inject constructor(
                             ))
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
@@ -617,5 +618,9 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadAdoptedSurveys() {
         uploadCoordinator.upload(uploadConfigs.AdoptedSurveys)
+    }
+
+    companion object {
+        private const val TAG = "UploadManager"
     }
 }
