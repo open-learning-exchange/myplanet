@@ -10,9 +10,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import androidx.preference.PreferenceManager
 
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext context: Context) {
+class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
     val rawPreferences: SharedPreferences get() = pref
@@ -301,4 +302,20 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
     fun removeKey(key: String) = pref.edit { remove(key) }
+    fun clearPreferences() {
+        val editor = pref.edit()
+        val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
+        val tempStorage = HashMap<String, Boolean>()
+        for (key in keysToKeep) {
+            tempStorage[key] = pref.getBoolean(key, false)
+        }
+        editor.clear().apply()
+        for ((key, value) in tempStorage) {
+            editor.putBoolean(key, value)
+        }
+        editor.commit()
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        defaultPreferences.edit { clear() }
+    }
+
 }
