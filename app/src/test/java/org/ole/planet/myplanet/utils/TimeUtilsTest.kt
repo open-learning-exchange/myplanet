@@ -54,6 +54,33 @@ class TimeUtilsTest {
     }
 
     @Test
+    fun testGetFormattedDate_epoch() {
+        // 0 timestamp is Jan 01, 1970 UTC
+        val formatted = TimeUtils.getFormattedDate(0L)
+        assertEquals("Thursday, Jan 01, 1970", formatted)
+    }
+
+    @Test
+    fun testGetFormattedDate_preEpoch() {
+        // -1000000000000L is roughly 1938
+        val timestamp = -1000000000000L
+        val formatted = TimeUtils.getFormattedDate(timestamp)
+        assertEquals("Sunday, Apr 24, 1938", formatted)
+    }
+
+    @Test
+    fun testGetFormattedDate_extremeValues() {
+        // Just verify it doesn't crash and returns gracefully when format exceeds what DateTimeFormatter can do
+        val maxFormatted = TimeUtils.getFormattedDate(Long.MAX_VALUE)
+        assertNotNull(maxFormatted)
+        assertNotEquals("N/A", maxFormatted)
+
+        val minFormatted = TimeUtils.getFormattedDate(Long.MIN_VALUE)
+        assertNotNull(minFormatted)
+        assertNotEquals("N/A", minFormatted)
+    }
+
+    @Test
     fun testGetFormattedDateWithTime() {
         val timestamp = 1710115200000L
         val formatted = TimeUtils.getFormattedDateWithTime(timestamp)
