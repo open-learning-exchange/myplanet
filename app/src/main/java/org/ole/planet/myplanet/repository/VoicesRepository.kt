@@ -23,7 +23,7 @@ data class NewsUpdateData(
 )
 
 interface VoicesRepository {
-    suspend fun getNewsForUpload(serializeNews: (RealmNews) -> JsonObject): List<NewsUploadData>
+    suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
@@ -50,5 +50,5 @@ interface VoicesRepository {
     suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
     suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
     suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
-    fun serializeNews(news: RealmNews): com.google.gson.JsonObject
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

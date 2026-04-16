@@ -23,7 +23,7 @@ class RatingsRepositoryImpl @Inject constructor(
             equalTo("type", type)
         }
         val aggregated = aggregateRatings(ratings, userId)
-        val map = HashMap<String?, JsonObject>()
+        val map = HashMap<String?, JsonObject>(Math.ceil(aggregated.size / 0.75).toInt())
         for ((item, aggregation) in aggregated) {
             map[item] = aggregation.toJson()
         }
@@ -201,6 +201,21 @@ class RatingsRepositoryImpl @Inject constructor(
 
         internal fun roundToSupportedRating(rating: Float): Int {
             return rating.roundToInt().coerceIn(MIN_RATING, MAX_RATING)
+        }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmRating.insert(realm, jsonDoc)
         }
     }
 }

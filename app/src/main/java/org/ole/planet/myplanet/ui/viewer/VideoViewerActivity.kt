@@ -21,9 +21,11 @@ import androidx.media3.datasource.FileDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
@@ -88,11 +90,11 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
         val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
         auth = headerAuth[0]
-        runOnUiThread {
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
             streamVideoFromUrl(videoURL, auth)
-            if (videoType == "online" && !FileUtils.checkFileExist(this, videoURL)) {
+            if (videoType == "online" && !FileUtils.checkFileExist(this@VideoViewerActivity, videoURL)) {
                 try {
-                    DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
+                    DownloadUtils.openDownloadService(this@VideoViewerActivity, arrayListOf(videoURL), false)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -101,7 +103,11 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun onError(s: String) {
-        runOnUiThread { Utilities.toast(this, getString(R.string.connection_failed_reason) + s) }
+        runOnUiThread {
+            if (!isFinishing) {
+                Utilities.toast(this@VideoViewerActivity, getString(R.string.connection_failed_reason) + s)
+            }
+        }
     }
 
     override fun onStart() {

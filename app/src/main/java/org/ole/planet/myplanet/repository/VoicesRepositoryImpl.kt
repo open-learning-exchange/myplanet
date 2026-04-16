@@ -36,7 +36,7 @@ class VoicesRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
-    override suspend fun getNewsForUpload(serializeNews: (RealmNews) -> JsonObject): List<NewsUploadData> {
+    override suspend fun getNewsForUpload(): List<NewsUploadData> {
         return withRealm { realm ->
             realm.where(RealmNews::class.java)
                 .findAll()
@@ -570,7 +570,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
     }
 
-    override fun serializeNews(news: RealmNews): JsonObject {
+    private fun serializeNews(news: RealmNews): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("chat", news.chat)
         `object`.addProperty("message", news.message)
@@ -628,5 +628,21 @@ class VoicesRepositoryImpl @Inject constructor(
         existingConcatenatedLinks.addAll(linksToProcess)
         val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            insertNewsToRealm(realm, jsonDoc)
+        }
+        saveConcatenatedLinksToPrefs()
     }
 }

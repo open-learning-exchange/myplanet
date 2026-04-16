@@ -27,7 +27,6 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -48,11 +47,15 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -319,7 +322,7 @@ class MyHealthFragment : Fragment() {
                 searchJob?.cancel()
                 searchJob = viewLifecycleOwner.lifecycleScope.launch {
                     delay(300)
-                    val loadingJob = launch(Dispatchers.Main) {
+                    val loadingJob = launch(dispatcherProvider.main) {
                         delay(100)
                         alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
                         rv.visibility = View.GONE

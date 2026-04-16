@@ -158,4 +158,34 @@ class UserRepositoryImplTest {
         assertEquals(true, result.first)
         assertEquals(successMessage, result.second)
     }
+
+    @Test
+    fun `hasAtLeastOneUser returns true when user exists`() = runTest {
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        coEvery { databaseService.withRealmAsync<Boolean>(any()) } answers {
+            val block = firstArg<(io.realm.Realm) -> Boolean>()
+            block(mockRealm)
+        }
+        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealmQuery.findFirst() } returns mockk()
+
+        val result = repository.hasAtLeastOneUser()
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun `hasAtLeastOneUser returns false when no user exists`() = runTest {
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        coEvery { databaseService.withRealmAsync<Boolean>(any()) } answers {
+            val block = firstArg<(io.realm.Realm) -> Boolean>()
+            block(mockRealm)
+        }
+        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealmQuery.findFirst() } returns null
+
+        val result = repository.hasAtLeastOneUser()
+        assertEquals(false, result)
+    }
 }

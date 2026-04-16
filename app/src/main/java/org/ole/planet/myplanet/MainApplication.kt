@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.net.TrafficStats
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
@@ -34,13 +35,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.ApiClientEntryPoint
-import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.di.RetryQueueEntryPoint
-import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
-import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
@@ -53,7 +50,9 @@ import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
@@ -116,10 +115,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             applicationScope.launch {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     context,
-                    WorkerDependenciesEntryPoint::class.java
+                    CoreDependenciesEntryPoint::class.java
                 )
                 val userSessionManager = entryPoint.userSessionManager()
-                val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                val spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
                     val model = userSessionManager.getUserModel()
@@ -154,7 +153,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             urlString: String,
             ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
         ): Boolean {
-            val entryPoint = EntryPointAccessors.fromApplication(context, ServerUrlMapperEntryPoint::class.java)
+            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
@@ -171,6 +170,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
+                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
@@ -180,6 +180,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         connection.responseCode
                     } finally {
                         connection.disconnect()
+                        TrafficStats.clearThreadStatsTag()
                     }
                 }
                 responseCode in 200..299
@@ -201,6 +202,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
+    private var mainThreadRealm: io.realm.Realm? = null
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
@@ -210,6 +212,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         super.onCreate()
         context = this
         setupCriticalProperties()
+        LocaleUtils.preload(this)
+        warmUpMainThreadRealm()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
@@ -218,7 +222,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private fun performDeferredInitialization() {
         applicationScope.launch(Dispatchers.IO) {
+            FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
+            MarkdownUtils.warmUp(this@MainApplication)
         }
         applicationScope.launch {
             initApp()
@@ -239,15 +245,23 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private fun setupCriticalProperties() {
         applicationScope = EntryPointAccessors.fromApplication(
             this,
-            ApplicationScopeEntryPoint::class.java
+            CoreDependenciesEntryPoint::class.java
         ).applicationScope()
+    }
+
+    private fun warmUpMainThreadRealm() {
+        try {
+            mainThreadRealm = databaseService.createManagedRealmInstance()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun ensureApiClientInitialized() {
         withContext(dispatcherProvider.io) {
             EntryPointAccessors.fromApplication(
                 this@MainApplication,
-                ApiClientEntryPoint::class.java
+                NetworkDependenciesEntryPoint::class.java
             ).apiClient()
             apiClientInitialized.complete(Unit)
         }
@@ -306,7 +320,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             try {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     this@MainApplication,
-                    RetryQueueEntryPoint::class.java
+                    NetworkDependenciesEntryPoint::class.java
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
@@ -445,6 +459,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
+        mainThreadRealm?.close()
+        mainThreadRealm = null
         super.onTerminate()
         stopListenNetworkState()
     }

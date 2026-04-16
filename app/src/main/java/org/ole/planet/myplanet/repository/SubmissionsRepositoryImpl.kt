@@ -30,7 +30,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val teamsRepositoryProvider: Provider<TeamsRepository>
+    private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     private fun RealmSubmission.examIdFromParentId(): String? {
@@ -61,40 +63,43 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
+        if (examIds.isEmpty()) return emptyList()
+        return queryList(RealmStepExam::class.java) {
+            `in`("id", examIds.toTypedArray())
+        }
+    }
+
     override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
 
-        return databaseService.withRealmAsync { realm ->
-            val pendingSurveys = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("status", "pending")
-                .equalTo("type", "survey")
-                .isNull("membershipDoc")
-                .findAll()
-
-            if (pendingSurveys.isEmpty()) {
-                return@withRealmAsync emptyList()
-            }
-
-            val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
-            if (examIds.isEmpty()) {
-                return@withRealmAsync emptyList()
-            }
-
-            val exams = realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds.toTypedArray())
-                .findAll()
-            val validExamIds = exams.mapNotNull { it.id }.toSet()
-
-            val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
-            pendingSurveys.forEach { submission ->
-                val examId = submission.examIdFromParentId()
-                if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
-                    uniqueSurveys[examId] = submission
-                }
-            }
-            realm.copyFromRealm(uniqueSurveys.values)
+        val pendingSurveys = queryList(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("status", "pending")
+            equalTo("type", "survey")
+            isNull("membershipDoc")
         }
+
+        if (pendingSurveys.isEmpty()) {
+            return emptyList()
+        }
+
+        val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
+        if (examIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val exams = getExamsByIds(examIds)
+        val validExamIds = exams.mapNotNull { it.id }.toSet()
+
+        val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
+        pendingSurveys.forEach { submission ->
+            val examId = submission.examIdFromParentId()
+            if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
+                uniqueSurveys[examId] = submission
+            }
+        }
+        return uniqueSurveys.values.toList()
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
@@ -105,16 +110,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             return emptyList()
         }
 
-        return databaseService.withRealmAsync { realm ->
-            val exams = realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds.toTypedArray())
-                .findAll()
-            val examMap = exams.associate { it.id to (it.name ?: "") }
+        val exams = getExamsByIds(examIds)
+        val examMap = exams.associate { it.id to (it.name ?: "") }
 
-            submissions.map { submission ->
-                val examId = submission.examIdFromParentId()
-                examMap[examId] ?: ""
-            }
+        return submissions.map { submission ->
+            val examId = submission.examIdFromParentId()
+            examMap[examId] ?: ""
         }
     }
 
@@ -126,19 +127,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             return emptyMap()
         }
 
-        return databaseService.withRealmAsync { realm ->
-            val examMap = realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds.toTypedArray())
-                .findAll()
-                .associateBy { it.id }
+        val exams = getExamsByIds(examIds)
+        val examMap = exams.associateBy { it.id }
 
-            val resultMap = submissions.mapNotNull { sub ->
-                val parentId = sub.parentId
-                val examId = sub.examIdFromParentId()
-                examMap[examId]?.let { parentId to realm.copyFromRealm(it) }
-            }.toMap()
-            resultMap
-        }
+        return submissions.mapNotNull { sub ->
+            val parentId = sub.parentId
+            val examId = sub.examIdFromParentId()
+            examMap[examId]?.let { parentId to it }
+        }.toMap()
     }
 
     override suspend fun getExamQuestionCount(stepId: String): Int {
@@ -239,84 +235,78 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        return databaseService.withRealmAsync { realm ->
-            var submission = realm.where(RealmSubmission::class.java)
-                .equalTo("id", submissionId)
+        var submission = queryList(RealmSubmission::class.java) {
+            equalTo("id", submissionId)
                 .or()
                 .equalTo("_id", submissionId)
-                .findFirst()
+        }.firstOrNull()
 
-            if (submission == null) {
-                submission = realm.where(RealmSubmission::class.java)
-                    .contains("parentId", submissionId)
-                    .findFirst()
-            }
+        if (submission == null) {
+            submission = queryList(RealmSubmission::class.java) {
+                contains("parentId", submissionId)
+            }.firstOrNull()
+        }
 
-            if (submission == null) {
-                return@withRealmAsync null
-            }
+        if (submission == null) {
+            return null
+        }
 
-            val examId = submission.parentId?.substringBefore('@')
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
+        val examId = submission.parentId?.substringBefore('@')
+        val exam = examId?.let { getExamById(it) }
 
-            val user = realm.where(RealmUser::class.java)
-                .equalTo("id", submission.userId)
-                .findFirst()
+        val user = submission.userId?.let { findByField(RealmUser::class.java, "id", it) }
 
-            val questions = realm.where(RealmExamQuestion::class.java)
-                .equalTo("examId", examId)
-                .findAll()
+        val questions = queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", examId)
+        }
 
-            val questionAnswers = questions.map { question ->
-                val answer = submission.answers?.find { it.questionId == question.id }
-                val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
-                var formattedAnswer: String? = null
-                if (answer != null) {
-                    if (!answer.value.isNullOrEmpty()) {
-                        formattedAnswer = answer.value
-                    } else {
-                        val choices = answer.valueChoices
-                        if (!choices.isNullOrEmpty()) {
-                            if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
-                                formattedAnswer = choices.map { choiceId ->
-                                    try {
-                                        val choicesArray = com.google.gson.JsonParser.parseString(question.choices).asJsonArray
-                                        val choiceObject = choicesArray.find {
-                                            it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
-                                        }?.asJsonObject
-                                        choiceObject?.get("text")?.asString ?: choiceId
-                                    } catch (e: Exception) {
-                                        choiceId
-                                    }
-                                }.joinToString(", ")
-                            } else {
-                                formattedAnswer = choices.joinToString(", ")
-                            }
+        val questionAnswers = questions.map { question ->
+            val answer = submission.answers?.find { it.questionId == question.id }
+            val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
+            var formattedAnswer: String? = null
+            if (answer != null) {
+                if (!answer.value.isNullOrEmpty()) {
+                    formattedAnswer = answer.value
+                } else {
+                    val choices = answer.valueChoices
+                    if (!choices.isNullOrEmpty()) {
+                        if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
+                            formattedAnswer = choices.map { choiceId ->
+                                try {
+                                    val choicesArray = com.google.gson.JsonParser.parseString(question.choices).asJsonArray
+                                    val choiceObject = choicesArray.find {
+                                        it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
+                                    }?.asJsonObject
+                                    choiceObject?.get("text")?.asString ?: choiceId
+                                } catch (e: Exception) {
+                                    choiceId
+                                }
+                            }.joinToString(", ")
+                        } else {
+                            formattedAnswer = choices.joinToString(", ")
                         }
                     }
                 }
-
-                QuestionAnswer(
-                    questionId = question.id,
-                    questionHeader = question.header,
-                    questionBody = question.body,
-                    questionType = question.type,
-                    answer = formattedAnswer,
-                    answerChoices = answer?.valueChoices?.toList(),
-                    isCorrect = isCorrect
-                )
             }
 
-            SubmissionDetail(
-                title = exam?.name ?: "Submission Details",
-                status = "Status: ${submission.status ?: "Unknown"}",
-                date = submission.startTime,
-                submittedBy = "Submitted by: ${user?.name ?: "Unknown"}",
-                questionAnswers = questionAnswers
+            QuestionAnswer(
+                questionId = question.id,
+                questionHeader = question.header,
+                questionBody = question.body,
+                questionType = question.type,
+                answer = formattedAnswer,
+                answerChoices = answer?.valueChoices?.toList(),
+                isCorrect = isCorrect
             )
         }
+
+        return SubmissionDetail(
+            title = exam?.name ?: "Submission Details",
+            status = "Status: ${submission.status ?: "Unknown"}",
+            date = submission.startTime,
+            submittedBy = "Submitted by: ${user?.name ?: "Unknown"}",
+            questionAnswers = questionAnswers
+        )
     }
 
     override fun getNormalizedSubmitterName(submission: RealmSubmission): String? {
@@ -439,9 +429,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             null
         }
 
-        return databaseService.withRealmAsync { realm ->
-            var detachedSub: RealmSubmission? = null
-            realm.executeTransaction { r ->
+        var detachedSub: RealmSubmission? = null
+        executeTransaction { r ->
                 val managedSub = createSubmissionInternal(null, r)
 
                 val parentId = when {
@@ -503,8 +492,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 }
                 detachedSub = r.copyFromRealm(managedSub)
             }
-            detachedSub
-        }
+        return detachedSub
     }
 
     override suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean {
@@ -611,7 +599,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getLastPendingSubmission(userId: String?): RealmSubmission? {
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             realm.where(RealmSubmission::class.java)
                 .equalTo("status", "pending")
                 .equalTo("userId", userId)
@@ -661,7 +649,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
-        return databaseService.withRealm { realm ->
+        return withRealm { realm ->
             val results = realm.where(RealmSubmitPhotos::class.java)
                 .`in`("id", ids)
                 .findAll()
@@ -670,27 +658,25 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
-        return databaseService.withRealmAsync { realm ->
-            var detachedSub: RealmSubmission? = null
-            realm.executeTransaction { r ->
-                val sub = r.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("parentId", parentId)
-                    .sort("lastUpdateTime", Sort.DESCENDING)
-                    .equalTo("status", "pending")
-                    .findFirst()
+        var detachedSub: RealmSubmission? = null
+        executeTransaction { r ->
+            val sub = r.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("parentId", parentId)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+                .equalTo("status", "pending")
+                .findFirst()
 
-                val managedSub = createSubmissionInternal(sub, r)
-                if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
-                if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
-                if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
-                if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
-                if (managedSub.startTime == 0L) managedSub.startTime = Date().time
+            val managedSub = createSubmissionInternal(sub, r)
+            if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
+            if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
+            if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
+            if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
+            if (managedSub.startTime == 0L) managedSub.startTime = Date().time
 
-                detachedSub = r.copyFromRealm(managedSub)
-            }
-            detachedSub!!
+            detachedSub = r.copyFromRealm(managedSub)
         }
+        return detachedSub!!
     }
 
     private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {
@@ -700,5 +686,262 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
         submission!!.lastUpdateTime = Date().time
         return submission
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            insertSubmission(realm, jsonDoc)
+        }
+    }
+
+    override fun insertSubmission(mRealm: io.realm.Realm, submission: JsonObject) {
+        if (submission.has("_attachments")) {
+            return
+        }
+
+        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", submission)
+        var transactionStarted = false
+
+        try {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+                transactionStarted = true
+            }
+
+            var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
+            val isNewSubmission = sub == null
+            val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+            val serverStatus = org.ole.planet.myplanet.utils.JsonUtils.getString("status", submission)
+            val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
+                (sub?.status == "complete" || sub?.status == "requires grading")
+            val skipOverwrite = hadLocalChanges || isStatusDowngrade
+
+            if (sub == null) {
+                sub = mRealm.createObject(RealmSubmission::class.java, id)
+            }
+
+            updateBasicFields(sub, id, serverStatus, skipOverwrite, submission)
+            updateTeam(mRealm, sub, submission)
+            updateMembership(mRealm, sub, submission)
+            updateUserId(sub, submission)
+            updateAnswers(mRealm, sub, submission, skipOverwrite)
+
+            if (transactionStarted) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (transactionStarted && mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+        }
+    }
+
+    private fun updateBasicFields(
+        sub: RealmSubmission?,
+        id: String,
+        serverStatus: String,
+        skipOverwrite: Boolean,
+        submission: JsonObject
+    ) {
+        sub?._id = id
+        if (!skipOverwrite) {
+            sub?.status = serverStatus
+            sub?.isUpdated = false
+        }
+        sub?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", submission)
+        sub?.grade = org.ole.planet.myplanet.utils.JsonUtils.getLong("grade", submission)
+        sub?.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", submission)
+        sub?.uploaded = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", submission).isNotEmpty()
+        sub?.startTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("startTime", submission)
+        sub?.lastUpdateTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("lastUpdateTime", submission)
+        sub?.parentId = org.ole.planet.myplanet.utils.JsonUtils.getString("parentId", submission)
+        sub?.sender = org.ole.planet.myplanet.utils.JsonUtils.getString("sender", submission)
+        sub?.source = org.ole.planet.myplanet.utils.JsonUtils.getString("source", submission)
+        sub?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", submission)
+        sub?.parent = org.ole.planet.myplanet.utils.JsonUtils.gson.toJson(org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("parent", submission))
+        sub?.user = org.ole.planet.myplanet.utils.JsonUtils.gson.toJson(org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("user", submission))
+    }
+
+    private fun updateTeam(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
+        if (submission.has("team") && submission.get("team").isJsonObject) {
+            val teamJson = submission.getAsJsonObject("team")
+            val teamRef = mRealm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+            teamRef._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", teamJson)
+            teamRef.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", teamJson)
+            teamRef.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", teamJson)
+            sub?.teamObject = teamRef
+        }
+    }
+
+    private fun updateMembership(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
+        val userJson = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("user", submission)
+        if (userJson.has("membershipDoc")) {
+            val membershipJson = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("membershipDoc", userJson)
+            if (membershipJson.entrySet().isNotEmpty()) {
+                val membership = mRealm.createObject(RealmMembershipDoc::class.java)
+                membership.teamId = org.ole.planet.myplanet.utils.JsonUtils.getString("teamId", membershipJson)
+                sub?.membershipDoc = membership
+            }
+        }
+    }
+
+    private fun updateUserId(sub: RealmSubmission?, submission: JsonObject) {
+        val userId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("user", submission))
+        sub?.userId = if (userId.contains("@")) {
+            val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            if (us[0].startsWith("org.couchdb.user:")) us[0] else "org.couchdb.user:${us[0]}"
+        } else {
+            userId
+        }
+    }
+
+    private fun updateAnswers(
+        mRealm: io.realm.Realm,
+        sub: RealmSubmission?,
+        submission: JsonObject,
+        skipOverwrite: Boolean
+    ) {
+        if (!skipOverwrite && submission.has("answers")) {
+            val answersArray = submission.get("answers").asJsonArray
+            sub?.answers = io.realm.RealmList<RealmAnswer>()
+
+            val unmanagedAnswers = mutableListOf<RealmAnswer>()
+            for (i in 0 until answersArray.size()) {
+                val answerJson = answersArray[i].asJsonObject
+                val realmAnswer = RealmAnswer()
+                realmAnswer.id = UUID.randomUUID().toString()
+
+                realmAnswer.value = org.ole.planet.myplanet.utils.JsonUtils.getString("value", answerJson)
+                realmAnswer.mistakes = org.ole.planet.myplanet.utils.JsonUtils.getInt("mistakes", answerJson)
+                realmAnswer.isPassed = org.ole.planet.myplanet.utils.JsonUtils.getBoolean("passed", answerJson)
+                realmAnswer.submissionId = sub?._id
+                realmAnswer.examId = sub?.parentId
+
+                val examIdPart = sub?.parentId?.split("@")?.get(0) ?: sub?.parentId
+                realmAnswer.questionId = if (answerJson.has("questionId")) {
+                    org.ole.planet.myplanet.utils.JsonUtils.getString("questionId", answerJson)
+                } else {
+                    "$examIdPart-$i"
+                }
+
+                unmanagedAnswers.add(realmAnswer)
+            }
+
+            if (unmanagedAnswers.isNotEmpty()) {
+                val managedAnswers = mRealm.copyToRealmOrUpdate(unmanagedAnswers)
+                sub?.answers?.addAll(managedAnswers)
+            }
+        }
+    }
+
+    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
+        val `object` = JsonObject()
+        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+        var examId = submission.parentId
+        if (submission.parentId?.contains("@") == true) {
+            examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
+        }
+        val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+        if (!android.text.TextUtils.isEmpty(submission._id)) {
+            `object`.addProperty("_id", submission._id)
+        }
+        if (!android.text.TextUtils.isEmpty(submission._rev)) {
+            `object`.addProperty("_rev", submission._rev)
+        }
+        `object`.addProperty("parentId", submission.parentId)
+        `object`.addProperty("type", submission.type)
+
+        if (submission.teamObject != null) {
+            val teamJson = JsonObject()
+            teamJson.addProperty("_id", submission.teamObject?._id)
+            teamJson.addProperty("name", submission.teamObject?.name)
+            teamJson.addProperty("type", submission.teamObject?.type)
+            `object`.add("team", teamJson)
+        }
+
+        `object`.addProperty("grade", submission.grade)
+        `object`.addProperty("startTime", submission.startTime)
+        `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
+        `object`.addProperty("status", submission.status)
+        `object`.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+        `object`.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+        `object`.addProperty("sender", submission.sender)
+        `object`.addProperty("source", sharedPrefManager.getPlanetCode())
+        `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
+        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+        if (exam != null) {
+            `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+        } else {
+            val parent = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
+            `object`.add("parent", parent)
+        }
+        if (android.text.TextUtils.isEmpty(submission.user)) {
+            `object`.add("user", user?.serialize())
+        } else {
+            `object`.add("user", com.google.gson.JsonParser.parseString(submission.user))
+        }
+        `object`
+    }
+
+    override fun serializeSubmission(mRealm: io.realm.Realm, submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject {
+        val jsonObject = JsonObject()
+
+        try {
+            var examId = submission.parentId
+            if (submission.parentId?.contains("@") == true) {
+                examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
+            }
+            val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+
+            if (!submission._id.isNullOrEmpty()) {
+                jsonObject.addProperty("_id", submission._id)
+            }
+            if (!submission._rev.isNullOrEmpty()) {
+                jsonObject.addProperty("_rev", submission._rev)
+            }
+
+            jsonObject.addProperty("parentId", submission.parentId ?: "")
+            jsonObject.addProperty("type", submission.type ?: "survey")
+            jsonObject.addProperty("grade", submission.grade)
+            jsonObject.addProperty("startTime", submission.startTime)
+            jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
+            jsonObject.addProperty("status", submission.status ?: "pending")
+            jsonObject.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+            jsonObject.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+            jsonObject.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+            jsonObject.addProperty("sender", submission.sender)
+            jsonObject.addProperty("source", source)
+            jsonObject.addProperty("parentCode", parentCode)
+            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+            if (exam != null) {
+                jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+            } else if (!submission.parent.isNullOrEmpty()) {
+                jsonObject.add("parent", com.google.gson.JsonParser.parseString(submission.parent))
+            }
+
+            if (!submission.user.isNullOrEmpty()) {
+                val userJson = com.google.gson.JsonParser.parseString(submission.user).asJsonObject
+                if (submission.membershipDoc != null) {
+                    val membershipJson = JsonObject()
+                    membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
+                    userJson.add("membershipDoc", membershipJson)
+                }
+                jsonObject.add("user", userJson)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return jsonObject
     }
 }

@@ -4,26 +4,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 
-data class TeamLogData(
-    val id: String?,
-    val time: Long?,
-    val user: String?,
-    val type: String?,
-    val serialized: JsonObject
-)
-
-data class TeamLogUploadResult(
-    val id: String?,
-    val time: Long?,
-    val user: String?,
-    val type: String?,
-    val _id: String,
-    val _rev: String
-)
-
 interface ActivitiesRepository {
-    suspend fun getUnuploadedTeamLogs(): List<TeamLogData>
-    suspend fun markTeamLogsUploaded(results: List<TeamLogUploadResult>)
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity>
     suspend fun getOfflineVisitCount(userId: String): Int
     suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>>
@@ -40,7 +21,8 @@ interface ActivitiesRepository {
     suspend fun getUnuploadedLoginActivities(): List<org.ole.planet.myplanet.model.LoginActivityData>
     suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>)
     suspend fun recordSyncActivity(userId: String)
-    fun insertActivity(realm: io.realm.Realm, json: JsonObject)
-    fun getRecentLogin(realm: io.realm.Realm): RealmOfflineActivity?
+    suspend fun insertActivity(json: JsonObject)
+    suspend fun getRecentLogin(): RealmOfflineActivity?
     fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): JsonObject
+    fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

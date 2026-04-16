@@ -31,6 +31,8 @@ interface UserRepository {
         endMillis: Long,
     ): Map<Int, Int>
     fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser?
+    suspend fun isUserExists(name: String?): Boolean
+    fun parseLeadersJson(jsonString: String): List<RealmUser>
     suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
     suspend fun fetchUserSecurityData(name: String)
@@ -86,7 +88,7 @@ interface UserRepository {
     suspend fun validateUsername(username: String): String?
     suspend fun cleanupDuplicateUsers()
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
-    fun hasAtLeastOneUser(): Boolean
+    suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
     suspend fun initializeAchievement(achievementId: String): RealmAchievement?
     suspend fun updateAchievement(
@@ -107,4 +109,7 @@ interface UserRepository {
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getAchievementsForUpload(): List<JsonObject>
     suspend fun markAchievementUploaded(id: String, rev: String?)
+    fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences)
+    suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject
 }

@@ -7,21 +7,23 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
+import android.util.Log
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) {
     private val fullName: String
 
@@ -50,7 +52,7 @@ class UserSessionManager @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val model = getUserModel()
                 activitiesRepository.logLogin(
@@ -59,11 +61,11 @@ class UserSessionManager @Inject constructor(
                     parentCode = model?.parentCode,
                     planetCode = model?.planetCode
                 )
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback?.invoke()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     onError?.invoke(e)
                 }
             }
@@ -71,12 +73,12 @@ class UserSessionManager @Inject constructor(
     }
 
     fun logoutAsync() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val model = getUserModel()
                 activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in logoutAsync", e)
             }
         }
     }
@@ -107,7 +109,7 @@ class UserSessionManager @Inject constructor(
         val itemTitle = item.title
         val itemResourceId = item.resourceId
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val model = getUserModel()
                 if (model?.id?.startsWith("guest") == true) {
@@ -124,7 +126,7 @@ class UserSessionManager @Inject constructor(
                 )
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in setResourceOpenCount", e)
             }
         }
     }
@@ -144,6 +146,7 @@ class UserSessionManager @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "UserSessionManager"
         const val KEY_LOGIN = "login"
         const val KEY_RESOURCE_OPEN = "visit"
         const val KEY_RESOURCE_DOWNLOAD = "download"
