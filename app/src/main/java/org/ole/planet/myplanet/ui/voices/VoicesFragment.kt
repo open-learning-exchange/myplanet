@@ -267,10 +267,10 @@ class VoicesFragment : BaseVoicesFragment() {
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.updateList(sortedList)
+            adapterNews?.submitList(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.updateList(list)
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
     }
