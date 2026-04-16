@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
@@ -31,6 +32,19 @@ class TeamViewModel @Inject constructor(
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
+
+    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
+    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
+
+    fun loadTasks(teamId: String) {
+        viewModelScope.launch {
+            withContext(dispatcherProvider.io) {
+                teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+                    _taskList.value = tasks
+                }
+            }
+        }
+    }
 
     private var currentTeams: List<TeamSummary> = emptyList()
     private var currentSearchQuery: String = ""
