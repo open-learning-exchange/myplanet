@@ -13,6 +13,8 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
@@ -274,19 +276,25 @@ class UploadToShelfService @Inject constructor(
             val myHealths = healthRepository.getUpdatedHealthExaminations()
 
             val uploadedHealths = mutableMapOf<String, String?>()
-            myHealths.forEach { pojo ->
-                try {
-                    val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
+            myHealths.map { pojo ->
+                async {
+                    try {
+                        val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
 
-                    if (res.body() != null && res.body()?.has("id") == true) {
-                        val rev = res.body()?.get("rev")?.asString
-                        pojo._id?.let { id ->
-                            uploadedHealths[id] = rev
+                        if (res.body() != null && res.body()?.has("id") == true) {
+                            val rev = res.body()?.get("rev")?.asString
+                            val id = pojo._id
+                            if (id != null) {
+                                return@async id to rev
+                            }
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                    null
                 }
+            }.awaitAll().filterNotNull().forEach { (id, rev) ->
+                uploadedHealths[id] = rev
             }
 
             healthRepository.markHealthExaminationsUploaded(uploadedHealths)
@@ -301,24 +309,30 @@ class UploadToShelfService @Inject constructor(
                 val myHealths = healthRepository.getUpdatedHealthForUser(userId)
 
                 val uploadedHealths = mutableMapOf<String, String?>()
-                myHealths.forEach { pojo ->
-                    try {
-                        val res = apiInterface.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/health",
-                            serialize(pojo)
-                        )
+                myHealths.map { pojo ->
+                    async {
+                        try {
+                            val res = apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/health",
+                                serialize(pojo)
+                            )
 
-                        if (res.body() != null && res.body()?.has("id") == true) {
-                            val rev = res.body()?.get("rev")?.asString
-                            pojo._id?.let { id ->
-                                uploadedHealths[id] = rev
+                            if (res.body() != null && res.body()?.has("id") == true) {
+                                val rev = res.body()?.get("rev")?.asString
+                                val id = pojo._id
+                                if (id != null) {
+                                    return@async id to rev
+                                }
                             }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                        null
                     }
+                }.awaitAll().filterNotNull().forEach { (id, rev) ->
+                    uploadedHealths[id] = rev
                 }
 
                 healthRepository.markHealthExaminationsUploaded(uploadedHealths)
