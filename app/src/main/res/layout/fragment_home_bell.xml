@@ -1,47 +1,130 @@
-<FrameLayout
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  fragment_home_bell.xml  (redesigned)
+  Drop-in replacement for app/src/main/res/layout/fragment_home_bell.xml
+
+  Requires (included files / drawables / colors below):
+    layout/card_profile_bell.xml            (updated, included at top)
+    layout/home_offline_banner.xml          (new)
+    layout/home_continue_card.xml           (new)
+    layout/home_card_library.xml            (redesigned)
+    layout/home_card_courses.xml            (redesigned)
+    layout/home_card_teams.xml              (redesigned)
+    layout/home_card_mylife.xml             (redesigned)
+    drawable/bg_category_library.xml  …courses/teams/life   (new)
+    drawable/bg_count_badge.xml, bg_chip_offline.xml, bg_chip_synced.xml  (new)
+    drawable/ic_chevron_down.xml, ic_bell.xml, ic_cloud_off.xml           (new)
+    colors: see values/colors_dashboard.xml
+-->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorPrimary"
-    tools:context="org.ole.planet.myplanet.ui.dashboard.DashboardFragment">
+    android:background="@color/dash_bg"
+    tools:context="org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp">
 
-        <include
-            android:id="@+id/cardProfileBell"
-            layout="@layout/card_profile_bell"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-        <include
-            android:id="@+id/homeCardLibrary"
-            layout="@layout/home_card_library"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-        <include
-            android:id="@+id/homeCardCourses"
-            layout="@layout/home_card_courses"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-        <include
-            android:id="@+id/homeCardTeams"
-            layout="@layout/home_card_teams"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-        <include
-            android:id="@+id/homeCardMyLife"
-            layout="@layout/home_card_mylife"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header: avatar + greeting + offline chip + bell -->
+            <include
+                android:id="@+id/cardProfileBell"
+                layout="@layout/card_profile_bell" />
+
+            <!-- Offline banner — visibility toggled from fragment -->
+            <include
+                android:id="@+id/offlineBanner"
+                layout="@layout/home_offline_banner" />
+
+            <!-- Eyebrow + page title -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="4dp"
+                android:text="@string/your_learning"
+                android:textColor="@color/dash_ink_soft"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:id="@+id/dashTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginTop="2dp"
+                android:text="@string/pick_up_where_you_left_off"
+                android:textColor="@color/dash_ink"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:letterSpacing="-0.015" />
+
+            <!-- Continue-learning hero -->
+            <include
+                android:id="@+id/homeContinue"
+                layout="@layout/home_continue_card" />
+
+            <!-- Section label -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/my_stuff"
+                    android:textAllCaps="true"
+                    android:textColor="@color/dash_ink"
+                    android:textSize="12sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tap_card_to_expand"
+                    android:textColor="@color/dash_ink_soft"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <!-- Four category cards — each has header row + collapsible recent list -->
+            <include
+                android:id="@+id/homeCardLibrary"
+                layout="@layout/home_card_library" />
+
+            <include
+                android:id="@+id/homeCardCourses"
+                layout="@layout/home_card_courses" />
+
+            <include
+                android:id="@+id/homeCardTeams"
+                layout="@layout/home_card_teams" />
+
+            <include
+                android:id="@+id/homeCardMyLife"
+                layout="@layout/home_card_mylife" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/fab_my_activity"
@@ -51,14 +134,19 @@
         android:layout_margin="@dimen/padding_large"
         android:src="@drawable/ic_activity"
         android:contentDescription="@string/my_activity"
-        app:fab_label="@string/my_activity"/>
+        app:fab_label="@string/my_activity"
+        app:fab_colorNormal="@color/colorPrimary"
+        app:fab_colorPressed="@color/colorPrimaryDark" />
+
+    <!-- Legacy update-profile prompt (kept for parity with existing code) -->
     <LinearLayout
         android:id="@+id/ll_prompt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/md_amber_100"
         android:orientation="horizontal"
-        android:padding="@dimen/padding_normal">
+        android:padding="@dimen/padding_normal"
+        android:visibility="gone">
 
         <TextView
             android:layout_width="0dp"
@@ -67,6 +155,7 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/update_profile_alert"
             android:textColor="@color/md_black_1000" />
+
         <ImageView
             android:id="@+id/ic_close"
             android:layout_width="@dimen/_30dp"
@@ -75,4 +164,4 @@
             app:tint="@color/md_black_1000"
             android:contentDescription="@string/close" />
     </LinearLayout>
-</FrameLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

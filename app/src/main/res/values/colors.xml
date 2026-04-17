@@ -39,4 +39,37 @@
     <color name="dropdown_bg">@android:color/white</color>
     <color name="dropdown_text">@android:color/black</color>
 
+    <!-- Dashboard redesign palette -->
+    <color name="dash_bg">#F7F7F5</color>
+    <color name="dash_surface_2">#EFEFEA</color>
+    <color name="dash_line">#E7E5DF</color>
+    <color name="dash_ink">#1C1C1A</color>
+    <color name="dash_ink_soft">#6B6B66</color>
+    <color name="cat_library_bg">#FBE7E1</color>
+    <color name="cat_library_chip">#F2CFC2</color>
+    <color name="cat_library_ink">#5A1A0B</color>
+    <color name="cat_library_accent">#C94A28</color>
+    <color name="cat_courses_bg">#F6ECD1</color>
+    <color name="cat_courses_chip">#ECD99E</color>
+    <color name="cat_courses_ink">#4A3A0C</color>
+    <color name="cat_courses_accent">#A87E1E</color>
+    <color name="cat_courses_ink_soft">#7A5E1A</color>
+    <color name="cat_teams_bg">#DCEFE1</color>
+    <color name="cat_teams_chip">#BCDDC6</color>
+    <color name="cat_teams_ink">#0F3B1E</color>
+    <color name="cat_teams_accent">#2E8B4A</color>
+    <color name="cat_life_bg">#ECE1F3</color>
+    <color name="cat_life_chip">#D7C2E4</color>
+    <color name="cat_life_ink">#3B1B52</color>
+    <color name="cat_life_accent">#7F49B0</color>
+    <color name="chip_synced_bg">#DDEEDF</color>
+    <color name="chip_synced_ink">#1E6B33</color>
+    <color name="chip_offline_bg">#FBE6DA</color>
+    <color name="chip_offline_ink">#8A3A12</color>
+    <color name="offline_bg">#FCEEDF</color>
+    <color name="offline_stroke">#F0D3B2</color>
+    <color name="offline_icon_bg">#F6D8B8</color>
+    <color name="offline_ink">#8A3A12</color>
+    <color name="notif_dot">#D64A26</color>
+
 </resources>

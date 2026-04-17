@@ -11,7 +11,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
@@ -21,6 +23,8 @@ class BellDashboardViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val coursesRepository: CoursesRepository,
     private val teamsRepository: TeamsRepository,
+    private val resourcesRepository: ResourcesRepository,
+    private val lifeRepository: LifeRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
@@ -28,6 +32,18 @@ class BellDashboardViewModel @Inject constructor(
 
     private val _completedCourses = MutableStateFlow<List<CourseCompletion>>(emptyList())
     val completedCourses: StateFlow<List<CourseCompletion>> = _completedCourses.asStateFlow()
+
+    private val _coursePreviewItems = MutableStateFlow<List<CoursePreviewItem>>(emptyList())
+    val coursePreviewItems: StateFlow<List<CoursePreviewItem>> = _coursePreviewItems.asStateFlow()
+
+    private val _libraryPreviewItems = MutableStateFlow<List<LibraryPreviewItem>>(emptyList())
+    val libraryPreviewItems: StateFlow<List<LibraryPreviewItem>> = _libraryPreviewItems.asStateFlow()
+
+    private val _teamPreviewItems = MutableStateFlow<List<TeamPreviewItem>>(emptyList())
+    val teamPreviewItems: StateFlow<List<TeamPreviewItem>> = _teamPreviewItems.asStateFlow()
+
+    private val _lifePreviewItems = MutableStateFlow<List<LifePreviewItem>>(emptyList())
+    val lifePreviewItems: StateFlow<List<LifePreviewItem>> = _lifePreviewItems.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -38,6 +54,77 @@ class BellDashboardViewModel @Inject constructor(
                     updateNetworkStatus(NetworkStatus.Disconnected)
                 }
             }
+        }
+    }
+
+    fun loadCoursePreviewItems(userId: String) {
+        viewModelScope.launch {
+            val items = withContext(dispatcherProvider.io) {
+                val myCourses = coursesRepository.getMyCourses(userId)
+                val allProgressRecords = progressRepository.getProgressRecords(userId)
+                myCourses.filter { !it.courseTitle.isNullOrBlank() }.map { course ->
+                    val passedSteps = allProgressRecords
+                        .filter { it.courseId == course.courseId && it.passed }
+                        .map { it.stepNum }
+                        .toSet()
+                        .size
+                    val totalSteps = course.courseSteps?.size ?: 0
+                    val percent = if (totalSteps > 0) (passedSteps * 100) / totalSteps else 0
+                    CoursePreviewItem(
+                        courseId = course.courseId ?: "",
+                        courseTitle = course.courseTitle ?: "",
+                        progressPercent = percent
+                    )
+                }
+            }
+            _coursePreviewItems.value = items
+        }
+    }
+
+    fun loadLibraryPreviewItems(userId: String) {
+        viewModelScope.launch {
+            val items = withContext(dispatcherProvider.io) {
+                resourcesRepository.getMyLibrary(userId)
+                    .filter { !it.title.isNullOrBlank() }
+                    .map { r ->
+                        LibraryPreviewItem(
+                            resourceId = r.id ?: "",
+                            title = r.title ?: "",
+                            subline = r.mediaType?.replaceFirstChar { it.uppercase() }
+                                ?: r.resourceType?.replaceFirstChar { it.uppercase() }
+                                ?: ""
+                        )
+                    }
+            }
+            _libraryPreviewItems.value = items
+        }
+    }
+
+    fun loadTeamPreviewItems(userId: String) {
+        viewModelScope.launch {
+            val items = withContext(dispatcherProvider.io) {
+                teamsRepository.getMyTeamsByUserId(userId)
+                    .filter { !it.name.isNullOrBlank() }
+                    .map { t ->
+                        TeamPreviewItem(
+                            teamId = t._id ?: "",
+                            name = t.name ?: "",
+                            teamType = t.teamType ?: t.type ?: ""
+                        )
+                    }
+            }
+            _teamPreviewItems.value = items
+        }
+    }
+
+    fun loadLifePreviewItems(userId: String) {
+        viewModelScope.launch {
+            val items = withContext(dispatcherProvider.io) {
+                lifeRepository.getMyLifeByUserId(userId)
+                    .filter { it.isVisible && !it.title.isNullOrBlank() }
+                    .map { l -> LifePreviewItem(imageId = l.imageId ?: "", title = l.title ?: "") }
+            }
+            _lifePreviewItems.value = items
         }
     }
 
@@ -94,6 +181,16 @@ class BellDashboardViewModel @Inject constructor(
 }
 
 data class CourseCompletion(val courseId: String?, val courseTitle: String?)
+
+data class CoursePreviewItem(
+    val courseId: String,
+    val courseTitle: String,
+    val progressPercent: Int
+)
+
+data class LibraryPreviewItem(val resourceId: String, val title: String, val subline: String)
+data class TeamPreviewItem(val teamId: String, val name: String, val teamType: String)
+data class LifePreviewItem(val imageId: String, val title: String)
 
 sealed class NetworkStatus {
     object Disconnected : NetworkStatus()

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.NumberPicker
+import android.widget.ProgressBar
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -19,6 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.card.MaterialCardView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -54,6 +57,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
     var user: RealmUser? = null
     private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
+    private var isCoursesExpanded = false
+    private var isLibraryExpanded = false
+    private var isTeamsExpanded = false
+    private var isLifeExpanded = false
+    private var collapseCurrentSection: (() -> Unit)? = null
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -76,12 +84,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
+        observeCoursePreviewItems()
+        observeLibraryPreviewItems()
+        observeTeamPreviewItems()
+        observeLifePreviewItems()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
             user = profileDbHandler.getUserModel()
             binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
                 viewModel.loadCompletedCourses(it)
+                viewModel.loadCoursePreviewItems(it)
+                viewModel.loadLibraryPreviewItems(it)
+                viewModel.loadTeamPreviewItems(it)
+                viewModel.loadLifePreviewItems(it)
             }
             if (wasUserNull && (user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
@@ -406,31 +422,274 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun declareElements() {
-        binding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", true)
+    private fun observeLibraryPreviewItems() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.libraryPreviewItems.collectLatest { items ->
+                    val subline = if (items.isEmpty()) "" else "${items.size} recent"
+                    binding.homeCardLibrary.txtLibrarySubline.text = subline
+                    populatePreviewRows(
+                        container = binding.homeCardLibrary.containerLibraryPreviews,
+                        items = items.take(3).map { PreviewRow(it.title, it.subline, R.drawable.library, R.color.cat_library_accent, R.drawable.bg_category_library) },
+                        onClickItem = { homeItemClickListener?.openMyFragment(ResourcesFragment()) }
+                    )
+                    setupSectionExpandCollapse(
+                        card = binding.homeCardLibrary.root as? MaterialCardView ?: return@collectLatest,
+                        header = binding.homeCardLibrary.myLibraryImageButton,
+                        chevron = binding.homeCardLibrary.chevronLibrary,
+                        container = binding.homeCardLibrary.containerLibraryPreviews,
+                        openBtn = binding.homeCardLibrary.btnOpenLibrary,
+                        accentColorRes = R.color.cat_library_accent,
+                        hasItems = items.isNotEmpty(),
+                        isExpandedProvider = { isLibraryExpanded },
+                        setExpanded = { isLibraryExpanded = it },
+                        onOpenAll = {
+                            if (user?.id?.startsWith("guest") == true) guestDialog(requireContext(), profileDbHandler)
+                            else homeItemClickListener?.openMyFragment(ResourcesFragment())
+                        },
+                        onHeaderFallback = {
+                            if (user?.id?.startsWith("guest") == true) guestDialog(requireContext(), profileDbHandler)
+                            else homeItemClickListener?.openMyFragment(ResourcesFragment())
+                        }
+                    )
                 }
             }
-            homeItemClickListener?.openMyFragment(fragment)
         }
-        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
-            if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
-            } else {
-                homeItemClickListener?.openMyFragment(ResourcesFragment())
+    }
+
+    private fun observeTeamPreviewItems() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.teamPreviewItems.collectLatest { items ->
+                    val subline = if (items.isEmpty()) "" else "${items.size} active"
+                    binding.homeCardTeams.txtTeamsSubline.text = subline
+                    populatePreviewRows(
+                        container = binding.homeCardTeams.containerTeamsPreviews,
+                        items = items.take(3).map { PreviewRow(it.name, it.teamType.replaceFirstChar { c -> c.uppercase() }, R.drawable.team, R.color.cat_teams_accent, R.drawable.bg_category_teams) },
+                        onClickItem = { homeItemClickListener?.openMyFragment(
+                            org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
+                                arguments = Bundle().apply { putBoolean("fromDashboard", true) }
+                            }
+                        )}
+                    )
+                    setupSectionExpandCollapse(
+                        card = binding.homeCardTeams.root as? MaterialCardView ?: return@collectLatest,
+                        header = binding.homeCardTeams.llHomeTeam,
+                        chevron = binding.homeCardTeams.chevronTeams,
+                        container = binding.homeCardTeams.containerTeamsPreviews,
+                        openBtn = binding.homeCardTeams.btnOpenTeams,
+                        accentColorRes = R.color.cat_teams_accent,
+                        hasItems = items.isNotEmpty(),
+                        isExpandedProvider = { isTeamsExpanded },
+                        setExpanded = { isTeamsExpanded = it },
+                        onOpenAll = {
+                            homeItemClickListener?.openMyFragment(
+                                org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
+                                    arguments = Bundle().apply { putBoolean("fromDashboard", true) }
+                                }
+                            )
+                        },
+                        onHeaderFallback = {
+                            homeItemClickListener?.openMyFragment(
+                                org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
+                                    arguments = Bundle().apply { putBoolean("fromDashboard", true) }
+                                }
+                            )
+                        }
+                    )
+                }
             }
         }
-        binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
-            if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
-            } else {
-                homeItemClickListener?.openMyFragment(CoursesFragment())
+    }
+
+    private fun observeLifePreviewItems() {
+        val lifeIconMap = mapOf(
+            "ic_myhealth" to R.drawable.ic_myhealth,
+            "my_achievement" to R.drawable.my_achievement,
+            "ic_submissions" to R.drawable.ic_submissions,
+            "ic_my_survey" to R.drawable.ic_my_survey,
+            "ic_references" to R.drawable.ic_references,
+            "ic_calendar" to R.drawable.ic_calendar,
+            "ic_mypersonals" to R.drawable.ic_mypersonals
+        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lifePreviewItems.collectLatest { items ->
+                    val subline = if (items.isEmpty()) "" else "${items.size} categories"
+                    binding.homeCardMyLife.txtLifeSubline.text = subline
+                    populatePreviewRows(
+                        container = binding.homeCardMyLife.containerLifePreviews,
+                        items = items.take(3).map { l ->
+                            PreviewRow(l.title, "", lifeIconMap[l.imageId] ?: R.drawable.ic_myhealth, R.color.cat_life_accent, R.drawable.bg_category_life)
+                        },
+                        onClickItem = { homeItemClickListener?.openCallFragment(LifeFragment()) }
+                    )
+                    setupSectionExpandCollapse(
+                        card = binding.homeCardMyLife.root as? MaterialCardView ?: return@collectLatest,
+                        header = binding.homeCardMyLife.myLifeImageButton,
+                        chevron = binding.homeCardMyLife.chevronLife,
+                        container = binding.homeCardMyLife.containerLifePreviews,
+                        openBtn = binding.homeCardMyLife.btnOpenLife,
+                        accentColorRes = R.color.cat_life_accent,
+                        hasItems = items.isNotEmpty(),
+                        isExpandedProvider = { isLifeExpanded },
+                        setExpanded = { isLifeExpanded = it },
+                        onOpenAll = { homeItemClickListener?.openCallFragment(LifeFragment()) },
+                        onHeaderFallback = { homeItemClickListener?.openCallFragment(LifeFragment()) }
+                    )
+                }
             }
         }
+    }
+
+    private data class PreviewRow(
+        val title: String,
+        val subline: String,
+        val iconRes: Int,
+        val iconTintRes: Int,
+        val bgRes: Int
+    )
+
+    private fun populatePreviewRows(
+        container: android.widget.LinearLayout,
+        items: List<PreviewRow>,
+        onClickItem: () -> Unit
+    ) {
+        while (container.childCount > 1) container.removeViewAt(1)
+        for (item in items) {
+            val row = LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_dashboard_preview_row, container, false)
+            val iconBg = row.findViewById<android.widget.FrameLayout>(R.id.preview_icon_bg)
+            val icon = row.findViewById<ImageView>(R.id.preview_icon)
+            val title = row.findViewById<TextView>(R.id.txt_preview_title)
+            val subline = row.findViewById<TextView>(R.id.txt_preview_subline)
+            iconBg.setBackgroundResource(item.bgRes)
+            icon.setImageResource(item.iconRes)
+            icon.setColorFilter(ContextCompat.getColor(requireContext(), item.iconTintRes))
+            title.text = item.title
+            if (item.subline.isNotBlank()) {
+                subline.text = item.subline
+                subline.setTextColor(ContextCompat.getColor(requireContext(), item.iconTintRes))
+                subline.visibility = View.VISIBLE
+            } else {
+                subline.visibility = View.GONE
+            }
+            row.setOnClickListener { onClickItem() }
+            container.addView(row)
+        }
+    }
+
+    private fun setupSectionExpandCollapse(
+        card: MaterialCardView,
+        header: View,
+        chevron: ImageView,
+        container: android.widget.LinearLayout,
+        openBtn: TextView,
+        accentColorRes: Int,
+        hasItems: Boolean,
+        isExpandedProvider: () -> Boolean,
+        setExpanded: (Boolean) -> Unit,
+        onOpenAll: () -> Unit,
+        onHeaderFallback: () -> Unit
+    ) {
+        val accentColor = ContextCompat.getColor(requireContext(), accentColorRes)
+        val defaultStroke = ContextCompat.getColor(requireContext(), R.color.dash_line)
+
+        fun collapse() {
+            setExpanded(false)
+            ObjectAnimator.ofFloat(chevron, "rotation", chevron.rotation, 0f).setDuration(200).start()
+            container.visibility = View.GONE
+            openBtn.visibility = View.GONE
+            card.strokeColor = defaultStroke
+        }
+
+        if (!hasItems) {
+            header.setOnClickListener { onHeaderFallback() }
+            return
+        }
+
+        header.setOnClickListener {
+            if (isExpandedProvider()) {
+                collapse()
+                collapseCurrentSection = null
+            } else {
+                collapseCurrentSection?.invoke()
+                setExpanded(true)
+                ObjectAnimator.ofFloat(chevron, "rotation", chevron.rotation, 180f).setDuration(200).start()
+                container.visibility = View.VISIBLE
+                openBtn.visibility = View.VISIBLE
+                card.strokeColor = accentColor
+                collapseCurrentSection = ::collapse
+            }
+        }
+
+        openBtn.setOnClickListener { onOpenAll() }
+    }
+
+    private fun observeCoursePreviewItems() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.coursePreviewItems.collectLatest { items ->
+                    val inProgress = items.count { it.progressPercent in 1..99 }
+                    val toStart = items.count { it.progressPercent == 0 }
+                    binding.homeCardCourses.txtCoursesSubline.text = buildString {
+                        if (inProgress > 0) append("$inProgress in progress")
+                        if (inProgress > 0 && toStart > 0) append(" · ")
+                        if (toStart > 0) append("$toStart to start")
+                    }
+                    populateCoursePreviewRows(items.take(3))
+                    setupCoursesExpandCollapse(items.isNotEmpty())
+                }
+            }
+        }
+    }
+
+    private fun populateCoursePreviewRows(items: List<CoursePreviewItem>) {
+        val container = binding.homeCardCourses.containerCoursePreviews
+        // Remove all but the first child (the divider View)
+        while (container.childCount > 1) container.removeViewAt(1)
+
+        for (item in items) {
+            val row = LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_dashboard_course_preview, container, false)
+            row.findViewById<TextView>(R.id.txt_course_preview_title).text = item.courseTitle
+            row.findViewById<TextView>(R.id.txt_course_preview_percent).text =
+                "${item.progressPercent}%"
+            row.findViewById<ProgressBar>(R.id.progress_course_preview).progress = item.progressPercent
+            row.setOnClickListener {
+                val f = org.ole.planet.myplanet.ui.courses.TakeCourseFragment()
+                f.arguments = Bundle().apply { putString("id", item.courseId) }
+                homeItemClickListener?.openCallFragment(f)
+            }
+            container.addView(row)
+        }
+    }
+
+    private fun setupCoursesExpandCollapse(hasItems: Boolean) {
+        setupSectionExpandCollapse(
+            card = binding.homeCardCourses.root as? MaterialCardView ?: return,
+            header = binding.homeCardCourses.myCoursesImageButton,
+            chevron = binding.homeCardCourses.chevronCourses,
+            container = binding.homeCardCourses.containerCoursePreviews,
+            openBtn = binding.homeCardCourses.btnOpenCourses,
+            accentColorRes = R.color.cat_courses_accent,
+            hasItems = hasItems,
+            isExpandedProvider = { isCoursesExpanded },
+            setExpanded = { isCoursesExpanded = it },
+            onOpenAll = {
+                if (user?.id?.startsWith("guest") == true) guestDialog(requireContext(), profileDbHandler)
+                else homeItemClickListener?.openMyFragment(CoursesFragment())
+            },
+            onHeaderFallback = {
+                if (user?.id?.startsWith("guest") == true) guestDialog(requireContext(), profileDbHandler)
+                else homeItemClickListener?.openMyFragment(CoursesFragment())
+            }
+        )
+    }
+
+    private fun declareElements() {
+        // Library, Courses, Teams, MyLife header clicks are wired in their observe* methods
         binding.fabMyActivity.setOnClickListener { openHelperFragment(ActivitiesFragment()) }
-        binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 
     private fun openHelperFragment(f: Fragment) {
