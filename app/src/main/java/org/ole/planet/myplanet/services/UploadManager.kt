@@ -16,6 +16,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -458,14 +461,17 @@ class UploadManager @Inject constructor(
             activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 val successfulUpdates = mutableMapOf<String, com.google.gson.JsonObject?>()
 
-                withContext(dispatcherProvider.io) {
+                val semaphore = Semaphore(6)
+                coroutineScope {
                     val deferreds = batch.map { activityData ->
                         async {
                             try {
-                                val `object` = apiInterface.postDoc(
-                                    UrlUtils.header, "application/json",
-                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized
-                                ).body()
+                                val `object` = semaphore.withPermit {
+                                    apiInterface.postDoc(
+                                        UrlUtils.header, "application/json",
+                                        "${UrlUtils.getUrl()}/login_activities", activityData.serialized
+                                    ).body()
+                                }
                                 activityData.id to `object`
                             } catch (e: java.io.IOException) {
                                 Log.e(TAG, "Exception in UploadManager", e)
