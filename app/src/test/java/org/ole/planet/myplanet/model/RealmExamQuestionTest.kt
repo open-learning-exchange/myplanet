@@ -75,9 +75,10 @@ class RealmExamQuestionTest {
         val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
 
         // Return empty collection when findAll() is called on the mockQuery. No need to mock RealmResults
-        val emptyResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-        every { emptyResults.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
-        every { emptyResults.size } returns 0
+        @Suppress("UNCHECKED_CAST")
+        val emptyResults = org.mockito.Mockito.mock(RealmResults::class.java) as RealmResults<RealmExamQuestion>
+        org.mockito.Mockito.`when`(emptyResults.iterator()).thenReturn(mutableListOf<RealmExamQuestion>().iterator())
+        org.mockito.Mockito.`when`(emptyResults.size).thenReturn(0)
         every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
         every { mockQuery.`in`("id", any<Array<String>>()) } returns mockQuery
         every { mockQuery.findAll() } returns emptyResults
@@ -150,13 +151,14 @@ class RealmExamQuestionTest {
         questions.add(q2)
 
         val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
+        @Suppress("UNCHECKED_CAST")
+        val mockResultsEmpty = org.mockito.Mockito.mock(RealmResults::class.java) as RealmResults<RealmExamQuestion>
+        org.mockito.Mockito.`when`(mockResultsEmpty.iterator()).thenReturn(mutableListOf<RealmExamQuestion>().iterator())
+        org.mockito.Mockito.`when`(mockResultsEmpty.size).thenReturn(0)
 
         every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
         every { mockQuery.`in`("id", arrayOf("q1", "q2")) } returns mockQuery
         every { mockQuery.findAll() } returns mockResultsEmpty
-        every { mockResultsEmpty.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
-        every { mockResultsEmpty.size } returns 0
 
         val mockQ1 = RealmExamQuestion().apply { id = "q1" }
         val mockQ2 = RealmExamQuestion().apply { id = "q2" }
@@ -251,21 +253,23 @@ class RealmExamQuestionTest {
         questions.add(q1)
 
         val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
+        @Suppress("UNCHECKED_CAST")
+        val mockResultsEmpty = org.mockito.Mockito.mock(RealmResults::class.java) as RealmResults<RealmExamQuestion>
+        org.mockito.Mockito.`when`(mockResultsEmpty.iterator()).thenReturn(mutableListOf<RealmExamQuestion>().iterator())
+        org.mockito.Mockito.`when`(mockResultsEmpty.size).thenReturn(0)
 
         every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
         every { mockQuery.`in`("id", arrayOf("q1")) } returns mockQuery
         every { mockQuery.findAll() } returns mockResultsEmpty
-        every { mockResultsEmpty.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
-        every { mockResultsEmpty.size } returns 0
 
         val realmQuestion = RealmExamQuestion().apply { id = "q1" }
         every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns realmQuestion
 
         RealmExamQuestion.insertExamQuestions(questions, "exam1", mockRealm)
 
-        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-        every { mockResults.iterator() } returns mutableListOf(realmQuestion).iterator()
+        @Suppress("UNCHECKED_CAST")
+        val mockResults = org.mockito.Mockito.mock(RealmResults::class.java) as RealmResults<RealmExamQuestion>
+        org.mockito.Mockito.`when`(mockResults.iterator()).thenReturn(mutableListOf(realmQuestion).iterator())
 
         val serialized = RealmExamQuestion.serializeQuestions(mockResults)
 
