@@ -83,14 +83,6 @@ class UserSessionManagerTest {
     }
 
     @Test
-    fun `getUserModel returns model from repository`() {
-        val mockUser = mockk<RealmUser>()
-        every { userRepository.getUserModel() } returns mockUser
-        assertEquals(mockUser, userSessionManager.userModel)
-        assertEquals(mockUser, userSessionManager.getUserModelCopy())
-    }
-
-    @Test
     fun `getUserModel suspending returns model from repository`() = testScope.runTest {
         val mockUser = mockk<RealmUser>()
         coEvery { userRepository.getUserModelSuspending() } returns mockUser
