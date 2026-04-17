@@ -136,18 +136,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         )
 
-        @Suppress("DEPRECATION")
-        user = userSessionManager.userModel
-        checkUser()
-        updateAppTitle()
-        if (handleGuestAccess()) return
-
         isFirstLaunch = savedInstanceState == null
-        if (isFirstLaunch) handleInitialFragment()
         addBackPressCallback()
         collectUiState()
 
         lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            checkUser()
+            updateAppTitle()
+            if (handleGuestAccess()) return@launch
+
+            if (isFirstLaunch) handleInitialFragment()
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
