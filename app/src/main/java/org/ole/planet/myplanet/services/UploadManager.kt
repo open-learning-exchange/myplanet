@@ -177,20 +177,24 @@ class UploadManager @Inject constructor(
             list.chunked(BATCH_SIZE).forEach { batch ->
                 val jobs = batch.map { achievement ->
                     async {
-                        val id = achievement.get("_id")?.asString ?: return@async
+                        val id = achievement.get("_id")?.asString ?: return@async null
                         val url = "${UrlUtils.getUrl()}/achievements/$id"
                         try {
                             val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
                             if (response.isSuccessful) {
                                 val rev = response.body()?.get("rev")?.asString
-                                userRepository.markAchievementUploaded(id, rev)
-                            }
+                                Pair(id, rev)
+                            } else null
                         } catch (e: Exception) {
                             Log.e(TAG, "Exception in UploadManager", e)
+                            null
                         }
                     }
                 }
-                jobs.awaitAll()
+                val results = jobs.awaitAll().filterNotNull()
+                results.forEach { (id, rev) ->
+                    userRepository.markAchievementUploaded(id, rev)
+                }
             }
         }
     }
