@@ -13,6 +13,9 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
@@ -346,22 +349,26 @@ class UploadToShelfService @Inject constructor(
             }
 
             try {
-                unmanagedUsers.forEach { model ->
-                    try {
-                        val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
-                        val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
-                        val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                        val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
-                        shelfData.addProperty("_rev", getString("_rev", jsonDoc))
-                        apiInterface.putDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}",
-                            shelfData
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                coroutineScope {
+                    unmanagedUsers.map { model ->
+                        async {
+                            try {
+                                val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
+                                val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                                val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
+                                val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
+                                shelfData.addProperty("_rev", getString("_rev", jsonDoc))
+                                apiInterface.putDoc(
+                                    UrlUtils.header,
+                                    "application/json",
+                                    "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}",
+                                    shelfData
+                                )
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }.awaitAll()
                 }
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
