@@ -165,6 +165,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         binding.rvFeedback.adapter = feedbackAdapter
         observeFeedbackList()
+
     }
 
     private fun observeFeedbackList() {
@@ -193,6 +194,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onFeedbackSubmitted() {
         refreshFeedbackListData()
+        binding.rvFeedback.scrollToPosition(0)
     }
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
