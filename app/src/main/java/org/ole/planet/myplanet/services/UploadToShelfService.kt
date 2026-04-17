@@ -13,7 +13,12 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
@@ -274,18 +279,29 @@ class UploadToShelfService @Inject constructor(
             val myHealths = healthRepository.getUpdatedHealthExaminations()
 
             val uploadedHealths = mutableMapOf<String, String?>()
-            myHealths.forEach { pojo ->
-                try {
-                    val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
+            val semaphore = Semaphore(5)
+            supervisorScope {
+                myHealths.map { pojo ->
+                    async {
+                        semaphore.withPermit {
+                            try {
+                                val res = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))
 
-                    if (res.body() != null && res.body()?.has("id") == true) {
-                        val rev = res.body()?.get("rev")?.asString
-                        pojo._id?.let { id ->
-                            uploadedHealths[id] = rev
+                                if (res.body() != null && res.body()?.has("id") == true) {
+                                    val rev = res.body()?.get("rev")?.asString
+                                    val id = pojo._id
+                                    if (id != null) {
+                                        return@async id to rev
+                                    }
+                                }
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
+                            null
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                }.awaitAll().filterNotNull().forEach { (id, rev) ->
+                    uploadedHealths[id] = rev
                 }
             }
 
@@ -301,23 +317,34 @@ class UploadToShelfService @Inject constructor(
                 val myHealths = healthRepository.getUpdatedHealthForUser(userId)
 
                 val uploadedHealths = mutableMapOf<String, String?>()
-                myHealths.forEach { pojo ->
-                    try {
-                        val res = apiInterface.postDoc(
-                            UrlUtils.header,
-                            "application/json",
-                            "${UrlUtils.getUrl()}/health",
-                            serialize(pojo)
-                        )
+                val semaphore = Semaphore(5)
+                supervisorScope {
+                    myHealths.map { pojo ->
+                        async {
+                            semaphore.withPermit {
+                                try {
+                                    val res = apiInterface.postDoc(
+                                        UrlUtils.header,
+                                        "application/json",
+                                        "${UrlUtils.getUrl()}/health",
+                                        serialize(pojo)
+                                    )
 
-                        if (res.body() != null && res.body()?.has("id") == true) {
-                            val rev = res.body()?.get("rev")?.asString
-                            pojo._id?.let { id ->
-                                uploadedHealths[id] = rev
+                                    if (res.body() != null && res.body()?.has("id") == true) {
+                                        val rev = res.body()?.get("rev")?.asString
+                                        val id = pojo._id
+                                        if (id != null) {
+                                            return@async id to rev
+                                        }
+                                    }
+                                } catch (e: Throwable) {
+                                    e.printStackTrace()
+                                }
+                                null
                             }
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    }.awaitAll().filterNotNull().forEach { (id, rev) ->
+                        uploadedHealths[id] = rev
                     }
                 }
 
@@ -326,7 +353,7 @@ class UploadToShelfService @Inject constructor(
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Error uploading health data for user $userId: ${e.localizedMessage}")
                 }
