@@ -6,6 +6,12 @@ import org.junit.Test
 class VoicesLabelManagerTest {
 
     @Test
+    fun testFormatLabelValue_singleWord() {
+        assertEquals("Hello", VoicesLabelManager.formatLabelValue("hello"))
+        assertEquals("Hello", VoicesLabelManager.formatLabelValue("HELLO"))
+    }
+
+    @Test
     fun testFormatLabelValue_normalizesCase() {
         assertEquals("Hello World", VoicesLabelManager.formatLabelValue("HELLO WORLD"))
         assertEquals("Hello World", VoicesLabelManager.formatLabelValue("hello world"))
@@ -27,11 +33,11 @@ class VoicesLabelManagerTest {
     }
 
     @Test
-    fun testFormatLabelValue_handlesBlankStrings() {
+    fun testFormatLabelValue_handlesNonAlphaOnlyInputs() {
         assertEquals("", VoicesLabelManager.formatLabelValue(""))
-        assertEquals("   ", VoicesLabelManager.formatLabelValue("   "))
-        assertEquals(" _ ", VoicesLabelManager.formatLabelValue(" _ "))
-        assertEquals("-", VoicesLabelManager.formatLabelValue("-"))
-        assertEquals("_-", VoicesLabelManager.formatLabelValue("_-"))
+        assertEquals("", VoicesLabelManager.formatLabelValue("   "))
+        assertEquals("", VoicesLabelManager.formatLabelValue(" _ "))
+        assertEquals("", VoicesLabelManager.formatLabelValue("-"))
+        assertEquals("", VoicesLabelManager.formatLabelValue("_-"))
     }
 }

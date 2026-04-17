@@ -127,11 +127,10 @@ class VoicesLabelManager(
     }
 
     companion object {
-        // internal visibility is required for testing
         internal fun formatLabelValue(raw: String): String {
             val cleaned = raw.replace("_", " ").replace("-", " ")
             if (cleaned.isBlank()) {
-                return ""
+                return raw
             }
             return cleaned
                 .trim()
