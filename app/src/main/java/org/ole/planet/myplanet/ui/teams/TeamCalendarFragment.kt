@@ -345,6 +345,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         meetupDialog?.setOnDismissListener {
             eventDates.add(clickedCalendar)
             lifecycleScope.launch {
+                val calendarDays = eventDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
                 binding.calendarView.selectedDates = emptyList()
                 binding.calendarView.selectedDates = eventDates.toList()
             }
@@ -368,6 +372,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
             if (isAdded && activity != null) {
                 eventDates.clear()
                 eventDates.addAll(newDates)
+                val calendarDays = newDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
                 binding.calendarView.selectedDates = ArrayList(newDates)
             }
         }
