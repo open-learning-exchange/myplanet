@@ -500,7 +500,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
-            return context.packageManager.canRequestPackageInstalls()
+            return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }
     }
 }
