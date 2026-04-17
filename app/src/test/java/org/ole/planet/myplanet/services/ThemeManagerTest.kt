@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
@@ -30,13 +31,15 @@ import org.robolectric.shadows.ShadowDialog
 @Config(sdk = [33], manifest = Config.NONE, application = dagger.hilt.android.testing.HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class ThemeManagerTest {
+    private lateinit var activityController: ActivityController<AppCompatActivity>
     private lateinit var activity: AppCompatActivity
     private lateinit var mockSpm: SharedPrefManager
     private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
 
     @Before
     fun setUp() {
-        activity = Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
+        activityController = Robolectric.buildActivity(AppCompatActivity::class.java).setup()
+        activity = activityController.get()
 
         mockSpm = mockk(relaxed = true)
         mockEntryPoint = mockk(relaxed = true)
@@ -50,6 +53,7 @@ class ThemeManagerTest {
 
     @After
     fun tearDown() {
+        activityController.pause().stop().destroy()
         unmockkAll()
     }
 
