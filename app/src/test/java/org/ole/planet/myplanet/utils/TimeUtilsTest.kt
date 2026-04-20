@@ -4,6 +4,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
 import java.util.TimeZone
+import java.io.PrintStream
+import java.io.ByteArrayOutputStream
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -16,6 +18,7 @@ class TimeUtilsTest {
 
     private lateinit var defaultLocale: Locale
     private lateinit var defaultTimeZone: TimeZone
+    private lateinit var originalErr: PrintStream
 
     @Before
     fun setUp() {
@@ -24,12 +27,17 @@ class TimeUtilsTest {
 
         Locale.setDefault(Locale.US)
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+
+        // Suppress expected stack traces printed via e.printStackTrace() during tests
+        originalErr = System.err
+        System.setErr(PrintStream(ByteArrayOutputStream()))
     }
 
     @After
     fun tearDown() {
         Locale.setDefault(defaultLocale)
         TimeZone.setDefault(defaultTimeZone)
+        System.setErr(originalErr)
     }
 
     @Test
