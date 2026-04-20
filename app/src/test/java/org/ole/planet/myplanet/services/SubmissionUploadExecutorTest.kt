@@ -1,18 +1,14 @@
 package org.ole.planet.myplanet.services
 
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
+import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
-import dagger.hilt.components.SingletonComponent
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -41,20 +37,13 @@ class SubmissionUploadExecutorTest {
     @get:Rule
     val hiltRule = HiltAndroidRule(this)
 
-    companion object {
-        private val testScheduler = TestCoroutineScheduler()
-        private val ioDispatcher = StandardTestDispatcher(testScheduler)
-        private val mockDispatcherProvider = mockk<DispatcherProvider> {
-            every { io } returns ioDispatcher
-        }
+    private val testScheduler = TestCoroutineScheduler()
+    private val ioDispatcher = StandardTestDispatcher(testScheduler)
 
-        @Module
-        @InstallIn(SingletonComponent::class)
-        object TestModule {
-            @Provides
-            @Singleton
-            fun provideDispatcherProvider(): DispatcherProvider = mockDispatcherProvider
-        }
+    @BindValue
+    @JvmField
+    val dispatcherProvider: DispatcherProvider = mockk(relaxed = true) {
+        every { io } returns ioDispatcher
     }
 
     @Inject
