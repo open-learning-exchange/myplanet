@@ -350,25 +350,27 @@ class UploadToShelfService @Inject constructor(
 
             try {
                 coroutineScope {
-                    unmanagedUsers.map { model ->
-                        async {
-                            try {
-                                val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
-                                val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
-                                val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                                val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
-                                shelfData.addProperty("_rev", getString("_rev", jsonDoc))
-                                apiInterface.putDoc(
-                                    UrlUtils.header,
-                                    "application/json",
-                                    "${UrlUtils.getUrl()}/shelf/${sharedPrefManager.getUserId()}",
-                                    shelfData
-                                )
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                    unmanagedUsers.chunked(10).forEach { chunk ->
+                        chunk.map { model ->
+                            async {
+                                try {
+                                    val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
+                                    val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
+                                    val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
+                                    val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
+                                    shelfData.addProperty("_rev", getString("_rev", jsonDoc))
+                                    apiInterface.putDoc(
+                                        UrlUtils.header,
+                                        "application/json",
+                                        "${UrlUtils.getUrl()}/shelf/${model._id}",
+                                        shelfData
+                                    )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
                             }
-                        }
-                    }.awaitAll()
+                        }.awaitAll()
+                    }
                 }
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
