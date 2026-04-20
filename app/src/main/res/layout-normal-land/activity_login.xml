@@ -73,6 +73,7 @@
                         app:srcCompat="@drawable/ic_settings_black_24dp"
                         app:tint="@color/daynight_textColor" />
                 </LinearLayout>
+
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
