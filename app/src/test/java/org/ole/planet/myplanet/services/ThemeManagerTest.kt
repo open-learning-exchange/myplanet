@@ -21,10 +21,11 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
-import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
+import org.robolectric.Shadows
+import android.os.Looper
 import androidx.appcompat.app.AlertDialog
 
 @RunWith(RobolectricTestRunner::class)
@@ -91,7 +92,9 @@ class ThemeManagerTest {
 
         ThemeManager.showThemeDialog(activity)
 
-        val dialog = ShadowDialog.getLatestDialog() as AlertDialog
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+
+        val dialog = ShadowAlertDialog.getLatestDialog() as AlertDialog
         assertNotNull(dialog)
         assertTrue(dialog.isShowing)
 
@@ -99,7 +102,7 @@ class ThemeManagerTest {
         assertNotNull(listView)
         assertEquals(3, listView.count)
 
-        // Simulate clicking 'Dark' mode using position and ID explicitly without relying on child view layout
+        // Simulate clicking 'Dark' mode using explicitly position and ID without relying on null view layout
         listView.performItemClick(null, 1, listView.getItemIdAtPosition(1))
 
         verify { mockSpm.setRawString("theme_mode", ThemeMode.DARK) }
