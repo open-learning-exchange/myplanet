@@ -130,11 +130,11 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    private fun isSynced(key: SyncKey): Boolean {
+    fun isSynced(key: SyncKey): Boolean {
         return pref.getBoolean(key.key, false)
     }
 
-    private fun setSynced(key: SyncKey, synced: Boolean) {
+    fun setSynced(key: SyncKey, synced: Boolean) {
         pref.edit {
             putBoolean(key.key, synced)
             if (synced) {
@@ -146,30 +146,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun getSyncTime(key: SyncKey): Long {
         return pref.getLong("${key.key}_time", 0L)
     }
-
-    fun isChatHistorySynced(): Boolean = isSynced(SyncKey.CHAT_HISTORY)
-    fun setChatHistorySynced(synced: Boolean) = setSynced(SyncKey.CHAT_HISTORY, synced)
-
-    fun isTeamsSynced(): Boolean = isSynced(SyncKey.TEAMS)
-    fun setTeamsSynced(synced: Boolean) = setSynced(SyncKey.TEAMS, synced)
-
-    fun isFeedbackSynced(): Boolean = isSynced(SyncKey.FEEDBACK)
-    fun setFeedbackSynced(synced: Boolean) = setSynced(SyncKey.FEEDBACK, synced)
-
-    fun isAchievementsSynced(): Boolean = isSynced(SyncKey.ACHIEVEMENTS)
-    fun setAchievementsSynced(synced: Boolean) = setSynced(SyncKey.ACHIEVEMENTS, synced)
-
-    fun isHealthSynced(): Boolean = isSynced(SyncKey.HEALTH)
-    fun setHealthSynced(synced: Boolean) = setSynced(SyncKey.HEALTH, synced)
-
-    fun isCoursesSynced(): Boolean = isSynced(SyncKey.COURSES)
-    fun setCoursesSynced(synced: Boolean) = setSynced(SyncKey.COURSES, synced)
-
-    fun isResourcesSynced(): Boolean = isSynced(SyncKey.RESOURCES)
-    fun setResourcesSynced(synced: Boolean) = setSynced(SyncKey.RESOURCES, synced)
-
-    fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
-    fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
 
     fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
     fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
@@ -278,9 +254,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
 
     fun getLastWifiSsid(): String? = pref.getString(LAST_WIFI_SSID, null)
     fun setLastWifiSsid(ssid: String) = pref.edit { putString(LAST_WIFI_SSID, ssid) }
-
-    fun getIsExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
-    fun setIsExamsSynced(value: Boolean) = setSynced(SyncKey.EXAMS, value)
 
     fun getHasShownCongrats(): Boolean = pref.getBoolean(HAS_SHOWN_CONGRATS, false)
     fun setHasShownCongrats(value: Boolean) = pref.edit { putBoolean(HAS_SHOWN_CONGRATS, value) }
