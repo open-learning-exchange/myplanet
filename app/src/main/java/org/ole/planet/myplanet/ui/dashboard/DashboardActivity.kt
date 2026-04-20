@@ -137,6 +137,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         )
 
         isFirstLaunch = savedInstanceState == null
+        if (isFirstLaunch) handleInitialFragment()
         addBackPressCallback()
         collectUiState()
 
@@ -144,9 +145,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             user = userSessionManager.getUserModel()
             checkUser()
             updateAppTitle()
-            if (handleGuestAccess()) return@launch
+            if (handleGuestAccess()) {
+                isReady = true
+                binding.root.invalidate()
+                return@launch
+            }
 
-            if (isFirstLaunch) handleInitialFragment()
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
