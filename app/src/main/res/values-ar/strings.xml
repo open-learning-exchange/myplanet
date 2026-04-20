@@ -1229,5 +1229,28 @@
     <string name="no_references_added">لم تتم إضافة مراجع</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
+    <string name="your_learning">تعلّمك</string>
+    <string name="pick_up_where_you_left_off">أكمل من حيث توقفت</string>
+    <string name="my_stuff">أشيائي</string>
+    <string name="tap_card_to_expand">اضغط على بطاقة للتوسيع</string>
+    <string name="good_morning">صباح الخير،</string>
+    <string name="good_afternoon">مساء الخير،</string>
+    <string name="good_evening">مساء الخير،</string>
+    <string name="good_night">تصبح على خير،</string>
+    <string name="continue_label">متابعة</string>
+    <string name="offline">غير متصل</string>
+    <string name="connecting">جارٍ الاتصال…</string>
+    <string name="online">متصل</string>
+    <string name="offline_headline">أنت غير متصل — التعلم مستمر</string>
+    <string name="offline_queue_3">٣ عناصر في قائمة الانتظار للمزامنة عند الاتصال</string>
+    <string name="retry">إعادة المحاولة</string>
+    <string name="notifications">الإشعارات</string>
+    <string name="open_courses_arrow">فتح الدورات ←</string>
+    <string name="open_library_arrow">فتح المكتبة ←</string>
+    <string name="open_teams_arrow">فتح الفرق ←</string>
+    <string name="open_life_arrow">فتح حياتي ←</string>
+    <string name="course_completed_label">مكتمل</string>
+    <string name="complete_label">مكتمل</string>
+    <string name="not_started_label">لم تبدأ بعد</string>
 
 </resources>

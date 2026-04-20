@@ -63,7 +63,7 @@
                 android:background="@drawable/oval_dot_soft" />
 
             <TextView
-                android:id="@+id/txt_community_name"
+                android:id="@+id/txtRole"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -73,12 +73,11 @@
                 android:ellipsize="end" />
         </LinearLayout>
 
-        <!-- Badges live on profile screen; kept hidden here for cleaner dashboard.
-             Fragment code still references txtRole / ll_badges / progress_bar_badges. -->
+        <!-- Hidden anchor kept so FragmentHomeBellBinding.txtCommunityName stays non-null -->
         <TextView
-            android:id="@+id/txtRole"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:id="@+id/txt_community_name"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:visibility="gone" />
 
         <LinearLayout
@@ -128,30 +127,4 @@
             android:textSize="12sp"
             android:textStyle="bold" />
     </LinearLayout>
-
-    <!-- Notifications bell -->
-    <FrameLayout
-        android:layout_width="38dp"
-        android:layout_height="38dp"
-        android:background="@drawable/oval_surface_2"
-        android:clickable="true"
-        android:focusable="true">
-
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_bell"
-            app:tint="@color/dash_ink"
-            android:contentDescription="@string/notifications" />
-
-        <View
-            android:id="@+id/dot_notifications"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="6dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/dot_notifications" />
-    </FrameLayout>
 </LinearLayout>

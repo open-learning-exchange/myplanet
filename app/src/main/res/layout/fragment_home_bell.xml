@@ -42,13 +42,9 @@
                 android:id="@+id/cardProfileBell"
                 layout="@layout/card_profile_bell" />
 
-            <!-- Offline banner — visibility toggled from fragment -->
-            <include
-                android:id="@+id/offlineBanner"
-                layout="@layout/home_offline_banner" />
-
             <!-- Eyebrow + page title -->
             <TextView
+                android:id="@+id/txtYourLearning"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"

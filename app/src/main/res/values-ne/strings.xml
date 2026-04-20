@@ -1213,5 +1213,28 @@
     <string name="no_references_added">कुनै सन्दर्भ थपिएको छैन</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
+    <string name="your_learning">तपाईंको सिकाइ</string>
+    <string name="pick_up_where_you_left_off">जहाँ छोड्नुभयो त्यहाँबाट जारी राख्नुहोस्</string>
+    <string name="my_stuff">मेरो सामग्री</string>
+    <string name="tap_card_to_expand">विस्तार गर्न कार्डमा ट्याप गर्नुहोस्</string>
+    <string name="good_morning">सुप्रभात,</string>
+    <string name="good_afternoon">शुभ दिउँसो,</string>
+    <string name="good_evening">शुभ साँझ,</string>
+    <string name="good_night">शुभ रात्री,</string>
+    <string name="continue_label">जारी राख्नुहोस्</string>
+    <string name="offline">अफलाइन</string>
+    <string name="connecting">जोडिँदै…</string>
+    <string name="online">अनलाइन</string>
+    <string name="offline_headline">तपाईं अफलाइन हुनुहुन्छ — सिकाइ जारी छ</string>
+    <string name="offline_queue_3">अनलाइन हुँदा सिङ्क गर्न ३ वस्तुहरू पंक्तिमा छन्</string>
+    <string name="retry">पुनः प्रयास गर्नुहोस्</string>
+    <string name="notifications">सूचनाहरू</string>
+    <string name="open_courses_arrow">पाठ्यक्रम खोल्नुहोस् →</string>
+    <string name="open_library_arrow">पुस्तकालय खोल्नुहोस् →</string>
+    <string name="open_teams_arrow">टोली खोल्नुहोस् →</string>
+    <string name="open_life_arrow">मेरो जीवन खोल्नुहोस् →</string>
+    <string name="course_completed_label">पूर्ण भयो</string>
+    <string name="complete_label">पूर्ण</string>
+    <string name="not_started_label">अझै सुरु भएको छैन</string>
 
 </resources>

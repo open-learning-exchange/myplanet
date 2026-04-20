@@ -88,16 +88,18 @@ class BellDashboardFragment : BaseDashboardFragment() {
         observeLibraryPreviewItems()
         observeTeamPreviewItems()
         observeLifePreviewItems()
+        observeLastVisitedCourse()
+        setGreetingBasedOnTime()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
             user = profileDbHandler.getUserModel()
-            binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
                 viewModel.loadCompletedCourses(it)
                 viewModel.loadCoursePreviewItems(it)
                 viewModel.loadLibraryPreviewItems(it)
                 viewModel.loadTeamPreviewItems(it)
                 viewModel.loadLifePreviewItems(it)
+                viewModel.loadLastVisitedCourse(it)
             }
             if (wasUserNull && (user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
@@ -159,10 +161,26 @@ class BellDashboardFragment : BaseDashboardFragment() {
         context ?: return
 
         when (status) {
-            is NetworkStatus.Disconnected -> setNetworkIndicatorColor(R.color.md_red_700)
-            is NetworkStatus.Connecting -> handleConnectingState()
-            is NetworkStatus.Connected -> setNetworkIndicatorColor(R.color.green)
+            is NetworkStatus.Disconnected -> {
+                setNetworkIndicatorColor(R.color.md_red_700)
+                updateSyncChip(R.drawable.bg_chip_offline, R.drawable.dot_offline, R.string.offline, R.color.chip_offline_ink)
+            }
+            is NetworkStatus.Connecting -> {
+                handleConnectingState()
+                updateSyncChip(R.drawable.bg_chip_connecting, R.drawable.dot_connecting, R.string.connecting, R.color.chip_connecting_ink)
+            }
+            is NetworkStatus.Connected -> {
+                setNetworkIndicatorColor(R.color.green)
+                updateSyncChip(R.drawable.bg_chip_synced, R.drawable.dot_synced, R.string.online, R.color.chip_synced_ink)
+            }
         }
+    }
+
+    private fun updateSyncChip(bgRes: Int, dotRes: Int, labelRes: Int, textColorRes: Int) {
+        binding.cardProfileBell.chipSync?.setBackgroundResource(bgRes)
+        binding.cardProfileBell.dotSync?.setBackgroundResource(dotRes)
+        binding.cardProfileBell.txtSyncState?.text = getString(labelRes)
+        binding.cardProfileBell.txtSyncState?.setTextColor(ContextCompat.getColor(requireContext(), textColorRes))
     }
 
     private fun checkPendingSurveys() {
@@ -389,6 +407,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun showBadges(completedCourses: List<CourseCompletion>) {
         binding.cardProfileBell.llBadges.removeAllViews()
+        if (completedCourses.isEmpty()) {
+            binding.cardProfileBell.llBadges.visibility = View.GONE
+            return
+        }
+        binding.cardProfileBell.llBadges.visibility = View.VISIBLE
         completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
@@ -626,6 +649,37 @@ class BellDashboardFragment : BaseDashboardFragment() {
         openBtn.setOnClickListener { onOpenAll() }
     }
 
+    private fun observeLastVisitedCourse() {
+        binding.homeContinue.root.visibility = View.GONE
+        binding.txtYourLearning.visibility = View.GONE
+        binding.dashTitle.visibility = View.GONE
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.lastVisitedCourse.collectLatest { info ->
+                    val visible = if (info == null) View.GONE else View.VISIBLE
+                    binding.homeContinue.root.visibility = visible
+                    binding.txtYourLearning.visibility = visible
+                    binding.dashTitle.visibility = visible
+                    if (info == null) return@collectLatest
+                    binding.homeContinue.txtContinueTitle.text = info.courseTitle
+                    val metaText = when {
+                        info.progressPercent >= 100 -> getString(R.string.course_completed_label)
+                        info.progressPercent > 0 -> "${info.progressPercent}% ${getString(R.string.complete_label)}"
+                        else -> getString(R.string.not_started_label)
+                    }
+                    binding.homeContinue.txtContinueMeta.text = metaText
+                    binding.homeContinue.progressContinue.progress = info.progressPercent
+                    binding.homeContinue.txtContinuePercent.text = "${info.progressPercent}%"
+                    binding.homeContinue.root.setOnClickListener {
+                        val f = TakeCourseFragment()
+                        f.arguments = Bundle().apply { putString("id", info.courseId) }
+                        homeItemClickListener?.openCallFragment(f)
+                    }
+                }
+            }
+        }
+    }
+
     private fun observeCoursePreviewItems() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -685,6 +739,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 else homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         )
+    }
+
+    private fun setGreetingBasedOnTime() {
+        val timeOfDay = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        binding.cardProfileBell.txtGreeting?.text = when {
+            timeOfDay < 12 -> getString(R.string.good_morning)
+            timeOfDay < 16 -> getString(R.string.good_afternoon)
+            timeOfDay < 21 -> getString(R.string.good_evening)
+            else -> getString(R.string.good_night)
+        }
     }
 
     private fun declareElements() {

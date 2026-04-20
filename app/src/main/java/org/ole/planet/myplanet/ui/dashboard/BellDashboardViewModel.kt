@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 
@@ -25,6 +26,7 @@ class BellDashboardViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val resourcesRepository: ResourcesRepository,
     private val lifeRepository: LifeRepository,
+    private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
@@ -44,6 +46,9 @@ class BellDashboardViewModel @Inject constructor(
 
     private val _lifePreviewItems = MutableStateFlow<List<LifePreviewItem>>(emptyList())
     val lifePreviewItems: StateFlow<List<LifePreviewItem>> = _lifePreviewItems.asStateFlow()
+
+    private val _lastVisitedCourse = MutableStateFlow<LastVisitedCourseInfo?>(null)
+    val lastVisitedCourse: StateFlow<LastVisitedCourseInfo?> = _lastVisitedCourse.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -128,6 +133,30 @@ class BellDashboardViewModel @Inject constructor(
         }
     }
 
+    fun loadLastVisitedCourse(userId: String) {
+        viewModelScope.launch {
+            val info = withContext(dispatcherProvider.io) {
+                val courseId = sharedPrefManager.getLastVisitedCourseId() ?: return@withContext null
+                val course = coursesRepository.getCourseById(courseId) ?: return@withContext null
+                val allProgress = progressRepository.getProgressRecords(userId)
+                val passedSteps = allProgress
+                    .filter { it.courseId == courseId && it.passed }
+                    .map { it.stepNum }
+                    .toSet()
+                    .size
+                val totalSteps = course.courseSteps?.size ?: 0
+                val percent = if (totalSteps > 0) (passedSteps * 100) / totalSteps else 0
+                LastVisitedCourseInfo(
+                    courseId = courseId,
+                    courseTitle = course.courseTitle ?: sharedPrefManager.getLastVisitedCourseTitle() ?: "",
+                    progressPercent = percent,
+                    totalSteps = totalSteps
+                )
+            }
+            _lastVisitedCourse.value = info
+        }
+    }
+
     fun loadCompletedCourses(userId: String) {
         viewModelScope.launch {
             val completedCourses = withContext(dispatcherProvider.io) {
@@ -191,6 +220,12 @@ data class CoursePreviewItem(
 data class LibraryPreviewItem(val resourceId: String, val title: String, val subline: String)
 data class TeamPreviewItem(val teamId: String, val name: String, val teamType: String)
 data class LifePreviewItem(val imageId: String, val title: String)
+data class LastVisitedCourseInfo(
+    val courseId: String,
+    val courseTitle: String,
+    val progressPercent: Int,
+    val totalSteps: Int
+)
 
 sealed class NetworkStatus {
     object Disconnected : NetworkStatus()
