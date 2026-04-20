@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.appcompat.app.AlertDialog
 import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
@@ -22,10 +21,11 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
+import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
-import org.robolectric.shadows.ShadowDialog
+import androidx.appcompat.app.AlertDialog
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], manifest = Config.NONE, application = dagger.hilt.android.testing.HiltTestApplication::class)
@@ -99,8 +99,8 @@ class ThemeManagerTest {
         assertNotNull(listView)
         assertEquals(3, listView.count)
 
-        // Simulate clicking 'Dark' mode
-        listView.performItemClick(listView.getChildAt(1), 1, listView.getItemIdAtPosition(1))
+        // Simulate clicking 'Dark' mode using position and ID explicitly without relying on child view layout
+        listView.performItemClick(null, 1, listView.getItemIdAtPosition(1))
 
         verify { mockSpm.setRawString("theme_mode", ThemeMode.DARK) }
         verify { AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES) }
