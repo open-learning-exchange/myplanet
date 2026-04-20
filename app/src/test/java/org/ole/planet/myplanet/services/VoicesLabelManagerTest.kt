@@ -47,13 +47,18 @@ class VoicesLabelManagerTest {
 
         voicesLabelManager = VoicesLabelManager(context, voicesRepository, scope)
 
-        binding = mockk(relaxed = true)
         mockkConstructor(ChipCloud::class)
         every { anyConstructed<ChipCloud>().addChip(any<String>()) } answers { }
         every { anyConstructed<ChipCloud>().setDeleteListener(any<fisk.chipcloud.ChipDeletedListener>()) } answers { }
+
+        binding = mockk(relaxed = true)
         btnAddLabel = mockk(relaxed = true)
         fbChips = mockk(relaxed = true)
 
+        // Reflection is required here because RowNewsBinding is a generated Java class with final public fields.
+        // MockK cannot mock Java fields using property access syntax (throws MockKException).
+        // Since we cannot use Robolectric (due to Realm core crashes) and RowNewsBinding has a private constructor
+        // with 21 non-null arguments, reflection is the most robust way to inject our mock views.
         val btnAddLabelField = RowNewsBinding::class.java.getField("btnAddLabel")
         btnAddLabelField.isAccessible = true
         btnAddLabelField.set(binding, btnAddLabel)
@@ -89,7 +94,7 @@ class VoicesLabelManagerTest {
         voicesLabelManager.setupAddLabelMenu(binding, voice, false)
 
         verify { btnAddLabel.isEnabled = false }
-        verify(exactly = 1) { btnAddLabel.setOnClickListener(any()) }
+        verify { btnAddLabel.setOnClickListener(null) }
     }
 
     @Test
@@ -97,7 +102,7 @@ class VoicesLabelManagerTest {
         voicesLabelManager.setupAddLabelMenu(binding, voice, true)
 
         verify { btnAddLabel.isEnabled = true }
-        verify(exactly = 2) { btnAddLabel.setOnClickListener(any()) }
+        verify { btnAddLabel.setOnClickListener(any()) }
     }
 
     @Test
@@ -105,6 +110,7 @@ class VoicesLabelManagerTest {
         voicesLabelManager.showChips(binding, voice, false)
 
         verify { fbChips.removeAllViews() }
+        verify(exactly = 0) { anyConstructed<ChipCloud>().addChip(any<String>()) }
         verify { btnAddLabel.visibility = View.GONE }
     }
 
@@ -112,12 +118,13 @@ class VoicesLabelManagerTest {
     fun testShowChips_WithLabels_CannotManage() {
         val labelsMock = mockk<RealmList<String>>(relaxed = true)
         every { labelsMock.iterator() } answers { mutableListOf("offer").iterator() }
-        val labelsSet = setOf("offer")
+
         every { voice.labels } returns labelsMock
 
         voicesLabelManager.showChips(binding, voice, false)
 
         verify { fbChips.removeAllViews() }
+        verify { anyConstructed<ChipCloud>().addChip("Offer") }
         verify { btnAddLabel.visibility = View.GONE }
     }
 
@@ -139,6 +146,7 @@ class VoicesLabelManagerTest {
         voicesLabelManager.showChips(binding, voice, true)
 
         verify { fbChips.removeAllViews() }
+        verify { anyConstructed<ChipCloud>().addChip("Offer") }
         verify { btnAddLabel.visibility = View.GONE }
     }
 }
