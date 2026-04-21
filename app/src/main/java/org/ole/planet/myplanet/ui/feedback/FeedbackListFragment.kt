@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
@@ -168,12 +169,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun observeFeedbackList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.feedbackList.collect { feedbackList ->
-                    updatedFeedbackList(feedbackList)
-                }
-            }
+        collectWhenStarted(viewModel.feedbackList) { feedbackList ->
+            updatedFeedbackList(feedbackList)
         }
     }
 

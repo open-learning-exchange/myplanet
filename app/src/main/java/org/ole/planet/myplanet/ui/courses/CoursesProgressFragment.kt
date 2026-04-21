@@ -15,6 +15,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class CoursesProgressFragment : Fragment() {
@@ -38,14 +39,10 @@ class CoursesProgressFragment : Fragment() {
     }
 
     private fun observeCourseData() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                progressViewModel.courseData.collect { courseData ->
-                    courseData?.let { jsonArray ->
-                        val list = jsonArray.map { it.asJsonObject }
-                        progressAdapter.submitList(list)
-                    }
-                }
+        collectWhenStarted(progressViewModel.courseData) { courseData ->
+            courseData?.let { jsonArray ->
+                val list = jsonArray.map { it.asJsonObject }
+                progressAdapter.submitList(list)
             }
         }
     }

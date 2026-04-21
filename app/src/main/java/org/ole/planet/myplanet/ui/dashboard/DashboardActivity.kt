@@ -83,6 +83,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint  
@@ -546,12 +547,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupDashboardDataObserver() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dashboardViewModel.dashboardDataFlow(user?.id).collect {
-                    onRealmDataChange()
-                }
-            }
+        collectWhenStarted(dashboardViewModel.dashboardDataFlow(user?.id)) {
+            onRealmDataChange()
         }
     }
 
