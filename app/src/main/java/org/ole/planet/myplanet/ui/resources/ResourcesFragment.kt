@@ -87,41 +87,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel.startResourcesSync()
-
-        collectWhenStarted(viewModel.syncState) { state ->
-            when (state) {
-                is org.ole.planet.myplanet.model.SyncState.Syncing -> {
-                    if (isAdded && !requireActivity().isFinishing && view != null) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_resources))
-                        customProgressDialog?.show()
-                    }
-                }
-                is org.ole.planet.myplanet.model.SyncState.Success -> {
-                    if (isAdded && view != null) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshResourcesData()
-                        viewModel.resetSyncState()
-                    }
-                }
-                is org.ole.planet.myplanet.model.SyncState.Failed -> {
-                    if (isAdded && view != null) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            viewModel.startResourcesSync()
-                        }.show()
-                        viewModel.resetSyncState()
-                    }
-                }
-                is org.ole.planet.myplanet.model.SyncState.Idle -> {
-                    // Do nothing
-                }
-            }
-        }
     }
 
     override fun getLayout(): Int {
@@ -230,6 +195,36 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         setupEventListeners()
         initArrays()
         hideButton()
+
+        collectWhenStarted(viewModel.syncState) { state ->
+            when (state) {
+                is org.ole.planet.myplanet.model.SyncState.Syncing -> {
+                    if (!requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_resources))
+                        customProgressDialog?.show()
+                    }
+                }
+                is org.ole.planet.myplanet.model.SyncState.Success -> {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                    refreshResourcesData()
+                    viewModel.resetSyncState()
+                }
+                is org.ole.planet.myplanet.model.SyncState.Failed -> {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                    Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                    ).setAction("Retry") {
+                        viewModel.startResourcesSync()
+                    }.show()
+                    viewModel.resetSyncState()
+                }
+                is org.ole.planet.myplanet.model.SyncState.Idle -> {
+                    // Do nothing
+                }
+            }
+        }
 
         lifecycleScope.launch {
             userModel = profileDbHandler.getUserModel()
