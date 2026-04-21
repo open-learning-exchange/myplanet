@@ -27,7 +27,7 @@ class ResourcesViewModel @Inject constructor(
 
     fun startResourcesSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isResourcesSynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.RESOURCES)) {
             checkServerAndStartSync()
         }
     }
@@ -51,7 +51,7 @@ class ResourcesViewModel @Inject constructor(
 
             override fun onSyncComplete() {
                 _syncState.value = SyncState.Success
-                sharedPrefManager.setResourcesSynced(true)
+                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.RESOURCES, true)
             }
 
             override fun onSyncFailed(msg: String?) {

@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -184,7 +185,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     private fun startTeamSync() {
         val isFastSync = prefData.getFastSync()
-        if (isFastSync && prefData.isTeamsSynced()) {
+        if (isFastSync && prefData.isSynced(SharedPrefManager.SyncKey.TEAMS)) {
             checkServerAndStartSync()
         }
     }
@@ -216,7 +217,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshTeamDetails()
-                        prefData.setTeamsSynced(true)
+                        prefData.setSynced(SharedPrefManager.SyncKey.TEAMS, true)
                     }
                 }
             }
