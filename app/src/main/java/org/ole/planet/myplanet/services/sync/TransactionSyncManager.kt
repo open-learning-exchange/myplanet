@@ -158,10 +158,11 @@ class TransactionSyncManager @Inject constructor(
             // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
                 "ratings" -> 20      // Small batches for slow endpoint
-                "submissions" -> 100  // Medium batches for slow endpoint
-                else -> 1000          // Large batches for fast endpoints
+                "submissions" -> 20  // Medium batches for slow endpoint
+                "login_activities" -> 200
+                else -> 500
             }
-            var skip = 0
+            var lastId: String? = null
             var totalDocs = 0
             var batchNumber = 0
 
@@ -171,10 +172,16 @@ class TransactionSyncManager @Inject constructor(
                 val batchStartTime = System.currentTimeMillis()
                 // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
+                val url = if (lastId == null) {
+                    "${UrlUtils.getUrl()}/$table/_all_docs?include_docs=true&limit=$pageSize"
+                } else {
+                    "&startkey=\"$lastId\"&skip=1"
+                }
+
                 val response = apiInterface.findDocs(
                     UrlUtils.header,
                     "application/json",
-                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
+                    url,
                     JsonObject() // Empty body for GET-style query
                 )
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
@@ -279,33 +286,34 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
-                } else if (table == "login_activities") {
-                databaseService.executeTransactionAsync { mRealm: Realm ->
-                    val insertStartTime = System.currentTimeMillis()
-                    activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
-                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                        "insert_batch",
-                        table,
-                        insertDuration,
-                        arr.size()
-                    )
-                }
-            } else {
+                } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                                                when (table) {
-                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
+                        when (table) {
+                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(
+                                mRealm,
+                                arr,
+                                sharedPrefManager.rawPreferences
+                            )
+
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
-                            "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
+//                            "team_activities" -> teamsRepository.get()
+//                                .bulkInsertTeamActivitiesFromSync(mRealm, arr)
+
+                            "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(
+                                mRealm,
+                                arr
+                            )
+
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
                             "courses" -> {
                                 coursesRepository.bulkInsertFromSync(mRealm, arr)
-                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(
+                                    sharedPrefManager
+                                )
                             }
                             "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
@@ -330,7 +338,7 @@ class TransactionSyncManager @Inject constructor(
                     }
                 }
                 totalDocs += arr.size()
-                skip += arr.size()
+                lastId = arr.last().asJsonObject.get("id")?.asString ?: break
                 val batchDuration = System.currentTimeMillis() - batchStartTime
                 android.util.Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
