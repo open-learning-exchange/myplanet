@@ -12,10 +12,9 @@ import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
-import androidx.fragment.app.viewModels
-import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
