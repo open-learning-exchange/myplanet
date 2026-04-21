@@ -124,8 +124,8 @@ class ServerConfigUtilsTest {
         assertEquals("5932", ServerConfigUtils.getPinForUrl("planet.somalia.ole.org"))
         assertEquals("0660", ServerConfigUtils.getPinForUrl("planet.vi.ole.org"))
         assertEquals("4324", ServerConfigUtils.getPinForUrl("10.82.1.31"))
-        assertEquals("4025", ServerConfigUtils.getPinForUrl("192.168.1.64"))
-        assertEquals("8925", ServerConfigUtils.getPinForUrl("192.168.1.93"))
+        assertEquals("4025", ServerConfigUtils.getPinForUrl("192.168.1.73"))
+        assertEquals("8925", ServerConfigUtils.getPinForUrl("192.168.1.66"))
         assertEquals("0963", ServerConfigUtils.getPinForUrl("192.168.1.148"))
         assertEquals("6407", ServerConfigUtils.getPinForUrl("192.168.68.126"))
     }
