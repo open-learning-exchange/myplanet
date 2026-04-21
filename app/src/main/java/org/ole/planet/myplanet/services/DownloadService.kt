@@ -128,18 +128,14 @@ class DownloadService : Service() {
         }
     }
 
-    private data class QueuedUrl(val url: String, val isPriority: Boolean)
+    internal data class QueuedUrl(val url: String, val isPriority: Boolean)
 
-    private fun getNextPriorityUrl(): QueuedUrl? {
-        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val next = priorityUrls.firstOrNull { it !in processedUrls && it.isNotBlank() }
-        return next?.let { QueuedUrl(it, isPriority = true) }
+    internal fun getNextPriorityUrl(): QueuedUrl? {
+        return Companion.getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
     }
 
-    private fun getNextPendingUrl(): QueuedUrl? {
-        val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val next = pendingUrls.firstOrNull { it !in processedUrls && it.isNotBlank() }
-        return next?.let { QueuedUrl(it, isPriority = false) }
+    internal fun getNextPendingUrl(): QueuedUrl? {
+        return Companion.getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
     }
 
     private fun getRemainingCount(): Int {
@@ -398,6 +394,18 @@ class DownloadService : Service() {
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
+
+        @androidx.annotation.VisibleForTesting
+        internal fun getNextUrl(
+            preferences: SharedPreferences,
+            key: String,
+            processedUrls: Set<String>,
+            isPriority: Boolean
+        ): QueuedUrl? {
+            val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
+            val next = urls.sorted().firstOrNull { it !in processedUrls && it.isNotBlank() }
+            return next?.let { QueuedUrl(it, isPriority) }
+        }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, DownloadService::class.java).apply {
