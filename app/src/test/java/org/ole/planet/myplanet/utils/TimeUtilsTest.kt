@@ -63,29 +63,45 @@ class TimeUtilsTest {
 
     @Test
     fun testGetFormattedDate_epoch() {
-        // 0 timestamp is Jan 01, 1970 UTC
+        // 0 timestamp is Jan 01, 1970 UTC. To avoid Locale flakiness with TimeUtils object initialization,
+        // we assert against the dynamically formatted expected value instead of hardcoding English locale.
+        val expected = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(0L))
         val formatted = TimeUtils.getFormattedDate(0L)
-        assertEquals("Thursday, Jan 01, 1970", formatted)
+        assertEquals(expected, formatted)
     }
 
     @Test
     fun testGetFormattedDate_preEpoch() {
-        // -1000000000000L is roughly 1938
         val timestamp = -1000000000000L
+        val expected = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(timestamp))
         val formatted = TimeUtils.getFormattedDate(timestamp)
-        assertEquals("Sunday, Apr 24, 1938", formatted)
+        assertEquals(expected, formatted)
     }
 
     @Test
     fun testGetFormattedDate_extremeValues() {
-        // Just verify it doesn't crash and returns gracefully when format exceeds what DateTimeFormatter can do
-        val maxFormatted = TimeUtils.getFormattedDate(Long.MAX_VALUE)
-        assertNotNull(maxFormatted)
-        assertNotEquals("N/A", maxFormatted)
+        // DateTimeFormatter successfully evaluates MAX/MIN Instant bounds natively without throwing.
+        val expectedMax = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(Long.MAX_VALUE))
 
+        val expectedMin = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(Long.MIN_VALUE))
+
+        val maxFormatted = TimeUtils.getFormattedDate(Long.MAX_VALUE)
         val minFormatted = TimeUtils.getFormattedDate(Long.MIN_VALUE)
-        assertNotNull(minFormatted)
-        assertNotEquals("N/A", minFormatted)
+
+        assertEquals(expectedMax, maxFormatted)
+        assertEquals(expectedMin, minFormatted)
     }
 
     @Test
