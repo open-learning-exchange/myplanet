@@ -10,18 +10,22 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.DispatcherModule
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.robolectric.RobolectricTestRunner
@@ -49,6 +53,10 @@ class SubmissionUploadExecutorTest {
     @Inject
     lateinit var executor: SubmissionUploadExecutor
 
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     @Before
     fun init() {
         hiltRule.inject()
@@ -69,9 +77,25 @@ class SubmissionUploadExecutorTest {
             capturedDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher
         }
 
+        assertFalse("Block should not be called synchronously", invoked)
+
         advanceUntilIdle()
 
         assertTrue("Block should have been invoked", invoked)
         assertEquals("Block should run on the provided IO dispatcher", ioDispatcher, capturedDispatcher)
+    }
+
+    @Test
+    fun testExecute_respectsCancellation() = runTest(testScheduler) {
+        applicationScope.cancel()
+
+        var invoked = false
+        executor.execute {
+            invoked = true
+        }
+
+        advanceUntilIdle()
+
+        assertFalse("Block should not be invoked if scope is cancelled", invoked)
     }
 }
