@@ -448,7 +448,8 @@ class MyHealthFragment : Fragment() {
 
         if (fullName.isNotEmpty()) return fullName
 
-        return getString(R.string.n_a)
+        val username = user.name?.trim().orEmpty()
+        return if (username.isNotEmpty()) username else getString(R.string.n_a)
     }
 
     private fun disableDobField() {
