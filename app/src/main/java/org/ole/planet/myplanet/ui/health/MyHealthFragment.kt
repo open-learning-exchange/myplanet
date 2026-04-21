@@ -253,7 +253,7 @@ class MyHealthFragment : Fragment() {
             }
             userModel = fetchedUser
             setupButtons()
-            binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
+            binding.lblHealthName.text = getDisplayName(userModel)
             binding.addNewRecord.setOnClickListener {
                 startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
             }
@@ -377,7 +377,7 @@ class MyHealthFragment : Fragment() {
 
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
-            binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
+            binding.txtFullName.text = getDisplayName(currentUser)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
@@ -436,6 +436,19 @@ class MyHealthFragment : Fragment() {
                 binding.tvDataPlaceholder.visibility = View.GONE
             }
         }
+    }
+
+    private fun getDisplayName(user: RealmUser?): String {
+        if (user == null) return getString(R.string.n_a)
+
+        val fullName = listOf(user.firstName, user.middleName, user.lastName)
+            .mapNotNull { it?.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(" ")
+
+        if (fullName.isNotEmpty()) return fullName
+
+        return getString(R.string.n_a)
     }
 
     private fun disableDobField() {
