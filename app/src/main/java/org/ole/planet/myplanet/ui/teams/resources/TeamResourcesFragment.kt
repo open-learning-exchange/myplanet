@@ -123,6 +123,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                         }
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
+                        teamsRepository.syncTeamActivities()
                         showLibraryList()
                     }
                 }
@@ -181,6 +182,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
                 teamsRepository.removeResourceLink(teamId, resourceId)
+                teamsRepository.syncTeamActivities()
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
             }.onFailure {
