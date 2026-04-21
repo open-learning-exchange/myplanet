@@ -100,7 +100,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     private fun startFeedbackSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isFeedbackSynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.FEEDBACK)) {
             checkServerAndStartSync()
         }
     }
@@ -134,7 +134,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshFeedbackListData()
-                        sharedPrefManager.setFeedbackSynced(true)
+                        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.FEEDBACK, true)
                     }
                 }
             }

@@ -174,7 +174,7 @@ class SurveysViewModel @Inject constructor(
 
     fun startExamSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        val isExamsSynced = sharedPrefManager.isExamsSynced()
+        val isExamsSynced = sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS)
 
         if (isFastSync && !isExamsSynced) {
             checkServerAndStartSync()
@@ -202,7 +202,7 @@ class SurveysViewModel @Inject constructor(
             }
 
             override fun onSyncComplete() {
-                sharedPrefManager.setExamsSynced(true)
+                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true)
                 _isLoading.value = false
                 loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
             }
