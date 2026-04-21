@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 
@@ -116,8 +117,12 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
                     val selectedResources = (myLibraryAlertdialogBinding.alertDialogListView.adapter as CheckboxAdapter).selectedItemsList
                         .map { index -> availableLibraries[index] }
+                        .mapNotNull {
+                            val id = it._id
+                            if (id != null) TeamResourceDto(id, it.title) else null
+                        }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamsRepository.addResourceLinks(teamId, selectedResources, user)
+                        teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
                         showLibraryList()
                     }
                 }

@@ -8,8 +8,8 @@
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.46.0 (versionCode: 4600)
-- **Build System**: Gradle 9.3.1 with Android Gradle Plugin 9.0.0
+- **Current Version**: 0.53.38 (versionCode: 5338)
+- **Build System**: Gradle 9.4.1 with Android Gradle Plugin 9.1.1
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -27,7 +27,8 @@ myplanet/
 ├── .github/                    # CI/CD workflows and Dependabot config
 │   └── workflows/
 │       ├── build.yml          # Build workflow for all branches
-│       └── release.yml        # Release and Play Store publishing
+│       ├── release.yml        # Release and Play Store publishing
+│       └── test.yml           # Unit test workflow
 ├── app/                       # Main application module
 │   ├── src/
 │   │   ├── main/
@@ -37,13 +38,13 @@ myplanet/
 │   │   │   │   ├── callback/                # Event listeners and interfaces
 │   │   │   │   ├── data/                    # Data services and API
 │   │   │   │   ├── di/                      # Dependency injection modules
-│   │   │   │   ├── model/                   # Realm data models (40 Realm classes, 67 total)
+│   │   │   │   ├── model/                   # Realm data models (83 files)
 │   │   │   │   ├── repository/              # Repository pattern implementations
 │   │   │   │   ├── services/                # Background services and workers
 │   │   │   │   ├── ui/                      # UI components (28 packages)
 │   │   │   │   └── utils/                   # Helper utilities
 │   │   │   ├── res/                         # Android resources
-│   │   │   │   ├── layout/                  # 169 layout files
+│   │   │   │   ├── layout/                  # 171 layout files
 │   │   │   │   ├── values/                  # Strings, colors, styles
 │   │   │   │   ├── values-{lang}/           # Translations (ar, es, fr, ne, so)
 │   │   │   │   └── drawable*/               # Images and icons
@@ -67,14 +68,14 @@ myplanet/
 | `base/` | Base classes for common functionality | 12 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
 | `callback/` | Event listeners and interfaces | 34 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and 29 more |
 | `data/` | Data access and API services | 8 | DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
-| `di/` | Hilt dependency injection | 16 | 5 modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule) + 11 entry points |
-| `model/` | Realm database models and DTOs | 67 | 40 Realm models + 27 DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
-| `repository/` | Repository pattern implementations | 38 | 19 repositories with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
+| `di/` | Hilt dependency injection | 11 | 6 modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule) + 4 entry points (CoreDependenciesEntryPoint, NetworkDependenciesEntryPoint, RepositoryDependenciesEntryPoint, ServiceDependenciesEntryPoint) + RealmDispatcher |
+| `model/` | Realm database models and DTOs | 83 | Realm models + DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
+| `repository/` | Repository pattern implementations | 46 | 23 repositories with Interface + Impl pairs + RealmRepository base + SubmissionsRepositoryExporter |
 | `services/` | Background services and workers | 37 | 20 root-level + `sync/` (11), `upload/` (4), `retry/` (2) |
-| `ui/` | User interface components | 147 | 28 feature packages with 16 ViewModels (courses, resources, teams, chat, etc.) |
+| `ui/` | User interface components | 156 | 28 feature packages with 16+ ViewModels (courses, resources, teams, chat, etc.) |
 | `utils/` | Helper functions | 39 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and 32 more |
 
-### UI Sub-packages (28 feature packages, 147 files)
+### UI Sub-packages (28 feature packages, 156 files)
 
 | Package | Files | Key Components |
 |---------|-------|----------------|
@@ -82,26 +83,26 @@ myplanet/
 | `ui/chat/` | 6 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
 | `ui/community/` | 6 | CommunityTabFragment, LeadersFragment |
 | `ui/components/` | 5 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
-| `ui/courses/` | 12 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
+| `ui/courses/` | 16 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
 | `ui/dashboard/` | 11 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
 | `ui/dictionary/` | 1 | DictionaryActivity |
 | `ui/enterprises/` | 5 | EnterprisesViewModel, FinancesFragment, ReportsFragment |
 | `ui/events/` | 2 | EventsDetailFragment, EventsAdapter |
 | `ui/exam/` | 2 | ExamTakingFragment, UserInformationFragment |
 | `ui/feedback/` | 6 | FeedbackFragment, FeedbackDetailActivity, FeedbackListViewModel |
-| `ui/health/` | 5 | MyHealthFragment, AddExaminationActivity |
+| `ui/health/` | 6 | MyHealthFragment, AddExaminationActivity |
 | `ui/life/` | 2 | LifeFragment, LifeAdapter |
 | `ui/maps/` | 1 | OfflineMapsActivity |
 | `ui/notifications/` | 3 | NotificationsFragment, NotificationsViewModel |
 | `ui/onboarding/` | 2 | OnboardingActivity, OnboardingAdapter |
-| `ui/personals/` | 2 | PersonalsFragment, PersonalsAdapter |
+| `ui/personals/` | 3 | PersonalsFragment, PersonalsAdapter |
 | `ui/ratings/` | 2 | RatingsFragment, RatingsViewModel |
 | `ui/references/` | 2 | ReferencesFragment, ReferencesAdapter |
-| `ui/resources/` | 8 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
+| `ui/resources/` | 9 | ResourcesFragment, AddResourceFragment, CollectionsFragment |
 | `ui/settings/` | 1 | SettingsActivity |
-| `ui/submissions/` | 8 | SubmissionsFragment, SubmissionViewModel |
+| `ui/submissions/` | 9 | SubmissionsFragment, SubmissionViewModel |
 | `ui/surveys/` | 4 | SurveyFragment, SendSurveyFragment |
-| `ui/sync/` | 7 | LoginActivity, SyncActivity, ProcessUserDataActivity |
+| `ui/sync/` | 8 | LoginActivity, SyncActivity, ProcessUserDataActivity |
 | `ui/teams/` | 22 | TeamFragment, TeamDetailFragment, TeamViewModel (largest UI package) |
 | `ui/user/` | 7 | UserProfileFragment, UserProfileViewModel, BecomeMemberActivity |
 | `ui/viewer/` | 8 | ImageViewer, VideoViewer, AudioPlayer, PDFReader, WebView, MarkdownViewer, TextFileViewer, CSVViewer |
@@ -111,7 +112,7 @@ myplanet/
 
 1. **`MainApplication.kt`** (~448 lines)
    - Application initialization with Hilt DI
-   - WorkManager scheduling (AutoSyncWorker, StayOnlineWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
+   - WorkManager scheduling (AutoSyncWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
    - Server reachability checking with alternative URL mapping
    - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
@@ -145,23 +146,23 @@ myplanet/
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Language** | Kotlin | 2.3.10 | Primary development language |
-| **Build System** | Gradle | 9.3.1 | Build automation |
-| **Build Plugin** | Android Gradle Plugin | 9.0.0 | Android build tooling |
-| **DI Framework** | Dagger Hilt | 2.59.1 | Dependency injection |
+| **Language** | Kotlin | 2.3.20 | Primary development language |
+| **Build System** | Gradle | 9.4.1 | Build automation |
+| **Build Plugin** | Android Gradle Plugin | 9.1.1 | Android build tooling |
+| **DI Framework** | Dagger Hilt | 2.59.2 | Dependency injection |
 | **Database** | Realm | 10.19.0 | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
 | **JSON** | Gson | 2.13.2 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.10.2 | Asynchronous programming |
-| **Background Tasks** | AndroidX Work | 2.11.1 | Background job scheduling |
+| **Background Tasks** | AndroidX Work | 2.11.2 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.13.0 | UI components |
 | **Image Loading** | Glide | 5.0.5 | Image loading and caching |
-| **Media Playback** | Media3 (ExoPlayer) | 1.9.2 | Audio/video playback |
+| **Media Playback** | Media3 (ExoPlayer) | 1.10.0 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
-| **Encryption** | Tink | 1.20.0 | Cryptographic operations |
-| **Serialization** | Kotlin Serialization | 1.10.0 | Kotlin-native serialization |
+| **Encryption** | Tink | 1.21.0 | Cryptographic operations |
+| **Serialization** | Kotlin Serialization | 1.11.0 | Kotlin-native serialization |
 | **CSV** | OpenCSV | 5.12.0 | CSV file parsing |
 
 ### Build Configuration
@@ -188,9 +189,9 @@ myplanet/
 ### 1. Layered Architecture
 
 ```
-UI Layer (Activities/Fragments + 16 ViewModels)
+UI Layer (Activities/Fragments + 16+ ViewModels)
     ↓
-Repository Layer (19 domains, Interface + Impl pairs, Flow-based queries)
+Repository Layer (23 domains, Interface + Impl pairs, Flow-based queries)
     ↓
 Service Layer (ApiInterface, SyncManager, UploadCoordinator)
     ↓
@@ -218,8 +219,8 @@ class CourseRepositoryImpl @Inject constructor(
 }
 ```
 
-**All 19 Domain Repositories:**
-Activities, Chat, Configurations, Courses, Events, Feedback, Life, Notifications, Personals, Progress, Ratings, Resources, Submissions, Surveys, Tags, Teams, User, Voices
+**All 23 Domain Repositories:**
+Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback, Health, Life, Notifications, Personals, Progress, Ratings, Resources, Retry, Submissions, Surveys, Tags, Teams, User, Voices
 
 **Utility Classes:**
 - `RealmRepository` - Generic base repository
@@ -229,18 +230,19 @@ Activities, Chat, Configurations, Courses, Events, Feedback, Life, Notifications
 
 ### 4. Dependency Injection (Hilt)
 
-**Module Structure:**
+**Module Structure (6 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
 - `DatabaseModule.kt` - Provides Realm instances
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
+- `DispatcherModule.kt` - Provides coroutine dispatchers (see also `RealmDispatcher.kt`)
 
-**Entry Points for Workers (11 entry point files):**
-- `NetworkDependenciesEntryPoint`, `NetworkDependenciesEntryPoint`, `NetworkDependenciesEntryPoint`
-- `ApplicationScopeEntryPoint`, `BroadcastServiceEntryPoint`, `DatabaseServiceEntryPoint`
-- `RepositoryEntryPoint`, `RetryQueueEntryPoint`, `ServiceEntryPoint`
-- `RepositoryDependenciesEntryPoint`, `CoreDependenciesEntryPoint`
+**Entry Points for Workers (4 entry point files):**
+- `CoreDependenciesEntryPoint`
+- `NetworkDependenciesEntryPoint`
+- `RepositoryDependenciesEntryPoint`
+- `ServiceDependenciesEntryPoint`
 
 ```kotlin
 @EntryPoint
@@ -281,7 +283,6 @@ interface NetworkDependenciesEntryPoint {
 - `TaskNotificationWorker` - Task deadline notifications
 - `DownloadWorker` - Background file downloads
 - `FreeSpaceWorker` - Disk space monitoring
-- `StayOnlineWorker` - Keeps connection alive
 - `RetryQueueWorker` - Retries failed operations (`services/retry/`)
 
 **Services and Managers (20 root-level files):**
@@ -291,12 +292,13 @@ interface NetworkDependenciesEntryPoint {
 - `UploadCoordinator` - Upload orchestration (`services/upload/`)
 - `AudioRecorder` - Audio recording
 - `BroadcastService` - Service broadcasting
-- `ConfigurationManager` - Configuration management
 - `SharedPrefManager` - SharedPreferences management
 - `UserSessionManager` - User session handling
 - `ThemeManager` - App theming
 - `FileUploader` - File upload utilities
 - `DownloadService` - Background file download service (foreground service)
+- `ResourceDownloadCoordinator` - Orchestrates resource downloads
+- `SubmissionUploadExecutor` - Executes submission uploads
 - `VoicesLabelManager` - Voice/discussion forum label management
 - `ChallengePrompter` - Challenge prompt generation
 - `NotificationActionReceiver` - Broadcast receiver for notification actions
@@ -1104,15 +1106,15 @@ git rebase --continue
 
 ## Codebase Inventory Summary
 
-### Source Files (394 total Kotlin files)
+### Source Files (427 total Kotlin files in `app/src/main/java`)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
-| `model/` | 67 | Realm database models (40) + DTOs (27) |
-| `repository/` | 38 | Data access abstraction (19 domains + utilities) |
-| `ui/` | 147 | User interface across 28 feature packages |
+| `model/` | 83 | Realm database models + DTOs |
+| `repository/` | 46 | Data access abstraction (23 domains + utilities) |
+| `ui/` | 156 | User interface across 28 feature packages |
 | `services/` | 37 | Background tasks & managers (20 root + 3 sub-packages) |
-| `di/` | 16 | Dependency injection (5 modules + 11 entry points) |
+| `di/` | 11 | Dependency injection (6 modules + 4 entry points + RealmDispatcher) |
 | `base/` | 12 | Reusable base classes |
 | `callback/` | 34 | Event listeners and interfaces |
 | `data/` | 8 | Data services, API, auth |
@@ -1123,11 +1125,8 @@ git rebase --continue
 
 | Category | Count |
 |----------|-------|
-| Layout files (main) | 169 |
-| Layout files (all variants) | 181 |
-| Drawable files | 129 |
+| Layout files (main) | 171 |
 | Translation languages | 5 (ar, es, fr, ne, so) |
-| String resources | ~1,194 lines |
 | Menu files | 2 |
 | XML config files | 3 |
 
@@ -1141,6 +1140,6 @@ git rebase --continue
 
 ---
 
-**Last Updated**: 2026-02-10
-**Version**: 0.46.0
+**Last Updated**: 2026-04-20
+**Version**: 0.53.38
 **Maintainer**: Open Learning Exchange
