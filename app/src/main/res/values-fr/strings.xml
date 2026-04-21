@@ -1217,5 +1217,28 @@
     <string name="no_references_added">Aucune référence ajoutée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="already_shared">Déjà partagé</string>
+    <string name="your_learning">Votre apprentissage</string>
+    <string name="pick_up_where_you_left_off">Reprenez là où vous en étiez</string>
+    <string name="my_stuff">Mes affaires</string>
+    <string name="tap_card_to_expand">Appuyez sur une carte pour développer</string>
+    <string name="good_morning">Bonjour,</string>
+    <string name="good_afternoon">Bon après-midi,</string>
+    <string name="good_evening">Bonsoir,</string>
+    <string name="good_night">Bonne nuit,</string>
+    <string name="continue_label">Continuer</string>
+    <string name="offline">hors ligne</string>
+    <string name="connecting">connexion…</string>
+    <string name="online">en ligne</string>
+    <string name="offline_headline">Vous êtes hors ligne — l\'apprentissage continue</string>
+    <string name="offline_queue_3">3 éléments en attente de synchronisation dès votre reconnexion</string>
+    <string name="retry">Réessayer</string>
+    <string name="notifications">Notifications</string>
+    <string name="open_courses_arrow">Ouvrir les Cours →</string>
+    <string name="open_library_arrow">Ouvrir la Bibliothèque →</string>
+    <string name="open_teams_arrow">Ouvrir les Équipes →</string>
+    <string name="open_life_arrow">Ouvrir Ma Vie →</string>
+    <string name="course_completed_label">Terminé</string>
+    <string name="complete_label">terminé</string>
+    <string name="not_started_label">Pas encore commencé</string>
 
 </resources>

@@ -20,7 +20,7 @@
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync_save">Keyd</string>
-    <string name="loading">Soo dejinta...</string>
+    <string name="loading">Soo dejinta…</string>
     <string name="select_team">xulo koox</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
@@ -1213,5 +1213,28 @@
     <string name="no_references_added">Tixraac lama darin</string>
     <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
     <string name="already_shared">Hore loo wadaagay</string>
+    <string name="your_learning">Waxbarashadadaada</string>
+    <string name="pick_up_where_you_left_off">Ku sii wad halka aad ka joogtay</string>
+    <string name="my_stuff">Waxyaalahayga</string>
+    <string name="tap_card_to_expand">Taab kaarka si aad u ballaariso</string>
+    <string name="good_morning">Subax wanaagsan,</string>
+    <string name="good_afternoon">Galabnimo wanaagsan,</string>
+    <string name="good_evening">Fiidnimo wanaagsan,</string>
+    <string name="good_night">Habeennimo wanaagsan,</string>
+    <string name="continue_label">Sii wad</string>
+    <string name="offline">lagama maarmaanka</string>
+    <string name="connecting">xidhinaya…</string>
+    <string name="online">onlayn</string>
+    <string name="offline_headline">Kuma xidna internetka — waxbarashadu way sii socdaa</string>
+    <string name="offline_queue_3">3 shay ayaa suraysa si loo xiriiriyo markaan dib online noqotid</string>
+    <string name="retry">Isku day mar kale</string>
+    <string name="notifications">Ogeysiisyada</string>
+    <string name="open_courses_arrow">Fur Koorsooyin →</string>
+    <string name="open_library_arrow">Fur Maktabadda →</string>
+    <string name="open_teams_arrow">Fur Kooxaha →</string>
+    <string name="open_life_arrow">Fur Noloshayda →</string>
+    <string name="course_completed_label">La dhammeeyey</string>
+    <string name="complete_label">la dhammeeyey</string>
+    <string name="not_started_label">Weli lama bilaaban</string>
 
 </resources>
