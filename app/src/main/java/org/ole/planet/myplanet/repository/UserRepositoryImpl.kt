@@ -563,19 +563,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModelSuspending() instead")
-    override fun getUserModel(): RealmUser? {
-        val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return databaseService.withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
