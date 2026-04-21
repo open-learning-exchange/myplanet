@@ -32,7 +32,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.EntryPointAccessors
 import java.io.File
 import java.util.Calendar
 import java.util.Date
@@ -52,7 +51,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -268,7 +266,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                         configurationsRepository.clearAllData()
                         prefData.setManualConfig(config)
-                        clearSharedPref()
+                        prefData.clearPreferences()
 
                         delay(500)
                         restartApp()
@@ -818,28 +816,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         lateinit var cal_last_Sync: Calendar
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
-
-        suspend fun clearSharedPref() {
-            withContext(Dispatchers.IO) {
-                val spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-                val prefs = spm.rawPreferences
-                val editor = prefs.edit()
-                val keysToKeep =
-                    setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
-                val tempStorage = HashMap<String, Boolean>()
-                for (key in keysToKeep) {
-                    tempStorage[key] = prefs.getBoolean(key, false)
-                }
-                editor.clear().apply()
-                for ((key, value) in tempStorage) {
-                    editor.putBoolean(key, value)
-                }
-                editor.commit()
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit { clear() }
-            }
-        }
-
         fun restartApp() {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)

@@ -194,6 +194,10 @@ class ResourcesAdapter(
                 }
                 handled = true
             }
+            if (payloads.contains(TAGS_PAYLOAD)) {
+                displayTagCloud(holder, position)
+                handled = true
+            }
             if (!handled) {
                 super.onBindViewHolder(holder, position, payloads)
             }
