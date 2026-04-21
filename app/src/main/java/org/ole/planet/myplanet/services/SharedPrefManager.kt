@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -10,7 +11,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
-import androidx.preference.PreferenceManager
 
 @Singleton
 class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {

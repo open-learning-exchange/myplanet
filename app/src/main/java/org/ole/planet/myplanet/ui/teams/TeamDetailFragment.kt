@@ -375,24 +375,34 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
         binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
-            val coursesPageIndex = pageIndexById(CoursesPage.id)
-            val isAlreadyOnCoursesPage = coursesPageIndex != null && binding.viewPager2.currentItem == coursesPageIndex
+            val isEnterprise = team?.type == "enterprise"
+            val targetPageId = if (isEnterprise) DocumentsPage.id else CoursesPage.id
+            val targetPageIndex = pageIndexById(targetPageId)
+            val isAlreadyOnTargetPage = targetPageIndex != null && binding.viewPager2.currentItem == targetPageIndex
 
-            selectPage(CoursesPage.id)
+            selectPage(targetPageId)
             MainApplication.showDownload = false
 
-            val delay = if (isAlreadyOnCoursesPage) 50L else 300L
+            val delay = if (isAlreadyOnTargetPage) 50L else 300L
 
             binding.root.postDelayed({
-                val allFragments = childFragmentManager.fragments
-                val coursesFragment = allFragments.filterIsInstance<TeamCoursesFragment>().firstOrNull()
-
+                val pageListener = childFragmentManager.fragments.firstOrNull {
+                    it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
+                } as? OnTeamPageListener
                 when {
-                    coursesFragment != null -> {
-                        coursesFragment.onAddCourse()
+                    pageListener != null -> {
+                        if (isEnterprise) {
+                            pageListener.onAddDocument()
+                        } else {
+                            pageListener.onAddCourse()
+                        }
                     }
-                    MainApplication.listener is TeamCoursesFragment -> {
-                        MainApplication.listener?.onAddCourse()
+                    MainApplication.listener is OnTeamPageListener -> {
+                        if (isEnterprise) {
+                            MainApplication.listener?.onAddDocument()
+                        } else {
+                            MainApplication.listener?.onAddCourse()
+                        }
                     }
                 }
             }, delay)
