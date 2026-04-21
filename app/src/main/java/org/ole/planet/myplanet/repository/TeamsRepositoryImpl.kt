@@ -55,7 +55,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
-    override suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
+    override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")
                 .equalTo("completed", false)

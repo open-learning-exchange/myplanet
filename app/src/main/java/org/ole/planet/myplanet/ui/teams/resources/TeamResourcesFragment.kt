@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResourcesUpdateListener {
@@ -48,12 +49,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         binding.fabAddResource.isVisible = false
         binding.fabAddResource.setOnClickListener { showResourceListDialog() }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                isMemberFlow.collectLatest { isMember ->
-                    binding.fabAddResource.isVisible = isMember
-                }
-            }
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            binding.fabAddResource.isVisible = isMember
         }
     }
 
