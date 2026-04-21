@@ -40,8 +40,8 @@ interface ResourcesRepository {
     suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
     suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
     suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary>
-    suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
-    suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
+    fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
+    fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
     suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean

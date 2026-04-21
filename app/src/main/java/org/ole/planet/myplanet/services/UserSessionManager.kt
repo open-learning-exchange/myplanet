@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -12,7 +13,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
-import android.util.Log
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -33,14 +33,6 @@ class UserSessionManager @Inject constructor(
         } catch (e: IllegalArgumentException) {
             throw e
         }
-    }
-
-    @Deprecated("Use getUserModel() suspend function instead")
-    val userModel: RealmUser? get() = userRepository.getUserModel()
-
-    @Deprecated("Use getUserModel() suspend function instead")
-    fun getUserModelCopy(): RealmUser? {
-        return userRepository.getUserModel()
     }
 
     suspend fun getUserModel(): RealmUser? {

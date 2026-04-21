@@ -9,10 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
@@ -41,14 +40,10 @@ class PlanFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                teamFlow.collect { updatedTeam ->
-                    if (updatedTeam != null) {
-                        updateUIWithTeamDetails(updatedTeam)
-                        updateButtonVisibility(updatedTeam)
-                    }
-                }
+        collectWhenStarted(teamFlow) { updatedTeam ->
+            if (updatedTeam != null) {
+                updateUIWithTeamDetails(updatedTeam)
+                updateButtonVisibility(updatedTeam)
             }
         }
         

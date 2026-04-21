@@ -104,7 +104,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun startCoursesSync() {
         val isFastSync = prefManager.getFastSync()
-        if (isFastSync && !prefManager.isCoursesSynced()) {
+        if (isFastSync && !prefManager.isSynced(SharedPrefManager.SyncKey.COURSES)) {
             checkServerAndStartSync()
         }
     }
@@ -140,7 +140,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         loadDataAsync()
-                        prefManager.setCoursesSynced(true)
+                        prefManager.setSynced(SharedPrefManager.SyncKey.COURSES, true)
                     }
                 }
             }
