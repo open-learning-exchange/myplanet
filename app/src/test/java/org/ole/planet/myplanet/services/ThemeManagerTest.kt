@@ -26,7 +26,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.Shadows
 import android.os.Looper
-import androidx.appcompat.app.AlertDialog
+import org.robolectric.shadows.ShadowDialog
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], manifest = Config.NONE, application = dagger.hilt.android.testing.HiltTestApplication::class)
@@ -94,7 +94,8 @@ class ThemeManagerTest {
 
         Shadows.shadowOf(Looper.getMainLooper()).idle()
 
-        val dialog = ShadowAlertDialog.getLatestDialog() as AlertDialog
+        // Use ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+        val dialog = ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
         assertNotNull(dialog)
         assertTrue(dialog.isShowing)
 
