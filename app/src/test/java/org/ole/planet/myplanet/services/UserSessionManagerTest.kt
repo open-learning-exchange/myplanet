@@ -146,7 +146,6 @@ class UserSessionManagerTest {
         coVerify { activitiesRepository.logLogin(any(), any(), any(), any()) }
     }
 
-
     @Test
     fun `logoutAsync logs logout successfully`() = testScope.runTest {
         val mockUser = mockk<RealmUser>(relaxed = true)
@@ -166,7 +165,6 @@ class UserSessionManagerTest {
         userSessionManager.logoutAsync()
         advanceUntilIdle()
     }
-
 
     @Test
     fun `getGlobalLastVisit returns value from repository`() = testScope.runTest {
@@ -263,7 +261,6 @@ class UserSessionManagerTest {
         }
     }
 
-
     @Test
     fun `setResourceOpenCount exits early for guest user`() = testScope.runTest {
         val mockUser = mockk<RealmUser>(relaxed = true)
@@ -301,7 +298,6 @@ class UserSessionManagerTest {
         coEvery { activitiesRepository.getMostOpenedResource("test_user", UserSessionManager.KEY_RESOURCE_OPEN) } returns null
         assertEquals("", userSessionManager.maxOpenedResource())
     }
-
 
     @Test
     fun `onLoginAsync invokes onError when callback throws exception`() = testScope.runTest {
