@@ -40,6 +40,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
@@ -61,7 +62,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         startFeedbackSync()
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
 
         binding.fab.setOnClickListener {
@@ -145,7 +150,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(
+                            binding.root,
+                            "Sync failed: ${msg ?: "Unknown error"}",
+                            Snackbar.LENGTH_LONG
+                        )
                             .setAction("Retry") { startFeedbackSync() }.show()
                     }
                 }
@@ -191,15 +200,15 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         customProgressDialog = null
         super.onDestroy()
     }
-
     override fun onFeedbackSubmitted() {
         refreshFeedbackListData()
-        binding.rvFeedback.scrollToPosition(0)
     }
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
         if (_binding == null) return
-        feedbackAdapter.submitList(updatedList)
+        feedbackAdapter.submitList(updatedList) {
+            binding.rvFeedback.scrollToPosition(0)
+        }
         val itemCount = updatedList?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")
         updateTextViewsVisibility(itemCount)
@@ -214,3 +223,4 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         binding.tvOpenDate.visibility = visibility
     }
 }
+
