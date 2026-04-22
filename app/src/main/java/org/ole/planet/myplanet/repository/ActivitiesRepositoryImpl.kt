@@ -285,6 +285,15 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun insertSearchActivityFromNewsLog(log: org.ole.planet.myplanet.model.RealmNewsLog) {
+        executeTransaction { realm ->
+            val activity = realm.createObject(org.ole.planet.myplanet.model.RealmSearchActivity::class.java, UUID.randomUUID().toString())
+            activity.user = log.userId ?: ""
+            activity.type = log.type ?: ""
+            activity.time = log.time ?: 0L
+        }
+    }
+
     override fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): com.google.gson.JsonObject {
         val ob = com.google.gson.JsonObject()
         ob.addProperty("user", activity.userName)
