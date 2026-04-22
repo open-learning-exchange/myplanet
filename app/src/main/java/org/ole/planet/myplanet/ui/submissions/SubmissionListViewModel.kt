@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.submissions
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,7 +11,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import javax.inject.Inject
 
 @HiltViewModel
 class SubmissionListViewModel @Inject constructor(

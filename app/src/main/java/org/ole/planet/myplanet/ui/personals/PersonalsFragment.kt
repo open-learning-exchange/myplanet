@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -61,13 +62,9 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         personalAdapter = PersonalsAdapter(requireActivity())
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.personals.collectLatest { realmMyPersonals ->
-                    personalAdapter?.submitList(realmMyPersonals)
-                    showNodata()
-                }
-            }
+        collectLatestWhenStarted(viewModel.personals) { realmMyPersonals ->
+            personalAdapter?.submitList(realmMyPersonals)
+            showNodata()
         }
         showNodata()
     }

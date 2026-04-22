@@ -78,9 +78,6 @@ interface UserRepository {
         userId: String,
         currentUser: RealmUser
     ): HealthRecord?
-
-    @Deprecated("Use getUserModelSuspending() instead")
-    fun getUserModel(): RealmUser?
     suspend fun getUserModelSuspending(): RealmUser?
     suspend fun getUserProfile(): RealmUser?
     suspend fun getUserImageUrl(): String?

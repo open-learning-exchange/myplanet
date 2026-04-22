@@ -83,6 +83,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint  
@@ -136,18 +137,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         )
 
-        @Suppress("DEPRECATION")
-        user = userSessionManager.userModel
-        checkUser()
-        updateAppTitle()
-        if (handleGuestAccess()) return
-
         isFirstLaunch = savedInstanceState == null
         if (isFirstLaunch) handleInitialFragment()
         addBackPressCallback()
         collectUiState()
 
         lifecycleScope.launch {
+            user = userSessionManager.getUserModel()
+            checkUser()
+            updateAppTitle()
+            if (handleGuestAccess()) {
+                isReady = true
+                binding.root.invalidate()
+                return@launch
+            }
+
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
@@ -546,12 +550,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupDashboardDataObserver() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dashboardViewModel.dashboardDataFlow(user?.id).collect {
-                    onRealmDataChange()
-                }
-            }
+        collectWhenStarted(dashboardViewModel.dashboardDataFlow(user?.id)) {
+            onRealmDataChange()
         }
     }
 
@@ -894,8 +894,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openCallFragment(f: Fragment) {
-        val tag = f::class.java.simpleName
-        openCallFragment(f,tag)
+        val id = f.arguments?.getString("id")
+        val tag = if (id != null) "${f::class.java.simpleName}_$id" else f::class.java.simpleName
+        openCallFragment(f, tag)
     }
 
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
