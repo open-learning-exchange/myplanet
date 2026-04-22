@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.net.SocketTimeoutException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -170,15 +171,37 @@ class TransactionSyncManager @Inject constructor(
             while (true) {
                 batchNumber++
                 val batchStartTime = System.currentTimeMillis()
-                // Time the batch API call (much faster with pagination)
-                val batchApiStartTime = System.currentTimeMillis()
-                val response = apiInterface.findDocs(
-                    UrlUtils.header,
-                    "application/json",
-                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
-                    JsonObject() // Empty body for GET-style query
-                )
-                val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
+
+                // Retry each batch up to 3 times to recover from stale connections
+                // killed by a server-side 60-second connection timeout.
+                val maxBatchRetries = 3
+                var batchResponse: retrofit2.Response<JsonObject>? = null
+                var batchAttempt = 0
+                while (batchAttempt < maxBatchRetries) {
+                    try {
+                        val batchApiStartTime = System.currentTimeMillis()
+                        batchResponse = apiInterface.findDocs(
+                            UrlUtils.header,
+                            "application/json",
+                            UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
+                            JsonObject()
+                        )
+                        val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
+                            "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
+                            batchApiDuration,
+                            batchResponse.isSuccessful,
+                            batchResponse.body()?.let { getJsonArray("rows", it).size() } ?: 0
+                        )
+                        break // success — exit retry loop
+                    } catch (e: SocketTimeoutException) {
+                        batchAttempt++
+                        if (batchAttempt >= maxBatchRetries) throw e
+                        android.util.Log.d("SyncPerf", "  ↺ $table batch $batchNumber timeout (attempt $batchAttempt/$maxBatchRetries), retrying...")
+                    }
+                }
+                val response = batchResponse ?: break
+
                 if (response.body() == null || !response.isSuccessful) {
                     android.util.Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
@@ -187,12 +210,6 @@ class TransactionSyncManager @Inject constructor(
                 if (arr.size() == 0) {
                     break // No more documents
                 }
-                org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
-                    "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
-                    batchApiDuration,
-                    response.isSuccessful,
-                    arr.size()
-                )
                 if (table == "news") {
                     val insertStartTime = System.currentTimeMillis()
                     val docs = ArrayList<JsonObject>(arr.size())
