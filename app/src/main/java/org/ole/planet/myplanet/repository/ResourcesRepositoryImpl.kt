@@ -113,45 +113,47 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+        return Normalizer.normalize(str, Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
+            .lowercase(Locale.ROOT)
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
-        if (userId == null && isMyCourseLib) {
-            return emptyList()
-        }
+        return withRealm { realm ->
+            val queryObj = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false)
 
-        val data = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
             if (userId != null) {
                 if (isMyCourseLib) {
-                    equalTo("userId", userId)
+                    queryObj.equalTo("userId", userId)
                 } else {
-                    not().equalTo("userId", userId)
+                    queryObj.not().equalTo("userId", userId)
+                }
+            } else if (isMyCourseLib) {
+                return@withRealm emptyList()
+            }
+
+            val data = queryObj.findAll()
+
+            if (query.isEmpty()) {
+                return@withRealm realm.copyFromRealm(data)
+            }
+
+            val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val normalizedQuery = normalizeText(query)
+            val startsWithQuery = mutableListOf<RealmMyLibrary>()
+            val containsQuery = mutableListOf<RealmMyLibrary>()
+
+            for (item in data) {
+                val title = item.title?.let { normalizeText(it) } ?: continue
+                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    containsQuery.add(item)
                 }
             }
+            realm.copyFromRealm(startsWithQuery + containsQuery)
         }
-
-        if (query.isEmpty()) {
-            return data
-        }
-
-        val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(query)
-        val startsWithQuery = mutableListOf<RealmMyLibrary>()
-        val containsQuery = mutableListOf<RealmMyLibrary>()
-
-        for (item in data) {
-            val title = item.title?.let { normalizeText(it) } ?: continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(item)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(item)
-            }
-        }
-        return startsWithQuery + containsQuery
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
