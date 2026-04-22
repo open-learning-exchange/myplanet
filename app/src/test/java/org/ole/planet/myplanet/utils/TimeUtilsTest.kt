@@ -4,6 +4,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
 import java.util.TimeZone
+import java.io.PrintStream
+import java.io.ByteArrayOutputStream
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -16,6 +18,7 @@ class TimeUtilsTest {
 
     private lateinit var defaultLocale: Locale
     private lateinit var defaultTimeZone: TimeZone
+    private lateinit var originalErr: PrintStream
 
     @Before
     fun setUp() {
@@ -24,12 +27,17 @@ class TimeUtilsTest {
 
         Locale.setDefault(Locale.US)
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+
+        // Suppress expected stack traces printed via e.printStackTrace() during tests
+        originalErr = System.err
+        System.setErr(PrintStream(ByteArrayOutputStream()))
     }
 
     @After
     fun tearDown() {
         Locale.setDefault(defaultLocale)
         TimeZone.setDefault(defaultTimeZone)
+        System.setErr(originalErr)
     }
 
     @Test
@@ -51,6 +59,49 @@ class TimeUtilsTest {
 
         val formattedNull = TimeUtils.getFormattedDate(null)
         assertNotEquals("N/A", formattedNull) // should return current date, not N/A
+    }
+
+    @Test
+    fun testGetFormattedDate_epoch() {
+        // 0 timestamp is Jan 01, 1970 UTC. To avoid Locale flakiness with TimeUtils object initialization,
+        // we assert against the dynamically formatted expected value instead of hardcoding English locale.
+        val expected = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(0L))
+        val formatted = TimeUtils.getFormattedDate(0L)
+        assertEquals(expected, formatted)
+    }
+
+    @Test
+    fun testGetFormattedDate_preEpoch() {
+        val timestamp = -1000000000000L
+        val expected = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(timestamp))
+        val formatted = TimeUtils.getFormattedDate(timestamp)
+        assertEquals(expected, formatted)
+    }
+
+    @Test
+    fun testGetFormattedDate_extremeValues() {
+        // DateTimeFormatter successfully evaluates MAX/MIN Instant bounds natively without throwing.
+        val expectedMax = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(Long.MAX_VALUE))
+
+        val expectedMin = java.time.format.DateTimeFormatter
+            .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
+            .withZone(java.time.ZoneId.of("UTC"))
+            .format(java.time.Instant.ofEpochMilli(Long.MIN_VALUE))
+
+        val maxFormatted = TimeUtils.getFormattedDate(Long.MAX_VALUE)
+        val minFormatted = TimeUtils.getFormattedDate(Long.MIN_VALUE)
+
+        assertEquals(expectedMax, maxFormatted)
+        assertEquals(expectedMin, minFormatted)
     }
 
     @Test

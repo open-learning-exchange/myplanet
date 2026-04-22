@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
@@ -26,22 +27,19 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun setupRealtimeSync() {
-        fragment.lifecycleScope.launch {
-            fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                syncManagerInstance.dataUpdateFlow
-                    .filter { update -> mixin.getWatchedTables().contains(update.table) }
-                    .distinctUntilChanged { old, new ->
-                        old.table == new.table &&
-                        old.newItemsCount == new.newItemsCount &&
-                        old.updatedItemsCount == new.updatedItemsCount
-                    }
-                    .debounce(300)
-                    .collect { update ->
-                        mixin.onDataUpdated(update.table, update)
-                        if (mixin.shouldAutoRefresh(update.table)) {
-                            refreshRecyclerView()
-                        }
-                    }
+        fragment.collectWhenStarted(
+            syncManagerInstance.dataUpdateFlow
+                .filter { update -> mixin.getWatchedTables().contains(update.table) }
+                .distinctUntilChanged { old, new ->
+                    old.table == new.table &&
+                    old.newItemsCount == new.newItemsCount &&
+                    old.updatedItemsCount == new.updatedItemsCount
+                }
+                .debounce(300)
+        ) { update ->
+            mixin.onDataUpdated(update.table, update)
+            if (mixin.shouldAutoRefresh(update.table)) {
+                refreshRecyclerView()
             }
         }
     }

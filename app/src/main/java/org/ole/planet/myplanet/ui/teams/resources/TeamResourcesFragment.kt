@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResourcesUpdateListener {
@@ -48,12 +49,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         binding.fabAddResource.isVisible = false
         binding.fabAddResource.setOnClickListener { showResourceListDialog() }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                isMemberFlow.collectLatest { isMember ->
-                    binding.fabAddResource.isVisible = isMember
-                }
-            }
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            binding.fabAddResource.isVisible = isMember
         }
     }
 
@@ -123,6 +120,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                         }
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
+                        teamsRepository.syncTeamActivities()
                         showLibraryList()
                     }
                 }
@@ -181,6 +179,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
                 teamsRepository.removeResourceLink(teamId, resourceId)
+                teamsRepository.syncTeamActivities()
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
             }.onFailure {

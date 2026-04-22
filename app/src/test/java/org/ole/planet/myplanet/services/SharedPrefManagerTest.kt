@@ -109,15 +109,14 @@ class SharedPrefManagerTest {
 
     @Test
     fun testSetSynced() {
-        // Since setSynced is private, we test it via the public wrapper setChatHistorySynced.
         // Test false synced
-        sharedPrefManager.setChatHistorySynced(false)
+        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, false)
         verify { mockEditor.putBoolean("chat_history_synced", false) }
         verify(exactly = 0) { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
         verify { mockEditor.apply() }
 
         // Test true synced
-        sharedPrefManager.setChatHistorySynced(true)
+        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
         verify { mockEditor.putBoolean("chat_history_synced", true) }
         verify { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
         verify { mockEditor.apply() }
