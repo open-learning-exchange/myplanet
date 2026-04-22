@@ -69,7 +69,8 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            mockUserRepository
+            mockUserRepository,
+            mockk<UserSyncHelper>(relaxed = true)
         )
     }
 

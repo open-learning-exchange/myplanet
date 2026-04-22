@@ -393,7 +393,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             } else {
                 val user = userRepository.authenticateUser(username, password, isManagerMode)
                 if (user != null) {
-                    saveUserInfoPref(this.settings, password, user)
+                    saveUserInfoPref(password, user)
                     true
                 } else {
                     false

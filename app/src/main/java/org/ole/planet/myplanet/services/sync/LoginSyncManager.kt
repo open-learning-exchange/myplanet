@@ -176,7 +176,7 @@ class LoginSyncManager @Inject constructor(
             return
         }
 
-        userRepository.saveUser(jsonDoc, sharedPrefManager.rawPreferences)
+        userRepository.saveUser(jsonDoc)
         withContext(dispatcherProvider.main) {
             listener.onSyncComplete()
         }

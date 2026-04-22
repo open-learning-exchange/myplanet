@@ -59,6 +59,9 @@ abstract class BaseResourceFragment : Fragment() {
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var userRepository: UserRepository
+
+    @javax.inject.Inject
+    lateinit var userSyncHelper: org.ole.planet.myplanet.repository.UserSyncHelper
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject

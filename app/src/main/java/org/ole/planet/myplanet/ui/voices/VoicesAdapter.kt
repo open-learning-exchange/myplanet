@@ -68,7 +68,7 @@ class VoicesAdapter(
     private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
-    private val userRepository: org.ole.planet.myplanet.repository.UserRepository
+    private val userSyncHelper: org.ole.planet.myplanet.repository.UserSyncHelper
 ) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
@@ -114,7 +114,7 @@ class VoicesAdapter(
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
         val raw = sharedPrefManager.getCommunityLeaders()
-        userRepository.parseLeadersJson(raw)
+        userSyncHelper.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
 

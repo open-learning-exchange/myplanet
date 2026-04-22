@@ -75,6 +75,7 @@ class TransactionSyncManagerTest {
             feedbackRepository,
             sharedPrefManager,
             userRepository,
+            mockk<org.ole.planet.myplanet.repository.UserSyncHelper>(relaxed = true),
             activitiesRepository,
 			teamsRepository,
 			notificationsRepository,

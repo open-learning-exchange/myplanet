@@ -55,6 +55,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    @javax.inject.Inject
+    lateinit var userSyncHelper: org.ole.planet.myplanet.repository.UserSyncHelper
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -154,7 +156,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
-                    userRepository = userRepository
+                    userSyncHelper = userSyncHelper
                 )
                 newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)

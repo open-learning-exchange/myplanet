@@ -234,7 +234,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
-                    userRepository = userRepository
+                    userSyncHelper = userSyncHelper
                 )
             }
             adapterNews?.sharedPrefManager = sharedPrefManager

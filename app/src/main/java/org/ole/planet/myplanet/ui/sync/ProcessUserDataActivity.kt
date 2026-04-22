@@ -314,7 +314,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+    suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {
         withContext(dispatcherProvider.io) {
             SecurePrefs.saveCredentials(this@ProcessUserDataActivity, settings, user?.name, password)
         }

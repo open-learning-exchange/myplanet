@@ -575,11 +575,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(user.name ?: "", settings)
+                    val model = userRepository.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
-                        saveUserInfoPref(settings, "", model)
+                        saveUserInfoPref("", model)
                         onLogin()
                     }
                 }
@@ -617,12 +617,12 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(username, settings)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
-                        saveUserInfoPref(settings, "", model)
+                        saveUserInfoPref("", model)
                         onLogin()
                         dialog.dismiss()
                     }
