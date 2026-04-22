@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -500,7 +501,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
-            return context.packageManager.canRequestPackageInstalls()
+            return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }
     }
 }

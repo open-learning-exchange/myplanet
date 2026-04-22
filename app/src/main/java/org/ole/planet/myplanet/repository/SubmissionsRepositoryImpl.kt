@@ -39,7 +39,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return parentId?.substringBefore("@")
     }
 
-    override suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
+    override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
                 .equalTo("type", "survey")
@@ -719,10 +719,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
             var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
             val isNewSubmission = sub == null
-            val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+            val hadLocalChanges = !isNewSubmission && sub.isUpdated
             val serverStatus = org.ole.planet.myplanet.utils.JsonUtils.getString("status", submission)
             val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
-                (sub?.status == "complete" || sub?.status == "requires grading")
+                (sub.status == "complete" || sub.status == "requires grading")
             val skipOverwrite = hadLocalChanges || isStatusDowngrade
 
             if (sub == null) {

@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -88,7 +89,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     private fun startAchievementSync() {
         val isFastSync = prefData.getFastSync()
-        if (isFastSync && !prefData.isAchievementsSynced()) {
+        if (isFastSync && !prefData.isSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS)) {
             checkServerAndStartSync()
         }
     }
@@ -122,7 +123,7 @@ class AchievementFragment : BaseContainerFragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshAchievementData()
-                        prefData.setAchievementsSynced(true)
+                        prefData.setSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS, true)
                     }
                 }
             }
