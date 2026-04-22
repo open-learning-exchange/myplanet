@@ -17,6 +17,9 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.UUID
+import org.ole.planet.myplanet.repository.SurveysRepositoryImpl
+import org.ole.planet.myplanet.data.DatabaseService
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -136,7 +139,8 @@ class RealmStepExamTest {
         every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
 
         // Calling the 4 arg which delegates to 5 arg with empty string
-        RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, mockRealm)
+        val surveysRepository = SurveysRepositoryImpl(mockk(relaxed=true), mockk(relaxed=true), StandardTestDispatcher(), mockk(relaxed=true), mockk(relaxed=true))
+surveysRepository.insertCourseStepsExams("course1", "step1", examJson, mockRealm)
 
         verify { mockRealmStepExam.name = "Test Exam" }
         verify { mockRealmStepExam.description = "Exam Description" }
@@ -182,7 +186,8 @@ class RealmStepExamTest {
         every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
 
         // Explicitly calling the 5 arg method
-        RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, parentId, mockRealm)
+        val surveysRepository = SurveysRepositoryImpl(mockk(relaxed=true), mockk(relaxed=true), StandardTestDispatcher(), mockk(relaxed=true), mockk(relaxed=true))
+surveysRepository.insertCourseStepsExams("course1", "step1", examJson, parentId, mockRealm)
 
         verify { mockRealmStepExam.name = "Nation Exam" }
         verify { mockRealmStepExam.isFromNation = true }

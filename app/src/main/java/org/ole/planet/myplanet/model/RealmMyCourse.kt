@@ -11,7 +11,6 @@ import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -147,7 +146,8 @@ open class RealmMyCourse : RealmObject() {
             if (stepContainer.has("exam")) {
                 val `object` = stepContainer.getAsJsonObject("exam")
                 `object`.addProperty("stepNumber", i)
-                insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
+                val surveysRepository = dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository()
+                surveysRepository.insertCourseStepsExams(myCoursesID, stepId, `object`, "", mRealm)
             }
         }
 
@@ -156,7 +156,8 @@ open class RealmMyCourse : RealmObject() {
                 val `object` = stepContainer.getAsJsonObject("survey")
                 `object`.addProperty("stepNumber", i)
                 `object`.addProperty("createdDate", createdDate)
-                insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
+                val surveysRepository = dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository()
+                surveysRepository.insertCourseStepsExams(myCoursesID, stepId, `object`, "", mRealm)
             }
         }
 
