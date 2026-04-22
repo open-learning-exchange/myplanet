@@ -151,14 +151,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun checkPendingSurveys() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-            val lastShown = preferences.getLong(KEY_LAST_SURVEY_DIALOG_SHOWN, 0L)
+            val lastShown = surveysRepository.getLastSurveyDialogShown()
             if (System.currentTimeMillis() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
 
             val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
             if (pendingSurveys.isNotEmpty()) {
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-                if (preferences.contains("reminder_time_$surveyIds")) return@launch
+                if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
                 val title = getString(
                     R.string.surveys_to_complete,
                     pendingSurveys.size,
@@ -222,14 +221,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun scheduleReminder(pendingSurveys: List<RealmSubmission>, value: Int, timeUnit: TimeUnit) {
-        val currentTime = System.currentTimeMillis()
-        val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
-
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-        preferences.edit {
-            putLong("reminder_time_$surveyIds", reminderTime)
-                .putString("reminder_surveys_$surveyIds", surveyIds)
+        viewLifecycleOwner.lifecycleScope.launch {
+            surveysRepository.scheduleSurveyReminder(surveyIds, timeUnit, value)
         }
     }
 
@@ -281,8 +275,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
-        requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-            .edit { putLong(KEY_LAST_SURVEY_DIALOG_SHOWN, System.currentTimeMillis()) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            surveysRepository.setLastSurveyDialogShown(System.currentTimeMillis())
+        }
 
         surveyListDialog?.dismiss()
         surveyListDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)

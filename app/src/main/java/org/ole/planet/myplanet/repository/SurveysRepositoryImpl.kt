@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import androidx.core.content.edit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -36,6 +37,12 @@ class SurveysRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
 ) : RealmRepository(databaseService, realmDispatcher), SurveysRepository {
+
+    companion object {
+        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
+        private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
+    }
+
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
             equalTo("examId", examId)
@@ -398,7 +405,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override fun dueRemindersFlow(): Flow<List<String>> = flow {
-        val prefs = context.getSharedPreferences("survey_reminders", Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
         while (true) {
             val currentTime = System.currentTimeMillis()
             val toShow = mutableListOf<String>()
@@ -427,4 +434,32 @@ class SurveysRepositoryImpl @Inject constructor(
             delay(60_000)
         }
     }.flowOn(dispatcherProvider.io)
+
+    override suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int) {
+        val currentTime = System.currentTimeMillis()
+        val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
+
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        preferences.edit {
+            putLong("reminder_time_$surveyIds", reminderTime)
+                .putString("reminder_surveys_$surveyIds", surveyIds)
+        }
+    }
+
+    override suspend fun setLastSurveyDialogShown(time: Long) {
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        preferences.edit {
+            putLong(KEY_LAST_SURVEY_DIALOG_SHOWN, time)
+        }
+    }
+
+    override suspend fun getLastSurveyDialogShown(): Long {
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        return preferences.getLong(KEY_LAST_SURVEY_DIALOG_SHOWN, 0L)
+    }
+
+    override suspend fun isReminderScheduled(surveyIds: String): Boolean {
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        return preferences.contains("reminder_time_$surveyIds")
+    }
 }
