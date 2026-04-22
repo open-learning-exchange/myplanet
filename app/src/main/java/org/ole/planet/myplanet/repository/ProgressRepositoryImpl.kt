@@ -144,15 +144,26 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun submissionMap(
         submissions: List<RealmSubmission>, examIds: List<String>, obj: JsonObject
     ) {
+        val submissionIds = submissions.mapNotNull { it.id }.toTypedArray()
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else queryList(RealmAnswer::class.java) {
+            `in`("submissionId", submissionIds)
+        }
+
+        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct().toTypedArray()
+        val allQuestions = if (questionIds.isEmpty()) emptyList() else queryList(RealmExamQuestion::class.java) {
+            `in`("id", questionIds)
+        }
+        val questionsMap = allQuestions.associateBy { it.id }
+
+        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+
         var totalMistakes = 0
-        submissions.forEach {
-            val answers = queryList(RealmAnswer::class.java) {
-                equalTo("submissionId", it.id)
-            }
+        submissions.forEach { submission ->
+            val answers = answersBySubmissionId[submission.id] ?: emptyList()
             val mistakesMap = HashMap<String, Int>()
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
-                    val question = findByField(RealmExamQuestion::class.java, "id", questionId)
+                    val question = questionsMap[questionId]
                     if (question != null && examIds.contains(question.examId)) {
                         totalMistakes += r.mistakes
                         val examIndexKey = examIds.indexOf(question.examId).toString()
