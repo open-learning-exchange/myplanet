@@ -441,15 +441,12 @@ class MyHealthFragment : Fragment() {
     private fun getDisplayName(user: RealmUser?): String {
         if (user == null) return getString(R.string.n_a)
 
-        val fullName = listOf(user.firstName, user.middleName, user.lastName)
-            .mapNotNull { it?.trim() }
+        val fullName = listOfNotNull(user.firstName, user.middleName, user.lastName)
+            .map { it.trim() }
             .filter { it.isNotEmpty() }
             .joinToString(" ")
 
-        if (fullName.isNotEmpty()) return fullName
-
-        val username = user.name?.trim().orEmpty()
-        return if (username.isNotEmpty()) username else getString(R.string.n_a)
+        return fullName.ifEmpty { user.name.orEmpty() }
     }
 
     private fun disableDobField() {
