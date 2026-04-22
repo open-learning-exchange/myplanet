@@ -38,10 +38,8 @@ class TeamViewModel @Inject constructor(
 
     fun loadTasks(teamId: String) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
-                    _taskList.value = tasks
-                }
+            teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+                _taskList.value = tasks
             }
         }
     }
@@ -56,39 +54,37 @@ class TeamViewModel @Inject constructor(
         currentUserId = userId
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                when {
-                    fromDashboard -> {
-                        if (userId != null) {
-                            teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
-                                val teamList = list.mapNotNull {
-                                    val id = it._id ?: return@mapNotNull null
-                                    TeamSummary(
-                                        _id = id,
-                                        name = it.name ?: "",
-                                        teamType = it.teamType,
-                                        teamPlanetCode = it.teamPlanetCode,
-                                        createdDate = it.createdDate,
-                                        type = it.type,
-                                        status = it.status,
-                                        teamId = it.teamId,
-                                        description = it.description,
-                                        services = it.services,
-                                        rules = it.rules
-                                    )
-                                }
-                                processTeams(teamList, userId, currentSearchQuery)
+            when {
+                fromDashboard -> {
+                    if (userId != null) {
+                        teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
+                            val teamList = list.mapNotNull {
+                                val id = it._id ?: return@mapNotNull null
+                                TeamSummary(
+                                    _id = id,
+                                    name = it.name ?: "",
+                                    teamType = it.teamType,
+                                    teamPlanetCode = it.teamPlanetCode,
+                                    createdDate = it.createdDate,
+                                    type = it.type,
+                                    status = it.status,
+                                    teamId = it.teamId,
+                                    description = it.description,
+                                    services = it.services,
+                                    rules = it.rules
+                                )
                             }
+                            processTeams(teamList, userId, currentSearchQuery)
                         }
                     }
-                    type == "enterprise" -> {
-                        val teamList = teamsRepository.getShareableEnterpriseSummaries(null)
-                        processTeams(teamList, userId, currentSearchQuery)
-                    }
-                    else -> {
-                        val teamList = teamsRepository.getTeamSummaries(null)
-                        processTeams(teamList, userId, currentSearchQuery)
-                    }
+                }
+                type == "enterprise" -> {
+                    val teamList = teamsRepository.getShareableEnterpriseSummaries(null)
+                    processTeams(teamList, userId, currentSearchQuery)
+                }
+                else -> {
+                    val teamList = teamsRepository.getTeamSummaries(null)
+                    processTeams(teamList, userId, currentSearchQuery)
                 }
             }
         }
