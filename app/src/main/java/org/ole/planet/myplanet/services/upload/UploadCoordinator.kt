@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadCoordinator @Inject constructor(
-    private val databaseService: DatabaseService,
+    private val uploadRepository: org.ole.planet.myplanet.repository.UploadRepository,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
     private val retryQueue: RetryQueue,
@@ -84,37 +84,44 @@ class UploadCoordinator @Inject constructor(
     private suspend fun <T : RealmObject> queryItemsToUpload(
         config: UploadConfig<T>
     ): List<PreparedUpload<T>> {
-        val tempResults = databaseService.withRealmAsync { realm ->
-            val query = realm.where(config.modelClass.java)
-            val filteredQuery = config.queryBuilder(query)
-            val results = filteredQuery.findAll()
-
-            results.mapNotNull { item ->
-                val copiedItem = realm.copyFromRealm(item)
-
-                if (config.filterGuests && config.guestUserIdExtractor != null) {
-                    val userId = config.guestUserIdExtractor.invoke(copiedItem)
-                    if (userId?.startsWith("guest") == true) {
-                        Log.d(TAG, "Filtering out guest user item: $userId")
-                        return@mapNotNull null
-                    }
-                }
-
-                val serialized = try {
-                    when (val serializer = config.serializer) {
-                        is UploadSerializer.Simple -> serializer.serialize(copiedItem)
-                        is UploadSerializer.WithRealm -> serializer.serialize(realm, copiedItem)
-                        is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
-                        is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context)
-                        is UploadSerializer.Async -> null
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Serialization failed for item", e)
+        val items = uploadRepository.queryPending(config)
+        val tempResults = items.mapNotNull { copiedItem ->
+            if (config.filterGuests && config.guestUserIdExtractor != null) {
+                val userId = config.guestUserIdExtractor.invoke(copiedItem)
+                if (userId?.startsWith("guest") == true) {
+                    Log.d(TAG, "Filtering out guest user item: $userId")
                     return@mapNotNull null
                 }
-
-                Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
             }
+
+            val serialized = try {
+                when (val serializer = config.serializer) {
+                    is UploadSerializer.Simple -> serializer.serialize(copiedItem)
+                    is UploadSerializer.WithRealm -> {
+                        val realm = io.realm.Realm.getDefaultInstance()
+                        try {
+                            serializer.serialize(realm, copiedItem)
+                        } finally {
+                            if (!realm.isClosed) realm.close()
+                        }
+                    }
+                    is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
+                    is UploadSerializer.Full -> {
+                        val realm = io.realm.Realm.getDefaultInstance()
+                        try {
+                            serializer.serialize(realm, copiedItem, context)
+                        } finally {
+                            if (!realm.isClosed) realm.close()
+                        }
+                    }
+                    is UploadSerializer.Async -> null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Serialization failed for item", e)
+                return@mapNotNull null
+            }
+
+            Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
         }
 
         return tempResults.mapNotNull { (copiedItem, preSerialized, localId) ->
@@ -246,38 +253,7 @@ class UploadCoordinator @Inject constructor(
         succeeded: List<UploadedItem>,
         config: UploadConfig<T>
     ) {
-        databaseService.executeTransactionAsync { realm ->
-            val localIds = succeeded.map { it.localId }
-            val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
-
-            val itemsById = mutableMapOf<String, T>()
-            if (localIds.isNotEmpty()) {
-                val query = realm.where(config.modelClass.java)
-                localIds.chunked(1000).forEachIndexed { index, chunk ->
-                    if (index > 0) query.or()
-                    query.`in`(idFieldName, chunk.toTypedArray())
-                }
-                val results = query.findAll()
-                results.forEach { item ->
-                    val localId = config.idExtractor(item) ?: ""
-                    itemsById[localId] = item
-                }
-            }
-
-            succeeded.forEach { uploadedItem ->
-                try {
-                    val item = itemsById[uploadedItem.localId]
-
-                    item?.let {
-                        setRealmField(it, "_id", uploadedItem.remoteId)
-                        setRealmField(it, "_rev", uploadedItem.remoteRev)
-                        config.additionalUpdates?.invoke(realm, it, uploadedItem)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update item ${uploadedItem.localId}", e)
-                }
-            }
-        }
+        uploadRepository.markUploaded(config, succeeded)
     }
 
     private suspend fun <T : RealmObject> queueRetryableFailures(
