@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.repository.SubmissionsRepositoryExporter
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
@@ -51,13 +52,9 @@ class SubmissionListFragment : Fragment() {
         binding.tvTitle.text = examTitle ?: "Submissions"
         setupRecyclerView()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.submissions.collect { submissionItems ->
-                    if (_binding != null) {
-                        adapter.submitList(submissionItems)
-                    }
-                }
+        collectWhenStarted(viewModel.submissions) { submissionItems ->
+            if (_binding != null) {
+                adapter.submitList(submissionItems)
             }
         }
 

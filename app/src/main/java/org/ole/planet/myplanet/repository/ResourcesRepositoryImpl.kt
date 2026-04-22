@@ -303,7 +303,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return imageList.mapNotNull { it.resourceRemoteAddress }
     }
 
-    override suspend fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
+    override fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
         return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
                 .sort("createdDate", Sort.DESCENDING)
@@ -311,7 +311,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>> {
+    override fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>> {
         return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
                 .equalTo("resourceOffline", false)

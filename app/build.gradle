@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< code-health-refactor-onviewcreated-13911234886502263907
         versionCode = 5364
         versionName = "0.53.64"
+=======
+        versionCode = 5363
+        versionName = "0.53.63"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -178,6 +183,7 @@ dependencies {
     androidTestImplementation(libs.test.rxjava)
     androidTestImplementation(libs.test.arch)
     androidTestImplementation(libs.test.hilt)
+    androidTestImplementation(libs.test.mockkdroid)
     kspAndroidTest(libs.hilt.android.compiler)
 }
 dependencies {

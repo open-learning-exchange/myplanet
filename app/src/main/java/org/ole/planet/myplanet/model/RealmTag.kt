@@ -32,6 +32,13 @@ open class RealmTag : RealmObject() {
         return name.orEmpty()
     }
 
+    fun toTag(): Tag {
+        return Tag(
+            id = this.id,
+            name = this.name
+        )
+    }
+
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
