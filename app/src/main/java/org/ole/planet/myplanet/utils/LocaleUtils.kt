@@ -10,10 +10,12 @@ import java.util.Locale
 object LocaleUtils {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"
     @Volatile private var cachedLanguage: String? = null
+    @Volatile private var cachedPrefs: android.content.SharedPreferences? = null
 
     fun preload(context: Context) {
         if (cachedLanguage == null) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+            cachedPrefs = prefs
             cachedLanguage = prefs.getString(SELECTED_LANGUAGE, null) ?: Locale.getDefault().language
         }
     }
@@ -45,13 +47,13 @@ object LocaleUtils {
     }
 
     private fun getPersistedData(context: Context, defaultLanguage: String): String {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val preferences = cachedPrefs ?: PreferenceManager.getDefaultSharedPreferences(context).also { cachedPrefs = it }
         return preferences.getString(SELECTED_LANGUAGE, defaultLanguage) ?: defaultLanguage
     }
 
     private fun persist(context: Context, language: String) {
         cachedLanguage = language
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+        val preferences = cachedPrefs ?: PreferenceManager.getDefaultSharedPreferences(context).also { cachedPrefs = it }
         preferences.edit { putString(SELECTED_LANGUAGE, language) }
     }
 }

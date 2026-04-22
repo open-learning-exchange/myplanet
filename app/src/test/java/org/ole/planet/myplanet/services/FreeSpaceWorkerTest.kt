@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -10,10 +12,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
-import io.mockk.clearAllMocks
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import android.util.Log
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
