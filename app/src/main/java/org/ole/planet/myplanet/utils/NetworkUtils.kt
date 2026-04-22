@@ -182,8 +182,8 @@ object NetworkUtils {
     }
 
     fun extractProtocol(url: String): String? {
-        val uri = url.toUri()
+        val uri = url.trim().toUri()
         val scheme = uri.scheme
-        return if (scheme != null) "$scheme://" else null
+        return if (scheme != null && !scheme.contains(" ")) "$scheme://" else null
     }
 }

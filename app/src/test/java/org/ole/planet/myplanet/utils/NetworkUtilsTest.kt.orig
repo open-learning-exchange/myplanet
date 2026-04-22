@@ -94,7 +94,7 @@ class NetworkUtilsTest {
 
     @Test
     fun extractProtocol_withInvalidSchemeCharacters() {
-        assertEquals("http#://", NetworkUtils.extractProtocol("http#://example.com"))
+        assertNull(NetworkUtils.extractProtocol("http#://example.com"))
     }
 
     @Test
