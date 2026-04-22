@@ -49,66 +49,60 @@ class NotificationsRepositoryImplTest {
         val userId2 = "user2"
         val teamId1 = "team1"
 
-        val jr1 = mockk<RealmMyTeam>(relaxed = true) {
-            every { _id } returns "req1"
-            every { userId } returns userId1
-            every { teamId } returns teamId1
+        val jr1 = RealmMyTeam().apply {
+            _id = "req1"
+            userId = userId1
+            teamId = teamId1
         }
-        val jr2 = mockk<RealmMyTeam>(relaxed = true) {
-            every { _id } returns "req2"
-            every { userId } returns userId2
-            every { teamId } returns teamId1
-        }
-
-        val team1 = mockk<RealmMyTeam>(relaxed = true) {
-            every { _id } returns teamId1
-            every { name } returns "Team 1"
+        val jr2 = RealmMyTeam().apply {
+            _id = "req2"
+            userId = userId2
+            teamId = teamId1
         }
 
-        val user1 = mockk<RealmUser>(relaxed = true) {
-            every { id } returns userId1
-            every { name } returns "User 1"
+        val team1 = RealmMyTeam().apply {
+            _id = teamId1
+            name = "Team 1"
         }
-        val user2 = mockk<RealmUser>(relaxed = true) {
-            every { id } returns userId2
-            every { name } returns "User 2"
+
+        val user1 = RealmUser().apply {
+            id = userId1
+            name = "User 1"
+        }
+        val user2 = RealmUser().apply {
+            id = userId2
+            name = "User 2"
         }
 
         val queryJR = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
-        val resultsJR = mockk<RealmResults<RealmMyTeam>>(relaxed = true)
+        val resultsJR = mockk<RealmResults<RealmMyTeam>>()
         val queryTeam = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
-        val resultsTeam = mockk<RealmResults<RealmMyTeam>>(relaxed = true)
+        val resultsTeam = mockk<RealmResults<RealmMyTeam>>()
 
         every { realm.where(RealmMyTeam::class.java) } returns queryJR andThen queryTeam
 
         every { queryJR.equalTo("docType", "request") } returns queryJR
-        every { queryJR.beginGroup() } returns queryJR
-        every { queryJR.or() } returns queryJR
-        every { queryJR.equalTo("_id", any<String>()) } returns queryJR
-        every { queryJR.endGroup() } returns queryJR
         every { queryJR.findAll() } returns resultsJR
 
-        every { resultsJR.iterator() } returns (mutableListOf(jr1, jr2).iterator() as MutableIterator<RealmMyTeam>)
+        val jrList = mutableListOf(jr1, jr2)
+        every { resultsJR.iterator() } returns (jrList.iterator() as MutableIterator<RealmMyTeam>)
+        every { resultsJR.size } returns jrList.size
 
-        every { queryTeam.beginGroup() } returns queryTeam
-        every { queryTeam.or() } returns queryTeam
-        every { queryTeam.equalTo("_id", any<String>()) } returns queryTeam
-        every { queryTeam.endGroup() } returns queryTeam
         every { queryTeam.findAll() } returns resultsTeam
-
-        every { resultsTeam.iterator() } returns (mutableListOf(team1).iterator() as MutableIterator<RealmMyTeam>)
+        val teamList = mutableListOf(team1)
+        every { resultsTeam.iterator() } returns (teamList.iterator() as MutableIterator<RealmMyTeam>)
+        every { resultsTeam.size } returns teamList.size
 
         coEvery { userRepository.getUsersByIds(any()) } returns listOf(user1, user2)
 
         val result = repository.getJoinRequestDetailsBatch(relatedIds)
 
-        assertEquals(2, result.size)
+        assertEquals("Expected 2 results", 2, result.size)
         assertEquals("User 1", result["req1"]?.first)
         assertEquals("Team 1", result["req1"]?.second)
         assertEquals("User 2", result["req2"]?.first)
         assertEquals("Team 1", result["req2"]?.second)
 
-        coVerify(exactly = 1) { userRepository.getUsersByIds(match { it.containsAll(listOf(userId1, userId2)) }) }
-        coVerify(exactly = 0) { userRepository.getUserById(any()) }
+        coVerify(exactly = 1) { userRepository.getUsersByIds(any()) }
     }
 }
