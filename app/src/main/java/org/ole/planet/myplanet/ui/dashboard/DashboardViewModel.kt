@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -134,21 +133,30 @@ class DashboardViewModel @Inject constructor(
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
             val libraryDeferred = async(dispatcherProvider.io) {
-                resourcesRepository.getMyLibrary(userId)
+                val result = resourcesRepository.getMyLibrary(userId)
+                result
             }
 
             launch(dispatcherProvider.main) {
+                var isFirstEmission = true
                 coursesRepository.getMyCoursesFlow(userId)
                     .flowOn(dispatcherProvider.io)
                     .collect { courses ->
+                        if (isFirstEmission) {
+                            isFirstEmission = false
+                        }
                         _uiState.update { it.copy(courses = courses) }
                     }
             }
 
             launch(dispatcherProvider.main) {
+                var isFirstEmission = true
                 teamsRepository.getMyTeamsFlow(userId)
                     .flowOn(dispatcherProvider.io)
                     .collect { teams ->
+                        if (isFirstEmission) {
+                            isFirstEmission = false
+                        }
                         _uiState.update { it.copy(teams = teams) }
                     }
             }
@@ -163,11 +171,10 @@ class DashboardViewModel @Inject constructor(
                 _uiState.update { it.copy(fullName = fullName) }
 
                 if (userName != null) {
-                    activitiesRepository.getOfflineLogins(userName)
-                        .flowOn(dispatcherProvider.io)
-                        .collect { logins ->
-                            _uiState.update { it.copy(offlineLogins = logins.size) }
-                        }
+                    val count = withContext(dispatcherProvider.io) {
+                        activitiesRepository.getOfflineLoginCount(userName)
+                    }
+                    _uiState.update { it.copy(offlineLogins = count) }
                 }
             }
 
