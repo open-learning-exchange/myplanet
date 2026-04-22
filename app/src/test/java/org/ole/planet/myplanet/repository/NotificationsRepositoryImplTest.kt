@@ -87,14 +87,16 @@ class NotificationsRepositoryImplTest {
         every { queryJR.equalTo("_id", any<String>()) } returns queryJR
         every { queryJR.endGroup() } returns queryJR
         every { queryJR.findAll() } returns resultsJR
-        every { resultsJR.iterator() } returns listOf(jr1, jr2).iterator()
+
+        every { resultsJR.iterator() } returns (mutableListOf(jr1, jr2).iterator() as MutableIterator<RealmMyTeam>)
 
         every { queryTeam.beginGroup() } returns queryTeam
         every { queryTeam.or() } returns queryTeam
         every { queryTeam.equalTo("_id", any<String>()) } returns queryTeam
         every { queryTeam.endGroup() } returns queryTeam
         every { queryTeam.findAll() } returns resultsTeam
-        every { resultsTeam.iterator() } returns listOf(team1).iterator()
+
+        every { resultsTeam.iterator() } returns (mutableListOf(team1).iterator() as MutableIterator<RealmMyTeam>)
 
         coEvery { userRepository.getUsersByIds(any()) } returns listOf(user1, user2)
 
