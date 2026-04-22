@@ -52,12 +52,24 @@ class UploadCoordinator @Inject constructor(
 
                 val (succeeded, failed) = uploadBatch(batch, config)
 
+                var dbFailedErrors = emptyList<UploadError>()
                 if (succeeded.isNotEmpty()) {
-                    updateDatabaseBatch(succeeded, config)
+                    val dbFailed = updateDatabaseBatch(succeeded, config)
+
+                    dbFailedErrors = dbFailed.map { failedItem ->
+                        UploadError(
+                            itemId = failedItem.localId,
+                            exception = Exception("Local DB update failed"),
+                            retryable = false
+                        )
+                    }
+
+                    val actuallySucceeded = succeeded.filter { it !in dbFailed }
+                    allSucceeded.addAll(actuallySucceeded)
                 }
 
-                allSucceeded.addAll(succeeded)
                 allFailed.addAll(failed)
+                allFailed.addAll(dbFailedErrors)
             }
 
             if (allFailed.isNotEmpty()) {
@@ -85,43 +97,32 @@ class UploadCoordinator @Inject constructor(
         config: UploadConfig<T>
     ): List<PreparedUpload<T>> {
         val items = uploadRepository.queryPending(config)
-        val tempResults = items.mapNotNull { copiedItem ->
-            if (config.filterGuests && config.guestUserIdExtractor != null) {
-                val userId = config.guestUserIdExtractor.invoke(copiedItem)
-                if (userId?.startsWith("guest") == true) {
-                    Log.d(TAG, "Filtering out guest user item: $userId")
+
+        val tempResults = uploadRepository.executeWithRealm { realm ->
+            items.mapNotNull { copiedItem ->
+                if (config.filterGuests && config.guestUserIdExtractor != null) {
+                    val userId = config.guestUserIdExtractor.invoke(copiedItem)
+                    if (userId?.startsWith("guest") == true) {
+                        Log.d(TAG, "Filtering out guest user item: $userId")
+                        return@mapNotNull null
+                    }
+                }
+
+                val serialized = try {
+                    when (val serializer = config.serializer) {
+                        is UploadSerializer.Simple -> serializer.serialize(copiedItem)
+                        is UploadSerializer.WithRealm -> serializer.serialize(realm, copiedItem)
+                        is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
+                        is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context)
+                        is UploadSerializer.Async -> null
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Serialization failed for item", e)
                     return@mapNotNull null
                 }
-            }
 
-            val serialized = try {
-                when (val serializer = config.serializer) {
-                    is UploadSerializer.Simple -> serializer.serialize(copiedItem)
-                    is UploadSerializer.WithRealm -> {
-                        val realm = io.realm.Realm.getDefaultInstance()
-                        try {
-                            serializer.serialize(realm, copiedItem)
-                        } finally {
-                            if (!realm.isClosed) realm.close()
-                        }
-                    }
-                    is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
-                    is UploadSerializer.Full -> {
-                        val realm = io.realm.Realm.getDefaultInstance()
-                        try {
-                            serializer.serialize(realm, copiedItem, context)
-                        } finally {
-                            if (!realm.isClosed) realm.close()
-                        }
-                    }
-                    is UploadSerializer.Async -> null
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Serialization failed for item", e)
-                return@mapNotNull null
+                Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
             }
-
-            Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
         }
 
         return tempResults.mapNotNull { (copiedItem, preSerialized, localId) ->
@@ -252,8 +253,8 @@ class UploadCoordinator @Inject constructor(
     private suspend fun <T : RealmObject> updateDatabaseBatch(
         succeeded: List<UploadedItem>,
         config: UploadConfig<T>
-    ) {
-        uploadRepository.markUploaded(config, succeeded)
+    ): List<UploadedItem> {
+        return uploadRepository.markUploaded(config, succeeded)
     }
 
     private suspend fun <T : RealmObject> queueRetryableFailures(

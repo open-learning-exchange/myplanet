@@ -6,5 +6,6 @@ import org.ole.planet.myplanet.services.upload.UploadedItem
 
 interface UploadRepository {
     suspend fun <T: RealmObject> queryPending(config: UploadConfig<T>): List<T>
-    suspend fun <T: RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>)
+    suspend fun <T: RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem>
+    suspend fun <R> executeWithRealm(action: (io.realm.Realm) -> R): R
 }

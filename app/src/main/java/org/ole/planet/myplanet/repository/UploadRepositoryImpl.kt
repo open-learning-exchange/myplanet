@@ -16,16 +16,20 @@ class UploadRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService, dispatcherProvider.io), UploadRepository {
 
     override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
-        val tempResults = withRealmAsync { realm ->
+        return withRealmAsync { realm ->
             val query = realm.where(config.modelClass.java)
             val filteredQuery = config.queryBuilder(query)
             val results = filteredQuery.findAll()
             results.map { realm.copyFromRealm(it) }
         }
-        return tempResults
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>) {
+    override suspend fun <R> executeWithRealm(action: (io.realm.Realm) -> R): R {
+        return withRealmAsync(action)
+    }
+
+    override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem> {
+        val failedLocally = mutableListOf<UploadedItem>()
         executeTransaction { realm ->
             val localIds = succeeded.map { it.localId }
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
@@ -52,12 +56,16 @@ class UploadRepositoryImpl @Inject constructor(
                         setRealmField(it, "_id", uploadedItem.remoteId)
                         setRealmField(it, "_rev", uploadedItem.remoteRev)
                         config.additionalUpdates?.invoke(realm, it, uploadedItem)
+                    } ?: run {
+                        failedLocally.add(uploadedItem)
                     }
                 } catch (e: Exception) {
                     Log.e("UploadRepositoryImpl", "Failed to update item ${uploadedItem.localId}", e)
+                    failedLocally.add(uploadedItem)
                 }
             }
         }
+        return failedLocally
     }
 
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
