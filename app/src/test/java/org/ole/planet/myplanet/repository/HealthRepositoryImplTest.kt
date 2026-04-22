@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import io.mockk.coEvery
+import org.ole.planet.myplanet.data.applyEqualTo
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.spyk
@@ -30,20 +31,26 @@ class HealthRepositoryImplTest {
 
     @Test
     fun testSaveExamination() = runTest {
-        val mockExamination = mockk<RealmHealthExamination>()
-        val mockPojo = mockk<RealmHealthExamination>()
-        val mockUser = mockk<RealmUser>()
+        val mockExamination = RealmHealthExamination()
+        val mockPojo = RealmHealthExamination()
+        val mockUser = RealmUser()
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
 
-        // Mock the underlying databaseService that base class executeTransaction delegates to
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val transaction = firstArg<(io.realm.Realm) -> Unit>()
-            // don't execute to avoid mocking realm internals, just verify it gets passed
+            transaction(mockRealm)
         }
+
+        // Mock copyToRealmOrUpdate to return the passed object instead of a RealmModel mock
+        io.mockk.every { mockRealm.copyToRealmOrUpdate(any<RealmUser>()) } returns mockUser
+        io.mockk.every { mockRealm.copyToRealmOrUpdate(any<RealmHealthExamination>()) } returns mockExamination
 
         repository.saveExamination(mockExamination, mockPojo, mockUser)
 
         coVerify(exactly = 1) {
-            databaseService.executeTransactionAsync(any())
+            mockRealm.copyToRealmOrUpdate(mockUser)
+            mockRealm.copyToRealmOrUpdate(mockPojo)
+            mockRealm.copyToRealmOrUpdate(mockExamination)
         }
     }
 
@@ -52,15 +59,28 @@ class HealthRepositoryImplTest {
         val testId = "test-id"
         val testUserId = "user-123"
 
-        // Base class update delegates to executeTransactionAsync
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockQuery = mockk<io.realm.RealmQuery<RealmHealthExamination>>(relaxed = true)
+        val mockExamination = mockk<RealmHealthExamination>(relaxed = true)
+
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val transaction = firstArg<(io.realm.Realm) -> Unit>()
+            transaction(mockRealm)
         }
+
+        io.mockk.every { mockRealm.where(RealmHealthExamination::class.java) } returns mockQuery
+
+        io.mockk.mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
+        io.mockk.every {
+            mockQuery.applyEqualTo("_id", testId as Any)
+        } returns mockQuery
+
+        io.mockk.every { mockQuery.findFirst() } returns mockExamination
 
         repository.updateExaminationUserId(testId, testUserId)
 
         coVerify(exactly = 1) {
-            databaseService.executeTransactionAsync(any())
+            mockExamination.userId = testUserId
         }
     }
 }
