@@ -210,10 +210,12 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private fun insertCourseProgress(mRealm: Realm, act: JsonObject?) {
-        var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+        val docId = JsonUtils.getString("_id", act)
+        var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("id", docId).findFirst()
         if (courseProgress == null) {
-            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
+            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, docId)
         }
+        courseProgress?._id = docId
         courseProgress?._rev = JsonUtils.getString("_rev", act)
         courseProgress?.passed = JsonUtils.getBoolean("passed", act)
         courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)

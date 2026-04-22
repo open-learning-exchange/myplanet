@@ -8,6 +8,7 @@ import dagger.Lazy
 import io.mockk.mockk
 import io.realm.Realm
 import io.realm.RealmConfiguration
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -45,22 +46,13 @@ class RealmUserTest {
             Realm.setDefaultConfiguration(realmConfiguration)
         }
 
-        databaseService = object : DatabaseService {
-            override val realm: Realm
-                get() = Realm.getInstance(realmConfiguration)
-
-            override fun executeTransaction(transaction: Realm.Transaction) {
-                realm.executeTransaction(transaction)
-            }
-
-            override fun executeTransactionAsync(
-                transaction: Realm.Transaction,
-                onSuccess: Realm.Transaction.OnSuccess,
-                onError: Realm.Transaction.OnError
-            ) {
-                realm.executeTransactionAsync(transaction, onSuccess, onError)
-            }
+        val testDispatcherProvider = object : DispatcherProvider {
+            override val main: CoroutineDispatcher = Dispatchers.Unconfined
+            override val io: CoroutineDispatcher = Dispatchers.Unconfined
+            override val default: CoroutineDispatcher = Dispatchers.Unconfined
+            override val unconfined: CoroutineDispatcher = Dispatchers.Unconfined
         }
+        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), testDispatcherProvider)
 
         val mockSettings = mockk<SharedPreferences>(relaxed = true)
         val mockSharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
