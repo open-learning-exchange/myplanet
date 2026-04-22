@@ -50,7 +50,7 @@ class BellDashboardViewModel @Inject constructor(
                 val allProgressRecords = progressRepository.getProgressRecords(userId)
 
                 val completedCourses = mutableListOf<CourseCompletion>()
-                myCourses.forEachIndexed { index, course ->
+                myCourses.forEach { course ->
                     val hasValidId = !course.courseId.isNullOrBlank()
                     val hasValidTitle = !course.courseTitle.isNullOrBlank()
 
