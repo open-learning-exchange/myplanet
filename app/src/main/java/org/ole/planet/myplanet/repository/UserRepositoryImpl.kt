@@ -64,6 +64,16 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUsersByIds(userIds: List<String>): List<RealmUser> {
+        return withRealm { realm ->
+            if (userIds.isEmpty()) return@withRealm emptyList()
+            val users = realm.where(RealmUser::class.java)
+                .`in`("id", userIds.toTypedArray())
+                .findAll()
+            realm.copyFromRealm(users)
+        }
+    }
+
     override suspend fun getUserByAnyId(id: String): RealmUser? {
         return findByField(RealmUser::class.java, "_id", id)
             ?: findByField(RealmUser::class.java, "id", id)
