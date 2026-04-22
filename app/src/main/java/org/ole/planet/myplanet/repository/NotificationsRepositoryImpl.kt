@@ -452,6 +452,33 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun insert(doc: com.google.gson.JsonObject) {
+        executeTransaction { realm ->
+            internalInsert(realm, doc)
+        }
+    }
+
+    private fun internalInsert(mRealm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+        val id = doc.get("_id")?.asString ?: return
+        val notification = mRealm.where(RealmNotification::class.java)
+            .equalTo("id", id).findFirst()
+            ?: mRealm.createObject(RealmNotification::class.java, id)
+        notification.apply {
+            userId = doc.get("user")?.asString ?: ""
+            message = doc.get("message")?.asString ?: ""
+            type = doc.get("type")?.asString ?: ""
+            link = doc.get("link")?.asString
+            priority = doc.get("priority")?.asInt ?: 0
+            rev = doc.get("_rev")?.asString
+            // Preserve local read state if a change is pending upload
+            if (!needsSync) {
+                isRead = doc.get("status")?.asString != "unread"
+            }
+            createdAt = doc.get("time")?.let { java.util.Date(it.asLong) } ?: java.util.Date()
+            isFromServer = true
+        }
+    }
+
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
@@ -463,7 +490,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmNotification.insert(realm, jsonDoc)
+            internalInsert(realm, jsonDoc)
         }
     }
 }
