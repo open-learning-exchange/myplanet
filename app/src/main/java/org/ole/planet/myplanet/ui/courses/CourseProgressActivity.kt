@@ -2,12 +2,9 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import androidx.activity.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
@@ -30,13 +27,9 @@ class CourseProgressActivity : BaseActivity() {
 
         binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.courseProgress.collect { data ->
-                    if (data != null) {
-                        updateUI(data)
-                    }
-                }
+        collectWhenStarted(viewModel.courseProgress) { data ->
+            if (data != null) {
+                updateUI(data)
             }
         }
         viewModel.loadProgress(courseId)

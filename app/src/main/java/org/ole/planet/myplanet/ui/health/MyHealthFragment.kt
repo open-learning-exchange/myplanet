@@ -98,7 +98,7 @@ class MyHealthFragment : Fragment() {
 
     private fun startHealthSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isHealthSynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.HEALTH)) {
             checkServerAndStartSync()
         }
     }
@@ -130,7 +130,7 @@ class MyHealthFragment : Fragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshHealthData()
-                        sharedPrefManager.setHealthSynced(true)
+                        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.HEALTH, true)
                     }
                 }
             }

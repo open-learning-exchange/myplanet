@@ -56,6 +56,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private var saveInProgress: Job? = null
     private var loadDataJob: Job? = null
     private var inlineResourceAdapter: InlineResourceAdapter? = null
+    private var pendingProgressSave = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -151,8 +152,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         textWithSpans.removeSpan(urlSpan)
                     }
                 }
-                if (isVisible && data.userHasCourse) {
-                    launchSaveCourseProgress()
+                if (data.userHasCourse) {
+                    if (isResumed) {
+                        launchSaveCourseProgress()
+                    } else {
+                        pendingProgressSave = true
+                    }
                 }
             }
         }
@@ -250,6 +255,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (pendingProgressSave) {
+            pendingProgressSave = false
+            launchSaveCourseProgress()
+        }
+    }
+
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         if (!isAdded || !::step.isInitialized) return
@@ -298,6 +311,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun onDestroyView() {
         super.onDestroyView()
         loadDataJob?.cancel()
+        pendingProgressSave = false
         CameraUtils.release()
     }
 }
