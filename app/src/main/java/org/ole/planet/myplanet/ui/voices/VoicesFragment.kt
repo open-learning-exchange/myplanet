@@ -177,102 +177,114 @@ class VoicesFragment : BaseVoicesFragment() {
 
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            val resourceIds = mutableSetOf<String>()
-            list.forEach { news ->
-                if ((news?.imagesArray?.size() ?: 0) > 0) {
-                    val ob = news?.imagesArray?.get(0)?.asJsonObject
-                    val resourceId = getString("resourceId", ob?.asJsonObject)
-                    if (!resourceId.isNullOrBlank()) {
-                        resourceIds.add(resourceId)
-                    }
-                }
-            }
-            viewLifecycleOwner.lifecycleScope.launch {
-                if (resourceIds.isNotEmpty()) {
-                    val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                    resourcesRepository.downloadResources(libraries)
-                }
-            }
-            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            Trace.beginSection("VoicesFragment.sort")
-            val sortedList = try {
-                updatedListAsMutable.sortedWith(compareByDescending { news ->
-                    news?.sortDate ?: 0L
-                })
-            } finally {
-                Trace.endSection()
-            }
-            val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
-            adapterNews = VoicesAdapter(
-                context = requireActivity(),
-                currentUser = user,
-                parentNews = null,
-                teamName = "",
-                teamId = null,
-                userSessionManager = userSessionManager,
-                isTeamLeaderFn = { onResult ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch {
-                        onResult(false)
-                    }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                getUserFn = { userId, onResult ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        val result = userRepository.getUserById(userId)
-                        withContext(Dispatchers.Main) { onResult(result) }
-                    }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                getReplyCountFn = { newsId, onResult ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        try {
-                            val result = voicesRepository.getReplyCount(newsId)
-                            withContext(Dispatchers.Main) { onResult(result) }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                deletePostFn = { newsId, onComplete ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        voicesRepository.deletePost(newsId, "")
-                        withContext(Dispatchers.Main) { onComplete() }
-                    }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                        withContext(Dispatchers.Main) { onResult(result) }
-                    }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                getLibraryResourceFn = { resourceId, onResult ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                        val result = voicesRepository.getLibraryResource(resourceId)
-                        withContext(Dispatchers.Main) { onResult(result) }
-                    }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                launchCoroutine = { action ->
-                    val job = viewLifecycleOwner.lifecycleScope.launch { action() }
-                    return@VoicesAdapter { job.cancel() }
-                },
-                labelManager = labelManager,
-                voicesRepository = voicesRepository,
-                userRepository = userRepository
-            )
-            adapterNews?.sharedPrefManager = sharedPrefManager
-            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
-            adapterNews?.registerAdapterDataObserver(observer)
-            adapterNews?.submitList(sortedList)
-            binding.rvNews.adapter = adapterNews
+            downloadResourcesForNews(list)
+            val sortedList = sortNews(list)
+            setupVoicesAdapter(sortedList)
         } else {
             (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list)
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
+    }
+
+    private fun downloadResourcesForNews(list: List<RealmNews?>) {
+        val resourceIds = mutableSetOf<String>()
+        list.forEach { news ->
+            if ((news?.imagesArray?.size() ?: 0) > 0) {
+                val ob = news?.imagesArray?.get(0)?.asJsonObject
+                val resourceId = getString("resourceId", ob?.asJsonObject)
+                if (!resourceId.isNullOrBlank()) {
+                    resourceIds.add(resourceId)
+                }
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (resourceIds.isNotEmpty()) {
+                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                resourcesRepository.downloadResources(libraries)
+            }
+        }
+    }
+
+    private fun sortNews(list: List<RealmNews?>): List<RealmNews?> {
+        val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
+        Trace.beginSection("VoicesFragment.sort")
+        return try {
+            updatedListAsMutable.sortedWith(compareByDescending { news ->
+                news?.sortDate ?: 0L
+            })
+        } finally {
+            Trace.endSection()
+        }
+    }
+
+    private fun setupVoicesAdapter(sortedList: List<RealmNews?>) {
+        val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+        adapterNews = VoicesAdapter(
+            context = requireActivity(),
+            currentUser = user,
+            parentNews = null,
+            teamName = "",
+            teamId = null,
+            userSessionManager = userSessionManager,
+            isTeamLeaderFn = { onResult ->
+                val job = viewLifecycleOwner.lifecycleScope.launch {
+                    onResult(false)
+                }
+                return@VoicesAdapter { job.cancel() }
+            },
+            getUserFn = { userId, onResult ->
+                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    val result = userRepository.getUserById(userId)
+                    withContext(Dispatchers.Main) { onResult(result) }
+                }
+                return@VoicesAdapter { job.cancel() }
+            },
+            getReplyCountFn = { newsId, onResult ->
+                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        val result = voicesRepository.getReplyCount(newsId)
+                        withContext(Dispatchers.Main) { onResult(result) }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+                return@VoicesAdapter { job.cancel() }
+            },
+            deletePostFn = { newsId, onComplete ->
+                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    voicesRepository.deletePost(newsId, "")
+                    withContext(Dispatchers.Main) { onComplete() }
+                }
+                return@VoicesAdapter { job.cancel() }
+            },
+            shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
+                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    withContext(Dispatchers.Main) { onResult(result) }
+                }
+                return@VoicesAdapter { job.cancel() }
+            },
+            getLibraryResourceFn = { resourceId, onResult ->
+                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    val result = voicesRepository.getLibraryResource(resourceId)
+                    withContext(Dispatchers.Main) { onResult(result) }
+                }
+                return@VoicesAdapter { job.cancel() }
+            },
+            launchCoroutine = { action ->
+                val job = viewLifecycleOwner.lifecycleScope.launch { action() }
+                return@VoicesAdapter { job.cancel() }
+            },
+            labelManager = labelManager,
+            voicesRepository = voicesRepository,
+            userRepository = userRepository
+        )
+        adapterNews?.sharedPrefManager = sharedPrefManager
+        adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+        adapterNews?.setListener(this)
+        adapterNews?.registerAdapterDataObserver(observer)
+        adapterNews?.submitList(sortedList)
+        binding.rvNews.adapter = adapterNews
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
