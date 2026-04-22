@@ -3,8 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
+import androidx.core.content.edit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -19,6 +24,7 @@ import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
@@ -28,6 +34,7 @@ class SurveysRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
+    private val dispatcherProvider: DispatcherProvider,
 ) : RealmRepository(databaseService, realmDispatcher), SurveysRepository {
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
@@ -389,4 +396,35 @@ class SurveysRepositoryImpl @Inject constructor(
             org.ole.planet.myplanet.model.RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
         }
     }
+
+    override fun dueRemindersFlow(): Flow<List<String>> = flow {
+        val prefs = context.getSharedPreferences("survey_reminders", Context.MODE_PRIVATE)
+        while (true) {
+            val currentTime = System.currentTimeMillis()
+            val toShow = mutableListOf<String>()
+            val toRemove = mutableListOf<String>()
+
+            for (entry in prefs.all) {
+                if (entry.key.startsWith("reminder_time_")) {
+                    val surveyIds = entry.key.removePrefix("reminder_time_")
+                    val reminderTime = prefs.getLong(entry.key, 0)
+                    if (reminderTime <= currentTime) {
+                        toShow.add(surveyIds)
+                        toRemove.add(surveyIds)
+                    }
+                }
+            }
+
+            if (toShow.isNotEmpty()) {
+                emit(toShow)
+                prefs.edit {
+                    for (surveyIds in toRemove) {
+                        remove("reminder_time_$surveyIds")
+                        remove("reminder_surveys_$surveyIds")
+                    }
+                }
+            }
+            delay(60_000)
+        }
+    }.flowOn(dispatcherProvider.io)
 }

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
@@ -28,4 +29,5 @@ interface SurveysRepository {
     suspend fun getSurveys(): List<RealmStepExam>
     suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam>
     fun bulkInsertExamsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun dueRemindersFlow(): Flow<List<String>>
 }
