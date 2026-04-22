@@ -46,6 +46,7 @@ interface ResourcesRepository {
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
     suspend fun saveLibraryItem(item: RealmMyLibrary)
+    suspend fun saveLocalResource(resource: RealmMyLibrary, userId: String?, isPrivateTeamResource: Boolean, teamId: String?): Result<Unit>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
