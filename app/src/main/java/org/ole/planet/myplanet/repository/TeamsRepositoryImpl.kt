@@ -1299,12 +1299,10 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long {
         if (userName == null || teamId == null) return 0
-        return databaseService.withRealmAsync { realm ->
-            realm.where(RealmTeamLog::class.java)
-                .equalTo("type", "teamVisit")
-                .equalTo("user", userName)
-                .equalTo("teamId", teamId)
-                .count()
+        return count(RealmTeamLog::class.java) {
+            equalTo("type", "teamVisit")
+            equalTo("user", userName)
+            equalTo("teamId", teamId)
         }
     }
 
@@ -1353,13 +1351,11 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLastVisit(userName: String?, teamId: String?): Long? {
-        return withRealm { realm ->
-            realm.where(RealmTeamLog::class.java)
-                .equalTo("type", "teamVisit")
-                .equalTo("user", userName)
-                .equalTo("teamId", teamId)
-                .max("time")?.toLong()
-        }
+        return queryList(RealmTeamLog::class.java) {
+            equalTo("type", "teamVisit")
+            equalTo("user", userName)
+            equalTo("teamId", teamId)
+        }.maxOfOrNull { it.time ?: 0 }
     }
 
     override fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
