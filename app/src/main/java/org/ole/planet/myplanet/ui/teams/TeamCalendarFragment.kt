@@ -85,83 +85,29 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun showMeetupAlert() {
         if (addMeetupDialog?.isShowing == true) return
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
-        setDatePickerListener(addMeetupBinding.tvStartDate, start, end)
-        setDatePickerListener(addMeetupBinding.tvEndDate, end, null)
-        setTimePicker(addMeetupBinding.tvStartTime)
-        setTimePicker(addMeetupBinding.tvEndTime)
+        setupMeetupDialogPickers(addMeetupBinding)
+
         if (!::clickedCalendar.isInitialized) {
             clickedCalendar = Calendar.getInstance()
         }
         addMeetupDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
-        addMeetupBinding.btnSave.setOnClickListener {
-            val title = "${addMeetupBinding.etTitle.text.trim()}"
-            val link = "${addMeetupBinding.etLink.text.trim()}"
-            val description = "${addMeetupBinding.etDescription.text.trim()}"
-            val location = "${addMeetupBinding.etLocation.text.trim()}"
-            if (title.isEmpty()) {
-                Utilities.toast(activity, getString(R.string.title_is_required))
-            } else if (description.isEmpty()) {
-                Utilities.toast(activity, getString(R.string.description_is_required))
-            } else if (!link.isValidWebLink() && link.isNotEmpty()) {
-                Utilities.toast(activity, getString(R.string.invalid_url))
-            } else {
-                val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
-                val startTimeText = "${addMeetupBinding.tvStartTime.text}"
-                val endTimeText = "${addMeetupBinding.tvEndTime.text}"
-                val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
-                val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
-                val recurringText = rb?.text?.toString()
-                val teamPlanetCode = team?.teamPlanetCode
-                val userName = user?.name
-                val startMillis = start.timeInMillis
-                val endMillis = end.timeInMillis
-                val currentTeamId = teamId
 
-                lifecycleScope.launch {
-                    val meetup = RealmMeetup().apply {
-                        id = "${UUID.randomUUID()}"
-                        this.title = title
-                        meetupLink = link
-                        this.description = description
-                        meetupLocation = location
-                        creator = userName
-                        startDate = startMillis
-                        endDate = endMillis
-                        if (startTimeText == defaultPlaceholder) {
-                            startTime = ""
-                        } else {
-                            startTime = startTimeText
-                        }
-                        if (endTimeText == defaultPlaceholder) {
-                            endTime = ""
-                        } else {
-                            endTime = endTimeText
-                        }
-                        createdDate = System.currentTimeMillis()
-                        sourcePlanet = teamPlanetCode
-                        val jo = JsonObject()
-                        jo.addProperty("type", "local")
-                        jo.addProperty("planetCode", teamPlanetCode)
-                        sync = Gson().toJson(jo)
-                        if (recurringText != null) {
-                            recurring = recurringText
-                        }
-                        val ob = JsonObject()
-                        ob.addProperty("teams", currentTeamId)
-                        this.link = Gson().toJson(ob)
-                        this.teamId = currentTeamId
-                    }
-                    val success = eventsRepository.createMeetup(meetup)
-                    if (success) {
-                        Utilities.toast(activity, getString(R.string.meetup_added))
-                        addMeetupDialog?.dismiss()
-                        refreshCalendarView()
-                        refreshMeetupDialog()
-                    } else {
-                        Utilities.toast(activity, getString(R.string.meetup_not_added))
-                    }
-                }
-            }
+        setupMeetupDialogButtons(addMeetupBinding)
+
+        addMeetupDialog?.show()
+        addMeetupDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
+    }
+
+    private fun setupMeetupDialogPickers(addMeetupBinding: AddMeetupBinding) {
+        setDatePickerListener(addMeetupBinding.tvStartDate, start, end)
+        setDatePickerListener(addMeetupBinding.tvEndDate, end, null)
+        setTimePicker(addMeetupBinding.tvStartTime)
+        setTimePicker(addMeetupBinding.tvEndTime)
+    }
+
+    private fun setupMeetupDialogButtons(addMeetupBinding: AddMeetupBinding) {
+        addMeetupBinding.btnSave.setOnClickListener {
+            handleMeetupSave(addMeetupBinding)
         }
 
         addMeetupBinding.btnCancel.setOnClickListener {
@@ -174,8 +120,88 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 refreshCalendarView()
             }
         }
-        addMeetupDialog?.show()
-        addMeetupDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
+    }
+
+    private fun handleMeetupSave(addMeetupBinding: AddMeetupBinding) {
+        val title = "${addMeetupBinding.etTitle.text.trim()}"
+        val link = "${addMeetupBinding.etLink.text.trim()}"
+        val description = "${addMeetupBinding.etDescription.text.trim()}"
+        val location = "${addMeetupBinding.etLocation.text.trim()}"
+
+        if (title.isEmpty()) {
+            Utilities.toast(activity, getString(R.string.title_is_required))
+        } else if (description.isEmpty()) {
+            Utilities.toast(activity, getString(R.string.description_is_required))
+        } else if (!link.isValidWebLink() && link.isNotEmpty()) {
+            Utilities.toast(activity, getString(R.string.invalid_url))
+        } else {
+            saveMeetupToDatabase(addMeetupBinding, title, link, description, location)
+        }
+    }
+
+    private fun saveMeetupToDatabase(
+        addMeetupBinding: AddMeetupBinding,
+        title: String,
+        link: String,
+        description: String,
+        location: String
+    ) {
+        val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
+        val startTimeText = "${addMeetupBinding.tvStartTime.text}"
+        val endTimeText = "${addMeetupBinding.tvEndTime.text}"
+        val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
+        val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
+        val recurringText = rb?.text?.toString()
+        val teamPlanetCode = team?.teamPlanetCode
+        val userName = user?.name
+        val startMillis = start.timeInMillis
+        val endMillis = end.timeInMillis
+        val currentTeamId = teamId
+
+        lifecycleScope.launch {
+            val meetup = RealmMeetup().apply {
+                id = "${UUID.randomUUID()}"
+                this.title = title
+                meetupLink = link
+                this.description = description
+                meetupLocation = location
+                creator = userName
+                startDate = startMillis
+                endDate = endMillis
+                if (startTimeText == defaultPlaceholder) {
+                    startTime = ""
+                } else {
+                    startTime = startTimeText
+                }
+                if (endTimeText == defaultPlaceholder) {
+                    endTime = ""
+                } else {
+                    endTime = endTimeText
+                }
+                createdDate = System.currentTimeMillis()
+                sourcePlanet = teamPlanetCode
+                val jo = JsonObject()
+                jo.addProperty("type", "local")
+                jo.addProperty("planetCode", teamPlanetCode)
+                sync = Gson().toJson(jo)
+                if (recurringText != null) {
+                    recurring = recurringText
+                }
+                val ob = JsonObject()
+                ob.addProperty("teams", currentTeamId)
+                this.link = Gson().toJson(ob)
+                this.teamId = currentTeamId
+            }
+            val success = eventsRepository.createMeetup(meetup)
+            if (success) {
+                Utilities.toast(activity, getString(R.string.meetup_added))
+                addMeetupDialog?.dismiss()
+                refreshCalendarView()
+                refreshMeetupDialog()
+            } else {
+                Utilities.toast(activity, getString(R.string.meetup_not_added))
+            }
+        }
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
@@ -319,6 +345,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         meetupDialog?.setOnDismissListener {
             eventDates.add(clickedCalendar)
             lifecycleScope.launch {
+                val calendarDays = eventDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
                 binding.calendarView.selectedDates = emptyList()
                 binding.calendarView.selectedDates = eventDates.toList()
             }
@@ -342,6 +372,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
             if (isAdded && activity != null) {
                 eventDates.clear()
                 eventDates.addAll(newDates)
+                val calendarDays = newDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
                 binding.calendarView.selectedDates = ArrayList(newDates)
             }
         }
