@@ -101,6 +101,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var tabSelectedListener: OnTabSelectedListener
     @Inject
     lateinit var userSessionManager: UserSessionManager
+
+    @Inject
+    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
@@ -340,7 +343,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isFirstLaunch) {
             lifecycleScope.launch {
                 delay(50)
-                val offlineVisits = userSessionManager.getOfflineVisits(user)
+                val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
                 if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
                 ) {
@@ -660,7 +663,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return
         }
         lifecycleScope.launch {
-            val offlineVisits = userSessionManager.getOfflineVisits(user)
+            val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
             if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
                 showGuestDialog()
             }
