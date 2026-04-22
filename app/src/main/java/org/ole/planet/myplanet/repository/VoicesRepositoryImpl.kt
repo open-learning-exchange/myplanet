@@ -645,4 +645,13 @@ class VoicesRepositoryImpl @Inject constructor(
         }
         saveConcatenatedLinksToPrefs()
     }
+
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        val imageList = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+                .greaterThan("createdDate", timestamp)
+                .equalTo("mediaType", "image")
+        }
+        return imageList.mapNotNull { it.resourceRemoteAddress }
+    }
 }
