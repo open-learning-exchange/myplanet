@@ -70,7 +70,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             user?.let { realm.copyToRealmOrUpdate(it) }
             pojo?.let { realm.copyToRealmOrUpdate(it) }
             examination?.let { realm.copyToRealmOrUpdate(it) }
@@ -78,9 +78,8 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateExaminationUserId(id: String, userId: String) {
-        databaseService.executeTransactionAsync { realm ->
-            val examination = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()
-            examination?.userId = userId
+        update(RealmHealthExamination::class.java, "_id", id) { examination ->
+            examination.userId = userId
         }
     }
 
