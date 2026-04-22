@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.SyncApiInterface
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmUser
@@ -36,7 +37,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
-    private val apiInterface: ApiInterface,
+    @SyncApiInterface private val apiInterface: ApiInterface,
     private val databaseService: DatabaseService,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
