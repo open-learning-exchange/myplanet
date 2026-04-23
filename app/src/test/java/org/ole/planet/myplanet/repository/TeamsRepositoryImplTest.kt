@@ -70,7 +70,7 @@ class TeamsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             mockUserRepository,
-            mockk<UserSyncHelper>(relaxed = true)
+            mockk<UserSyncRepository>(relaxed = true)
         )
     }
 

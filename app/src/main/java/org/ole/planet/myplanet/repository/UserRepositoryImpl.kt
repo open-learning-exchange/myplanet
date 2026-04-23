@@ -54,7 +54,7 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncHelper {
+) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)

@@ -277,7 +277,7 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             labelManager = labelManager,
             voicesRepository = voicesRepository,
-            userSyncHelper = userSyncHelper
+            userSyncRepository = userSyncRepository
         )
         adapterNews?.sharedPrefManager = sharedPrefManager
         adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))

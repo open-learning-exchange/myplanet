@@ -11,7 +11,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.repository.UserSyncHelper
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
@@ -20,7 +20,7 @@ class LeadersFragment : Fragment() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var userSyncHelper: UserSyncHelper
+    lateinit var userSyncRepository: UserSyncRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentMembersBinding.inflate(inflater, container, false)
@@ -33,7 +33,7 @@ class LeadersFragment : Fragment() {
         if (leaders.isEmpty()) {
             binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
         } else {
-            val leadersList = userSyncHelper.parseLeadersJson(leaders)
+            val leadersList = userSyncRepository.parseLeadersJson(leaders)
             binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
             val adapter = CommunityLeadersAdapter(requireActivity())
             binding?.rvMember?.adapter = adapter

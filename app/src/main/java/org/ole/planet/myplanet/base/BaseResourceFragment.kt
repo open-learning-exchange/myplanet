@@ -61,7 +61,7 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var userRepository: UserRepository
 
     @javax.inject.Inject
-    lateinit var userSyncHelper: org.ole.planet.myplanet.repository.UserSyncHelper
+    lateinit var userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
     @Inject
