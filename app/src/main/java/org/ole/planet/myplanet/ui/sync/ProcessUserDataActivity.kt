@@ -314,11 +314,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {
+    suspend fun saveUserInfoPref(settings: android.content.SharedPreferences, password: String?, user: org.ole.planet.myplanet.model.RealmUser?) {
+        this.settings = settings
         withContext(dispatcherProvider.io) {
             SecurePrefs.saveCredentials(this@ProcessUserDataActivity, settings, user?.name, password)
         }
-        this.settings = settings
         prefData.setUserId(user?.id ?: "")
         prefData.setUserName(user?.name ?: "")
         prefData.rawPreferences.edit().apply {

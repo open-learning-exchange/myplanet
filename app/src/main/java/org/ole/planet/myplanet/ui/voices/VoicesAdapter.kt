@@ -172,6 +172,7 @@ class VoicesAdapter(
                 showShareButton(holder, news)
                 setMessageAndDate(holder, news, sharedTeamName)
                 configureEditDeleteButtons(holder, news)
+                showHideButtons(news, holder)
                 loadImage(holder.binding, news)
                 showReplyButton(holder, news, position)
                 val canManageLabels = canAddLabel(news)
@@ -246,17 +247,17 @@ class VoicesAdapter(
                 holder.binding.tvName.text =
                     if (userFullName.isNullOrEmpty()) news.userName else userFullName
                 ImageUtils.loadImage(userModel.userImage, holder.binding.imgUser)
-                showHideButtons(news, holder)
+
             } else {
                 holder.binding.tvName.text = news.userName
                 ImageUtils.loadImage(null, holder.binding.imgUser)
-                showHideButtons(news, holder)
+
             }
             return userModel
         } else {
             holder.binding.tvName.text = news.userName
             ImageUtils.loadImage(null, holder.binding.imgUser)
-            showHideButtons(news, holder)
+
             if (!fetchingUserIds.contains(userId)) {
                 fetchingUserIds.add(userId)
                 getUserFn(userId) { userModel ->
@@ -299,11 +300,11 @@ class VoicesAdapter(
     }
 
     private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: RealmNews) {
-        if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
+        if (canDelete(news)) {
             holder.binding.imgDelete.visibility = View.VISIBLE
         }
 
-        if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
+        if (canDelete(news)) {
             holder.binding.imgDelete.setOnClickListener {
                 val pos = holder.bindingAdapterPosition
                 val snapshotList = currentList.toMutableList()

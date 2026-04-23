@@ -65,7 +65,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                         toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                     } else {
                         saveUsers(username, "", "guest")
-                        saveUserInfoPref("", model)
+                        saveUserInfoPref(settings, "", model)
                         onLogin()
                     }
                 }
