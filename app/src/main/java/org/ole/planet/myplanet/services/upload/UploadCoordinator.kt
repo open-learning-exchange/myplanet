@@ -98,39 +98,36 @@ class UploadCoordinator @Inject constructor(
     ): List<PreparedUpload<T>> {
         val items = uploadRepository.queryPending(config)
 
-        val tempResults = uploadRepository.executeWithRealm { realm ->
-            items.mapNotNull { copiedItem ->
-                if (config.filterGuests && config.guestUserIdExtractor != null) {
-                    val userId = config.guestUserIdExtractor.invoke(copiedItem)
-                    if (userId?.startsWith("guest") == true) {
-                        Log.d(TAG, "Filtering out guest user item: $userId")
-                        return@mapNotNull null
-                    }
-                }
-
-                val serialized = try {
-                    when (val serializer = config.serializer) {
-                        is UploadSerializer.Simple -> serializer.serialize(copiedItem)
-                        is UploadSerializer.WithRealm -> serializer.serialize(realm, copiedItem)
-                        is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
-                        is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context)
-                        is UploadSerializer.Async -> null
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Serialization failed for item", e)
+        val tempResults = items.mapNotNull { copiedItem ->
+            if (config.filterGuests && config.guestUserIdExtractor != null) {
+                val userId = config.guestUserIdExtractor.invoke(copiedItem)
+                if (userId?.startsWith("guest") == true) {
+                    Log.d(TAG, "Filtering out guest user item: $userId")
                     return@mapNotNull null
                 }
-
-                Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
             }
+
+            val serialized = try {
+                when (val serializer = config.serializer) {
+                    is UploadSerializer.Simple -> serializer.serialize(copiedItem)
+                    is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
+                    is UploadSerializer.Async -> null
+                    is UploadSerializer.AsyncContext -> null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Serialization failed for item", e)
+                return@mapNotNull null
+            }
+
+            Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
         }
 
         return tempResults.mapNotNull { (copiedItem, preSerialized, localId) ->
             val serialized = try {
-                if (config.serializer is UploadSerializer.Async) {
-                    config.serializer.serialize(copiedItem)
-                } else {
-                    preSerialized ?: return@mapNotNull null
+                when (val serializer = config.serializer) {
+                    is UploadSerializer.Async -> serializer.serialize(copiedItem)
+                    is UploadSerializer.AsyncContext -> serializer.serialize(copiedItem, context)
+                    else -> preSerialized ?: return@mapNotNull null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)

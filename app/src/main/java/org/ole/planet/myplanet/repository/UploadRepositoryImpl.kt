@@ -24,10 +24,6 @@ class UploadRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun <R> executeWithRealm(action: (io.realm.Realm) -> R): R {
-        return withRealmAsync(action)
-    }
-
     override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem> {
         val failedLocally = mutableListOf<UploadedItem>()
         executeTransaction { realm ->
