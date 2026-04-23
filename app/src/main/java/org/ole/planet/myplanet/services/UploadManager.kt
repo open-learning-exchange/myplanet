@@ -425,16 +425,27 @@ class UploadManager @Inject constructor(
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
-                        val response = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/teams", teamData.serialized
-                        )
+                        if (teamData.isDeletePending) {
+                            val id = teamData.teamId ?: return@forEach
+                            val response = apiInterface.putDoc(
+                                UrlUtils.header, "application/json",
+                                "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
+                            )
+                            if (response.isSuccessful) {
+                                teamsRepository.get().deleteLocalTeamRecord(id)
+                            }
+                        } else {
+                            val response = apiInterface.postDoc(
+                                UrlUtils.header, "application/json",
+                                "${UrlUtils.getUrl()}/teams", teamData.serialized
+                            )
 
-                        val `object` = response.body()
+                            val `object` = response.body()
 
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            if (`object` != null) {
+                                val rev = getString("rev", `object`)
+                                teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            }
                         }
                     } catch (e: IOException) {
                         Log.e(TAG, "Exception in UploadManager", e)
