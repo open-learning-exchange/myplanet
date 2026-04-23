@@ -10,6 +10,8 @@ import org.ole.planet.myplanet.R
 
 class BaseRecyclerFragmentCompanionTest {
 
+    private val expectedMessageResId = R.string.no_course_matched_filter
+
     @Test
     fun testShowNoFilter_nullView() {
         BaseRecyclerFragment.showNoFilter(null, 0)
@@ -22,8 +24,8 @@ class BaseRecyclerFragmentCompanionTest {
 
         BaseRecyclerFragment.showNoFilter(mockView, 0)
 
-        verify { mockView.visibility = View.VISIBLE }
-        verify { mockView.setText(R.string.no_course_matched_filter) }
+        verify(exactly = 1) { mockView.visibility = View.VISIBLE }
+        verify(exactly = 1) { mockView.setText(expectedMessageResId) }
     }
 
     @Test
@@ -32,19 +34,23 @@ class BaseRecyclerFragmentCompanionTest {
 
         BaseRecyclerFragment.showNoFilter(mockView, 1)
 
-        verify { mockView.visibility = View.GONE }
-        verify { mockView.setText(R.string.no_course_matched_filter) }
+        verify(exactly = 1) { mockView.visibility = View.GONE }
+        verify(exactly = 1) { mockView.setText(expectedMessageResId) }
     }
 
     @Test
     fun testShowNoFilter_viewNotTextView() {
-        val mockView = mockk<View>(relaxed = true)
+        // Use a strict mock to ensure determinism and avoid relaxed mock interference
+        val mockView = mockk<View>()
         val mockTextView = mockk<TextView>(relaxed = true)
+
+        every { mockView.visibility = any() } returns Unit
         every { mockView.findViewById<TextView>(R.id.tv_empty_message) } returns mockTextView
 
         BaseRecyclerFragment.showNoFilter(mockView, 0)
 
-        verify { mockView.visibility = View.VISIBLE }
-        verify { mockTextView.setText(R.string.no_course_matched_filter) }
+        verify(exactly = 1) { mockView.visibility = View.VISIBLE }
+        verify(exactly = 1) { mockView.findViewById<TextView>(R.id.tv_empty_message) }
+        verify(exactly = 1) { mockTextView.setText(expectedMessageResId) }
     }
 }
