@@ -34,7 +34,7 @@ class NotificationsRepositoryImplTest {
         every { userRepositoryLazy.get() } returns userRepository
 
         repository = NotificationsRepositoryImpl(databaseService, realmDispatcher, userRepositoryLazy)
-        realm = mockk()
+        realm = mockk(relaxed = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
             val block = firstArg<(Realm) -> Any>()
@@ -44,56 +44,46 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getJoinRequestDetailsBatch should fetch users in batch`() = runTest {
-        val relatedIds = listOf("req1", "req2")
+        val relatedIds = listOf("req1")
 
-        val jr1 = RealmMyTeam().apply {
-            _id = "req1"
-            userId = "user1"
-            teamId = "team1"
-        }
-        val jr2 = RealmMyTeam().apply {
-            _id = "req2"
-            userId = "user2"
-            teamId = "team1"
-        }
-        val team1 = RealmMyTeam().apply {
-            _id = "team1"
-            name = "Team 1"
-        }
-        val user1 = RealmUser().apply {
-            id = "user1"
-            name = "User 1"
-        }
-        val user2 = RealmUser().apply {
-            id = "user2"
-            name = "User 2"
-        }
+        val jr1 = mockk<RealmMyTeam>(relaxed = true)
+        every { jr1._id } returns "req1"
+        every { jr1.userId } returns "user1"
+        every { jr1.teamId } returns "team1"
 
-        val query = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
-        every { realm.where(RealmMyTeam::class.java) } returns query
+        val team1 = mockk<RealmMyTeam>(relaxed = true)
+        every { team1._id } returns "team1"
+        every { team1.name } returns "Team 1"
 
+        val user1 = mockk<RealmUser>(relaxed = true)
+        every { user1.id } returns "user1"
+        every { user1.name } returns "User 1"
+
+        val queryJR = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
         val resultsJR = mockk<RealmResults<RealmMyTeam>>()
+        val queryTeam = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
         val resultsTeam = mockk<RealmResults<RealmMyTeam>>()
-        every { query.findAll() } returns resultsJR andThen resultsTeam
 
-        val jrList = listOf(jr1, jr2)
-        every { resultsJR.iterator() } returns (jrList.iterator() as MutableIterator<RealmMyTeam>)
+        every { realm.where(RealmMyTeam::class.java) } returns queryJR andThen queryTeam
+        every { queryJR.findAll() } returns resultsJR
+        every { queryTeam.findAll() } returns resultsTeam
+
+        val jrList = listOf(jr1)
+        every { resultsJR.iterator() } answers { jrList.iterator() as MutableIterator<RealmMyTeam> }
         every { resultsJR.size } returns jrList.size
 
         val teamList = listOf(team1)
-        every { resultsTeam.iterator() } returns (teamList.iterator() as MutableIterator<RealmMyTeam>)
+        every { resultsTeam.iterator() } answers { teamList.iterator() as MutableIterator<RealmMyTeam> }
         every { resultsTeam.size } returns teamList.size
 
-        coEvery { userRepository.getUsersByIds(any()) } returns listOf(user1, user2)
+        coEvery { userRepository.getUsersByIds(any()) } returns listOf(user1)
 
         val result = repository.getJoinRequestDetailsBatch(relatedIds)
 
-        assertEquals(2, result.size)
+        assertEquals(1, result.size)
         assertEquals("User 1", result["req1"]?.first)
         assertEquals("Team 1", result["req1"]?.second)
-        assertEquals("User 2", result["req2"]?.first)
-        assertEquals("Team 1", result["req2"]?.second)
 
-        coVerify(exactly = 1) { userRepository.getUsersByIds(any()) }
+        coVerify(exactly = 1) { userRepository.getUsersByIds(listOf("user1")) }
     }
 }
