@@ -11,13 +11,13 @@ class NetworkModuleTest {
     private class TestModel {
         var normalField: String = "normal"
         var nullField: String? = null
+        val finalField: String = "final"
         @Transient
         var transientField: String = "transient"
 
         companion object {
             @JvmStatic
             var staticField: String = "static"
-            val finalField: String = "final"
         }
     }
 
