@@ -103,9 +103,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
-        return withRealm { realm ->
-            realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-        }
+        return queryList(RealmMyLibrary::class.java)
     }
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -117,8 +115,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+        return Normalizer.normalize(str, Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
+            .lowercase(Locale.ROOT)
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
