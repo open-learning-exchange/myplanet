@@ -401,6 +401,16 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return false
     }
 
+    override suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
+        val surveys = getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!hasSubmission(survey.id, survey.courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
+
     override suspend fun addSubmissionPhoto(
         submissionId: String?,
         examId: String?,
