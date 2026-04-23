@@ -39,6 +39,14 @@ annotation class StandardHttpClient
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SyncHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SyncApiInterface
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -94,6 +102,25 @@ object NetworkModule {
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
+    }
+
+    @Provides
+    @Singleton
+    @SyncHttpClient
+    fun provideSyncOkHttpClient(broadcastService: BroadcastService): OkHttpClient {
+        return buildOkHttpClient(30, 300, 300, RetryInterceptor(broadcastService))
+    }
+
+    @Provides
+    @Singleton
+    @SyncApiInterface
+    fun provideSyncApiInterface(@SyncHttpClient okHttpClient: OkHttpClient, gson: Gson): ApiInterface {
+        return Retrofit.Builder()
+            .baseUrl("https://vi.media.mit.edu/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+            .create(ApiInterface::class.java)
     }
 
     @Provides
