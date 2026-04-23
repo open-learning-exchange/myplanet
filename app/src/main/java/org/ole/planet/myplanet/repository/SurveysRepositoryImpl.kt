@@ -404,6 +404,14 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Polling flow for survey reminders.
+     * Note: While WorkManager is used elsewhere in the project and is generally preferred for
+     * robust, persistent background scheduling, this flow maintains the legacy behavior of the
+     * in-memory `while(isActive)` loop from the Fragment. Since the reminders are short-lived
+     * and only relevant while the user is active in the app, a simple polling flow is used
+     * here rather than rewriting the scheduling mechanism.
+     */
     override fun dueRemindersFlow(): Flow<List<String>> = flow {
         val prefs = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
         while (true) {

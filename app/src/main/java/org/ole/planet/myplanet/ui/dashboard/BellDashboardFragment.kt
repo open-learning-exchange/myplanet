@@ -56,8 +56,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     lateinit var serverUrlMapper: ServerUrlMapper
 
     companion object {
-        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
-        private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
         private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
     }
 
