@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -86,45 +87,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel.startResourcesSync()
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.syncState.collect { state ->
-                    when (state) {
-                        is org.ole.planet.myplanet.model.SyncState.Syncing -> {
-                            if (isAdded && !requireActivity().isFinishing && view != null) {
-                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                                customProgressDialog?.setText(getString(R.string.syncing_resources))
-                                customProgressDialog?.show()
-                            }
-                        }
-                        is org.ole.planet.myplanet.model.SyncState.Success -> {
-                            if (isAdded && view != null) {
-                                customProgressDialog?.dismiss()
-                                customProgressDialog = null
-                                refreshResourcesData()
-                                viewModel.resetSyncState()
-                            }
-                        }
-                        is org.ole.planet.myplanet.model.SyncState.Failed -> {
-                            if (isAdded && view != null) {
-                                customProgressDialog?.dismiss()
-                                customProgressDialog = null
-
-                                Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
-                                ).setAction("Retry") {
-                                    viewModel.startResourcesSync()
-                                }.show()
-                                viewModel.resetSyncState()
-                            }
-                        }
-                        is org.ole.planet.myplanet.model.SyncState.Idle -> {
-                            // Do nothing
-                        }
-                    }
-                }
-            }
-        }
     }
 
     override fun getLayout(): Int {
@@ -233,6 +195,36 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         setupEventListeners()
         initArrays()
         hideButton()
+
+        collectWhenStarted(viewModel.syncState) { state ->
+            when (state) {
+                is org.ole.planet.myplanet.model.SyncState.Syncing -> {
+                    if (!requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_resources))
+                        customProgressDialog?.show()
+                    }
+                }
+                is org.ole.planet.myplanet.model.SyncState.Success -> {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                    refreshResourcesData()
+                    viewModel.resetSyncState()
+                }
+                is org.ole.planet.myplanet.model.SyncState.Failed -> {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                    Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                    ).setAction("Retry") {
+                        viewModel.startResourcesSync()
+                    }.show()
+                    viewModel.resetSyncState()
+                }
+                is org.ole.planet.myplanet.model.SyncState.Idle -> {
+                    // Do nothing
+                }
+            }
+        }
 
         lifecycleScope.launch {
             userModel = profileDbHandler.getUserModel()
@@ -402,7 +394,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
-        if (listSize == 0) {
+        val hasAnyLibraryData = allLibraryItems.isNotEmpty()
+
+        if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
@@ -416,7 +410,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
+            clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun hasActiveFilters(): Boolean {
+        val hasSearchText = etSearch.text?.toString()?.trim()?.isNotEmpty() == true
+        val hasTagFilter = ::searchTags.isInitialized && searchTags.isNotEmpty()
+        return hasSearchText || hasTagFilter || subjects.isNotEmpty() || languages.isNotEmpty() || mediums.isNotEmpty() || levels.isNotEmpty()
     }
 
     private fun initArrays() {
@@ -577,9 +578,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
-        val currentIds = adapterLibrary.getLibraryList().mapNotNull { it.id }.toSet()
-        val libraryList = allLibraryItems.filter { it.id in currentIds }
-        return resourcesRepository.getFilterFacets(libraryList)
+        // Keep facet options stable so applying one filter does not hide other available options.
+        return resourcesRepository.getFilterFacets(allLibraryItems)
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
