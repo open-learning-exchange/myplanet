@@ -46,12 +46,12 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var syncManager: SyncManager
-
+    
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
     private val serverUrl: String
-        get() = sharedPrefManager.getServerUrl()
+    get() = sharedPrefManager.getServerUrl()
 
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
@@ -68,7 +68,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
             feedbackFragment.setOnFeedbackSubmittedListener(this)
@@ -76,9 +75,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                 feedbackFragment.show(childFragmentManager, "")
             }
         }
-
         setupRealtimeSync()
-
         return binding.root
     }
 
@@ -174,7 +171,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         binding.rvFeedback.adapter = feedbackAdapter
         observeFeedbackList()
-
     }
 
     private fun observeFeedbackList() {
@@ -200,6 +196,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         customProgressDialog = null
         super.onDestroy()
     }
+
     override fun onFeedbackSubmitted() {
         refreshFeedbackListData()
     }
@@ -223,4 +220,3 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         binding.tvOpenDate.visibility = visibility
     }
 }
-
