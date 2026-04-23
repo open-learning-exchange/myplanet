@@ -12,11 +12,8 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import kotlin.OptIn
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -145,20 +142,21 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
-        return queryListFlow(RealmMyTeam::class.java) {
-            equalTo("userId", userId)
-            equalTo("docType", "membership")
-        }.flatMapLatest { memberships ->
-            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
-            if (teamIds.isEmpty()) {
-                flowOf(emptyList())
-            } else {
-                queryListFlow(RealmMyTeam::class.java) {
-                    `in`("_id", teamIds)
-                    notEqualTo("status", "archived")
-                }
+        val teamIds = withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .findAll()
+                .mapNotNull { it.teamId }
+                .toTypedArray()
+        }
+        return if (teamIds.isEmpty()) {
+            flowOf(emptyList())
+        } else {
+            queryListFlow(RealmMyTeam::class.java) {
+                `in`("_id", teamIds)
+                notEqualTo("status", "archived")
             }
         }
     }
