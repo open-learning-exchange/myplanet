@@ -46,7 +46,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var syncManager: SyncManager
-    
+
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
