@@ -92,7 +92,7 @@ open class RealmStepExam : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeExam(mRealm: Realm, exam: RealmStepExam): JsonObject {
+        fun serializeExam(exam: RealmStepExam, questions: List<RealmExamQuestion>): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
             if (exam._rev != null) {
@@ -114,8 +114,7 @@ open class RealmStepExam : RealmObject() {
             if (exam.teamId != null) {
                 `object`.addProperty("teamId", exam.teamId)
             }
-            val question = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
-            `object`.add("questions", RealmExamQuestion.serializeQuestions(question))
+            `object`.add("questions", RealmExamQuestion.serializeQuestions(questions))
             return `object`
         }
 
