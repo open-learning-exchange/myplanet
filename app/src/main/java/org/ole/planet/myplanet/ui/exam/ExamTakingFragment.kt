@@ -65,6 +65,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initializeExamData()
+        setupListeners()
+    }
+
+    private fun initializeExamData() {
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
@@ -94,7 +99,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val examCourseIdValue = exam?.courseId
                     val userIdValue = user?.id
 
-                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                         try {
                             submissionsRepository.deleteExamSubmissions(
                                 examIdValue ?: id ?: "", examCourseIdValue, userIdValue
@@ -103,7 +108,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             e.printStackTrace()
                         }
 
-                        withContext(Dispatchers.Main) {
+                        withContext(dispatcherProvider.main) {
                             answerCache.clear()
                             clearAnswer()
                             ans = ""
@@ -116,7 +121,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             val newSub = submissionsRepository.createExamSubmission(
                                 user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                             )
-                            withContext(Dispatchers.Main) {
+                            withContext(dispatcherProvider.main) {
                                 sub = newSub
                                 startExam(questions?.get(currentIndex))
                                 updateNavButtons()
@@ -142,7 +147,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
             }
         }
+    }
 
+    private fun setupListeners() {
         binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
             lifecycleScope.launch {

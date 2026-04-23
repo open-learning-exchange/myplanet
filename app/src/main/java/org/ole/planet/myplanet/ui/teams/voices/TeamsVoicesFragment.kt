@@ -240,7 +240,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.updateList(it) }
+            realmNewsList?.let { adapterNews?.submitList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
@@ -248,7 +248,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 realmNewsList?.let {
-                    adapter.updateList(it)
+                    adapter.submitList(it)
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
             }

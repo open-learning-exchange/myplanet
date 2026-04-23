@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
@@ -40,6 +41,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
@@ -50,7 +52,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     lateinit var dispatcherProvider: DispatcherProvider
 
     private val serverUrl: String
-        get() = sharedPrefManager.getServerUrl()
+    get() = sharedPrefManager.getServerUrl()
 
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
@@ -61,9 +63,12 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         startFeedbackSync()
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
             feedbackFragment.setOnFeedbackSubmittedListener(this)
@@ -71,9 +76,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                 feedbackFragment.show(childFragmentManager, "")
             }
         }
-
         setupRealtimeSync()
-
         return binding.root
     }
 
@@ -100,7 +103,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     private fun startFeedbackSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isFeedbackSynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.FEEDBACK)) {
             checkServerAndStartSync()
         }
     }
@@ -134,7 +137,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshFeedbackListData()
-                        sharedPrefManager.setFeedbackSynced(true)
+                        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.FEEDBACK, true)
                     }
                 }
             }
@@ -145,7 +148,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(
+                            binding.root,
+                            "Sync failed: ${msg ?: "Unknown error"}",
+                            Snackbar.LENGTH_LONG
+                        )
                             .setAction("Retry") { startFeedbackSync() }.show()
                     }
                 }
@@ -168,12 +175,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun observeFeedbackList() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.feedbackList.collect { feedbackList ->
-                    updatedFeedbackList(feedbackList)
-                }
-            }
+        collectWhenStarted(viewModel.feedbackList) { feedbackList ->
+            updatedFeedbackList(feedbackList)
         }
     }
 
@@ -197,7 +200,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
         if (_binding == null) return
-        feedbackAdapter.submitList(updatedList)
+        feedbackAdapter.submitList(updatedList) {
+            binding.rvFeedback.scrollToPosition(0)
+        }
         val itemCount = updatedList?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")
         updateTextViewsVisibility(itemCount)

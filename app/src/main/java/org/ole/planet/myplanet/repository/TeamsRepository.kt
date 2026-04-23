@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 
@@ -62,7 +63,7 @@ interface TeamsRepository {
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
-    suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
+    fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
     suspend fun getTasks(userId: String?): List<RealmTeamTask>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
@@ -72,7 +73,7 @@ interface TeamsRepository {
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun removeMember(teamId: String, userId: String)
-    suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUser?)
+    suspend fun addResourceLinks(teamId: String, resources: List<TeamResourceDto>, userId: String?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
@@ -126,8 +127,9 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 
-    fun insertTeamLog(realm: Realm, json: JsonObject)
-    fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long?
+    suspend fun insertTeamLog(json: JsonObject)
+    suspend fun insertTeamLogs(logs: List<JsonObject>)
+    suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
     fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)

@@ -39,7 +39,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return parentId?.substringBefore("@")
     }
 
-    override suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
+    override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
                 .equalTo("type", "survey")
@@ -63,40 +63,43 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
+        if (examIds.isEmpty()) return emptyList()
+        return queryList(RealmStepExam::class.java) {
+            `in`("id", examIds.toTypedArray())
+        }
+    }
+
     override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
 
-        return databaseService.withRealmAsync { realm ->
-            val pendingSurveys = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("status", "pending")
-                .equalTo("type", "survey")
-                .isNull("membershipDoc")
-                .findAll()
-
-            if (pendingSurveys.isEmpty()) {
-                return@withRealmAsync emptyList()
-            }
-
-            val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
-            if (examIds.isEmpty()) {
-                return@withRealmAsync emptyList()
-            }
-
-            val exams = realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds.toTypedArray())
-                .findAll()
-            val validExamIds = exams.mapNotNull { it.id }.toSet()
-
-            val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
-            pendingSurveys.forEach { submission ->
-                val examId = submission.examIdFromParentId()
-                if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
-                    uniqueSurveys[examId] = submission
-                }
-            }
-            realm.copyFromRealm(uniqueSurveys.values)
+        val pendingSurveys = queryList(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("status", "pending")
+            equalTo("type", "survey")
+            isNull("membershipDoc")
         }
+
+        if (pendingSurveys.isEmpty()) {
+            return emptyList()
+        }
+
+        val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
+        if (examIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val exams = getExamsByIds(examIds)
+        val validExamIds = exams.mapNotNull { it.id }.toSet()
+
+        val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
+        pendingSurveys.forEach { submission ->
+            val examId = submission.examIdFromParentId()
+            if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
+                uniqueSurveys[examId] = submission
+            }
+        }
+        return uniqueSurveys.values.toList()
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
@@ -107,16 +110,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             return emptyList()
         }
 
-        return databaseService.withRealmAsync { realm ->
-            val exams = realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds.toTypedArray())
-                .findAll()
-            val examMap = exams.associate { it.id to (it.name ?: "") }
+        val exams = getExamsByIds(examIds)
+        val examMap = exams.associate { it.id to (it.name ?: "") }
 
-            submissions.map { submission ->
-                val examId = submission.examIdFromParentId()
-                examMap[examId] ?: ""
-            }
+        return submissions.map { submission ->
+            val examId = submission.examIdFromParentId()
+            examMap[examId] ?: ""
         }
     }
 
@@ -128,19 +127,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             return emptyMap()
         }
 
-        return databaseService.withRealmAsync { realm ->
-            val examMap = realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds.toTypedArray())
-                .findAll()
-                .associateBy { it.id }
+        val exams = getExamsByIds(examIds)
+        val examMap = exams.associateBy { it.id }
 
-            val resultMap = submissions.mapNotNull { sub ->
-                val parentId = sub.parentId
-                val examId = sub.examIdFromParentId()
-                examMap[examId]?.let { parentId to realm.copyFromRealm(it) }
-            }.toMap()
-            resultMap
-        }
+        return submissions.mapNotNull { sub ->
+            val parentId = sub.parentId
+            val examId = sub.examIdFromParentId()
+            examMap[examId]?.let { parentId to it }
+        }.toMap()
     }
 
     override suspend fun getExamQuestionCount(stepId: String): Int {
@@ -241,84 +235,78 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        return databaseService.withRealmAsync { realm ->
-            var submission = realm.where(RealmSubmission::class.java)
-                .equalTo("id", submissionId)
+        var submission = queryList(RealmSubmission::class.java) {
+            equalTo("id", submissionId)
                 .or()
                 .equalTo("_id", submissionId)
-                .findFirst()
+        }.firstOrNull()
 
-            if (submission == null) {
-                submission = realm.where(RealmSubmission::class.java)
-                    .contains("parentId", submissionId)
-                    .findFirst()
-            }
+        if (submission == null) {
+            submission = queryList(RealmSubmission::class.java) {
+                contains("parentId", submissionId)
+            }.firstOrNull()
+        }
 
-            if (submission == null) {
-                return@withRealmAsync null
-            }
+        if (submission == null) {
+            return null
+        }
 
-            val examId = submission.parentId?.substringBefore('@')
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
+        val examId = submission.parentId?.substringBefore('@')
+        val exam = examId?.let { getExamById(it) }
 
-            val user = realm.where(RealmUser::class.java)
-                .equalTo("id", submission.userId)
-                .findFirst()
+        val user = submission.userId?.let { findByField(RealmUser::class.java, "id", it) }
 
-            val questions = realm.where(RealmExamQuestion::class.java)
-                .equalTo("examId", examId)
-                .findAll()
+        val questions = queryList(RealmExamQuestion::class.java) {
+            equalTo("examId", examId)
+        }
 
-            val questionAnswers = questions.map { question ->
-                val answer = submission.answers?.find { it.questionId == question.id }
-                val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
-                var formattedAnswer: String? = null
-                if (answer != null) {
-                    if (!answer.value.isNullOrEmpty()) {
-                        formattedAnswer = answer.value
-                    } else {
-                        val choices = answer.valueChoices
-                        if (!choices.isNullOrEmpty()) {
-                            if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
-                                formattedAnswer = choices.map { choiceId ->
-                                    try {
-                                        val choicesArray = com.google.gson.JsonParser.parseString(question.choices).asJsonArray
-                                        val choiceObject = choicesArray.find {
-                                            it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
-                                        }?.asJsonObject
-                                        choiceObject?.get("text")?.asString ?: choiceId
-                                    } catch (e: Exception) {
-                                        choiceId
-                                    }
-                                }.joinToString(", ")
-                            } else {
-                                formattedAnswer = choices.joinToString(", ")
-                            }
+        val questionAnswers = questions.map { question ->
+            val answer = submission.answers?.find { it.questionId == question.id }
+            val isCorrect = answer != null && question.getCorrectChoice()?.contains(answer.value) == true
+            var formattedAnswer: String? = null
+            if (answer != null) {
+                if (!answer.value.isNullOrEmpty()) {
+                    formattedAnswer = answer.value
+                } else {
+                    val choices = answer.valueChoices
+                    if (!choices.isNullOrEmpty()) {
+                        if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
+                            formattedAnswer = choices.map { choiceId ->
+                                try {
+                                    val choicesArray = com.google.gson.JsonParser.parseString(question.choices).asJsonArray
+                                    val choiceObject = choicesArray.find {
+                                        it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
+                                    }?.asJsonObject
+                                    choiceObject?.get("text")?.asString ?: choiceId
+                                } catch (e: Exception) {
+                                    choiceId
+                                }
+                            }.joinToString(", ")
+                        } else {
+                            formattedAnswer = choices.joinToString(", ")
                         }
                     }
                 }
-
-                QuestionAnswer(
-                    questionId = question.id,
-                    questionHeader = question.header,
-                    questionBody = question.body,
-                    questionType = question.type,
-                    answer = formattedAnswer,
-                    answerChoices = answer?.valueChoices?.toList(),
-                    isCorrect = isCorrect
-                )
             }
 
-            SubmissionDetail(
-                title = exam?.name ?: "Submission Details",
-                status = "Status: ${submission.status ?: "Unknown"}",
-                date = submission.startTime,
-                submittedBy = "Submitted by: ${user?.name ?: "Unknown"}",
-                questionAnswers = questionAnswers
+            QuestionAnswer(
+                questionId = question.id,
+                questionHeader = question.header,
+                questionBody = question.body,
+                questionType = question.type,
+                answer = formattedAnswer,
+                answerChoices = answer?.valueChoices?.toList(),
+                isCorrect = isCorrect
             )
         }
+
+        return SubmissionDetail(
+            title = exam?.name ?: "Submission Details",
+            status = "Status: ${submission.status ?: "Unknown"}",
+            date = submission.startTime,
+            submittedBy = "Submitted by: ${user?.name ?: "Unknown"}",
+            questionAnswers = questionAnswers
+        )
     }
 
     override fun getNormalizedSubmitterName(submission: RealmSubmission): String? {
@@ -441,9 +429,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             null
         }
 
-        return databaseService.withRealmAsync { realm ->
-            var detachedSub: RealmSubmission? = null
-            realm.executeTransaction { r ->
+        var detachedSub: RealmSubmission? = null
+        executeTransaction { r ->
                 val managedSub = createSubmissionInternal(null, r)
 
                 val parentId = when {
@@ -505,8 +492,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 }
                 detachedSub = r.copyFromRealm(managedSub)
             }
-            detachedSub
-        }
+        return detachedSub
     }
 
     override suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean {
@@ -672,27 +658,25 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
-        return databaseService.withRealmAsync { realm ->
-            var detachedSub: RealmSubmission? = null
-            realm.executeTransaction { r ->
-                val sub = r.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("parentId", parentId)
-                    .sort("lastUpdateTime", Sort.DESCENDING)
-                    .equalTo("status", "pending")
-                    .findFirst()
+        var detachedSub: RealmSubmission? = null
+        executeTransaction { r ->
+            val sub = r.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("parentId", parentId)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+                .equalTo("status", "pending")
+                .findFirst()
 
-                val managedSub = createSubmissionInternal(sub, r)
-                if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
-                if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
-                if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
-                if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
-                if (managedSub.startTime == 0L) managedSub.startTime = Date().time
+            val managedSub = createSubmissionInternal(sub, r)
+            if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
+            if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
+            if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
+            if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
+            if (managedSub.startTime == 0L) managedSub.startTime = Date().time
 
-                detachedSub = r.copyFromRealm(managedSub)
-            }
-            detachedSub!!
+            detachedSub = r.copyFromRealm(managedSub)
         }
+        return detachedSub!!
     }
 
     private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {
@@ -735,10 +719,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
             var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
             val isNewSubmission = sub == null
-            val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+            val hadLocalChanges = !isNewSubmission && sub.isUpdated
             val serverStatus = org.ole.planet.myplanet.utils.JsonUtils.getString("status", submission)
             val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
-                (sub?.status == "complete" || sub?.status == "requires grading")
+                (sub.status == "complete" || sub.status == "requires grading")
             val skipOverwrite = hadLocalChanges || isStatusDowngrade
 
             if (sub == null) {

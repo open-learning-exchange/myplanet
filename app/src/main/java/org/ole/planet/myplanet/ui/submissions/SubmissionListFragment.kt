@@ -6,26 +6,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepositoryExporter
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
+    private val viewModel: SubmissionListViewModel by viewModels()
     @Inject
     lateinit var submissionsRepositoryExporter: SubmissionsRepositoryExporter
     private var parentId: String? = null
@@ -51,11 +51,22 @@ class SubmissionListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         binding.tvTitle.text = examTitle ?: "Submissions"
         setupRecyclerView()
-        loadSubmissions()
-    }
 
-    override fun onResume() {
-        super.onResume()
+        collectWhenStarted(viewModel.submissions) { submissionItems ->
+            if (_binding != null) {
+                adapter.submitList(submissionItems)
+            }
+        }
+
+        binding.btnDownloadReport.setOnClickListener {
+            val submissionIds = viewModel.submissions.value.mapNotNull { it.id }
+            if (submissionIds.isNotEmpty()) {
+                generateReport(submissionIds)
+            } else {
+                Toast.makeText(context, "No submissions to report", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         loadSubmissions()
     }
 
@@ -74,19 +85,7 @@ class SubmissionListFragment : Fragment() {
     }
 
     private fun loadSubmissions() {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val submissionItems = submissionsRepository.getSubmissionItems(parentId, userId)
-
-            withContext(Dispatchers.Main) {
-                if (_binding == null) return@withContext
-                adapter.submitList(submissionItems)
-
-                val submissionIds = submissionItems.mapNotNull { it.id }
-                binding.btnDownloadReport.setOnClickListener {
-                    generateReport(submissionIds)
-                }
-            }
-        }
+        viewModel.loadSubmissions(parentId, userId)
     }
 
     private fun generateSubmissionPdf(submissionId: String) {

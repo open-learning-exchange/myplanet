@@ -178,6 +178,7 @@ dependencies {
     androidTestImplementation(libs.test.rxjava)
     androidTestImplementation(libs.test.arch)
     androidTestImplementation(libs.test.hilt)
+    androidTestImplementation(libs.test.mockkdroid)
     kspAndroidTest(libs.hilt.android.compiler)
 }
 dependencies {

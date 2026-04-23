@@ -32,7 +32,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.EntryPointAccessors
 import java.io.File
 import java.util.Calendar
 import java.util.Date
@@ -52,7 +51,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -82,6 +80,7 @@ import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
@@ -156,33 +155,29 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
-        lifecycleScope.launch {
-            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                syncManager.syncStatus.collect { status ->
-                    when (status) {
-                        is SyncManager.SyncStatus.Idle -> {
-                            // Do nothing
-                        }
+        collectWhenStarted(syncManager.syncStatus) { status ->
+            when (status) {
+                is SyncManager.SyncStatus.Idle -> {
+                    // Do nothing
+                }
 
-                        is SyncManager.SyncStatus.Syncing -> {
-                            withContext(Dispatchers.Main) {
-                                onSyncStarted()
-                            }
-                        }
+                is SyncManager.SyncStatus.Syncing -> {
+                    withContext(Dispatchers.Main) {
+                        onSyncStarted()
+                    }
+                }
 
-                        is SyncManager.SyncStatus.Success -> {
-                            syncManager.resetSyncStatus()
-                            withContext(Dispatchers.Main) {
-                                onSyncComplete()
-                            }
-                        }
+                is SyncManager.SyncStatus.Success -> {
+                    syncManager.resetSyncStatus()
+                    withContext(Dispatchers.Main) {
+                        onSyncComplete()
+                    }
+                }
 
-                        is SyncManager.SyncStatus.Error -> {
-                            syncManager.resetSyncStatus()
-                            withContext(Dispatchers.Main) {
-                                onSyncFailed(status.message)
-                            }
-                        }
+                is SyncManager.SyncStatus.Error -> {
+                    syncManager.resetSyncStatus()
+                    withContext(Dispatchers.Main) {
+                        onSyncFailed(status.message)
                     }
                 }
             }
@@ -268,7 +263,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                         configurationsRepository.clearAllData()
                         prefData.setManualConfig(config)
-                        clearSharedPref()
+                        prefData.clearPreferences()
 
                         delay(500)
                         restartApp()
@@ -766,13 +761,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCheckingVersion() {}
 
     fun registerReceiver() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
-                broadcastService.events.collect { intent ->
-                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                        broadcastReceiver.onReceive(this@SyncActivity, intent)
-                    }
-                }
+        collectWhenStarted(broadcastService.events) { intent ->
+            if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                broadcastReceiver.onReceive(this@SyncActivity, intent)
             }
         }
     }
@@ -818,28 +809,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         lateinit var cal_last_Sync: Calendar
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
-
-        suspend fun clearSharedPref() {
-            withContext(Dispatchers.IO) {
-                val spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-                val prefs = spm.rawPreferences
-                val editor = prefs.edit()
-                val keysToKeep =
-                    setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
-                val tempStorage = HashMap<String, Boolean>()
-                for (key in keysToKeep) {
-                    tempStorage[key] = prefs.getBoolean(key, false)
-                }
-                editor.clear().apply()
-                for ((key, value) in tempStorage) {
-                    editor.putBoolean(key, value)
-                }
-                editor.commit()
-                val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-                preferences.edit { clear() }
-            }
-        }
-
         fun restartApp() {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)
