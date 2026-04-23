@@ -1,18 +1,40 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.slot
+import io.mockk.invoke
 import io.realm.Realm
 import io.realm.RealmQuery
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmNotification
 
-class RealmNotificationTest {
+@ExperimentalCoroutinesApi
+class NotificationsRepositoryImplTest {
+
+    private lateinit var databaseService: DatabaseService
+    private lateinit var userRepository: dagger.Lazy<UserRepository>
+    private lateinit var repository: NotificationsRepositoryImpl
+    private val testDispatcher = UnconfinedTestDispatcher()
+
+    @Before
+    fun setUp() {
+        databaseService = mockk(relaxed = true)
+        userRepository = mockk(relaxed = true)
+        repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository)
+    }
 
     @Test
     fun `test default property values`() {
@@ -33,18 +55,23 @@ class RealmNotificationTest {
     }
 
     @Test
-    fun `insert with missing id does nothing`() {
+    fun `insert with missing id does nothing`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
         val jsonObject = JsonObject() // Missing _id
 
-        RealmNotification.insert(realm, jsonObject)
+        val transactionSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
+        repository.insert(jsonObject)
 
         verify(exactly = 0) { realm.where(RealmNotification::class.java) }
         verify(exactly = 0) { realm.createObject(RealmNotification::class.java, any<String>()) }
     }
 
     @Test
-    fun `insert creates new notification when not found`() {
+    fun `insert creates new notification when not found`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
         val query = mockk<RealmQuery<RealmNotification>>()
         val notification = RealmNotification()
@@ -60,12 +87,17 @@ class RealmNotificationTest {
             addProperty("time", 123456789L)
         }
 
+        val transactionSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
         every { realm.where(RealmNotification::class.java) } returns query
         every { query.equalTo("id", "testId") } returns query
         every { query.findFirst() } returns null
         every { realm.createObject(RealmNotification::class.java, "testId") } returns notification
 
-        RealmNotification.insert(realm, jsonObject)
+        repository.insert(jsonObject)
 
         assertEquals("testUser", notification.userId)
         assertEquals("testMessage", notification.message)
@@ -79,7 +111,7 @@ class RealmNotificationTest {
     }
 
     @Test
-    fun `insert updates existing notification`() {
+    fun `insert updates existing notification`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
         val query = mockk<RealmQuery<RealmNotification>>()
         val notification = RealmNotification()
@@ -92,11 +124,16 @@ class RealmNotificationTest {
             addProperty("time", 987654321L)
         }
 
+        val transactionSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
         every { realm.where(RealmNotification::class.java) } returns query
         every { query.equalTo("id", "testId") } returns query
         every { query.findFirst() } returns notification
 
-        RealmNotification.insert(realm, jsonObject)
+        repository.insert(jsonObject)
 
         assertEquals("updatedUser", notification.userId)
         assertEquals("updatedMessage", notification.message)
@@ -109,7 +146,7 @@ class RealmNotificationTest {
     }
 
     @Test
-    fun `insert preserves read status if needsSync is true`() {
+    fun `insert preserves read status if needsSync is true`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
         val query = mockk<RealmQuery<RealmNotification>>()
         val notification = RealmNotification().apply {
@@ -121,11 +158,16 @@ class RealmNotificationTest {
             addProperty("status", "unread")
         }
 
+        val transactionSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
         every { realm.where(RealmNotification::class.java) } returns query
         every { query.equalTo("id", "testId") } returns query
         every { query.findFirst() } returns notification
 
-        RealmNotification.insert(realm, jsonObject)
+        repository.insert(jsonObject)
 
         // isRead should be preserved (true) even though status is "unread", because needsSync is true
         assertTrue(notification.isRead)
