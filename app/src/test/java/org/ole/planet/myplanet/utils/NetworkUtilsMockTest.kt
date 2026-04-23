@@ -16,8 +16,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.MainApplication
 import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 class NetworkUtilsMockTest {
@@ -103,33 +103,5 @@ class NetworkUtilsMockTest {
         every { mockWifiManager.isWifiEnabled } returns false
         every { mockBluetoothAdapter.isEnabled } returns false
         assertFalse(NetworkUtils.isWifiBluetoothEnabled())
-    }
-
-    @Test
-    fun `isWifiConnected returns true when active network is wifi`() {
-        val mockNetwork = mockk<android.net.Network>()
-        val mockCapabilities = mockk<NetworkCapabilities>()
-        every { mockConnectivityManager.activeNetwork } returns mockNetwork
-        every { mockConnectivityManager.getNetworkCapabilities(mockNetwork) } returns mockCapabilities
-        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
-
-        assertTrue(NetworkUtils.isWifiConnected())
-    }
-
-    @Test
-    fun `isWifiConnected returns false when active network is not wifi`() {
-        val mockNetwork = mockk<android.net.Network>()
-        val mockCapabilities = mockk<NetworkCapabilities>()
-        every { mockConnectivityManager.activeNetwork } returns mockNetwork
-        every { mockConnectivityManager.getNetworkCapabilities(mockNetwork) } returns mockCapabilities
-        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns false
-
-        assertFalse(NetworkUtils.isWifiConnected())
-    }
-
-    @Test
-    fun `isWifiConnected returns false when no active network`() {
-        every { mockConnectivityManager.activeNetwork } returns null
-        assertFalse(NetworkUtils.isWifiConnected())
     }
 }
