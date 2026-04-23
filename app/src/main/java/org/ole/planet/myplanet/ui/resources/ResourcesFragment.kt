@@ -394,7 +394,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
-        if (listSize == 0) {
+        val hasAnyLibraryData = allLibraryItems.isNotEmpty()
+
+        if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
@@ -408,7 +410,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
+            clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun hasActiveFilters(): Boolean {
+        val hasSearchText = etSearch.text?.toString()?.trim()?.isNotEmpty() == true
+        val hasTagFilter = ::searchTags.isInitialized && searchTags.isNotEmpty()
+        return hasSearchText || hasTagFilter || subjects.isNotEmpty() || languages.isNotEmpty() || mediums.isNotEmpty() || levels.isNotEmpty()
     }
 
     private fun initArrays() {
@@ -569,9 +578,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
-        val currentIds = adapterLibrary.getLibraryList().mapNotNull { it.id }.toSet()
-        val libraryList = allLibraryItems.filter { it.id in currentIds }
-        return resourcesRepository.getFilterFacets(libraryList)
+        // Keep facet options stable so applying one filter does not hide other available options.
+        return resourcesRepository.getFilterFacets(allLibraryItems)
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
