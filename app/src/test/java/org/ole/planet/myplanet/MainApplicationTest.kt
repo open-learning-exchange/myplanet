@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet
 
 import android.content.Context
+import android.net.TrafficStats
 import dagger.hilt.android.EntryPointAccessors
 import io.mockk.*
 import io.realm.Realm
@@ -63,6 +64,9 @@ class MainApplicationTest {
 
         mockkStatic(VersionUtils::class)
         every { VersionUtils.getVersionName(any()) } returns "1.0.0"
+
+        mockkStatic(TrafficStats::class)
+        every { TrafficStats.setThreadStatsTag(any()) } just runs
     }
 
     @After
