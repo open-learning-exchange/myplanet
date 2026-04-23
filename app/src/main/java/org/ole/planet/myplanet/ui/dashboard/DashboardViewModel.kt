@@ -316,7 +316,7 @@ class DashboardViewModel @Inject constructor(
                 val uniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
                 val allUniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
                 val courseName = withContext(dispatcherProvider.io) { coursesRepository.getCourseTitleById(courseId) }
-                val hasUnfinishedSurvey = withContext(dispatcherProvider.io) { hasPendingSurvey(courseId, userId) }
+                val hasUnfinishedSurvey = submissionsRepository.hasPendingSurvey(courseId, userId)
 
                 val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
 
@@ -348,16 +348,6 @@ class DashboardViewModel @Inject constructor(
                 e.printStackTrace()
             }
         }
-    }
-
-    private suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
-        val surveys = submissionsRepository.getSurveysByCourseId(courseId)
-        for (survey in surveys) {
-            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, userId, "survey")) {
-                return true
-            }
-        }
-        return false
     }
 
     private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {

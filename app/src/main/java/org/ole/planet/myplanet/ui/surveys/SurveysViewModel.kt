@@ -73,24 +73,20 @@ class SurveysViewModel @Inject constructor(
         _isTeamShareAllowed.value = isTeamShareAllowed
         viewModelScope.launch {
             try {
-                val currentSurveysList = withContext(dispatcherProvider.io) {
-                    when {
-                        isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
-                        isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
-                        else -> surveysRepository.getIndividualSurveys()
-                    }
+                val currentSurveysList = when {
+                    isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
+                    else -> surveysRepository.getIndividualSurveys()
                 }
 
-                val userModel = withContext(dispatcherProvider.io) { userSessionManager.getUserModel() }
-                val surveyInfos = withContext(dispatcherProvider.io) {
-                    surveysRepository.getSurveyInfos(
-                        isTeam,
-                        teamId,
-                        userModel?.id,
-                        currentSurveysList
-                    )
-                }
-                val bindingData = withContext(dispatcherProvider.io) { surveysRepository.getSurveyFormState(currentSurveysList, teamId) }
+                val userModel = userSessionManager.getUserModel()
+                val surveyInfos = surveysRepository.getSurveyInfos(
+                    isTeam,
+                    teamId,
+                    userModel?.id,
+                    currentSurveysList
+                )
+                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
 
                 _surveyInfos.value = surveyInfos
                 _bindingData.value = bindingData
@@ -217,10 +213,8 @@ class SurveysViewModel @Inject constructor(
     fun adoptSurvey(surveyId: String) {
         viewModelScope.launch {
             try {
-                withContext(dispatcherProvider.io) {
-                    val userModel = userSessionManager.getUserModel()
-                    surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
-                }
+                val userModel = userSessionManager.getUserModel()
+                surveysRepository.adoptSurvey(surveyId, userModel?.id, teamId, isTeam)
                 _userMessage.value = "Survey adopted successfully"
                 _isTeamShareAllowed.value = false
                 loadSurveys(isTeam, teamId, false)
