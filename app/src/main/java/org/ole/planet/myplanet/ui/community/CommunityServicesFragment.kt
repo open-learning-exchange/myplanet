@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator.replaceFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import android.content.Intent
 
 class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null
@@ -104,7 +106,13 @@ class CommunityServicesFragment : BaseTeamFragment() {
                             tag = ""
                         )
                     }
-                }
+                } else {
+                    val url = team.route ?: return@setOnClickListener
+                    val intent = Intent(requireContext(), WebViewActivity::class.java).apply {
+                        putExtra("link", url)
+                        putExtra("title", team.title)
+                    }
+                    startActivity(intent)}
             }
             parent.addView(b)
         }
