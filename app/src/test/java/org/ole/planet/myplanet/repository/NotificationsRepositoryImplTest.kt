@@ -45,51 +45,42 @@ class NotificationsRepositoryImplTest {
     @Test
     fun `getJoinRequestDetailsBatch should fetch users in batch`() = runTest {
         val relatedIds = listOf("req1", "req2")
-        val userId1 = "user1"
-        val userId2 = "user2"
-        val teamId1 = "team1"
 
         val jr1 = RealmMyTeam().apply {
             _id = "req1"
-            userId = userId1
-            teamId = teamId1
+            userId = "user1"
+            teamId = "team1"
         }
         val jr2 = RealmMyTeam().apply {
             _id = "req2"
-            userId = userId2
-            teamId = teamId1
+            userId = "user2"
+            teamId = "team1"
         }
-
         val team1 = RealmMyTeam().apply {
-            _id = teamId1
+            _id = "team1"
             name = "Team 1"
         }
-
         val user1 = RealmUser().apply {
-            id = userId1
+            id = "user1"
             name = "User 1"
         }
         val user2 = RealmUser().apply {
-            id = userId2
+            id = "user2"
             name = "User 2"
         }
 
-        val queryJR = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
+        val query = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
+        every { realm.where(RealmMyTeam::class.java) } returns query
+
         val resultsJR = mockk<RealmResults<RealmMyTeam>>()
-        val queryTeam = mockk<RealmQuery<RealmMyTeam>>(relaxed = true)
         val resultsTeam = mockk<RealmResults<RealmMyTeam>>()
+        every { query.findAll() } returns resultsJR andThen resultsTeam
 
-        every { realm.where(RealmMyTeam::class.java) } returns queryJR andThen queryTeam
-
-        every { queryJR.equalTo("docType", "request") } returns queryJR
-        every { queryJR.findAll() } returns resultsJR
-
-        val jrList = mutableListOf(jr1, jr2)
+        val jrList = listOf(jr1, jr2)
         every { resultsJR.iterator() } returns (jrList.iterator() as MutableIterator<RealmMyTeam>)
         every { resultsJR.size } returns jrList.size
 
-        every { queryTeam.findAll() } returns resultsTeam
-        val teamList = mutableListOf(team1)
+        val teamList = listOf(team1)
         every { resultsTeam.iterator() } returns (teamList.iterator() as MutableIterator<RealmMyTeam>)
         every { resultsTeam.size } returns teamList.size
 
@@ -97,7 +88,7 @@ class NotificationsRepositoryImplTest {
 
         val result = repository.getJoinRequestDetailsBatch(relatedIds)
 
-        assertEquals("Expected 2 results", 2, result.size)
+        assertEquals(2, result.size)
         assertEquals("User 1", result["req1"]?.first)
         assertEquals("Team 1", result["req1"]?.second)
         assertEquals("User 2", result["req2"]?.first)
