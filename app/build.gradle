@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< 13163-white-space-on-dashboard
         versionCode = 5396
         versionName = "0.53.96"
-=======
-        versionCode = 5395
-        versionName = "0.53.95"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
