@@ -53,7 +53,7 @@ class RealmMigrations : RealmMigration {
             version++
         }
 
-        if (version == 8L) {
+        if (version == 9L) {
             schema.create("RealmDeviceUser")
                 .addField("userId", String::class.java)
                 .addPrimaryKey("userId")
