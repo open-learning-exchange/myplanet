@@ -375,10 +375,20 @@ class TransactionSyncManager @Inject constructor(
             return 0
         }
 
+        android.util.Log.d(
+            "SyncPerf",
+            "    courses_progress selector: userId IN ${userIds.size} synced users"
+        )
+        android.util.Log.d(
+            "SyncPerf",
+            "    courses_progress synced user sample: ${userIds.take(10).joinToString(", ")}"
+        )
+
         val pageSize = 1000
         var totalDocs = 0
         var pageNumber = 0
         var bookmark: String? = null
+        var loggedLargeResultWarning = false
 
         while (true) {
             pageNumber++
@@ -455,7 +465,18 @@ class TransactionSyncManager @Inject constructor(
             totalDocs += docs.size()
             bookmark = response.body()?.get("bookmark")?.asString
             val batchDuration = System.currentTimeMillis() - batchStartTime
-            android.util.Log.d("SyncPerf", "    courses_progress page $pageNumber: ${docs.size()} docs in ${batchDuration}ms (total: $totalDocs)")
+            android.util.Log.d(
+                "SyncPerf",
+                "    courses_progress page $pageNumber: ${docs.size()} docs in ${batchDuration}ms (total: $totalDocs, bookmark=${!bookmark.isNullOrBlank()})"
+            )
+
+            if (!loggedLargeResultWarning && pageNumber >= 5 && totalDocs >= pageSize * 5) {
+                android.util.Log.w(
+                    "SyncPerf",
+                    "    courses_progress warning: selector is still returning full pages after $pageNumber pages for ${userIds.size} users"
+                )
+                loggedLargeResultWarning = true
+            }
 
             if (docs.size() < pageSize || bookmark.isNullOrBlank()) {
                 break
@@ -463,7 +484,10 @@ class TransactionSyncManager @Inject constructor(
         }
 
         val totalDuration = System.currentTimeMillis() - syncStartTime
-        android.util.Log.d("SyncPerf", "  ✓ Completed courses_progress sync: $totalDocs docs in ${totalDuration}ms")
+        android.util.Log.d(
+            "SyncPerf",
+            "  ✓ Completed courses_progress sync: $totalDocs docs in ${totalDuration}ms for ${userIds.size} synced users"
+        )
         return totalDocs
     }
 
