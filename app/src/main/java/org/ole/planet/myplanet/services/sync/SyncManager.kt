@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -71,6 +72,7 @@ class SyncManager @Inject constructor(
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
+    private val deviceUserRepository: DeviceUserRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
 ) {
@@ -210,101 +212,119 @@ class SyncManager @Inject constructor(
             transactionSyncManager.syncDb("tablet_users")
             logger.endProcess("tablet_users_sync")
 
+            val hasDeviceUsers = deviceUserRepository.hasDeviceUsers()
+            val fullSyncTables = SyncPolicy.applyBootstrapPolicy(
+                listOf(
+                    "exams",
+                    "ratings",
+                    "courses_progress",
+                    "achievements",
+                    "tags",
+                    "submissions",
+                    "news",
+                    "feedback",
+                    "tasks",
+                    "login_activities",
+                    "health",
+                    "certifications",
+                    "team_activities",
+                    "chat_history",
+                    "teams",
+                    "meetups",
+                    "courses",
+                ),
+                hasDeviceUsers
+            )
+
             // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
             coroutineScope {
-                val syncJobs = listOf(
-                    async {
+                val syncJobs = mutableListOf<Deferred<Unit>>()
+                if ("exams" in fullSyncTables) syncJobs += async {
                         logger.startProcess("exams_sync")
                         transactionSyncManager.syncDb("exams")
                         logger.endProcess("exams_sync")
-                    },
-                    async {
+                    }
+                if ("ratings" in fullSyncTables) syncJobs += async {
                         logger.startProcess("ratings_sync")
                         transactionSyncManager.syncDb("ratings")
                         logger.endProcess("ratings_sync")
-                    },
-                    async {
+                    }
+                if ("courses_progress" in fullSyncTables) syncJobs += async {
                         logger.startProcess("courses_progress_sync")
                         transactionSyncManager.syncDb("courses_progress")
                         logger.endProcess("courses_progress_sync")
-                    },
-                    async {
+                    }
+                if ("achievements" in fullSyncTables) syncJobs += async {
                         logger.startProcess("achievements_sync")
                         transactionSyncManager.syncDb("achievements")
                         logger.endProcess("achievements_sync")
-                    },
-                    async {
+                    }
+                if ("tags" in fullSyncTables) syncJobs += async {
                         logger.startProcess("tags_sync")
                         transactionSyncManager.syncDb("tags")
                         logger.endProcess("tags_sync")
-                    },
-                    async {
+                    }
+                if ("submissions" in fullSyncTables) syncJobs += async {
                         logger.startProcess("submissions_sync")
                         transactionSyncManager.syncDb("submissions")
                         logger.endProcess("submissions_sync")
-                    },
-                    async {
+                    }
+                if ("news" in fullSyncTables) syncJobs += async {
                         logger.startProcess("news_sync")
                         transactionSyncManager.syncDb("news")
                         logger.endProcess("news_sync")
-                    },
-                    async {
+                    }
+                if ("feedback" in fullSyncTables) syncJobs += async {
                         logger.startProcess("feedback_sync")
                         transactionSyncManager.syncDb("feedback")
                         logger.endProcess("feedback_sync")
-                    },
-                    async {
+                    }
+                if ("tasks" in fullSyncTables) syncJobs += async {
                         logger.startProcess("tasks_sync")
                         transactionSyncManager.syncDb("tasks")
                         logger.endProcess("tasks_sync")
-                    },
-                    async {
+                    }
+                if ("login_activities" in fullSyncTables) syncJobs += async {
                         logger.startProcess("login_activities_sync")
                         transactionSyncManager.syncDb("login_activities")
                         logger.endProcess("login_activities_sync")
-                    },
-                    async {
+                    }
+                if ("health" in fullSyncTables) syncJobs += async {
                         logger.startProcess("health_sync")
                         transactionSyncManager.syncDb("health")
                         logger.endProcess("health_sync")
-                    },
-                    async {
+                    }
+                if ("certifications" in fullSyncTables) syncJobs += async {
                         logger.startProcess("certifications_sync")
                         transactionSyncManager.syncDb("certifications")
                         logger.endProcess("certifications_sync")
-                    },
-                    async {
+                    }
+                if ("team_activities" in fullSyncTables) syncJobs += async {
                         logger.startProcess("team_activities_sync")
                         transactionSyncManager.syncDb("team_activities")
                         logger.endProcess("team_activities_sync")
-                    },
-                    async {
+                    }
+                if ("chat_history" in fullSyncTables) syncJobs += async {
                         logger.startProcess("chat_history_sync")
                         transactionSyncManager.syncDb("chat_history")
                         logger.endProcess("chat_history_sync")
-                    },
-                    async {
+                    }
+                if ("teams" in fullSyncTables) syncJobs += async {
                         logger.startProcess("teams_sync")
                         transactionSyncManager.syncDb("teams")
                         logger.endProcess("teams_sync")
-                    },
-                    async {
+                    }
+                if ("meetups" in fullSyncTables) syncJobs += async {
                         logger.startProcess("meetups_sync")
                         transactionSyncManager.syncDb("meetups")
                         logger.endProcess("meetups_sync")
-                    },
-                    async {
+                    }
+                if ("courses" in fullSyncTables) syncJobs += async {
                         logger.startProcess("courses_sync")
                         transactionSyncManager.syncDb("courses")
                         logger.endProcess("courses_sync")
-                    },
-                    async {
-                        logger.startProcess("notifications_sync")
-                        transactionSyncManager.syncDb("notifications")
-                        logger.endProcess("notifications_sync")
                     }
-                )
                 syncJobs.awaitAll()
             }
 
@@ -330,6 +350,10 @@ class SyncManager @Inject constructor(
             logger.startProcess("on_synced")
             activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
             logger.endProcess("on_synced")
+
+            if (hasDeviceUsers) {
+                startBackgroundNotificationSync()
+            }
 
             logger.stopLogging()
 
@@ -359,55 +383,65 @@ class SyncManager @Inject constructor(
         try {
             val logger = SyncTimeLogger
             logger.startLogging()
+            val hasDeviceUsers = deviceUserRepository.hasDeviceUsers()
+            val requestedTables = syncTables ?: listOf(
+                "tablet_users",
+                "login_activities",
+                "tags",
+                "teams",
+                "news"
+            )
+            val fastSyncTables = SyncPolicy.applyBootstrapPolicy(requestedTables, hasDeviceUsers).toSet()
 
             initializeSync()
             coroutineScope {
                 val syncJobs = mutableListOf<Deferred<Unit>>()
-                if (syncTables?.contains("tablet_users") != false) {
+                if ("tablet_users" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("tablet_users_sync")
                             transactionSyncManager.syncDb("tablet_users")
                             logger.endProcess("tablet_users_sync")
                         })
+                }
 
+                if ("login_activities" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("login_activities_sync")
                             transactionSyncManager.syncDb("login_activities")
                             logger.endProcess("login_activities_sync")
                         })
+                }
 
+                if ("tags" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("tags_sync")
                             transactionSyncManager.syncDb("tags")
                             logger.endProcess("tags_sync")
                         })
+                }
 
+                if ("teams" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("teams_sync")
                             transactionSyncManager.syncDb("teams")
                             logger.endProcess("teams_sync")
                         })
+                }
 
+                if ("news" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("news_sync")
                             transactionSyncManager.syncDb("news")
                             logger.endProcess("news_sync")
                         })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("notifications_sync")
-                            transactionSyncManager.syncDb("notifications")
-                            logger.endProcess("notifications_sync")
-                        })
                 }
 
-                if (syncTables?.contains("resources") == true) {
+                if ("resources" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("library_sync")
@@ -423,7 +457,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("courses") == true) {
+                if ("courses" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("library_sync")
@@ -438,12 +472,14 @@ class SyncManager @Inject constructor(
                             logger.endProcess("courses_sync")
                         })
 
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("courses_progress_sync")
-                            transactionSyncManager.syncDb("courses_progress")
-                            logger.endProcess("courses_progress_sync")
-                        })
+                    if (hasDeviceUsers) {
+                        syncJobs.add(
+                            async {
+                                logger.startProcess("courses_progress_sync")
+                                transactionSyncManager.syncDb("courses_progress")
+                                logger.endProcess("courses_progress_sync")
+                            })
+                    }
 
                     syncJobs.add(
                         async {
@@ -453,7 +489,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("tasks") == true) {
+                if ("tasks" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("tasks_sync")
@@ -462,7 +498,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("meetups") == true) {
+                if ("meetups" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("meetups_sync")
@@ -471,7 +507,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("team_activities") == true) {
+                if ("team_activities" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("team_activities_sync")
@@ -480,7 +516,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("chat_history") == true) {
+                if ("chat_history" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("chat_history_sync")
@@ -489,7 +525,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("feedback") == true) {
+                if ("feedback" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("feedback_sync")
@@ -498,7 +534,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("achievements") == true) {
+                if ("achievements" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("achievements_sync")
@@ -507,7 +543,7 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("health") == true) {
+                if ("health" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("health_sync")
@@ -523,14 +559,16 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("courses") == true || syncTables?.contains("exams") == true) {
+                if ("courses" in fastSyncTables || "exams" in fastSyncTables) {
                     syncJobs.add(
                         async {
                             logger.startProcess("exams_sync")
                             transactionSyncManager.syncDb("exams")
                             logger.endProcess("exams_sync")
                         })
+                }
 
+                if (hasDeviceUsers && ("courses" in fastSyncTables || "exams" in fastSyncTables)) {
                     syncJobs.add(
                         async {
                             logger.startProcess("submissions_sync")
@@ -554,6 +592,10 @@ class SyncManager @Inject constructor(
             activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
             logger.endProcess("on_synced")
 
+            if (hasDeviceUsers) {
+                startBackgroundNotificationSync()
+            }
+
             logger.stopLogging()
         } catch (err: Exception) {
             err.printStackTrace()
@@ -566,6 +608,17 @@ class SyncManager @Inject constructor(
     private fun cleanupMainSync() {
         cancel(context, 111)
         isSyncing.set(false)
+    }
+
+    private fun startBackgroundNotificationSync() {
+        syncScope.launch(dispatcherProvider.io) {
+            try {
+                Log.d("SyncPerf", "  ▶ Starting background notifications sync")
+                transactionSyncManager.syncDb("notifications")
+            } catch (e: Exception) {
+                Log.d("SyncPerf", "  ✗ Background notifications sync failed: ${e.message}")
+            }
+        }
     }
 
     private fun initializeSync() {

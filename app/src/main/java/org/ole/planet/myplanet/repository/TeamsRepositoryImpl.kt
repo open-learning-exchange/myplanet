@@ -165,6 +165,17 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamIdsForUsers(userIds: Collection<String>): List<String> {
+        if (userIds.isEmpty()) {
+            return emptyList()
+        }
+        return queryList(RealmMyTeam::class.java) {
+            `in`("userId", userIds.toTypedArray())
+            equalTo("docType", "membership")
+        }.mapNotNull { it.teamId?.takeIf(String::isNotBlank) }
+            .distinct()
+    }
+
     private suspend fun getMemberTeamIds(userId: String): Set<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("userId", userId)

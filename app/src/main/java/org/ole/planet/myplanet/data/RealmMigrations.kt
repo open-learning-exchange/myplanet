@@ -52,5 +52,18 @@ class RealmMigrations : RealmMigration {
                 ?.addField("isUpdated", Boolean::class.java)
             version++
         }
+
+        if (version == 8L) {
+            schema.create("RealmDeviceUser")
+                .addField("userId", String::class.java)
+                .addPrimaryKey("userId")
+                .addField("userName", String::class.java)
+                .addIndex("userName")
+                .addField("parentCode", String::class.java)
+                .addField("planetCode", String::class.java)
+                .addField("firstLoginAt", Long::class.javaPrimitiveType!!)
+                .addField("lastLoginAt", Long::class.javaPrimitiveType!!)
+            version++
+        }
     }
 }

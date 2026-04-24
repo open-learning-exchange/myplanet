@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 
@@ -31,7 +32,8 @@ class ImprovedSyncManager @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager,
     private val standardStrategy: StandardSyncStrategy,
     private val loginSyncManager: LoginSyncManager,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val deviceUserRepository: DeviceUserRepository
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
@@ -62,8 +64,7 @@ class ImprovedSyncManager @Inject constructor(
         "certifications",
         "team_activities",
         "chat_history",
-        "feedback",
-        "notifications"
+        "feedback"
     )
 
     suspend fun initialize() {
@@ -109,7 +110,9 @@ class ImprovedSyncManager @Inject constructor(
 
         initializeSync()
 
-        val tablesToSync = syncTables ?: syncOrder
+        val hasDeviceUsers = deviceUserRepository.hasDeviceUsers()
+        val requestedTables = syncTables ?: syncOrder
+        val tablesToSync = SyncPolicy.applyBootstrapPolicy(requestedTables, hasDeviceUsers)
         val strategy = getStrategy(syncMode)
 
         coroutineScope {
@@ -130,6 +133,15 @@ class ImprovedSyncManager @Inject constructor(
         logger.startProcess("on_synced")
         activitiesRepository.recordSyncActivity(settings.getString("userId", "") ?: "")
         logger.endProcess("on_synced")
+
+        if (hasDeviceUsers) {
+            syncScope.launch {
+                try {
+                    transactionSyncManager.syncDb("notifications")
+                } catch (_: Exception) {
+                }
+            }
+        }
 
         logger.stopLogging()
     }

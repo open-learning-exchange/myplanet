@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -23,6 +24,7 @@ class UserSessionManager @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository,
+    private val deviceUserRepository: DeviceUserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) {
     private val fullName: String
@@ -48,6 +50,12 @@ class UserSessionManager @Inject constructor(
             try {
                 val model = getUserModel()
                 activitiesRepository.logLogin(
+                    userId = model?.id,
+                    userName = model?.name,
+                    parentCode = model?.parentCode,
+                    planetCode = model?.planetCode
+                )
+                deviceUserRepository.upsertFromLogin(
                     userId = model?.id,
                     userName = model?.name,
                     parentCode = model?.parentCode,

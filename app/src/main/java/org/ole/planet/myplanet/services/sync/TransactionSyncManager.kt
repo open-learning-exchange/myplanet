@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -43,6 +44,7 @@ class TransactionSyncManager @Inject constructor(
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
+    private val deviceUserRepository: DeviceUserRepository,
     private val userRepository: UserRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
@@ -157,6 +159,18 @@ class TransactionSyncManager @Inject constructor(
         try {
             if (table == "courses_progress") {
                 return@withContext syncCoursesProgressDb(syncStartTime)
+            }
+            if (table == "submissions") {
+                return@withContext syncSubmissionsDb(syncStartTime)
+            }
+            if (table == "login_activities") {
+                return@withContext syncLoginActivitiesDb(syncStartTime)
+            }
+            if (table == "chat_history") {
+                return@withContext syncChatHistoryDb(syncStartTime)
+            }
+            if (table == "team_activities") {
+                return@withContext syncTeamActivitiesDb(syncStartTime)
             }
 
             // Determine pagination size based on table (smaller for slow endpoints)
@@ -308,7 +322,7 @@ class TransactionSyncManager @Inject constructor(
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                                                when (table) {
+                        when (table) {
                             "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                             "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
@@ -367,21 +381,20 @@ class TransactionSyncManager @Inject constructor(
     }
 
     private suspend fun syncCoursesProgressDb(syncStartTime: Long): Int {
-        val userIds = userRepository.getSyncedUsers()
-            .mapNotNull { user -> user._id?.takeIf { it.isNotBlank() } ?: user.id?.takeIf { it.isNotBlank() } }
+        val userIds = deviceUserRepository.getDeviceUserIds()
             .distinct()
         if (userIds.isEmpty()) {
-            android.util.Log.d("SyncPerf", "  ↷ Skipping courses_progress sync: no synced users available")
+            android.util.Log.d("SyncPerf", "  ↷ Skipping courses_progress sync: no device users available")
             return 0
         }
 
         android.util.Log.d(
             "SyncPerf",
-            "    courses_progress selector: userId IN ${userIds.size} synced users"
+            "    courses_progress selector: userId IN ${userIds.size} device users"
         )
         android.util.Log.d(
             "SyncPerf",
-            "    courses_progress synced user sample: ${userIds.take(10).joinToString(", ")}"
+            "    courses_progress device user sample: ${userIds.take(10).joinToString(", ")}"
         )
 
         val pageSize = 1000
@@ -473,7 +486,7 @@ class TransactionSyncManager @Inject constructor(
             if (!loggedLargeResultWarning && pageNumber >= 5 && totalDocs >= pageSize * 5) {
                 android.util.Log.w(
                     "SyncPerf",
-                    "    courses_progress warning: selector is still returning full pages after $pageNumber pages for ${userIds.size} users"
+                    "    courses_progress warning: selector is still returning full pages after $pageNumber pages for ${userIds.size} device users"
                 )
                 loggedLargeResultWarning = true
             }
@@ -486,7 +499,263 @@ class TransactionSyncManager @Inject constructor(
         val totalDuration = System.currentTimeMillis() - syncStartTime
         android.util.Log.d(
             "SyncPerf",
-            "  ✓ Completed courses_progress sync: $totalDocs docs in ${totalDuration}ms for ${userIds.size} synced users"
+            "  ✓ Completed courses_progress sync: $totalDocs docs in ${totalDuration}ms for ${userIds.size} device users"
+        )
+        return totalDocs
+    }
+
+    private suspend fun syncSubmissionsDb(syncStartTime: Long): Int {
+        val userIds = deviceUserRepository.getDeviceUserIds().distinct()
+        if (userIds.isEmpty()) {
+            android.util.Log.d("SyncPerf", "  ↷ Skipping submissions sync: no device users available")
+            return 0
+        }
+
+        val pageSize = 100
+        var totalDocs = 0
+        var pageNumber = 0
+        var bookmark: String? = null
+
+        android.util.Log.d(
+            "SyncPerf",
+            "    submissions selector: userId IN ${userIds.size} device users"
+        )
+
+        while (true) {
+            pageNumber++
+            val batchStartTime = System.currentTimeMillis()
+            val requestBody = JsonObject().apply {
+                add("selector", JsonObject().apply {
+                    add("userId", JsonObject().apply {
+                        add("\$in", com.google.gson.JsonArray().apply {
+                            userIds.forEach { add(it) }
+                        })
+                    })
+                })
+                addProperty("limit", pageSize)
+                bookmark?.let { addProperty("bookmark", it) }
+            }
+
+            val apiStartTime = System.currentTimeMillis()
+            val response = apiInterface.findDocs(
+                UrlUtils.header,
+                "application/json",
+                "${UrlUtils.getUrl()}/submissions/_find",
+                requestBody
+            )
+            val apiDuration = System.currentTimeMillis() - apiStartTime
+
+            if (response.body() == null || !response.isSuccessful) {
+                android.util.Log.d("SyncPerf", "  ✗ Failed submissions page $pageNumber: HTTP ${response.code()}")
+                break
+            }
+
+            val docs = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("docs", response.body())
+            if (docs.size() == 0) {
+                break
+            }
+
+            val rows = com.google.gson.JsonArray()
+            docs.forEach { doc ->
+                rows.add(JsonObject().apply {
+                    add("doc", doc)
+                })
+            }
+
+            org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
+                "${UrlUtils.getUrl()}/submissions/_find (page $pageNumber)",
+                apiDuration,
+                response.isSuccessful,
+                docs.size()
+            )
+
+            databaseService.executeTransactionAsync { mRealm: Realm ->
+                val insertStartTime = System.currentTimeMillis()
+                submissionsRepository.bulkInsertFromSync(mRealm, rows)
+                val insertDuration = System.currentTimeMillis() - insertStartTime
+                org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                    "insert_batch",
+                    "submissions",
+                    insertDuration,
+                    docs.size()
+                )
+            }
+
+            totalDocs += docs.size()
+            bookmark = response.body()?.get("bookmark")?.asString
+            val batchDuration = System.currentTimeMillis() - batchStartTime
+            android.util.Log.d(
+                "SyncPerf",
+                "    submissions page $pageNumber: ${docs.size()} docs in ${batchDuration}ms (total: $totalDocs, bookmark=${!bookmark.isNullOrBlank()})"
+            )
+
+            if (docs.size() < pageSize || bookmark.isNullOrBlank()) {
+                break
+            }
+        }
+
+        val totalDuration = System.currentTimeMillis() - syncStartTime
+        android.util.Log.d(
+            "SyncPerf",
+            "  ✓ Completed submissions sync: $totalDocs docs in ${totalDuration}ms for ${userIds.size} device users"
+        )
+        return totalDocs
+    }
+
+    private suspend fun syncLoginActivitiesDb(syncStartTime: Long): Int {
+        val userNames = deviceUserRepository.getDeviceUserNames().distinct()
+        if (userNames.isEmpty()) {
+            android.util.Log.d("SyncPerf", "  ↷ Skipping login_activities sync: no device users available")
+            return 0
+        }
+
+        return syncFindByField(
+            table = "login_activities",
+            selectorField = "user",
+            selectorValues = userNames,
+            pageSize = 1000,
+            syncStartTime = syncStartTime
+        ) { realm, rows ->
+            activitiesRepository.bulkInsertLoginActivitiesFromSync(realm, rows)
+        }
+    }
+
+    private suspend fun syncChatHistoryDb(syncStartTime: Long): Int {
+        val userNames = deviceUserRepository.getDeviceUserNames().distinct()
+        if (userNames.isEmpty()) {
+            android.util.Log.d("SyncPerf", "  ↷ Skipping chat_history sync: no device users available")
+            return 0
+        }
+
+        return syncFindByField(
+            table = "chat_history",
+            selectorField = "user",
+            selectorValues = userNames,
+            pageSize = 1000,
+            syncStartTime = syncStartTime
+        ) { realm, rows ->
+            chatRepository.insertChatHistoryBatch(realm, rows)
+        }
+    }
+
+    private suspend fun syncTeamActivitiesDb(syncStartTime: Long): Int {
+        val userIds = deviceUserRepository.getDeviceUserIds().distinct()
+        if (userIds.isEmpty()) {
+            android.util.Log.d("SyncPerf", "  ↷ Skipping team_activities sync: no device users available")
+            return 0
+        }
+
+        val teamIds = teamsRepository.get().getTeamIdsForUsers(userIds)
+        if (teamIds.isEmpty()) {
+            android.util.Log.d("SyncPerf", "  ↷ Skipping team_activities sync: no team memberships for device users")
+            return 0
+        }
+
+        return syncFindByField(
+            table = "team_activities",
+            selectorField = "teamId",
+            selectorValues = teamIds,
+            pageSize = 1000,
+            syncStartTime = syncStartTime
+        ) { realm, rows ->
+            teamsRepository.get().bulkInsertTeamActivitiesFromSync(realm, rows)
+        }
+    }
+
+    private suspend fun syncFindByField(
+        table: String,
+        selectorField: String,
+        selectorValues: List<String>,
+        pageSize: Int,
+        syncStartTime: Long,
+        bulkInsert: (Realm, com.google.gson.JsonArray) -> Unit
+    ): Int {
+        var totalDocs = 0
+        var pageNumber = 0
+        var bookmark: String? = null
+
+        android.util.Log.d(
+            "SyncPerf",
+            "    $table selector: $selectorField IN ${selectorValues.size} values"
+        )
+
+        while (true) {
+            pageNumber++
+            val batchStartTime = System.currentTimeMillis()
+            val requestBody = JsonObject().apply {
+                add("selector", JsonObject().apply {
+                    add(selectorField, JsonObject().apply {
+                        add("\$in", com.google.gson.JsonArray().apply {
+                            selectorValues.forEach { add(it) }
+                        })
+                    })
+                })
+                addProperty("limit", pageSize)
+                bookmark?.let { addProperty("bookmark", it) }
+            }
+
+            val apiStartTime = System.currentTimeMillis()
+            val response = apiInterface.findDocs(
+                UrlUtils.header,
+                "application/json",
+                "${UrlUtils.getUrl()}/$table/_find",
+                requestBody
+            )
+            val apiDuration = System.currentTimeMillis() - apiStartTime
+
+            if (response.body() == null || !response.isSuccessful) {
+                android.util.Log.d("SyncPerf", "  ✗ Failed $table page $pageNumber: HTTP ${response.code()}")
+                break
+            }
+
+            val docs = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("docs", response.body())
+            if (docs.size() == 0) {
+                break
+            }
+
+            val rows = com.google.gson.JsonArray()
+            docs.forEach { doc ->
+                rows.add(JsonObject().apply {
+                    add("doc", doc)
+                })
+            }
+
+            org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
+                "${UrlUtils.getUrl()}/$table/_find (page $pageNumber)",
+                apiDuration,
+                response.isSuccessful,
+                docs.size()
+            )
+
+            databaseService.executeTransactionAsync { mRealm: Realm ->
+                val insertStartTime = System.currentTimeMillis()
+                bulkInsert(mRealm, rows)
+                val insertDuration = System.currentTimeMillis() - insertStartTime
+                org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                    "insert_batch",
+                    table,
+                    insertDuration,
+                    docs.size()
+                )
+            }
+
+            totalDocs += docs.size()
+            bookmark = response.body()?.get("bookmark")?.asString
+            val batchDuration = System.currentTimeMillis() - batchStartTime
+            android.util.Log.d(
+                "SyncPerf",
+                "    $table page $pageNumber: ${docs.size()} docs in ${batchDuration}ms (total: $totalDocs, bookmark=${!bookmark.isNullOrBlank()})"
+            )
+
+            if (docs.size() < pageSize || bookmark.isNullOrBlank()) {
+                break
+            }
+        }
+
+        val totalDuration = System.currentTimeMillis() - syncStartTime
+        android.util.Log.d(
+            "SyncPerf",
+            "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms for ${selectorValues.size} selector values"
         )
         return totalDocs
     }
