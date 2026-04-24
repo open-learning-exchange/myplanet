@@ -38,12 +38,14 @@ data class JoinRequestNotification(
 
 data class TeamUploadData(
     val teamId: String?,
-    val serialized: JsonObject
+    val serialized: JsonObject,
+    val isDeletePending: Boolean = false
 )
 
 interface TeamsRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)
+    suspend fun deleteLocalTeamRecord(teamId: String?)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam>

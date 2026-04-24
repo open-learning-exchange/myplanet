@@ -73,9 +73,20 @@ class TeamsRepositoryImpl @Inject constructor(
             teams.map { team ->
                 TeamUploadData(
                     teamId = team._id,
-                    serialized = RealmMyTeam.serialize(team, realm)
+                    serialized = RealmMyTeam.serialize(team, realm),
+                    isDeletePending = team.isDeletePending
                 )
             }
+        }
+    }
+
+    override suspend fun deleteLocalTeamRecord(teamId: String?) {
+        if (teamId.isNullOrBlank()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+                ?.deleteFromRealm()
         }
     }
 
@@ -151,6 +162,7 @@ class TeamsRepositoryImpl @Inject constructor(
             realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
+                .equalTo("isDeletePending", false)
                 .findAll()
                 .mapNotNull { it.teamId }
                 .toTypedArray()
@@ -624,6 +636,7 @@ class TeamsRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
+            equalTo("isDeletePending", false)
         } > 0
     }
 
@@ -655,6 +668,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val memberships = queryList(RealmMyTeam::class.java) {
             equalTo("userId", userId)
             equalTo("docType", "membership")
+            equalTo("isDeletePending", false)
             `in`("teamId", validIds.toTypedArray())
         }
 
@@ -710,6 +724,18 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
         if (teamId.isBlank() || userId.isNullOrBlank()) return
         executeTransaction { realm ->
+            // If there's a pending leave (isDeletePending membership), cancel it instead of creating a duplicate request
+            val pendingLeave = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .equalTo("isDeletePending", true)
+                .findFirst()
+            if (pendingLeave != null) {
+                pendingLeave.isDeletePending = false
+                pendingLeave.updated = false
+                return@executeTransaction
+            }
             val request = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             request.docType = "request"
             request.createdDate = Date().time
@@ -758,7 +784,16 @@ class TeamsRepositoryImpl @Inject constructor(
                 .equalTo("teamId", teamId)
                 .equalTo("docType", "membership")
                 .findAll()
-                .deleteAllFromRealm()
+                .forEach { membership ->
+                    if (membership._rev.isNullOrBlank()) {
+                        // Never synced to server — safe to delete locally
+                        membership.deleteFromRealm()
+                    } else {
+                        // Server knows about this record; mark for deletion upload
+                        membership.isDeletePending = true
+                        membership.updated = true
+                    }
+                }
         }
     }
 
@@ -770,7 +805,14 @@ class TeamsRepositoryImpl @Inject constructor(
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
                 .findAll()
-                .deleteAllFromRealm()
+                .forEach { membership ->
+                    if (membership._rev.isNullOrBlank()) {
+                        membership.deleteFromRealm()
+                    } else {
+                        membership.isDeletePending = true
+                        membership.updated = true
+                    }
+                }
         }
     }
 
