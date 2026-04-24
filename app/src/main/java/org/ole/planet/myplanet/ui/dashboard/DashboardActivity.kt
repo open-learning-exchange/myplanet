@@ -46,9 +46,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
@@ -111,6 +109,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var exitSnackbar: Snackbar? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -406,30 +405,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (result != null && result?.isDrawerOpen == true) {
-                    result?.closeDrawer()
-                } else {
-                    if (supportFragmentManager.backStackEntryCount > 1) {
-                        FragmentNavigator.popBackStack(supportFragmentManager)
-                    } else {
-                        if (!doubleBackToExitPressedOnce) {
-                            doubleBackToExitPressedOnce = true
-                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
-                            lifecycleScope.launch {
-                                delay(2000)
-                                doubleBackToExitPressedOnce = false
-                            }
-                        } else {
-                            val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                            if (!BuildConfig.LITE && fragment is BaseContainerFragment) {
-                                fragment.handleBackPressed()
-                            }
-                            finish()
-                        }
-                    }
+                when {
+                    result?.isDrawerOpen == true -> result?.closeDrawer()
+                    supportFragmentManager.backStackEntryCount > 1 -> FragmentNavigator.popBackStack(supportFragmentManager)
+                    else -> promptLogout()
                 }
             }
         })
+    }
+
+    private fun promptLogout() {
+        if (exitSnackbar?.isShown == true) {
+            exitSnackbar?.dismiss()
+            logout()
+            return
+        }
+        exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_logout), 2000)
+            .setAction(getString(R.string.menu_logout)) { logout() }
+        exitSnackbar?.show()
     }
 
     private fun handleNotificationIntent(intent: Intent?) {

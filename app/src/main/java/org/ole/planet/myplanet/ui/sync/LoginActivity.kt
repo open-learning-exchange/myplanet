@@ -20,6 +20,7 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -73,8 +74,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private var guest = false
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
-    private var backPressedTime: Long = 0
-    private val backPressedInterval: Long = 2000
+    private var exitSnackbar: Snackbar? = null
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
@@ -204,11 +204,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private fun setupOnBackPressed() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
+                if (exitSnackbar?.isShown == true) {
+                    exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
-                    backPressedTime = System.currentTimeMillis()
+                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
+                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar?.show()
                 }
             }
         })
