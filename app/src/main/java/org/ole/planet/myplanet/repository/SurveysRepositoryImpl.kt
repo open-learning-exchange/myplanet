@@ -7,13 +7,16 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.json.JSONException
 import org.json.JSONObject
+import android.text.TextUtils
+import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmStepExam
+
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
@@ -379,61 +382,59 @@ class SurveysRepositoryImpl @Inject constructor(
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertCourseStepsExams("", "", jsonDoc, "", realm)
+        kotlinx.coroutines.runBlocking {
+            documentList.forEach { jsonDoc ->
+                insertCourseStepsExams("", "", jsonDoc, "")
+            }
         }
     }
 
-    override fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject, mRealm: io.realm.Realm) {
-        insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
+    override suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject) {
+        insertCourseStepsExams(myCoursesID, stepId, exam, "")
     }
 
-    override fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject, parentId: String?, mRealm: io.realm.Realm) {
-        val performInsert = {
-            var myExam = mRealm.where(org.ole.planet.myplanet.model.RealmStepExam::class.java).equalTo("id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", exam)).findFirst()
+    override suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject, parentId: String?) {
+        val performInsert: (io.realm.Realm) -> Unit = { mRealm ->
+            var myExam = mRealm.where(RealmStepExam::class.java).equalTo("id", JsonUtils.getString("_id", exam)).findFirst()
             if (myExam == null) {
-                val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", exam)
-                myExam = mRealm.createObject(org.ole.planet.myplanet.model.RealmStepExam::class.java,
-                    if (android.text.TextUtils.isEmpty(id)) parentId else id
+                val id = JsonUtils.getString("_id", exam)
+                myExam = mRealm.createObject(RealmStepExam::class.java,
+                    if (TextUtils.isEmpty(id)) parentId else id
                 )
             }
-            if (!android.text.TextUtils.isEmpty(myCoursesID)) myExam?.courseId = myCoursesID
-            if (!android.text.TextUtils.isEmpty(stepId)) myExam?.stepId = stepId
-            myExam?.type = if (exam.has("type")) org.ole.planet.myplanet.utils.JsonUtils.getString("type", exam) else "exam"
-            myExam?.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", exam)
-            myExam?.description = org.ole.planet.myplanet.utils.JsonUtils.getString("description", exam)
-            myExam?.passingPercentage = org.ole.planet.myplanet.utils.JsonUtils.getString("passingPercentage", exam)
-            myExam?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", exam)
-            myExam?.createdBy = org.ole.planet.myplanet.utils.JsonUtils.getString("createdBy", exam)
-            myExam?.sourcePlanet = org.ole.planet.myplanet.utils.JsonUtils.getString("sourcePlanet", exam)
-            myExam?.createdDate = org.ole.planet.myplanet.utils.JsonUtils.getLong("createdDate", exam)
-            myExam?.updatedDate = org.ole.planet.myplanet.utils.JsonUtils.getLong("updatedDate", exam)
-            myExam?.adoptionDate = org.ole.planet.myplanet.utils.JsonUtils.getLong("adoptionDate", exam)
-            myExam?.totalMarks = org.ole.planet.myplanet.utils.JsonUtils.getInt("totalMarks", exam)
-            myExam?.noOfQuestions = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("questions", exam).size()
-            myExam?.isFromNation = !android.text.TextUtils.isEmpty(parentId)
-            myExam?.teamId = org.ole.planet.myplanet.utils.JsonUtils.getString("teamId", exam)
-            myExam?.isTeamShareAllowed = org.ole.planet.myplanet.utils.JsonUtils.getBoolean("teamShareAllowed", exam)
-            myExam?.sourceSurveyId = org.ole.planet.myplanet.utils.JsonUtils.getString("sourceSurveyId", exam)
-            val oldQuestions = mRealm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java)
-                .equalTo("examId", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", exam)).findAll()
+            if (!TextUtils.isEmpty(myCoursesID)) myExam?.courseId = myCoursesID
+            if (!TextUtils.isEmpty(stepId)) myExam?.stepId = stepId
+            myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
+            myExam?.name = JsonUtils.getString("name", exam)
+            myExam?.description = JsonUtils.getString("description", exam)
+            myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
+            myExam?._rev = JsonUtils.getString("_rev", exam)
+            myExam?.createdBy = JsonUtils.getString("createdBy", exam)
+            myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
+            myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
+            myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
+            myExam?.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
+            myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
+            myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
+            myExam?.isFromNation = !TextUtils.isEmpty(parentId)
+            myExam?.teamId = JsonUtils.getString("teamId", exam)
+            myExam?.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
+            myExam?.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
+            val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
-                org.ole.planet.myplanet.model.RealmExamQuestion.insertExamQuestions(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("questions", exam), org.ole.planet.myplanet.utils.JsonUtils.getString("_id", exam), mRealm)
+                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
             }
         }
 
 
-        if (mRealm.isInTransaction) {
-            performInsert()
-        } else {
-            mRealm.executeTransaction { performInsert() }
-        }
+        executeTransaction { mRealm -> performInsert(mRealm) }
     }
 
 }
