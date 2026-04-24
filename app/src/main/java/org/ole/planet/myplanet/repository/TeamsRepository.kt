@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.Transaction
 
 data class JoinedMemberData(
@@ -51,6 +52,10 @@ interface TeamsRepository {
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
     suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
+    fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>>
+    suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails>
+    suspend fun getTeamDetails(userId: String?): List<TeamDetails>
+
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamCourseIds(teamId: String): List<String>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>

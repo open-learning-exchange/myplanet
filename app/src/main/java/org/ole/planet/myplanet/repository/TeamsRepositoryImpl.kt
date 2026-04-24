@@ -12,7 +12,6 @@ import java.util.Date
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import kotlin.OptIn
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +31,8 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.UploadManager
@@ -145,20 +146,21 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
-        return queryListFlow(RealmMyTeam::class.java) {
-            equalTo("userId", userId)
-            equalTo("docType", "membership")
-        }.flatMapLatest { memberships ->
-            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
-            if (teamIds.isEmpty()) {
-                flowOf(emptyList())
-            } else {
-                queryListFlow(RealmMyTeam::class.java) {
-                    `in`("_id", teamIds)
-                    notEqualTo("status", "archived")
-                }
+        val teamIds = withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .findAll()
+                .mapNotNull { it.teamId }
+                .toTypedArray()
+        }
+        return if (teamIds.isEmpty()) {
+            flowOf(emptyList())
+        } else {
+            queryListFlow(RealmMyTeam::class.java) {
+                `in`("_id", teamIds)
+                notEqualTo("status", "archived")
             }
         }
     }
@@ -207,6 +209,90 @@ class TeamsRepositoryImpl @Inject constructor(
             notEqualTo("status", "archived")
             equalTo("type", "enterprise")
         }
+    }
+
+
+    private suspend fun mapToTeamDetails(teams: List<RealmMyTeam>, userId: String?): List<TeamDetails> {
+        val validTeams = teams.filter { !it._id.isNullOrBlank() && it.status != "archived" }
+        if (validTeams.isEmpty()) return emptyList()
+
+        val teamIds = validTeams.map { it._id!! }
+        val visitCounts = getRecentVisitCounts(teamIds)
+        val memberStatuses = getTeamMemberStatuses(userId, teamIds)
+
+        val detailsList = validTeams.map { team ->
+            val teamId = team._id!!
+            val status = memberStatuses[teamId]
+            TeamDetails(
+                _id = team._id,
+                name = team.name ?: "",
+                teamType = team.teamType,
+                createdDate = team.createdDate,
+                type = team.type,
+                status = team.status,
+                visitCount = visitCounts[teamId] ?: 0L,
+                teamStatus = status?.let {
+                    TeamStatus(
+                        isMember = it.isMember,
+                        isLeader = it.isLeader,
+                        hasPendingRequest = it.hasPendingRequest
+                    )
+                },
+                description = team.description,
+                services = team.services,
+                rules = team.rules,
+                teamId = team.teamId
+            )
+        }
+
+        return detailsList.sortedWith(
+            compareByDescending<TeamDetails> {
+                when {
+                    it.teamStatus?.isLeader == true -> 3
+                    it.teamStatus?.isMember == true -> 2
+                    else -> 1
+                }
+            }.thenByDescending { it.visitCount }
+        )
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>> {
+        return queryListFlow(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+        }.flatMapLatest { memberships ->
+            val teamIds = memberships.mapNotNull { it.teamId }.toTypedArray()
+            if (teamIds.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                queryListFlow(RealmMyTeam::class.java) {
+                    isEmpty("teamId")
+                    `in`("_id", teamIds)
+                    notEqualTo("status", "archived")
+                }
+            }
+        }.map { teams ->
+            mapToTeamDetails(teams, userId)
+        }
+    }
+
+    override suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails> {
+        val all = queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            equalTo("type", "enterprise")
+        }
+        return mapToTeamDetails(all, userId)
+    }
+
+    override suspend fun getTeamDetails(userId: String?): List<TeamDetails> {
+        val all = queryList(RealmMyTeam::class.java) {
+            isEmpty("teamId")
+            notEqualTo("status", "archived")
+            equalTo("type", "team")
+        }
+        return mapToTeamDetails(all, userId)
     }
 
     override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {

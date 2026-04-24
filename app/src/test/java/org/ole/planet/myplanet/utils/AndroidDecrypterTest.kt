@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AndroidDecrypterTest {
@@ -99,5 +100,20 @@ class AndroidDecrypterTest {
         val truncatedKey = key.substring(0, 64)
         val decrypted = AndroidDecrypter.decrypt(encrypted, truncatedKey, iv)
         assertEquals(plainText, decrypted)
+    }
+
+    @Test
+    fun testAndroidDecrypter() {
+        val userId = "testUser"
+        val password = "password123"
+        val salt = "someSalt"
+
+        // Use the same logic as in the function to get the expected hash
+        val p = de.rtner.security.auth.spi.PBKDF2Parameters("HmacSHA1", "utf-8", salt.toByteArray(), 10)
+        val dk = de.rtner.security.auth.spi.PBKDF2Engine(p).deriveKey(password, 20)
+        val expectedHash = de.rtner.misc.BinTools.bin2hex(dk).lowercase(java.util.Locale.ROOT)
+
+        val result = AndroidDecrypter.androidDecrypter(userId, password, expectedHash, salt)
+        assertTrue(result)
     }
 }

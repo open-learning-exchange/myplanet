@@ -36,7 +36,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
@@ -74,8 +73,6 @@ class ChatDetailFragment : Fragment() {
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var chatRepository: ChatRepository
-    @Inject
-    lateinit var chatApiService: ChatApiService
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
