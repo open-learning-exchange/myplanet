@@ -696,6 +696,8 @@
     <string name="turning_on_wifi_please_wait">Turning on Wifi. Please wait…</string>
     <string name="you_are_now_connected">"You are now connected "</string>
     <string name="press_back_again_to_exit">Press BACK again to exit</string>
+    <string name="press_back_again_to_logout">Press BACK again to log out</string>
+    <string name="exit">Exit</string>
     <string name="it_has_been_more_than">"It has been more than "</string>
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
