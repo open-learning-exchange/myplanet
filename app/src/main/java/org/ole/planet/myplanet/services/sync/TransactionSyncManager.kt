@@ -155,6 +155,10 @@ class TransactionSyncManager @Inject constructor(
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
+            if (table == "courses_progress") {
+                return@withContext syncCoursesProgressDb(syncStartTime)
+            }
+
             // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
                 "ratings" -> 20      // Small batches for slow endpoint
@@ -360,6 +364,107 @@ class TransactionSyncManager @Inject constructor(
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
         }
+    }
+
+    private suspend fun syncCoursesProgressDb(syncStartTime: Long): Int {
+        val userIds = userRepository.getSyncedUsers()
+            .mapNotNull { user -> user._id?.takeIf { it.isNotBlank() } ?: user.id?.takeIf { it.isNotBlank() } }
+            .distinct()
+        if (userIds.isEmpty()) {
+            android.util.Log.d("SyncPerf", "  ↷ Skipping courses_progress sync: no synced users available")
+            return 0
+        }
+
+        val pageSize = 1000
+        var totalDocs = 0
+        var pageNumber = 0
+        var bookmark: String? = null
+
+        while (true) {
+            pageNumber++
+            val batchStartTime = System.currentTimeMillis()
+            val requestBody = JsonObject().apply {
+                add("selector", JsonObject().apply {
+                    add("userId", JsonObject().apply {
+                        add("\$in", com.google.gson.JsonArray().apply {
+                            userIds.forEach { add(it) }
+                        })
+                    })
+                })
+                addProperty("limit", pageSize)
+                add("fields", com.google.gson.JsonArray().apply {
+                    add("_id")
+                    add("_rev")
+                    add("courseId")
+                    add("createdDate")
+                    add("createdOn")
+                    add("parentCode")
+                    add("passed")
+                    add("stepNum")
+                    add("updatedDate")
+                    add("userId")
+                })
+                bookmark?.let { addProperty("bookmark", it) }
+            }
+
+            val apiStartTime = System.currentTimeMillis()
+            val response = apiInterface.findDocs(
+                UrlUtils.header,
+                "application/json",
+                "${UrlUtils.getUrl()}/courses_progress/_find",
+                requestBody
+            )
+            val apiDuration = System.currentTimeMillis() - apiStartTime
+
+            if (response.body() == null || !response.isSuccessful) {
+                android.util.Log.d("SyncPerf", "  ✗ Failed courses_progress page $pageNumber: HTTP ${response.code()}")
+                break
+            }
+
+            val docs = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("docs", response.body())
+            if (docs.size() == 0) {
+                break
+            }
+
+            val rows = com.google.gson.JsonArray()
+            docs.forEach { doc ->
+                rows.add(JsonObject().apply {
+                    add("doc", doc)
+                })
+            }
+
+            org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
+                "${UrlUtils.getUrl()}/courses_progress/_find (page $pageNumber)",
+                apiDuration,
+                response.isSuccessful,
+                docs.size()
+            )
+
+            databaseService.executeTransactionAsync { mRealm: Realm ->
+                val insertStartTime = System.currentTimeMillis()
+                progressRepository.bulkInsertFromSync(mRealm, rows)
+                val insertDuration = System.currentTimeMillis() - insertStartTime
+                org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                    "insert_batch",
+                    "courses_progress",
+                    insertDuration,
+                    docs.size()
+                )
+            }
+
+            totalDocs += docs.size()
+            bookmark = response.body()?.get("bookmark")?.asString
+            val batchDuration = System.currentTimeMillis() - batchStartTime
+            android.util.Log.d("SyncPerf", "    courses_progress page $pageNumber: ${docs.size()} docs in ${batchDuration}ms (total: $totalDocs)")
+
+            if (docs.size() < pageSize || bookmark.isNullOrBlank()) {
+                break
+            }
+        }
+
+        val totalDuration = System.currentTimeMillis() - syncStartTime
+        android.util.Log.d("SyncPerf", "  ✓ Completed courses_progress sync: $totalDocs docs in ${totalDuration}ms")
+        return totalDocs
     }
 
     suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {

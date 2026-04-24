@@ -205,15 +205,15 @@ class SyncManager @Inject constructor(
 
             initializeSync()
 
+            // Seed tablet users first so filtered syncs can scope user-bound tables.
+            logger.startProcess("tablet_users_sync")
+            transactionSyncManager.syncDb("tablet_users")
+            logger.endProcess("tablet_users_sync")
+
             // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
             coroutineScope {
                 val syncJobs = listOf(
-                    async {
-                        logger.startProcess("tablet_users_sync")
-                        transactionSyncManager.syncDb("tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                    },
                     async {
                         logger.startProcess("exams_sync")
                         transactionSyncManager.syncDb("exams")
