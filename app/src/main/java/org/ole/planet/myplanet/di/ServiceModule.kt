@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UploadManager
@@ -51,10 +52,25 @@ object ServiceModule {
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
         @ApplicationScope scope: CoroutineScope,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        deviceUserRepository: DeviceUserRepository,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository)
+        return SyncManager(
+            context,
+            databaseService,
+            sharedPrefManager,
+            apiInterface,
+            improvedSyncManager,
+            transactionSyncManager,
+            resourcesRepository,
+            loginSyncManager,
+            scope,
+            activitiesRepository,
+            deviceUserRepository,
+            dispatcherProvider,
+            teamsRepository
+        )
     }
 
     @Provides
@@ -109,6 +125,7 @@ object ServiceModule {
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+        deviceUserRepository: DeviceUserRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
@@ -124,6 +141,29 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(
+            apiInterface,
+            databaseService,
+            context,
+            voicesRepository,
+            chatRepository,
+            feedbackRepository,
+            sharedPrefManager,
+            deviceUserRepository,
+            userRepository,
+            activitiesRepository,
+            teamsRepository,
+            notificationsRepository,
+            tagsRepository,
+            ratingsRepository,
+            submissionsRepository,
+            coursesRepository,
+            communityRepository,
+            healthRepository,
+            progressRepository,
+            surveysRepository,
+            scope,
+            dispatcherProvider
+        )
     }
 }
