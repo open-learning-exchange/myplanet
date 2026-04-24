@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider) {
     val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
-    private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
+    private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io
 
     init {
         Realm.init(context)

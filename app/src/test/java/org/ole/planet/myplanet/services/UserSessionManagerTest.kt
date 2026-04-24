@@ -25,6 +25,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -36,6 +37,7 @@ class UserSessionManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
+    private val deviceUserRepository: DeviceUserRepository = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -54,6 +56,7 @@ class UserSessionManagerTest {
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
+            deviceUserRepository = deviceUserRepository,
             dispatcherProvider = dispatcherProvider
         )
     }
@@ -78,6 +81,7 @@ class UserSessionManagerTest {
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
+            deviceUserRepository = deviceUserRepository,
             dispatcherProvider = dispatcherProvider
         )
     }
