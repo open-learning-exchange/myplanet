@@ -112,7 +112,7 @@ class ImprovedSyncManager @Inject constructor(
 
         val hasDeviceUsers = deviceUserRepository.hasDeviceUsers()
         val requestedTables = syncTables ?: syncOrder
-        val tablesToSync = SyncPolicy.applyBootstrapPolicy(requestedTables, hasDeviceUsers)
+        val tablesToSync = SyncPolicy.applyForegroundPolicy(requestedTables, hasDeviceUsers)
         val strategy = getStrategy(syncMode)
 
         coroutineScope {
@@ -134,14 +134,7 @@ class ImprovedSyncManager @Inject constructor(
         activitiesRepository.recordSyncActivity(settings.getString("userId", "") ?: "")
         logger.endProcess("on_synced")
 
-        if (hasDeviceUsers) {
-            syncScope.launch {
-                try {
-                    transactionSyncManager.syncDb("notifications")
-                } catch (_: Exception) {
-                }
-            }
-        }
+        startBackgroundDeferredSync(SyncPolicy.backgroundTablesFor(requestedTables, hasDeviceUsers))
 
         logger.stopLogging()
     }
@@ -172,6 +165,22 @@ class ImprovedSyncManager @Inject constructor(
         return when (syncMode) {
             SyncMode.Standard -> standardStrategy
             SyncMode.Fast, SyncMode.Optimized -> standardStrategy
+        }
+    }
+
+    private fun startBackgroundDeferredSync(tables: List<String>) {
+        if (tables.isEmpty()) {
+            return
+        }
+
+        syncScope.launch {
+            createLog("improved_sync_background", tables.joinToString(","))
+            for (table in tables) {
+                try {
+                    transactionSyncManager.syncDb(table)
+                } catch (_: Exception) {
+                }
+            }
         }
     }
 

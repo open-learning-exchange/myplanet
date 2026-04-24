@@ -213,26 +213,28 @@ class SyncManager @Inject constructor(
             logger.endProcess("tablet_users_sync")
 
             val hasDeviceUsers = deviceUserRepository.hasDeviceUsers()
-            val fullSyncTables = SyncPolicy.applyBootstrapPolicy(
-                listOf(
-                    "exams",
-                    "ratings",
-                    "courses_progress",
-                    "achievements",
-                    "tags",
-                    "submissions",
-                    "news",
-                    "feedback",
-                    "tasks",
-                    "login_activities",
-                    "health",
-                    "certifications",
-                    "team_activities",
-                    "chat_history",
-                    "teams",
-                    "meetups",
-                    "courses",
-                ),
+            val requestedFullSyncTables = listOf(
+                "exams",
+                "ratings",
+                "courses_progress",
+                "achievements",
+                "tags",
+                "submissions",
+                "news",
+                "feedback",
+                "tasks",
+                "login_activities",
+                "health",
+                "certifications",
+                "team_activities",
+                "chat_history",
+                "teams",
+                "meetups",
+                "courses",
+                "notifications",
+            )
+            val fullSyncTables = SyncPolicy.applyForegroundPolicy(
+                requestedFullSyncTables,
                 hasDeviceUsers
             )
 
@@ -352,7 +354,9 @@ class SyncManager @Inject constructor(
             logger.endProcess("on_synced")
 
             if (hasDeviceUsers) {
-                startBackgroundNotificationSync()
+                startBackgroundDeferredSync(
+                    SyncPolicy.backgroundTablesFor(requestedFullSyncTables, hasDeviceUsers)
+                )
             }
 
             logger.stopLogging()
@@ -391,7 +395,7 @@ class SyncManager @Inject constructor(
                 "teams",
                 "news"
             )
-            val fastSyncTables = SyncPolicy.applyBootstrapPolicy(requestedTables, hasDeviceUsers).toSet()
+            val fastSyncTables = SyncPolicy.applyForegroundPolicy(requestedTables, hasDeviceUsers).toSet()
 
             initializeSync()
             coroutineScope {
@@ -471,15 +475,6 @@ class SyncManager @Inject constructor(
                             transactionSyncManager.syncDb("courses")
                             logger.endProcess("courses_sync")
                         })
-
-                    if (hasDeviceUsers) {
-                        syncJobs.add(
-                            async {
-                                logger.startProcess("courses_progress_sync")
-                                transactionSyncManager.syncDb("courses_progress")
-                                logger.endProcess("courses_progress_sync")
-                            })
-                    }
 
                     syncJobs.add(
                         async {
@@ -593,7 +588,9 @@ class SyncManager @Inject constructor(
             logger.endProcess("on_synced")
 
             if (hasDeviceUsers) {
-                startBackgroundNotificationSync()
+                startBackgroundDeferredSync(
+                    SyncPolicy.backgroundTablesFor(requestedTables, hasDeviceUsers)
+                )
             }
 
             logger.stopLogging()
@@ -610,13 +607,19 @@ class SyncManager @Inject constructor(
         isSyncing.set(false)
     }
 
-    private fun startBackgroundNotificationSync() {
+    private fun startBackgroundDeferredSync(tables: List<String>) {
+        if (tables.isEmpty()) {
+            return
+        }
         syncScope.launch(dispatcherProvider.io) {
-            try {
-                Log.d("SyncPerf", "  ▶ Starting background notifications sync")
-                transactionSyncManager.syncDb("notifications")
-            } catch (e: Exception) {
-                Log.d("SyncPerf", "  ✗ Background notifications sync failed: ${e.message}")
+            Log.d("SyncPerf", "  ▶ Starting background deferred sync: ${tables.joinToString()}")
+            for (table in tables) {
+                try {
+                    Log.d("SyncPerf", "  ▶ Starting background $table sync")
+                    transactionSyncManager.syncDb(table)
+                } catch (e: Exception) {
+                    Log.d("SyncPerf", "  ✗ Background $table sync failed: ${e.message}")
+                }
             }
         }
     }
