@@ -75,24 +75,6 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    suspend fun getGlobalLastVisit(): Long? {
-        return activitiesRepository.getGlobalLastVisit()
-    }
-
-    suspend fun getOfflineVisits(m: RealmUser?): Int {
-        return m?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-    }
-
-    suspend fun getLastVisit(m: RealmUser): String {
-        val lastLogoutTimestamp = activitiesRepository.getLastVisit(m.name ?: "")
-        return if (lastLogoutTimestamp != null) {
-            val date = Date(lastLogoutTimestamp)
-            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-        } else {
-            "No logout record found"
-        }
-    }
-
     fun setResourceOpenCount(item: RealmMyLibrary) {
         setResourceOpenCount(item, KEY_RESOURCE_OPEN)
     }
@@ -120,20 +102,6 @@ class UserSessionManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error in setResourceOpenCount", e)
             }
-        }
-    }
-
-    suspend fun getNumberOfResourceOpen(): String {
-        val count = activitiesRepository.getResourceOpenCount(fullName, KEY_RESOURCE_OPEN)
-        return if (count == 0L) "" else "Resource opened $count times."
-    }
-
-    suspend fun maxOpenedResource(): String {
-        val result = activitiesRepository.getMostOpenedResource(fullName, KEY_RESOURCE_OPEN)
-        return if (result == null) {
-            ""
-        } else {
-            "${result.first} opened ${result.second} times"
         }
     }
 

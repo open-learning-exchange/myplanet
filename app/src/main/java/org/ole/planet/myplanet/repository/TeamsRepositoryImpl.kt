@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
@@ -1295,8 +1296,14 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return membersStats.map { stats ->
-            val profileLastVisit = userSessionManager.getLastVisit(stats.member)
-            val offlineVisits = "${userSessionManager.getOfflineVisits(stats.member)}"
+            val lastLogoutTimestamp = activitiesRepository.getLastVisit(stats.member.name ?: "")
+            val profileLastVisit = if (lastLogoutTimestamp != null) {
+                val date = java.util.Date(lastLogoutTimestamp)
+                java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault()).format(date)
+            } else {
+                "No logout record found"
+            }
+            val offlineVisits = "${stats.member.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0}"
             JoinedMemberData(
                 stats.member,
                 stats.visitCount,
