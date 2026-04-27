@@ -253,8 +253,7 @@
                             android:text="@string/add_a_reference"
                             android:theme="@style/PrimaryButton" />
                     </LinearLayout>
-
-                    <!-- CV/Resume Upload Section -->
+                    
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"

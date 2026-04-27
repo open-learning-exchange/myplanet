@@ -309,7 +309,7 @@
                             android:visibility="gone" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-                <!-- CV Card -->
+
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/cv_card"
                     android:layout_width="match_parent"

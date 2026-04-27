@@ -18,8 +18,6 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -110,7 +108,7 @@ class TransactionSyncManager @Inject constructor(
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
-                    if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
+                    if (key.isNotEmpty() || iv.isNotEmpty()) {
                         userModel.id?.let {
                             userRepository.markUserKeyIvSaved(it, key, iv)
                         }
@@ -192,59 +190,20 @@ class TransactionSyncManager @Inject constructor(
                     response.isSuccessful,
                     arr.size()
                 )
-                if (table == "news") {
-                    val insertStartTime = System.currentTimeMillis()
-                    val docs = ArrayList<JsonObject>(arr.size())
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
-                        if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
+                when (table) {
+                    "news" -> {
+                        val insertStartTime = System.currentTimeMillis()
+                        val docs = ArrayList<JsonObject>(arr.size())
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = getJsonObject("doc", jsonDoc)
+                            val id = getString("_id", jsonDoc)
+                            if (!id.startsWith("_design")) {
+                                docs.add(jsonDoc)
+                            }
                         }
-                    }
-                    voicesRepository.insertNewsList(docs)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
-                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                        "insert_batch",
-                        table,
-                        insertDuration,
-                        arr.size()
-                    )
-                } else if (table == "feedback") {
-                    val insertStartTime = System.currentTimeMillis()
-                    val docs = ArrayList<JsonObject>(arr.size())
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
-                        if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
-                        }
-                    }
-                    feedbackRepository.insertFeedbackList(docs)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
-                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                        "insert_batch",
-                        table,
-                        insertDuration,
-                        arr.size()
-                    )
-                } else if (table == "chat_history") {
-                    val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
-                        if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
-                        }
-                    }
-                    databaseService.executeTransactionAsync { mRealm: Realm ->
-                        val batchInsertStartTime = System.currentTimeMillis()
-                        chatRepository.insertChatHistoryBatch(mRealm, arr)
-                        val insertDuration = System.currentTimeMillis() - batchInsertStartTime
+                        voicesRepository.insertNewsList(docs)
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
                             table,
@@ -252,84 +211,92 @@ class TransactionSyncManager @Inject constructor(
                             arr.size()
                         )
                     }
-                    chatRepository.insertChatHistoryList(docs)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
-                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                        "insert_batch",
-                        table,
-                        insertDuration,
-                        arr.size()
-                    )
-                } else if (table == "team_activities") {
-                    val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
-                        if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
-                        }
-                    }
-                    teamsRepository.get().insertTeamLogs(docs)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
-                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                        "insert_batch",
-                        table,
-                        insertDuration,
-                        arr.size()
-                    )
-                } else if (table == "login_activities") {
-                    val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
-                        if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
-                        }
-                    }
-                    docs.forEach { jsonDoc ->
-                        activitiesRepository.insertActivity(jsonDoc)
-                    }
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
-                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                        "insert_batch",
-                        table,
-                        insertDuration,
-                        arr.size()
-                    )
-                } else {
-                    // Use async transaction to avoid blocking (ANR-safe)
-                    databaseService.executeTransactionAsync { mRealm: Realm ->
+                    "feedback" -> {
                         val insertStartTime = System.currentTimeMillis()
-                                                when (table) {
-                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
-                            "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
-                            "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
-                            "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
-                            "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
-                            "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
-                            "courses" -> {
-                                coursesRepository.bulkInsertFromSync(mRealm, arr)
-                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                        val docs = ArrayList<JsonObject>(arr.size())
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = getJsonObject("doc", jsonDoc)
+                            val id = getString("_id", jsonDoc)
+                            if (!id.startsWith("_design")) {
+                                docs.add(jsonDoc)
                             }
-                            "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
-                            "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
-                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
-                            "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
-                            "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
-                            "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
-                            "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)
-                            "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
-                            else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
+                        }
+                        feedbackRepository.insertFeedbackList(docs)
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
+                    }
+                    "chat_history" -> {
+                        val insertStartTime = System.currentTimeMillis()
+                        val docs = mutableListOf<JsonObject>()
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = getJsonObject("doc", jsonDoc)
+                            val id = getString("_id", jsonDoc)
+                            if (!id.startsWith("_design")) {
+                                docs.add(jsonDoc)
+                            }
+                        }
+                        databaseService.executeTransactionAsync { mRealm: Realm ->
+                            val batchInsertStartTime = System.currentTimeMillis()
+                            chatRepository.insertChatHistoryBatch(mRealm, arr)
+                            val insertDuration = System.currentTimeMillis() - batchInsertStartTime
+                            org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                                "insert_batch",
+                                table,
+                                insertDuration,
+                                arr.size()
+                            )
+                        }
+                        chatRepository.insertChatHistoryList(docs)
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
+                    }
+                    "team_activities" -> {
+                        val insertStartTime = System.currentTimeMillis()
+                        val docs = mutableListOf<JsonObject>()
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = getJsonObject("doc", jsonDoc)
+                            val id = getString("_id", jsonDoc)
+                            if (!id.startsWith("_design")) {
+                                docs.add(jsonDoc)
+                            }
+                        }
+                        teamsRepository.get().insertTeamLogs(docs)
+                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
+                    }
+                    "login_activities" -> {
+                        val insertStartTime = System.currentTimeMillis()
+                        val docs = mutableListOf<JsonObject>()
+                        for (j in arr) {
+                            var jsonDoc = j.asJsonObject
+                            jsonDoc = getJsonObject("doc", jsonDoc)
+                            val id = getString("_id", jsonDoc)
+                            if (!id.startsWith("_design")) {
+                                docs.add(jsonDoc)
+                            }
+                        }
+                        docs.forEach { jsonDoc ->
+                            activitiesRepository.insertActivity(jsonDoc)
                         }
                         val insertDuration = System.currentTimeMillis() - insertStartTime
-                        if (table == "courses") {
-                            android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
-                        }
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
                             table,
@@ -337,8 +304,63 @@ class TransactionSyncManager @Inject constructor(
                             arr.size()
                         )
                     }
+                    else -> {
+                        // Use async transaction to avoid blocking (ANR-safe)
+                        databaseService.executeTransactionAsync { mRealm: Realm ->
+                            val insertStartTime = System.currentTimeMillis()
+                            when (table) {
+                                "tablet_users" -> userRepository.bulkInsertUsersFromSync(
+                                    mRealm,
+                                    arr,
+                                    sharedPrefManager.rawPreferences
+                                )
+
+                                "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
+                                "team_activities" -> teamsRepository.get()
+                                    .bulkInsertTeamActivitiesFromSync(mRealm, arr)
+
+                                "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(
+                                    mRealm,
+                                    arr
+                                )
+
+                                "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
+                                "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
+                                "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
+                                "courses" -> {
+                                    coursesRepository.bulkInsertFromSync(mRealm, arr)
+                                    org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(
+                                        sharedPrefManager
+                                    )
+                                }
+
+                                "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
+                                "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
+                                "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
+                                "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
+                                "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
+                                "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
+                                "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)
+                                "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
+                                else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
+                            }
+                            val insertDuration = System.currentTimeMillis() - insertStartTime
+                            if (table == "courses") {
+                                android.util.Log.d(
+                                    "SyncPerf",
+                                    "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items"
+                                )
+                            }
+                            org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                                "insert_batch",
+                                table,
+                                insertDuration,
+                                arr.size()
+                            )
+                        }
+                    }
                 }
-                // After inserting achievements, download CV attachments from the same batch JSON
+
                 if (table == "achievements") {
                     downloadCvAttachmentsFromBatch(arr)
                 }
@@ -378,13 +400,13 @@ class TransactionSyncManager @Inject constructor(
                     org.ole.planet.myplanet.utils.FileUtils.getOlePath(context) + "cv/$resumeFileName"
                 )
                 if (!destFile.exists()) {
-                    downloadCvAttachment(docId, resumeFileName, destFile)
+                    downloadCvAttachment(docId, destFile)
                 }
             }
         }
     }
 
-    private suspend fun downloadCvAttachment(docId: String, resumeFileName: String, destFile: java.io.File) {
+    private suspend fun downloadCvAttachment(docId: String, destFile: java.io.File) {
         try {
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             val response = apiInterface.downloadFile(UrlUtils.header, url)
@@ -394,14 +416,9 @@ class TransactionSyncManager @Inject constructor(
                     destFile.outputStream().use { out ->
                         body.byteStream().use { it.copyTo(out) }
                     }
-                    android.util.Log.d("TransactionSync", "CV saved: $resumeFileName")
                 }
-            } else {
-                android.util.Log.w("TransactionSync", "CV download failed (${response.code()}): $resumeFileName")
             }
-        } catch (e: Exception) {
-            android.util.Log.e("TransactionSync", "CV download error: $resumeFileName", e)
-        }
+        } catch (_: Exception) { }
     }
 
     suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {
