@@ -134,7 +134,40 @@ class TagsRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmTag.insert(realm, jsonDoc)
+            insertIntoRealm(realm, jsonDoc)
+        }
+    }
+
+    override suspend fun insert(act: com.google.gson.JsonObject) {
+        executeTransaction { realm ->
+            insertIntoRealm(realm, act)
+        }
+    }
+
+    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject) {
+        var tag = mRealm.where(RealmTag::class.java).equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
+        if (tag == null) {
+            tag = mRealm.createObject(RealmTag::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
+        }
+        if (tag != null) {
+            tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
+            tag._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+            tag.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", act)
+            tag.db = org.ole.planet.myplanet.utils.JsonUtils.getString("db", act)
+            tag.docType = org.ole.planet.myplanet.utils.JsonUtils.getString("docType", act)
+            tag.tagId = org.ole.planet.myplanet.utils.JsonUtils.getString("tagId", act)
+            tag.linkId = org.ole.planet.myplanet.utils.JsonUtils.getString("linkId", act)
+            val el = act["attachedTo"]
+            if (el != null && el.isJsonArray) {
+                val attachedTo = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("attachedTo", act)
+                tag.attachedTo = io.realm.RealmList()
+                for (i in 0 until attachedTo.size()) {
+                    tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString(attachedTo, i))
+                }
+            } else {
+                tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString("attachedTo", act))
+            }
+            tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
         }
     }
 }

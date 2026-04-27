@@ -12,7 +12,7 @@
         android:id="@+id/hView"
         android:layout_width="1dp"
         android:layout_height="0dp"
-        android:background="#e0e0e0"
+        android:background="@color/chat_detail_divider"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

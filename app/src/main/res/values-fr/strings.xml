@@ -696,6 +696,8 @@
     <string name="turning_on_wifi_please_wait">Activation du wifi. Veuillez patienter…</string>
     <string name="you_are_now_connected">"Vous êtes maintenant connecté "</string>
     <string name="press_back_again_to_exit">Appuyez à nouveau sur RETOUR pour quitter</string>
+    <string name="press_back_again_to_logout">Appuyez à nouveau sur RETOUR pour vous déconnecter</string>
+    <string name="exit">Quitter</string>
     <string name="it_has_been_more_than">"Cela fait plus de "</string>
     <string name="days_since_you_last_synced_this_device">" jours depuis votre dernière synchronisation sur cet appareil."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\nConnectez-le au serveur via le wifi et synchronisez-le pour réactiver cette tablette</string>

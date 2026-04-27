@@ -696,6 +696,8 @@
     <string name="turning_on_wifi_please_wait">वाईफाई चालू गर्दैछ। कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="you_are_now_connected">"तपाईं अब सम्बन्धित छन् "</string>
     <string name="press_back_again_to_exit">बाहिर निस्कनको लागि पुन: प्रेस गर्नुहोस्</string>
+    <string name="press_back_again_to_logout">लग आउट गर्नका लागि पुन: BACK प्रेस गर्नुहोस्</string>
+    <string name="exit">बाहिर निस्कनुस्</string>
     <string name="it_has_been_more_than">"यो भन्दा बढी समय भएको छ "</string>
     <string name="days_since_you_last_synced_this_device">" दिन भएको छ जब तपाईंले यो डिभाइस सिंक गरें।"</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n यसलाई WiFi मार्फत सर्भरसँग कनेक्ट गरी सिंक गर्नुहोस् यो ट्याबलेट पुन: सक्रिय गर्नका लागि</string>
