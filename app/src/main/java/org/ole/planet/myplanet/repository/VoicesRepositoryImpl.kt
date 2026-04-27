@@ -12,7 +12,6 @@ import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
@@ -214,7 +215,7 @@ class VoicesRepositoryImpl @Inject constructor(
                 news.sortDate = news.calculateSortDate()
                 news
             }
-        }.flowOn(Dispatchers.Default)
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
@@ -243,7 +244,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
                 viewableByTeams || viewInTeam
             }
-        }.flowOn(Dispatchers.Default)
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
@@ -644,5 +645,14 @@ class VoicesRepositoryImpl @Inject constructor(
             insertNewsToRealm(realm, jsonDoc)
         }
         saveConcatenatedLinksToPrefs()
+    }
+
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        val imageList = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+                .greaterThan("createdDate", timestamp)
+                .equalTo("mediaType", "image")
+        }
+        return imageList.mapNotNull { it.resourceRemoteAddress }
     }
 }

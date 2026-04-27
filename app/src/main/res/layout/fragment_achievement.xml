@@ -103,7 +103,7 @@
                                 android:layout_height="28dp"
                                 android:gravity="center"
                                 android:text="★"
-                                android:textColor="#2e7d32"
+                                android:textColor="@color/achievement_purpose_icon"
                                 android:textSize="13sp" />
                             <TextView
                                 android:layout_width="wrap_content"
@@ -159,7 +159,7 @@
                                 android:layout_height="28dp"
                                 android:gravity="center"
                                 android:text="◎"
-                                android:textColor="#e65100"
+                                android:textColor="@color/achievement_goals_icon"
                                 android:textSize="13sp" />
                             <TextView
                                 android:layout_width="wrap_content"
@@ -277,7 +277,7 @@
                                 android:layout_height="28dp"
                                 android:gravity="center"
                                 android:text="●"
-                                android:textColor="#6a1b9a"
+                                android:textColor="@color/achievement_references_icon"
                                 android:textSize="12sp" />
                             <TextView
                                 android:layout_width="wrap_content"

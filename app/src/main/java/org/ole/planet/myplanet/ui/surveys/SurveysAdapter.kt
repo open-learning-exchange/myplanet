@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 
 class SurveysAdapter(
     private val context: Context,
@@ -27,7 +28,11 @@ class SurveysAdapter(
 ) : ListAdapter<RealmStepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
     { oldItem, newItem -> oldItem == newItem }
-)) {
+)), OnDiffRefreshListener {
+    override fun refreshWithDiff() {
+        submitList(currentList.toList())
+    }
+
     private var listener: OnHomeItemClickListener? = null
     private var isTitleAscending = true
     private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
