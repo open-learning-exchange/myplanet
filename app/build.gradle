@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< refactor-survey-reminder-flow-3325381700459425097
         versionCode = 5405
         versionName = "0.54.5"
-=======
-        versionCode = 5404
-        versionName = "0.54.4"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
