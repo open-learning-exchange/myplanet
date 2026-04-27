@@ -18,6 +18,19 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.callback.OnSyncListener
+
+
+sealed class SyncStatus {
+    object Idle : SyncStatus()
+    object Syncing : SyncStatus()
+    object Success : SyncStatus()
+    data class Failed(val message: String?) : SyncStatus()
+}
 
 data class CoursesUiState(
     val courses: List<Course> = emptyList(),
@@ -29,11 +42,62 @@ data class CoursesUiState(
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val syncManager: SyncManager,
+    private val serverUrlMapper: ServerUrlMapper,
+    private val prefManager: SharedPrefManager
 ) : ViewModel() {
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState
+
+    private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus
+
+    fun resetSyncStatus() {
+        _syncStatus.value = SyncStatus.Idle
+    }
+
+    fun startCoursesSync() {
+        val isFastSync = prefManager.getFastSync()
+        if (isFastSync && !prefManager.isSynced(SharedPrefManager.SyncKey.COURSES)) {
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        val serverUrl = prefManager.getServerUrl()
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        viewModelScope.launch {
+            withContext(dispatcherProvider.io) {
+                updateServerIfNecessary(mapping)
+            }
+            startSyncManager()
+        }
+    }
+
+    private fun startSyncManager() {
+        syncManager.start(object : OnSyncListener {
+            override fun onSyncStarted() {
+                _syncStatus.value = SyncStatus.Syncing
+            }
+
+            override fun onSyncComplete() {
+                _syncStatus.value = SyncStatus.Success
+            }
+
+            override fun onSyncFailed(msg: String?) {
+                _syncStatus.value = SyncStatus.Failed(msg)
+            }
+        }, "full", listOf("courses"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
+            isServerReachable(url)
+        }
+    }
 
     private fun processCourses(
         isMyCourseLib: Boolean,

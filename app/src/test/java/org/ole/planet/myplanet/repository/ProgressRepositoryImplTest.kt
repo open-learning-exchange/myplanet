@@ -40,10 +40,12 @@ class ProgressRepositoryImplTest {
     @Before
     fun setUp() {
         every { dispatcherProvider.io } returns testDispatcher
+        val mockCoursesRepository = mockk<CoursesRepository>()
         repository = spyk(ProgressRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
-            dispatcherProvider
+            dispatcherProvider,
+            { mockCoursesRepository }
         ), recordPrivateCalls = true)
         coEvery { repository["queryList"](RealmMyCourse::class.java, any<Function1<*, *>>()) } returns emptyList<RealmMyCourse>()
     }
