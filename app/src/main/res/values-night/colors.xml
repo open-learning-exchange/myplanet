@@ -24,6 +24,7 @@
     <color name="bg_white">#FFFFFF</color>
     <color name="green">#C304E019</color>
 
+
     <color name="empty_rating">@color/md_white_1000</color>
     <color name="ic_download">#FFFFFF</color>
     <color name="profile_pic">#757575</color>
