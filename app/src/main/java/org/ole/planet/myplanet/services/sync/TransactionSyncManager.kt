@@ -338,6 +338,10 @@ class TransactionSyncManager @Inject constructor(
                         )
                     }
                 }
+                // After inserting achievements, download CV attachments from the same batch JSON
+                if (table == "achievements") {
+                    downloadCvAttachmentsFromBatch(arr)
+                }
                 totalDocs += arr.size()
                 skip += arr.size()
                 val batchDuration = System.currentTimeMillis() - batchStartTime
@@ -359,6 +363,44 @@ class TransactionSyncManager @Inject constructor(
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
+        }
+    }
+
+    private suspend fun downloadCvAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
+        for (j in arr) {
+            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val docId = getString("_id", jsonDoc)
+            if (docId.startsWith("_design")) continue
+            val resumeFileName = getString("resumeFileName", jsonDoc)
+            val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
+            if (resumeFileName.isNotEmpty() && hasAttachment) {
+                val destFile = java.io.File(
+                    org.ole.planet.myplanet.utils.FileUtils.getOlePath(context) + "cv/$resumeFileName"
+                )
+                if (!destFile.exists()) {
+                    downloadCvAttachment(docId, resumeFileName, destFile)
+                }
+            }
+        }
+    }
+
+    private suspend fun downloadCvAttachment(docId: String, resumeFileName: String, destFile: java.io.File) {
+        try {
+            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    destFile.parentFile?.mkdirs()
+                    destFile.outputStream().use { out ->
+                        body.byteStream().use { it.copyTo(out) }
+                    }
+                    android.util.Log.d("TransactionSync", "CV saved: $resumeFileName")
+                }
+            } else {
+                android.util.Log.w("TransactionSync", "CV download failed (${response.code()}): $resumeFileName")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TransactionSync", "CV download error: $resumeFileName", e)
         }
     }
 

@@ -254,6 +254,76 @@
                             android:theme="@style/PrimaryButton" />
                     </LinearLayout>
 
+                    <!-- CV/Resume Upload Section -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="@dimen/padding_small"
+                        android:paddingTop="@dimen/padding_normal"
+                        android:paddingEnd="@dimen/padding_small"
+                        android:text="@string/upload_cv_label"
+                        android:textColor="@color/daynight_textColor" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="@dimen/padding_small">
+
+                        <Button
+                            android:id="@+id/btn_choose_cv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/choose_file"
+                            android:theme="@style/PrimaryButton" />
+
+                        <TextView
+                            android:id="@+id/tv_cv_filename"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/no_file_chosen"
+                            android:textColor="@color/daynight_textColor" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_current_cv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="@dimen/padding_small"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_current_cv"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="@color/daynight_textColor" />
+
+                        <Button
+                            android:id="@+id/btn_view_cv_edit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:drawableStart="@drawable/ic_folder"
+                            android:drawablePadding="@dimen/_2dp"
+                            android:text="@string/view_cv"
+                            android:theme="@style/PrimaryButton" />
+
+                        <ImageButton
+                            android:id="@+id/btn_delete_cv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/delete_cv"
+                            android:src="@drawable/ic_delete"
+                            android:tint="@color/md_red_700" />
+                    </LinearLayout>
+
                     <CheckBox
                         android:id="@+id/cb_send_to_nation"
                         android:layout_width="match_parent"

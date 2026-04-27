@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.ui.user
 
 import android.app.DatePickerDialog
 import android.content.DialogInterface
+import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +12,8 @@ import android.view.ViewGroup
 import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
@@ -20,6 +24,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
+import java.io.File
 import java.util.Calendar
 import java.util.Locale
 import kotlin.Array
@@ -41,7 +46,9 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -60,6 +67,29 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
     private var referenceDialog: AlertDialog? = null
+
+    private var selectedCvUri: Uri? = null
+    private var pendingCvFilename: String? = null
+    private var deleteCv = false
+    private lateinit var pickCvLauncher: ActivityResultLauncher<String>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        pickCvLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                val filename = getFilenameFromUri(uri)
+                if (filename?.endsWith(".pdf", ignoreCase = true) == true) {
+                    selectedCvUri = uri
+                    pendingCvFilename = filename
+                    deleteCv = false
+                    fragmentEditAchievementBinding.tvCvFilename.text = filename
+                    fragmentEditAchievementBinding.llCurrentCv.visibility = View.GONE
+                } else {
+                    Utilities.toast(activity, getString(R.string.select_pdf_only))
+                }
+            }
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
@@ -90,6 +120,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
+                val cvFilename = computeCvFilename()
                 userRepository.updateAchievement(
                     achievementId = achievementId,
                     header = header,
@@ -100,7 +131,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     references = referenceArray ?: JsonArray(),
                     createdOn = user?.planetCode ?: "",
                     username = user?.name ?: "",
-                    parentCode = user?.parentCode ?: ""
+                    parentCode = user?.parentCode ?: "",
+                    resumeFileName = cvFilename
                 )
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
@@ -123,6 +155,38 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             dpd.datePicker.maxDate = Calendar.getInstance().timeInMillis
             dpd.show()
         }
+        fragmentEditAchievementBinding.btnChooseCv.setOnClickListener {
+            pickCvLauncher.launch("application/pdf")
+        }
+        fragmentEditAchievementBinding.btnDeleteCv.setOnClickListener {
+            deleteCv = true
+            pendingCvFilename = null
+            selectedCvUri = null
+            fragmentEditAchievementBinding.llCurrentCv.visibility = View.GONE
+            fragmentEditAchievementBinding.tvCvFilename.text = getString(R.string.no_file_chosen)
+        }
+        fragmentEditAchievementBinding.btnViewCvEdit.setOnClickListener {
+            val filename = pendingCvFilename ?: achievement?.resumeFileName ?: return@setOnClickListener
+            val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$filename")
+            if (cvFile.exists()) {
+                val intent = android.content.Intent(requireContext(), PDFReaderActivity::class.java)
+                intent.putExtra("TOUCHED_FILE", "cv/$filename")
+                startActivity(intent)
+            } else {
+                Utilities.toast(activity, getString(R.string.file_not_found, filename))
+            }
+        }
+    }
+
+    private fun getFilenameFromUri(uri: Uri): String? {
+        var name: String? = null
+        requireContext().contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx >= 0) name = cursor.getString(idx)
+            }
+        }
+        return name ?: uri.lastPathSegment
     }
 
     private fun showAchievementAndInfo() {
@@ -321,12 +385,37 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         fragmentEditAchievementBinding.etMname.setText(user?.middleName)
         fragmentEditAchievementBinding.etLname.setText(user?.lastName)
         fragmentEditAchievementBinding.etBirthplace.setText(user?.birthPlace)
+        val existingCv = achievement?.resumeFileName ?: ""
+        if (existingCv.isNotEmpty()) {
+            fragmentEditAchievementBinding.llCurrentCv.visibility = View.VISIBLE
+            fragmentEditAchievementBinding.tvCurrentCv.text = getString(R.string.current_cv, existingCv)
+        }
         if (achievementArray != null) {
             showAchievementAndInfo()
         }
         if (referenceArray != null) {
             showReference()
         }
+    }
+
+    private fun computeCvFilename(): String {
+        if (deleteCv) return ""
+        val uri = selectedCvUri
+        val filename = pendingCvFilename
+        if (uri != null && filename != null) {
+            val destDir = File(FileUtils.getOlePath(requireContext()) + "cv")
+            if (!destDir.exists()) destDir.mkdirs()
+            val destFile = File(destDir, filename)
+            try {
+                requireContext().contentResolver.openInputStream(uri)?.use { input ->
+                    destFile.outputStream().use { output -> input.copyTo(output) }
+                }
+            } catch (e: Exception) {
+                Utilities.toast(activity, "Failed to save CV: ${e.message}")
+            }
+            return filename
+        }
+        return achievement?.resumeFileName ?: ""
     }
 
     private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<RealmMyLibrary>, prevList: List<String?>): RecyclerView {

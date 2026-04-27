@@ -938,7 +938,8 @@ class UserRepositoryImpl @Inject constructor(
         references: JsonArray,
         createdOn: String,
         username: String,
-        parentCode: String
+        parentCode: String,
+        resumeFileName: String
     ) {
         executeTransaction { transactionRealm ->
             val achievement = transactionRealm.where(RealmAchievement::class.java)
@@ -954,6 +955,7 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.parentCode = parentCode
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
+                achievement.resumeFileName = resumeFileName
                 achievement.isUpdated = true
             }
         }
@@ -1015,7 +1017,8 @@ class UserRepositoryImpl @Inject constructor(
                 achievementsHeader = achievementCopy.achievementsHeader ?: "",
                 achievements = achievementCopy.achievements ?: emptyList(),
                 achievementResources = resources,
-                references = achievementCopy.references ?: emptyList()
+                references = achievementCopy.references ?: emptyList(),
+                resumeFileName = achievementCopy.resumeFileName ?: ""
             )
         } else {
             AchievementData()
@@ -1076,6 +1079,7 @@ class UserRepositoryImpl @Inject constructor(
         achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
         achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
         achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
+        achievement?.resumeFileName = org.ole.planet.myplanet.utils.JsonUtils.getString("resumeFileName", act)
     }
     override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())

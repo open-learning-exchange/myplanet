@@ -1213,6 +1213,14 @@
     <string name="no_goal_added">अहिलेसम्म कुनै लक्ष्य तय गरिएको छैन</string>
     <string name="no_achievement_added">उपलब्धिहरूको सारांश</string>
     <string name="no_references_added">कुनै सन्दर्भ थपिएको छैन</string>
+    <string name="upload_cv_label">तलको बक्समा आफ्नो CV/रिज्युमे अपलोड गर्नुहोस् (PDF मात्र)</string>
+    <string name="no_file_chosen">कुनै फाइल छानिएको छैन</string>
+    <string name="delete_cv">CV मेटाउनुहोस्</string>
+    <string name="cv_resume">CV / रिज्युमे</string>
+    <string name="view_cv">CV/रिज्युमे हेर्नुहोस्</string>
+    <string name="current_cv">हालको CV/रिज्युमे: %s</string>
+    <string name="select_pdf_only">कृपया PDF फाइल छान्नुहोस्</string>
+    <string name="file_not_found">फाइल फेला परेन: %s</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
 
