@@ -38,6 +38,7 @@ interface SubmissionsRepository {
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
+    suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
     suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: org.ole.planet.myplanet.model.RealmStepExam, type: String?, teamId: String?): RealmSubmission?
     suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean
