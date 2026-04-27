@@ -142,11 +142,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 return@launch
             }
             try {
-                profileDbHandler.setResourceOpenCount(library)
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
-            try {
                 onRatingChanged()
             } catch (ex: Exception) {
                 ex.printStackTrace()
