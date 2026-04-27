@@ -47,14 +47,8 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
-            when (adapter) {
-                is OnDiffRefreshListener -> adapter.refreshWithDiff()
-                is ListAdapter<*, *> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    (adapter as ListAdapter<Any, *>).let { listAdapter ->
-                        listAdapter.submitList(listAdapter.currentList.toList())
-                    }
-                }
+            if (adapter is OnDiffRefreshListener) {
+                adapter.refreshWithDiff()
             }
         }
     }

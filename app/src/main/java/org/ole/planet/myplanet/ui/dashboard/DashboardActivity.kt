@@ -21,6 +21,10 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -46,9 +50,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
@@ -64,7 +66,6 @@ import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -79,7 +80,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -115,6 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var exitSnackbar: Snackbar? = null
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -254,7 +255,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        val insetsController = WindowCompat.getInsetsController(window, binding.root)
+        insetsController.isAppearanceLightStatusBars = true
+        insetsController.isAppearanceLightNavigationBars = true
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            binding.myToolbar.updatePadding(top = insets.top)
+            view.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -410,30 +420,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (result != null && result?.isDrawerOpen == true) {
-                    result?.closeDrawer()
-                } else {
-                    if (supportFragmentManager.backStackEntryCount > 1) {
-                        FragmentNavigator.popBackStack(supportFragmentManager)
-                    } else {
-                        if (!doubleBackToExitPressedOnce) {
-                            doubleBackToExitPressedOnce = true
-                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
-                            lifecycleScope.launch {
-                                delay(2000)
-                                doubleBackToExitPressedOnce = false
-                            }
-                        } else {
-                            val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                            if (!BuildConfig.LITE && fragment is BaseContainerFragment) {
-                                fragment.handleBackPressed()
-                            }
-                            finish()
-                        }
-                    }
+                when {
+                    result?.isDrawerOpen == true -> result?.closeDrawer()
+                    supportFragmentManager.backStackEntryCount > 1 -> FragmentNavigator.popBackStack(supportFragmentManager)
+                    else -> promptLogout()
                 }
             }
         })
+    }
+
+    private fun promptLogout() {
+        if (exitSnackbar?.isShown == true) {
+            exitSnackbar?.dismiss()
+            logout()
+            return
+        }
+        exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_logout), 2000)
+            .setAction(getString(R.string.menu_logout)) { logout() }
+        exitSnackbar?.show()
     }
 
     private fun handleNotificationIntent(intent: Intent?) {
