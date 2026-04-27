@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
+import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SurveysRepository
