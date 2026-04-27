@@ -674,7 +674,7 @@ class UserRepositoryImpl @Inject constructor(
             if (userModel != null) {
                 try {
                     uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
-                } catch (keyIvException: Exception) { }
+                } catch (_: Exception) { }
                 Result.success(userModel)
             } else {
                 Result.failure(Exception("Failed to save user or user model was null"))
@@ -1044,12 +1044,12 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -1059,34 +1059,34 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun insertAchievement(mRealm: io.realm.Realm, act: com.google.gson.JsonObject?) {
-        var achievement = mRealm.where(org.ole.planet.myplanet.model.RealmAchievement::class.java)
-            .equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
+    private fun insertAchievement(mRealm: io.realm.Realm, act: JsonObject?) {
+        var achievement = mRealm.where(RealmAchievement::class.java)
+            .equalTo("_id",JsonUtils.getString("_id", act)).findFirst()
         if (achievement == null) {
-            achievement = mRealm.createObject(org.ole.planet.myplanet.model.RealmAchievement::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
+            achievement = mRealm.createObject(RealmAchievement::class.java,JsonUtils.getString("_id", act))
         }
-        achievement?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
-        achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
-        achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
-        achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
+        achievement?._rev = JsonUtils.getString("_rev", act)
+        achievement?.purpose = JsonUtils.getString("purpose", act)
+        achievement?.goals = JsonUtils.getString("goals", act)
+        achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
         achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
-        achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
-        achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
-        achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)
-        achievement?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", act)
+        achievement?.dateSortOrder = JsonUtils.getString("dateSortOrder", act)
+        achievement?.createdOn = JsonUtils.getString("createdOn", act)
+        achievement?.username = JsonUtils.getString("username", act)
+        achievement?.parentCode = JsonUtils.getString("parentCode", act)
         achievement?.isUpdated = false
-        achievement?.setReferences(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("references", act))
-        achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
-        achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
-        achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
-        achievement?.resumeFileName = org.ole.planet.myplanet.utils.JsonUtils.getString("resumeFileName", act)
+        achievement?.setReferences(JsonUtils.getJsonArray("references", act))
+        achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
+        achievement?.setLinks(JsonUtils.getJsonArray("links", act))
+        achievement?.setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
+        achievement?.resumeFileName = JsonUtils.getString("resumeFileName", act)
     }
-    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: JsonArray, settings: SharedPreferences) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
