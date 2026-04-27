@@ -1,162 +1,150 @@
-# courses_progress filtered sync prototype
+# myPlanet device-user-scoped sync policy
 
-This branch changes `myPlanet` sync policy so large user-bound tables are no longer treated as bootstrap data by default.
+This branch changes `myPlanet` sync policy so the heaviest user-bound databases are no longer fetched as if they were bootstrap data. Instead they are scoped to the actual users that have logged into this device.
 
-For steady-state sync, `courses_progress` is no longer fetched with:
-
-- `/_all_docs?include_docs=true`
-
-Instead it now:
-
-1. syncs `tablet_users` first
-2. derives candidate user ids from a device-local `RealmDeviceUser` store
-3. queries `courses_progress/_find` with a selector:
-
-```json
-{
-  "selector": {
-    "userId": {
-      "$in": ["user-a", "user-b"]
-    }
-  },
-  "limit": 1000,
-  "bookmark": "..."
-}
-```
-
-## Why this is a useful prototype
-
-`courses_progress` was the main failure source in issue `planet#9895`, and it is a good template for the other heavy user-scoped databases:
-
-- `submissions`
-- `notifications`
-- `chat_history`
-- `login_activities`
-
-The important part is the pattern, not just this one database:
+The shape of the change is the same across all five user-scoped databases:
 
 - split bootstrap sync from steady-state sync
-- derive the relevant local scope from actual device users
-- replace `/_all_docs` with paged `_find`
-- insert the returned docs using the existing repository bulk-insert path
+- derive a device-local scope from a `RealmDeviceUser` store (backfilled from local login history on first run, maintained on every subsequent login)
+- replace `/_all_docs?include_docs=true` with paged `_find`
+- insert the returned docs through the existing repository bulk-insert path
 
-Just as importantly, this prototype exposed a bad assumption: `tablet_users` is not a device-local sync scope. It is effectively the set of non-admin users allowed to log into `myPlanet`, so `userId IN tablet_users` still behaves like near-full-table sync on a real Planet.
+`tablet_users` is **not** used as the locality source. It is the set of non-admin users allowed to log into `myPlanet`, so `userId IN tablet_users` is effectively a near-full-table scan on a real Planet. `device_users` (a Realm-backed table of users actually seen on this device) is the source of truth for steady-state sync.
 
-This branch now enforces that distinction in code:
+## Bootstrap vs. steady-state vs. background
 
-- bootstrap sync defers the heaviest user-bound tables until the device has real user history
-- `device_users` are stored in Realm and backfilled from local login history
-- steady-state sync uses `device_users` for `courses_progress`, `submissions`, `login_activities`, and `chat_history`
-- `team_activities` now scopes by derived `teamId` values from device-user memberships
-- `notifications` are deferred from bootstrap and run as a background follow-up once device users exist
+The three policy sets live in `SyncPolicy.kt`:
 
-## Files changed
+```kotlin
+val bootstrapDeferredTables = setOf(
+    "courses_progress",
+    "submissions",
+    "login_activities",
+    "notifications",
+    "chat_history",
+    "team_activities"
+)
 
-- `app/src/main/java/org/ole/planet/myplanet/model/RealmDeviceUser.kt`
-- `app/src/main/java/org/ole/planet/myplanet/repository/DeviceUserRepository.kt`
-- `app/src/main/java/org/ole/planet/myplanet/repository/DeviceUserRepositoryImpl.kt`
-- `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
-- `app/src/main/java/org/ole/planet/myplanet/services/sync/ImprovedSyncManager.kt`
-- `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncPolicy.kt`
-- `app/src/main/java/org/ole/planet/myplanet/services/sync/TransactionSyncManager.kt`
-- `app/src/main/java/org/ole/planet/myplanet/services/UserSessionManager.kt`
-- `app/src/main/java/org/ole/planet/myplanet/data/RealmMigrations.kt`
-- `app/src/test/java/org/ole/planet/myplanet/services/UserSessionManagerTest.kt`
+private val steadyStateBackgroundTables = setOf(
+    "courses_progress",
+    "notifications"
+)
+```
 
-## Pattern to copy for other databases
+How each set is applied:
+
+- **Bootstrap (no device users yet)** — `applyBootstrapPolicy` filters `bootstrapDeferredTables` out of the requested table list. The first sync after install therefore skips the heavy user-bound tables entirely; they have no device scope to filter on yet.
+- **Steady-state foreground (device users exist)** — `applyForegroundPolicy` runs the bootstrap filter (a no-op once device users exist) and additionally removes `steadyStateBackgroundTables` from the foreground job, so they don't block sync completion.
+- **Background follow-up** — `backgroundTablesFor` returns `courses_progress` (when `courses` or `courses_progress` was requested) plus `notifications`. These run on a separate coroutine via `startBackgroundDeferredSync` after the main sync wraps up.
+
+Both sync paths apply the same three calls:
+
+- `SyncManager.startFullSync` and `SyncManager.startFastSync` (legacy path)
+- `ImprovedSyncManager.start` (improved path)
+
+So the policy is enforced regardless of which manager the user is routed through, and regardless of fast vs. standard mode.
+
+## Per-database steady-state implementations
+
+All scoped paths are dispatched from `TransactionSyncManager.syncDb`. Three of them share the generic `syncFindByField` helper; `courses_progress` and `submissions` each have a bespoke helper because of their pagination tuning and field projection needs.
+
+### courses_progress
+
+- selector source: `RealmDeviceUser.userId`
+- selector: `userId: { "$in": [...] }`
+- endpoint: `courses_progress/_find`
+- page size: 1000, bookmark pagination
+- requests a fields projection (`_id`, `_rev`, `courseId`, `createdDate`, `createdOn`, `parentCode`, `passed`, `stepNum`, `updatedDate`, `userId`) to keep payloads small
+- runs as a background follow-up after foreground sync, not in the foreground phase
 
 ### submissions
 
-- selector source: true device-local users, not `tablet_users`
-- likely selector:
-
-```json
-{
-  "selector": {
-    "userId": {
-      "$in": ["user-a", "user-b"]
-    }
-  }
-}
-```
-
-### notifications
-
-- selector source: true device-local users, not `tablet_users`
-- current branch behavior:
-  - defer from bootstrap
-  - run in background after main sync when device users exist
-- likely future selector:
-
-```json
-{
-  "selector": {
-    "user": {
-      "$in": ["user-a", "user-b"]
-    }
-  }
-}
-```
-
-Add recency and unread rules later once the server indexes are ready.
+- selector source: `RealmDeviceUser.userId`
+- selector: `userId: { "$in": [...] }`
+- endpoint: `submissions/_find`
+- page size: 100, bookmark pagination
+- runs in the foreground phase once device users exist
 
 ### login_activities
 
-- selector source: true device-local users, not `tablet_users`
-- implemented selector field: `user`
-- add a recency window once server indexes exist
+- selector source: `RealmDeviceUser.userName`
+- selector: `user: { "$in": [...] }`
+- endpoint: `login_activities/_find`
+- page size: 1000, bookmark pagination
+- implemented through the shared `syncFindByField` helper
 
 ### chat_history
 
-- selector source: true device-local users, not `tablet_users`
-- implemented selector field: `user`
+- selector source: `RealmDeviceUser.userName`
+- selector: `user: { "$in": [...] }`
+- endpoint: `chat_history/_find`
+- page size: 1000, bookmark pagination
+- implemented through the shared `syncFindByField` helper
 
-### team_activities / teams
+### team_activities
 
-- implemented dependency path:
-  - derive device users first
-  - read local membership docs for those users
-  - derive relevant `teamId`s
-  - query `team_activities` with `teamId: { "$in": [...] }`
+- dependency path: device users → local team membership (`TeamsRepository.getTeamIdsForUsers`) → `teamId` set
+- selector: `teamId: { "$in": [...] }`
+- endpoint: `team_activities/_find`
+- page size: 1000, bookmark pagination
+- skipped when there are no team memberships for the current device users
+
+### notifications
+
+- deferred from bootstrap and run as a background follow-up after main sync once device users exist
+- not yet selector-scoped on the wire — still pulled via `_all_docs` inside the background job
+- the obvious next step is `user: { "$in": deviceUserNames }`; recency / unread filters can be added once the server side has matching indexes
+
+## Tables intentionally left on `_all_docs`
+
+Issue `planet#9895` listed several heavy tables. Not all of them are user-scoped, so the policy doesn't touch them:
+
+- `ratings` — small payload (the issue's run was 88 docs); slow only because it queues behind other requests. Not user-bound, so a `_find` selector wouldn't help.
+- `teams` — small and not strictly user-scoped; current `_all_docs` behavior is fine.
+- `tablet_users` — synced first, deliberately, because it's the auth scope that other tables depend on.
+
+## Files changed
+
+- `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt`
+- `app/src/main/java/org/ole/planet/myplanet/data/RealmMigrations.kt`
+- `app/src/main/java/org/ole/planet/myplanet/di/RepositoryModule.kt`
+- `app/src/main/java/org/ole/planet/myplanet/di/ServiceModule.kt`
+- `app/src/main/java/org/ole/planet/myplanet/model/RealmDeviceUser.kt`
+- `app/src/main/java/org/ole/planet/myplanet/repository/DeviceUserRepository.kt`
+- `app/src/main/java/org/ole/planet/myplanet/repository/DeviceUserRepositoryImpl.kt`
+- `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepository.kt`
+- `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
+- `app/src/main/java/org/ole/planet/myplanet/services/UserSessionManager.kt`
+- `app/src/main/java/org/ole/planet/myplanet/services/sync/ImprovedSyncManager.kt`
+- `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
+- `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncPolicy.kt`
+- `app/src/main/java/org/ole/planet/myplanet/services/sync/TransactionSyncManager.kt`
+- `app/src/test/java/org/ole/planet/myplanet/services/UserSessionManagerTest.kt`
+- `app/src/test/java/org/ole/planet/myplanet/services/sync/TransactionSyncManagerTest.kt`
 
 ## Server-side expectations
 
-For this pattern to scale on real data, Planet should add indexes that match the selectors. For `courses_progress`, the first index to add is on `userId`.
-
-Recommended follow-up on the Planet side:
+For these `_find` selectors to scale on real data, Planet should add Mango indexes that match them. Without the indexes the server falls back to full table scans and most of the win is lost:
 
 - `courses_progress`: index `userId`
 - `submissions`: index `userId`
 - `login_activities`: index `user`
 - `chat_history`: index `user`
-- `notifications`: index `user`
 - `team_activities`: index `teamId`
+- `notifications`: index `user` (once selector-scoped)
 
-## Known limitations of this prototype
+## Known limitations
 
-- It moves `courses_progress`, `submissions`, `login_activities`, `chat_history`, and `team_activities` onto device-scoped or team-scoped `_find`.
-- Bootstrap deferral is currently policy-based, not server-assisted.
-- It does not yet apply recency filtering to activity/history tables.
-- It assumes `courses_progress.userId`, `submissions.userId`, `login_activities.user`, and `chat_history.user` are the right first selectors, which still need verification against real server documents and indexes.
-- `notifications` are backgrounded rather than fully device-scoped in this branch.
-- It was not fully compiled in this environment because Gradle download is blocked by sandbox network restrictions.
+- Bootstrap deferral is policy-based, not server-assisted — the server still has the full table available; we just stop pulling it client-side until we have a device scope.
+- No recency window on the activity / history tables yet; we still pull every matching doc for every device user.
+- The selector field choices (`courses_progress.userId`, `submissions.userId`, `login_activities.user`, `chat_history.user`) still need verification against real production documents.
+- `notifications` is backgrounded but not yet selector-scoped.
+- The branch was not fully compiled in the original sandbox environment because Gradle download was blocked; verify a clean build locally before merging.
 
-## What testing showed
+## Suggested follow-ups
 
-- `courses_progress/_find` works mechanically in `myPlanet`.
-- `submissions/_find` can follow the same pattern with an existing `userId` field.
-- `login_activities/_find` and `chat_history/_find` fit the same device-user pattern.
-- `team_activities` is better treated as a team-scoped sync problem than a raw user-scoped one.
-- Replacing `/_all_docs` with `_find` is not enough by itself.
-- `tablet_users` cannot be used as the source of truth for device-local sync, because it is an auth/login dataset, not a locality dataset.
-- `device_users` is the more viable source of truth for steady-state sync on the tablet.
-
-## Suggested next step for myPlanet team
-
-1. verify the `courses_progress.userId`, `submissions.userId`, `login_activities.user`, and `chat_history.user` selectors against real server documents
-2. add the required Mango indexes on the Planet side for whichever selectors are chosen
-3. retest bootstrap sync and steady-state sync separately
-4. decide whether `notifications` should stay background-only or move to a selector-based steady-state sync
-5. keep team-scoped selectors for `team_activities` aligned with the local membership/team derivation path
-
-That sequence should give the biggest practical reduction in sync size before tackling team-scoped tables.
+1. Verify `courses_progress.userId`, `submissions.userId`, `login_activities.user`, and `chat_history.user` against real server documents.
+2. Add the Mango indexes listed above on the Planet side.
+3. Move `notifications` from "deferred + background" to a `user`-scoped `_find` matching the others.
+4. Add a recency window to `login_activities` and `chat_history` once the server indexes are in place.
+5. Re-run bootstrap and steady-state sync separately on real data to confirm the duration regressions from issue #9895 are gone.
