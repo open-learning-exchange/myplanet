@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< refactor-health-repo-transaction-12431160325900929699
         versionCode = 5407
         versionName = "0.54.7"
-=======
-        versionCode = 5406
-        versionName = "0.54.6"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
