@@ -20,7 +20,6 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -91,7 +90,7 @@ class DashboardViewModelTest {
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLogins("John Doe") } returns flowOf(listOf(RealmOfflineActivity(), RealmOfflineActivity()))
+        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
 
         viewModel.loadUserContent(userId)
 
@@ -126,7 +125,7 @@ class DashboardViewModelTest {
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLogins("John Doe") } returns flowOf(listOf(RealmOfflineActivity(), RealmOfflineActivity()))
+        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
 
         viewModel.loadUserContent(userId)
 

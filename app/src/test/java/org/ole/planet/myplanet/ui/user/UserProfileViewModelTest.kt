@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.user
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.every
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -15,6 +16,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -28,6 +30,7 @@ class UserProfileViewModelTest {
 
     private lateinit var userRepository: UserRepository
     private lateinit var userSessionManager: UserSessionManager
+    private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var viewModel: UserProfileViewModel
 
     private val dispatcherProvider = object : DispatcherProvider {
@@ -41,12 +44,17 @@ class UserProfileViewModelTest {
     fun setup() {
         userRepository = mockk(relaxed = true)
         userSessionManager = mockk(relaxed = true)
+        activitiesRepository = mockk(relaxed = true)
 
-        coEvery { userSessionManager.maxOpenedResource() } returns "Test Resource opened 5 times"
-        coEvery { userSessionManager.getGlobalLastVisit() } returns 123456789L
-        coEvery { userSessionManager.getNumberOfResourceOpen() } returns "Resource opened 10 times."
+        val mockUser = mockk<RealmUser>(relaxed = true)
+        every { mockUser.name } returns "Test User"
+        coEvery { userSessionManager.getUserModel() } returns mockUser
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager, dispatcherProvider)
+        coEvery { activitiesRepository.getMostOpenedResource("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Test Resource", 5)
+        coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
+        coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
+
+        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository, dispatcherProvider)
     }
 
     @Test
