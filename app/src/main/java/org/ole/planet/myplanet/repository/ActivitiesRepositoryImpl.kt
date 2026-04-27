@@ -193,6 +193,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                     val title = entry.value.first().title
                     Pair(count, title)
                 }
+                .filterValues { it.second != null }
 
             val maxEntry = resourceCounts.maxByOrNull { it.value.first }
 
