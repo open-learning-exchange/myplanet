@@ -30,8 +30,6 @@ interface SurveysRepository {
     suspend fun getSurveys(): List<RealmStepExam>
     suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam>
     fun bulkInsertExamsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject)
-    suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject, parentId: String?)
     fun dueRemindersFlow(): Flow<List<String>>
     suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int)
     suspend fun setLastSurveyDialogShown(time: Long)
