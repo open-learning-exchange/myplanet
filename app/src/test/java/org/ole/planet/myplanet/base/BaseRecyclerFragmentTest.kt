@@ -3,29 +3,23 @@ package org.ole.planet.myplanet.base
 import io.realm.RealmList
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import androidx.recyclerview.widget.RecyclerView
 
+@RunWith(JUnit4::class)
 class BaseRecyclerFragmentTest {
 
-    // Create a dummy concrete class to test BaseRecyclerFragment
-    class TestFragment : BaseRecyclerFragment<Any>() {
+    class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
         override fun getLayout(): Int = 0
-
-        override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
-            return object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-                override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-                    TODO("Not yet implemented")
-                }
-                override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {}
-                override fun getItemCount(): Int = 0
-            }
+        override suspend fun getAdapter(): androidx.recyclerview.widget.RecyclerView.Adapter<out androidx.recyclerview.widget.RecyclerView.ViewHolder> {
+            throw NotImplementedError()
         }
     }
 
     @Test
     fun testApplyFilter() {
-        val fragment = TestFragment()
+        val fragment = TestBaseRecyclerFragment()
 
         val lib1 = RealmMyLibrary().apply {
             subject = RealmList("Math")
@@ -67,5 +61,26 @@ class BaseRecyclerFragmentTest {
         fragment.languages = mutableSetOf("English")
         fragment.mediums = mutableSetOf("PDF")
         assertEquals(0, fragment.applyFilter(libraries).size)
+    }
+
+    @Test
+    fun testCountSelected_withNullSelectedItems() {
+        val fragment = TestBaseRecyclerFragment()
+        fragment.selectedItems = null
+        assertEquals(0, fragment.countSelected())
+    }
+
+    @Test
+    fun testCountSelected_withEmptySelectedItems() {
+        val fragment = TestBaseRecyclerFragment()
+        fragment.selectedItems = mutableListOf()
+        assertEquals(0, fragment.countSelected())
+    }
+
+    @Test
+    fun testCountSelected_withMultipleSelectedItems() {
+        val fragment = TestBaseRecyclerFragment()
+        fragment.selectedItems = mutableListOf("item1", "item2", "item3")
+        assertEquals(3, fragment.countSelected())
     }
 }

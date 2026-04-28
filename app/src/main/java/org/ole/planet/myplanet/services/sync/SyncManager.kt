@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.Rows
@@ -1027,7 +1028,7 @@ class SyncManager @Inject constructor(
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
+                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager, dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository())
                                             "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++

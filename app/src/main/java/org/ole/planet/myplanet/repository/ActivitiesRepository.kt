@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 interface ActivitiesRepository {
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity>
     suspend fun getOfflineVisitCount(userId: String): Int
+    suspend fun getOfflineLoginCount(userName: String): Int
     suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun markResourceRemoved(userId: String, resourceId: String)
@@ -23,6 +24,8 @@ interface ActivitiesRepository {
     suspend fun recordSyncActivity(userId: String)
     suspend fun insertActivity(json: JsonObject)
     suspend fun getRecentLogin(): RealmOfflineActivity?
+    suspend fun insertSearchActivityFromNewsLog(log: org.ole.planet.myplanet.model.RealmNewsLog)
     fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): JsonObject
     fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    suspend fun uploadActivities()
 }

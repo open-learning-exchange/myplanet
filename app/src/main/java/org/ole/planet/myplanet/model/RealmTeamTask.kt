@@ -56,7 +56,7 @@ open class RealmTeamTask : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(realm: Realm, task: RealmTeamTask): JsonObject {
+        fun serialize(task: RealmTeamTask, user: RealmUser?): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(task._id)) {
                 `object`.addProperty("_id", task._id)
@@ -67,7 +67,6 @@ open class RealmTeamTask : RealmObject() {
             `object`.addProperty("description", task.description)
             `object`.addProperty("completed", task.completed)
             `object`.addProperty("completedTime", task.completedTime)
-            val user = realm.where(RealmUser::class.java).equalTo("id", task.assignee).findFirst()
             if (user != null) `object`.add("assignee", user.serialize())
             else `object`.addProperty("assignee", "")
             `object`.add("sync", JsonUtils.gson.fromJson(task.sync, JsonObject::class.java))

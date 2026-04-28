@@ -30,69 +30,9 @@ open class RealmStepExam : RealmObject() {
     var sourceSurveyId: String? = null
 
     companion object {
-        @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
-            insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
-        }
 
         @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
-            val isInTransaction = mRealm.isInTransaction
-
-            val performInsert = {
-                var myExam = mRealm.where(RealmStepExam::class.java).equalTo("id", JsonUtils.getString("_id", exam)).findFirst()
-                if (myExam == null) {
-                    val id = JsonUtils.getString("_id", exam)
-                    myExam = mRealm.createObject(RealmStepExam::class.java,
-                        if (TextUtils.isEmpty(id)) {
-                            parentId
-                        } else {
-                            id
-                        }
-                    )
-                }
-                checkIdsAndInsert(myCoursesID, stepId, myExam)
-                myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
-                myExam?.name = JsonUtils.getString("name", exam)
-                myExam?.description = JsonUtils.getString("description", exam)
-                myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
-                myExam?._rev = JsonUtils.getString("_rev", exam)
-                myExam?.createdBy = JsonUtils.getString("createdBy", exam)
-                myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
-                myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
-                myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
-                myExam?.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
-                myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
-                myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
-                myExam?.isFromNation = !TextUtils.isEmpty(parentId)
-                myExam.teamId = JsonUtils.getString("teamId", exam)
-                myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-                myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
-                val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
-                if (oldQuestions == null || oldQuestions.isEmpty()) {
-                    RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
-                }
-            }
-
-            if (isInTransaction) {
-                performInsert()
-            } else {
-                mRealm.executeTransaction { performInsert() }
-            }
-        }
-
-        private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {
-            if (!TextUtils.isEmpty(myCoursesID)) {
-                myExam?.courseId = myCoursesID
-            }
-            if (!TextUtils.isEmpty(stepId)) {
-                myExam?.stepId = stepId
-            }
-        }
-
-        @JvmStatic
-        fun serializeExam(mRealm: Realm, exam: RealmStepExam): JsonObject {
+        fun serializeExam(exam: RealmStepExam, questions: List<RealmExamQuestion>): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
             if (exam._rev != null) {
@@ -114,8 +54,7 @@ open class RealmStepExam : RealmObject() {
             if (exam.teamId != null) {
                 `object`.addProperty("teamId", exam.teamId)
             }
-            val question = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
-            `object`.add("questions", RealmExamQuestion.serializeQuestions(question))
+            `object`.add("questions", RealmExamQuestion.serializeQuestions(questions))
             return `object`
         }
 
