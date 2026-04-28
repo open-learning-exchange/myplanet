@@ -52,5 +52,11 @@ class RealmMigrations : RealmMigration {
                 ?.addField("isUpdated", Boolean::class.java)
             version++
         }
+
+        if (version == 8L) {
+            schema.get("RealmMyTeam")
+                ?.addField("isDeletePending", Boolean::class.java)
+            version++
+        }
     }
 }

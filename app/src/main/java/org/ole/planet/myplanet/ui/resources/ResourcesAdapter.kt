@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 
 class ResourcesAdapter(
     private val context: Context,
@@ -38,7 +39,12 @@ class ResourcesAdapter(
         { oldItem, newItem -> oldItem.id == newItem.id },
         { oldItem, newItem -> oldItem._rev == newItem._rev && oldItem.uploadDate == newItem.uploadDate }
     )
-) {
+), OnDiffRefreshListener {
+
+    override fun refreshWithDiff() {
+        submitList(currentList.toList())
+    }
+
 
     private val selectedItems: MutableList<ResourceItem> = ArrayList()
     private var listener: OnLibraryItemSelectedListener? = null
@@ -159,7 +165,9 @@ class ResourcesAdapter(
         } else {
             selectedItems.clear()
         }
+
         notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
+
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
         }
@@ -206,9 +214,30 @@ class ResourcesAdapter(
         }
     }
 
-    fun setTagsMap(tagsMap: Map<String, List<TagItem>>) {
-        this.tagsMap = tagsMap
-        notifyItemRangeChanged(0, currentList.size, TAGS_PAYLOAD)
+    fun setTagsMap(newTagsMap: Map<String, List<TagItem>>) {
+        val updatedResourceIds = mutableSetOf<String?>()
+
+        newTagsMap.forEach { (resourceId, newTags) ->
+            if (tagsMap[resourceId] != newTags) {
+                updatedResourceIds.add(resourceId)
+            }
+        }
+
+        tagsMap.keys.filterNot { newTagsMap.containsKey(it) }.forEach { removedKey ->
+            updatedResourceIds.add(removedKey)
+        }
+
+        tagsMap = newTagsMap
+
+        updatedResourceIds.forEach { resourceId ->
+            if (resourceId.isNullOrEmpty()) {
+                return@forEach
+            }
+            val index = currentList.indexOfFirst { it.id == resourceId }
+            if (index != -1) {
+                notifyItemChanged(index, TAGS_PAYLOAD)
+            }
+        }
     }
 
     fun setOpenedResourceIds(openedResourceIds: Set<String>) {
