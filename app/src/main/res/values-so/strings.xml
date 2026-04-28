@@ -696,6 +696,8 @@
     <string name="turning_on_wifi_please_wait">Wifi lagu daboolo, fadlan sug…</string>
     <string name="you_are_now_connected">Hadda waxaad la xiriirayaa</string>
     <string name="press_back_again_to_exit">Daboolka BACK wixii hore ugu celi</string>
+    <string name="press_back_again_to_logout">Riix BACK mar kale si aad uga baxdo</string>
+    <string name="exit">Ka Bax</string>
     <string name="it_has_been_more_than">waxaa ka badan </string>
     <string name="days_since_you_last_synced_this_device">maalmood ka dib marka aad dib u hagreesatid qalabkanan.</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\nKu xiran talaalka serverka oo ku sug WiFi si aad u hagreesid taabeltaaga.</string>
