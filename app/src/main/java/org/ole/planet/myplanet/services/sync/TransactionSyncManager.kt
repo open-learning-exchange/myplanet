@@ -513,91 +513,46 @@ class TransactionSyncManager @Inject constructor(
 
         val pageSize = 100
         var totalDocs = 0
-        var pageNumber = 0
-        var bookmark: String? = null
 
-        android.util.Log.d(
-            "SyncPerf",
-            "    submissions selector: user._id IN ${userIds.size} device users"
-        )
+        // Pass 1: per-user submissions (exam attempts, individual surveys).
+        // Uses submissions/_find with selector user._id IN device users; matched by the
+        // server-side "user-id-index" Mango index.
+        totalDocs += syncFindByField(
+            table = "submissions",
+            selectorField = "user._id",
+            selectorValues = userIds,
+            pageSize = pageSize,
+            syncStartTime = System.currentTimeMillis()
+        ) { realm, rows ->
+            submissionsRepository.bulkInsertFromSync(realm, rows)
+        }
 
-        while (true) {
-            pageNumber++
-            val batchStartTime = System.currentTimeMillis()
-            val requestBody = JsonObject().apply {
-                add("selector", JsonObject().apply {
-                    add("user._id", JsonObject().apply {
-                        add("\$in", com.google.gson.JsonArray().apply {
-                            userIds.forEach { add(it) }
-                        })
-                    })
-                })
-                addProperty("limit", pageSize)
-                bookmark?.let { addProperty("bookmark", it) }
+        // Pass 2: team-scoped submissions (team surveys). These are written with an empty
+        // user object and team._id set, so the per-user pass cannot reach them. CouchDB 2.3.1
+        // Mango does not reliably index-union $or across two fields, so we do a separate
+        // pass against the "team-id-index" Mango index.
+        val teamIds = teamsRepository.get().getTeamIdsForUsers(userIds)
+        if (teamIds.isNotEmpty()) {
+            totalDocs += syncFindByField(
+                table = "submissions",
+                selectorField = "team._id",
+                selectorValues = teamIds,
+                pageSize = pageSize,
+                syncStartTime = System.currentTimeMillis()
+            ) { realm, rows ->
+                submissionsRepository.bulkInsertFromSync(realm, rows)
             }
-
-            val apiStartTime = System.currentTimeMillis()
-            val response = apiInterface.findDocs(
-                UrlUtils.header,
-                "application/json",
-                "${UrlUtils.getUrl()}/submissions/_find",
-                requestBody
-            )
-            val apiDuration = System.currentTimeMillis() - apiStartTime
-
-            if (response.body() == null || !response.isSuccessful) {
-                android.util.Log.d("SyncPerf", "  ✗ Failed submissions page $pageNumber: HTTP ${response.code()}")
-                break
-            }
-
-            val docs = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("docs", response.body())
-            if (docs.size() == 0) {
-                break
-            }
-
-            val rows = com.google.gson.JsonArray()
-            docs.forEach { doc ->
-                rows.add(JsonObject().apply {
-                    add("doc", doc)
-                })
-            }
-
-            org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
-                "${UrlUtils.getUrl()}/submissions/_find (page $pageNumber)",
-                apiDuration,
-                response.isSuccessful,
-                docs.size()
-            )
-
-            databaseService.executeTransactionAsync { mRealm: Realm ->
-                val insertStartTime = System.currentTimeMillis()
-                submissionsRepository.bulkInsertFromSync(mRealm, rows)
-                val insertDuration = System.currentTimeMillis() - insertStartTime
-                org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
-                    "insert_batch",
-                    "submissions",
-                    insertDuration,
-                    docs.size()
-                )
-            }
-
-            totalDocs += docs.size()
-            bookmark = response.body()?.get("bookmark")?.asString
-            val batchDuration = System.currentTimeMillis() - batchStartTime
+        } else {
             android.util.Log.d(
                 "SyncPerf",
-                "    submissions page $pageNumber: ${docs.size()} docs in ${batchDuration}ms (total: $totalDocs, bookmark=${!bookmark.isNullOrBlank()})"
+                "    submissions team pass: skipped (no team memberships for device users)"
             )
-
-            if (docs.size() < pageSize || bookmark.isNullOrBlank()) {
-                break
-            }
         }
 
         val totalDuration = System.currentTimeMillis() - syncStartTime
         android.util.Log.d(
             "SyncPerf",
-            "  ✓ Completed submissions sync: $totalDocs docs in ${totalDuration}ms for ${userIds.size} device users"
+            "  ✓ Completed submissions sync: $totalDocs docs in ${totalDuration}ms (${userIds.size} users, ${teamIds.size} teams)"
         )
         return totalDocs
     }

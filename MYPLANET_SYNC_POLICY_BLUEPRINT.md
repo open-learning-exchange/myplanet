@@ -59,12 +59,21 @@ All scoped paths are dispatched from `TransactionSyncManager.syncDb`. Three of t
 
 ### submissions
 
-- selector source: `RealmDeviceUser.userId` (which holds `org.couchdb.user:<name>`)
-- selector: `user._id: { "$in": [...] }`
+Submissions need two passes because they come in two flavors:
+
+- **Per-user submissions** (exam attempts, individual surveys) carry a populated `user` object with `_id`.
+- **Team-scoped submissions** (team surveys) are written with an empty `user` object and `team._id` set (`submissions.service.ts:223-225`). A pure user-scoped selector misses these entirely. They matter for correctness, not just completeness — Planet's submission writer checks for an existing team submission *before* creating a new one, so missing local copies cause duplicate writes from the tablet.
+
+CouchDB 2.3.1's Mango planner does not reliably index-union `$or` across two different fields, so we run two separate paginated `_find` calls instead of one combined query.
+
+- pass 1 selector: `user._id: { "$in": deviceUserIds }`, against `user-id-index`
+- pass 2 selector: `team._id: { "$in": teamIds }`, against `team-id-index`
+- `teamIds` derived via `TeamsRepository.getTeamIdsForUsers(deviceUserIds)` — same path used for `team_activities`
+- pass 2 is skipped when no team memberships exist for the device users
 - endpoint: `submissions/_find`
-- page size: 100, bookmark pagination
-- runs in the foreground phase once device users exist
-- planet stores submissions with a nested `user` object — the field path `user._id` (dotted) matches the server-side `user-id-index` Mango index
+- page size: 100 per pass, bookmark pagination
+- both passes run in the foreground phase once device users exist
+- both passes feed the same `submissionsRepository.bulkInsertFromSync` path; results don't overlap by construction (team submissions have empty `user._id`)
 
 ### login_activities
 
@@ -128,7 +137,7 @@ Issue `planet#9895` listed several heavy tables. Not all of them are user-scoped
 These Mango indexes are required for the `_find` selectors to scale; without them the server falls back to full-table scans and most of the win is lost. They have been added to `couchdb-setup.sh` in the planet repo (under issue `planet#9895`):
 
 - `courses_progress`: index `userId` (`user-index`)
-- `submissions`: index `user._id` (`user-id-index`)
+- `submissions`: index `user._id` (`user-id-index`) plus index `team._id` (`team-id-index`) for the team-scoped pass
 - `login_activities`: index `user` (`user-index`)
 - `chat_history`: index `user` (`user-index`)
 - `team_activities`: index `teamId` (`team-index`)
