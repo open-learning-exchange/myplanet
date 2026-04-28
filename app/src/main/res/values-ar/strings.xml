@@ -696,6 +696,8 @@
     <string name="turning_on_wifi_please_wait">جاري تشغيل الواي فاي. يرجى الانتظار…</string>
     <string name="you_are_now_connected">لقد تم الآن الاتصال</string>
     <string name="press_back_again_to_exit">اضغط BACK مرة أخرى للخروج</string>
+    <string name="press_back_again_to_logout">اضغط BACK مرة أخرى لتسجيل الخروج</string>
+    <string name="exit">خروج</string>
     <string name="it_has_been_more_than">لقد مرت مدة تزيد عن </string>
     <string name="days_since_you_last_synced_this_device">أيام منذ آخر مزامنة لهذا الجهاز.</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n اتصل به بالخادم عبر الواي فاي وقم بمزامنته لإعادة تنشيط هذا الجهاز اللوحي</string>

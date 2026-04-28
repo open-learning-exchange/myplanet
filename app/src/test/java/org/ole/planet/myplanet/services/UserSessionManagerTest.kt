@@ -159,50 +159,6 @@ class UserSessionManagerTest {
     }
 
     @Test
-    fun `getGlobalLastVisit returns value from repository`() = testScope.runTest {
-        coEvery { activitiesRepository.getGlobalLastVisit() } returns 12345L
-        assertEquals(12345L, userSessionManager.getGlobalLastVisit())
-    }
-
-    @Test
-    fun `getOfflineVisits returns count from repository for valid user`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>()
-        every { mockUser.id } returns "id123"
-        coEvery { activitiesRepository.getOfflineVisitCount("id123") } returns 5
-
-        assertEquals(5, userSessionManager.getOfflineVisits(mockUser))
-    }
-
-    @Test
-    fun `getOfflineVisits returns 0 for null user or id`() = testScope.runTest {
-        assertEquals(0, userSessionManager.getOfflineVisits(null))
-
-        val mockUser = mockk<RealmUser>()
-        every { mockUser.id } returns null
-        assertEquals(0, userSessionManager.getOfflineVisits(mockUser))
-    }
-
-    @Test
-    fun `getLastVisit returns formatted string for valid timestamp`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>()
-        every { mockUser.name } returns "test_name"
-        val timestamp = 1672531200000L // Jan 1, 2023, 00:00:00 UTC (or local depending on timezone)
-        coEvery { activitiesRepository.getLastVisit("test_name") } returns timestamp
-
-        val expectedFormat = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(timestamp))
-        assertEquals(expectedFormat, userSessionManager.getLastVisit(mockUser))
-    }
-
-    @Test
-    fun `getLastVisit returns fallback string when no record found`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>()
-        every { mockUser.name } returns "test_name"
-        coEvery { activitiesRepository.getLastVisit("test_name") } returns null
-
-        assertEquals("No logout record found", userSessionManager.getLastVisit(mockUser))
-    }
-
-    @Test
     fun `setResourceOpenCount delegates to logResourceOpen for normal user`() = testScope.runTest {
         val mockUser = mockk<RealmUser>(relaxed = true)
         every { mockUser.id } returns "normal_user"
@@ -265,30 +221,6 @@ class UserSessionManagerTest {
         advanceUntilIdle()
 
         coVerify(exactly = 0) { activitiesRepository.logResourceOpen(any(), any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun `getNumberOfResourceOpen returns formatted string when count is greater than 0`() = testScope.runTest {
-        coEvery { activitiesRepository.getResourceOpenCount("test_user", UserSessionManager.KEY_RESOURCE_OPEN) } returns 5L
-        assertEquals("Resource opened 5 times.", userSessionManager.getNumberOfResourceOpen())
-    }
-
-    @Test
-    fun `getNumberOfResourceOpen returns empty string when count is 0`() = testScope.runTest {
-        coEvery { activitiesRepository.getResourceOpenCount("test_user", UserSessionManager.KEY_RESOURCE_OPEN) } returns 0L
-        assertEquals("", userSessionManager.getNumberOfResourceOpen())
-    }
-
-    @Test
-    fun `maxOpenedResource returns formatted string when result is not null`() = testScope.runTest {
-        coEvery { activitiesRepository.getMostOpenedResource("test_user", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Top Resource", 10)
-        assertEquals("Top Resource opened 10 times", userSessionManager.maxOpenedResource())
-    }
-
-    @Test
-    fun `maxOpenedResource returns empty string when result is null`() = testScope.runTest {
-        coEvery { activitiesRepository.getMostOpenedResource("test_user", UserSessionManager.KEY_RESOURCE_OPEN) } returns null
-        assertEquals("", userSessionManager.maxOpenedResource())
     }
 
     @Test

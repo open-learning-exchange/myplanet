@@ -39,6 +39,9 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
+
+    @javax.inject.Inject
+    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
@@ -98,9 +101,9 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
     override fun onMemberSelected(userModel: RealmUser?) {
         if (!isAdded) return
-        val handler = profileDbHandler
+
         lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,
