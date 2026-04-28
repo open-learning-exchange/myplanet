@@ -44,6 +44,20 @@ Both sync paths apply the same three calls:
 
 So the policy is enforced regardless of which manager the user is routed through, and regardless of fast vs. standard mode.
 
+## Device-user catch-up sync
+
+Bootstrap deferral creates a real correctness gap on the first appearance of any device user — not just the very first sync. A new user logging in (or signing up) on a tablet that already has other device users still has all of *their* user-bound data missing locally, because every prior sync's `_find` selector was scoped to the previous device users. Most visible failure mode: the new user starts a team survey, the local DB shows no existing team submission (because that submission was scoped out by the previous selector), and the tablet writes a duplicate.
+
+To close the gap, `UserSessionManager.onLoginAsync` triggers a one-shot foreground sync the moment `DeviceUserRepository.upsertFromLogin` reports a real **insert** (not just a touch of `lastLoginAt` on an existing row). Three cases fall out:
+
+- First-ever login on a fresh tablet → insert → catch-up runs.
+- Same user re-login → update → no catch-up; regular sync cadence handles them.
+- New user (login or signup) on an existing tablet → insert → catch-up runs.
+
+By the time the catch-up sync evaluates `applyForegroundPolicy`, `RealmDeviceUser` includes the new user, so the previously-deferred tables are pulled with a selector that covers them.
+
+Open follow-up: the catch-up currently fires from `onLoginAsync` and runs concurrently with the post-login UI. A cleaner UX is to hold the redirect (`SyncActivity.openDashboard()`) until the catch-up's `onSyncComplete` fires, so users only enter the app once their data is local. That requires plumbing a completion signal through the existing `onLoginAsync` callback path and is left as a separate UI-flow change.
+
 ## Per-database steady-state implementations
 
 All scoped paths are dispatched from `TransactionSyncManager.syncDb`. Three of them share the generic `syncFindByField` helper; `courses_progress` and `submissions` each have a bespoke helper because of their pagination tuning and field projection needs.
@@ -154,5 +168,6 @@ These Mango indexes are required for the `_find` selectors to scale; without the
 
 ## Suggested follow-ups
 
-1. Add a recency window to `login_activities` and `chat_history` once we have a sense of how far back is useful on a real device.
-2. Re-run bootstrap and steady-state sync separately on real data to confirm the duration regressions from issue #9895 are gone.
+1. Hold the post-login redirect until the device-user catch-up sync completes (UI-flow change in `SyncActivity.onLogin`), so users only reach the dashboard once their data is local.
+2. Add a recency window to `login_activities` and `chat_history` once we have a sense of how far back is useful on a real device.
+3. Re-run bootstrap and steady-state sync separately on real data to confirm the duration regressions from issue #9895 are gone.

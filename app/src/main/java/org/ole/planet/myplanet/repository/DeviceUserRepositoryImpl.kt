@@ -21,13 +21,14 @@ class DeviceUserRepositoryImpl @Inject constructor(
         parentCode: String?,
         planetCode: String?,
         loginTime: Long
-    ) {
+    ): Boolean {
         if (userId.isNullOrBlank() || userId.startsWith("guest")) {
-            return
+            return false
         }
 
+        var newlyInserted = false
         executeTransaction { realm ->
-            upsertDeviceUser(
+            newlyInserted = upsertDeviceUser(
                 realm = realm,
                 userId = userId,
                 userName = userName,
@@ -36,6 +37,7 @@ class DeviceUserRepositoryImpl @Inject constructor(
                 loginTime = loginTime
             )
         }
+        return newlyInserted
     }
 
     override suspend fun ensureInitializedFromLoginHistory(): Int {
@@ -108,10 +110,12 @@ class DeviceUserRepositoryImpl @Inject constructor(
         parentCode: String?,
         planetCode: String?,
         loginTime: Long
-    ) {
-        val deviceUser = realm.where(RealmDeviceUser::class.java)
+    ): Boolean {
+        val existing = realm.where(RealmDeviceUser::class.java)
             .equalTo("userId", userId)
             .findFirst()
+        val newlyInserted = existing == null
+        val deviceUser = existing
             ?: realm.createObject(RealmDeviceUser::class.java, userId).apply {
                 firstLoginAt = loginTime
             }
@@ -131,5 +135,6 @@ class DeviceUserRepositoryImpl @Inject constructor(
         if (!planetCode.isNullOrBlank()) {
             deviceUser.planetCode = planetCode
         }
+        return newlyInserted
     }
 }

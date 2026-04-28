@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.util.Log
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -10,12 +11,14 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class UserSessionManager @Inject constructor(
@@ -25,7 +28,8 @@ class UserSessionManager @Inject constructor(
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val deviceUserRepository: DeviceUserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val syncManager: Lazy<SyncManager>
 ) {
     private val fullName: String
 
@@ -55,12 +59,15 @@ class UserSessionManager @Inject constructor(
                     parentCode = model?.parentCode,
                     planetCode = model?.planetCode
                 )
-                deviceUserRepository.upsertFromLogin(
+                val isNewDeviceUser = deviceUserRepository.upsertFromLogin(
                     userId = model?.id,
                     userName = model?.name,
                     parentCode = model?.parentCode,
                     planetCode = model?.planetCode
                 )
+                if (isNewDeviceUser) {
+                    triggerDeviceUserCatchUpSync()
+                }
                 withContext(dispatcherProvider.main) {
                     callback?.invoke()
                 }
@@ -70,6 +77,28 @@ class UserSessionManager @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Kicks off a foreground sync the moment a new RealmDeviceUser row appears. Without this,
+     * a user logging in for the first time on a tablet (whether via login or signup) would not
+     * see their previously-deferred user-bound tables until the next scheduled sync, which can
+     * cause duplicate writes (e.g. a team-survey submission written locally because the existing
+     * one wasn't pulled). The trigger fires once per new device user; same-user re-login is a no-op.
+     */
+    private fun triggerDeviceUserCatchUpSync() {
+        val listener = object : OnSyncListener {
+            override fun onSyncStarted() {
+                Log.d(TAG, "device-user catch-up sync started")
+            }
+            override fun onSyncComplete() {
+                Log.d(TAG, "device-user catch-up sync complete")
+            }
+            override fun onSyncFailed(msg: String?) {
+                Log.d(TAG, "device-user catch-up sync failed: $msg")
+            }
+        }
+        syncManager.get().start(listener, "sync")
     }
 
     fun logoutAsync() {

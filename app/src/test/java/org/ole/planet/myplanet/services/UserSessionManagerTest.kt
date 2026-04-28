@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.util.Log
+import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.DeviceUserRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,6 +40,10 @@ class UserSessionManagerTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val deviceUserRepository: DeviceUserRepository = mockk(relaxed = true)
+    private val syncManager: SyncManager = mockk(relaxed = true)
+    private val syncManagerLazy: Lazy<SyncManager> = object : Lazy<SyncManager> {
+        override fun get(): SyncManager = syncManager
+    }
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -47,6 +53,7 @@ class UserSessionManagerTest {
     fun setup() {
         mockkStatic(Log::class)
         every { Log.e(any(), any(), any()) } returns 0
+        every { Log.d(any(), any<String>()) } returns 0
 
         every { sharedPrefManager.getUserName() } returns "test_user"
 
@@ -57,7 +64,8 @@ class UserSessionManagerTest {
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
             deviceUserRepository = deviceUserRepository,
-            dispatcherProvider = dispatcherProvider
+            dispatcherProvider = dispatcherProvider,
+            syncManager = syncManagerLazy
         )
     }
 
@@ -82,7 +90,8 @@ class UserSessionManagerTest {
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
             deviceUserRepository = deviceUserRepository,
-            dispatcherProvider = dispatcherProvider
+            dispatcherProvider = dispatcherProvider,
+            syncManager = syncManagerLazy
         )
     }
 
@@ -117,6 +126,36 @@ class UserSessionManagerTest {
             )
         }
         assertEquals(true, callbackInvoked)
+    }
+
+    @Test
+    fun `onLoginAsync triggers catch-up sync when device user is newly inserted`() = testScope.runTest {
+        val mockUser = mockk<RealmUser>(relaxed = true)
+        every { mockUser.id } returns "id123"
+        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        coEvery {
+            deviceUserRepository.upsertFromLogin(any(), any(), any(), any(), any())
+        } returns true
+
+        userSessionManager.onLoginAsync()
+        advanceUntilIdle()
+
+        verify { syncManager.start(any(), "sync", null) }
+    }
+
+    @Test
+    fun `onLoginAsync skips catch-up sync when device user already exists`() = testScope.runTest {
+        val mockUser = mockk<RealmUser>(relaxed = true)
+        every { mockUser.id } returns "id123"
+        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        coEvery {
+            deviceUserRepository.upsertFromLogin(any(), any(), any(), any(), any())
+        } returns false
+
+        userSessionManager.onLoginAsync()
+        advanceUntilIdle()
+
+        verify(exactly = 0) { syncManager.start(any(), any(), any()) }
     }
 
     @Test
