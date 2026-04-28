@@ -39,4 +39,11 @@
     <color name="dropdown_bg">@android:color/white</color>
     <color name="dropdown_text">@android:color/black</color>
 
+    <color name="achievement_purpose_icon">#2E7D32</color>
+    <color name="achievement_goals_icon">#E65100</color>
+    <color name="achievement_references_icon">#6A1B9A</color>
+    <color name="chat_user_message_text">#FFFFFF</color>
+    <color name="chat_ai_response_text">#000000</color>
+    <color name="chat_ai_response_background">#EEF1F6</color>
+    <color name="chat_detail_divider">#E0E0E0</color>
 </resources>
