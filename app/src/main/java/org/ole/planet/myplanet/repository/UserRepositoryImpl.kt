@@ -1079,16 +1079,47 @@ class UserRepositoryImpl @Inject constructor(
     }
     override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                val docId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
+                ids.add(docId)
             }
         }
-        documentList.forEach { jsonDoc ->
-            populateUser(jsonDoc, realm, settings)
+
+        val existingUsersMap = if (ids.isNotEmpty()) {
+            realm.where(RealmUser::class.java).`in`("_id", ids.toTypedArray()).findAll()
+                .associateBy { it._id }
+                .toMutableMap()
+        } else {
+            mutableMapOf()
+        }
+
+        // Iterate with pre-assigned IDs to avoid random UUID generation issues
+        for (i in documentList.indices) {
+            val jsonDoc = documentList[i]
+            try {
+                val id = ids[i]
+                val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("name", jsonDoc)
+                var user = existingUsersMap[id]
+
+                if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
+                    user = migrateGuestUser(realm, id, userName, settings)
+                    user?.let { existingUsersMap[id] = it }
+                }
+
+                if (user == null) {
+                    user = realm.createObject(RealmUser::class.java, id)
+                    user?.let { existingUsersMap[id] = it }
+                }
+                user?.let { insertIntoUsers(jsonDoc, it, settings) }
+            } catch (err: Exception) {
+                err.printStackTrace()
+            }
         }
     }
 
