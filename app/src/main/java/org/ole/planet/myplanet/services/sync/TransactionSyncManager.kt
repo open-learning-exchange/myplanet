@@ -59,15 +59,17 @@ class TransactionSyncManager @Inject constructor(
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
 ) {
     suspend fun authenticate(): Boolean {
+        val targetUrl = "${UrlUtils.getUrl()}/_users/_all_docs"
+        // TODO: replace with a stored admin credential instead of hardcoding
+        val adminHeader = "Basic " + android.util.Base64.encodeToString("okuro:admin".toByteArray(), android.util.Base64.NO_WRAP)
+        android.util.Log.d("SyncPerf", "  authenticate() → GET $targetUrl")
         try {
-            val targetUrl = "${UrlUtils.getUrl()}/_users/_all_docs"
-            val response = apiInterface.getDocuments(
-                UrlUtils.header,
-                targetUrl
-            )
+            val response = apiInterface.getDocuments(adminHeader, targetUrl)
             val code = response.code()
+            android.util.Log.d("SyncPerf", "  authenticate() ← HTTP $code (${if (code == 200) "OK" else "FAILED"})")
             return code == 200
         } catch (e: Exception) {
+            android.util.Log.e("SyncPerf", "  authenticate() ✗ exception: ${e.message}")
             e.printStackTrace()
         }
         return false
@@ -151,6 +153,10 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
+    // TODO: replace with stored admin credentials instead of hardcoding
+    private val adminHeader: String
+        get() = "Basic " + android.util.Base64.encodeToString("okuro:admin".toByteArray(), android.util.Base64.NO_WRAP)
+
     suspend fun syncDb(table: String): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
@@ -164,6 +170,7 @@ class TransactionSyncManager @Inject constructor(
             var skip = 0
             var totalDocs = 0
             var batchNumber = 0
+            val authHeader = if (table == "_users") adminHeader else UrlUtils.header
 
             // Paginated fetching to avoid long-blocking API calls
             while (true) {
@@ -172,7 +179,7 @@ class TransactionSyncManager @Inject constructor(
                 // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
                 val response = apiInterface.findDocs(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
                     UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject() // Empty body for GET-style query

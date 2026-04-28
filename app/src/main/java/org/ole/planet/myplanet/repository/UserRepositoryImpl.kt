@@ -332,6 +332,8 @@ class UserRepositoryImpl @Inject constructor(
         try {
             val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
             val userName = JsonUtils.getString("name", jsonDoc)
+            val isAdmin = jsonDoc.get("isUserAdmin")?.asBoolean == true
+            android.util.Log.d("SyncPerf", "  _users populateUser: id=$id name=$userName isUserAdmin=$isAdmin")
             var user: RealmUser? = null
 
             if (!mRealm.isInTransaction) {
@@ -884,6 +886,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                 } else {
                     if (AndroidDecrypter.androidDecrypter(username, password, it.derived_key, it.salt)) {
+                        if (it.userAdmin == true) return null
                         if (isManagerMode && !it.isManager()) return null
                         return it
                     }
@@ -1078,18 +1081,24 @@ class UserRepositoryImpl @Inject constructor(
         achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
     }
     override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
+        android.util.Log.d("SyncPerf", "  _users bulkInsert: ${jsonArray.size()} raw rows received")
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        var skippedDesign = 0
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+            } else {
+                skippedDesign++
             }
         }
+        android.util.Log.d("SyncPerf", "  _users bulkInsert: ${documentList.size} to insert, $skippedDesign design docs skipped")
         documentList.forEach { jsonDoc ->
             populateUser(jsonDoc, realm, settings)
         }
+        android.util.Log.d("SyncPerf", "  _users bulkInsert: done")
     }
 
     override suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
