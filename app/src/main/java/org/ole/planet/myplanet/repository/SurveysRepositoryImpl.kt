@@ -1,10 +1,17 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.text.TextUtils
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -19,6 +26,8 @@ import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
@@ -28,7 +37,14 @@ class SurveysRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
+    private val dispatcherProvider: DispatcherProvider,
 ) : RealmRepository(databaseService, realmDispatcher), SurveysRepository {
+
+    companion object {
+        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
+        private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
+    }
+
     override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
         return queryList(RealmExamQuestion::class.java) {
             equalTo("examId", examId)
@@ -379,14 +395,117 @@ class SurveysRepositoryImpl @Inject constructor(
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
+        kotlinx.coroutines.runBlocking {
+            documentList.forEach { jsonDoc ->
+                insertCourseStepsExams("", "", jsonDoc, "")
+            }
         }
+    }
+
+    override suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject) {
+        insertCourseStepsExams(myCoursesID, stepId, exam, "")
+    }
+
+    override suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject, parentId: String?) {
+        val performInsert: (io.realm.Realm) -> Unit = { mRealm ->
+            var myExam = mRealm.where(RealmStepExam::class.java).equalTo("id", JsonUtils.getString("_id", exam)).findFirst()
+            if (myExam == null) {
+                val id = JsonUtils.getString("_id", exam)
+                myExam = mRealm.createObject(RealmStepExam::class.java,
+                    if (TextUtils.isEmpty(id)) parentId else id
+                )
+            }
+            if (!TextUtils.isEmpty(myCoursesID)) myExam?.courseId = myCoursesID
+            if (!TextUtils.isEmpty(stepId)) myExam?.stepId = stepId
+            myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
+            myExam?.name = JsonUtils.getString("name", exam)
+            myExam?.description = JsonUtils.getString("description", exam)
+            myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
+            myExam?._rev = JsonUtils.getString("_rev", exam)
+            myExam?.createdBy = JsonUtils.getString("createdBy", exam)
+            myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
+            myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
+            myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
+            myExam?.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
+            myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
+            myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
+            myExam?.isFromNation = !TextUtils.isEmpty(parentId)
+            myExam?.teamId = JsonUtils.getString("teamId", exam)
+            myExam?.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
+            myExam?.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
+            val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
+            if (oldQuestions == null || oldQuestions.isEmpty()) {
+                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
+            }
+        }
+
+
+        executeTransaction { mRealm -> performInsert(mRealm) }
+    }
+
+    override fun dueRemindersFlow(): Flow<List<String>> = flow {
+        val prefs = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        while (true) {
+            val currentTime = System.currentTimeMillis()
+            val toShow = mutableListOf<String>()
+            val toRemove = mutableListOf<String>()
+
+            for (entry in prefs.all) {
+                if (entry.key.startsWith("reminder_time_")) {
+                    val surveyIds = entry.key.removePrefix("reminder_time_")
+                    val reminderTime = prefs.getLong(entry.key, 0)
+                    if (reminderTime <= currentTime) {
+                        toShow.add(surveyIds)
+                        toRemove.add(surveyIds)
+                    }
+                }
+            }
+
+            if (toShow.isNotEmpty()) {
+                emit(toShow)
+                prefs.edit {
+                    for (surveyIds in toRemove) {
+                        remove("reminder_time_$surveyIds")
+                        remove("reminder_surveys_$surveyIds")
+                    }
+                }
+            }
+            delay(60_000)
+        }
+    }.flowOn(dispatcherProvider.io)
+
+    override suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int) {
+        val currentTime = System.currentTimeMillis()
+        val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
+
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        preferences.edit {
+            putLong("reminder_time_$surveyIds", reminderTime)
+                .putString("reminder_surveys_$surveyIds", surveyIds)
+        }
+    }
+
+    override suspend fun setLastSurveyDialogShown(time: Long) {
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        preferences.edit {
+            putLong(KEY_LAST_SURVEY_DIALOG_SHOWN, time)
+        }
+    }
+
+    override suspend fun getLastSurveyDialogShown(): Long {
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        return preferences.getLong(KEY_LAST_SURVEY_DIALOG_SHOWN, 0L)
+    }
+
+    override suspend fun isReminderScheduled(surveyIds: String): Boolean {
+        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
+        return preferences.contains("reminder_time_$surveyIds")
     }
 }

@@ -12,13 +12,8 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -425,16 +420,27 @@ class UploadManager @Inject constructor(
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
-                        val response = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/teams", teamData.serialized
-                        )
+                        if (teamData.isDeletePending) {
+                            val id = teamData.teamId ?: return@forEach
+                            val response = apiInterface.putDoc(
+                                UrlUtils.header, "application/json",
+                                "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
+                            )
+                            if (response.isSuccessful) {
+                                teamsRepository.get().deleteLocalTeamRecord(id)
+                            }
+                        } else {
+                            val response = apiInterface.postDoc(
+                                UrlUtils.header, "application/json",
+                                "${UrlUtils.getUrl()}/teams", teamData.serialized
+                            )
 
-                        val `object` = response.body()
+                            val `object` = response.body()
 
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            if (`object` != null) {
+                                val rev = getString("rev", `object`)
+                                teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            }
                         }
                     } catch (e: IOException) {
                         Log.e(TAG, "Exception in UploadManager", e)
@@ -456,39 +462,7 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            val activitiesToUpload = activitiesRepository.getUnuploadedLoginActivities()
-
-            activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableMapOf<String, com.google.gson.JsonObject?>()
-
-                val semaphore = Semaphore(6)
-                coroutineScope {
-                    val deferreds = batch.map { activityData ->
-                        async {
-                            try {
-                                val `object` = semaphore.withPermit {
-                                    apiInterface.postDoc(
-                                        UrlUtils.header, "application/json",
-                                        "${UrlUtils.getUrl()}/login_activities", activityData.serialized
-                                    ).body()
-                                }
-                                activityData.id to `object`
-                            } catch (e: java.io.IOException) {
-                                Log.e(TAG, "Exception in UploadManager", e)
-                                null
-                            }
-                        }
-                    }
-                    deferreds.awaitAll().filterNotNull().forEach { (id, obj) ->
-                        successfulUpdates[id] = obj
-                    }
-                }
-
-                if (successfulUpdates.isNotEmpty()) {
-                    val idsToUpdate = successfulUpdates.keys.toTypedArray()
-                    activitiesRepository.markActivitiesUploaded(idsToUpdate, successfulUpdates)
-                }
-            }
+            activitiesRepository.uploadActivities()
 
             uploadTeamActivities()
 

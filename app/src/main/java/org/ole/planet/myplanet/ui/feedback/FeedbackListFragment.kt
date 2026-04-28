@@ -6,9 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -20,17 +18,15 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
@@ -41,17 +37,15 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
 
     @Inject
-    lateinit var syncManager: SyncManager
+    lateinit var serverUrlMapper: ServerUrlMapper
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
     private val serverUrl: String
-        get() = sharedPrefManager.getServerUrl()
+    get() = sharedPrefManager.getServerUrl()
 
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
@@ -62,9 +56,12 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         startFeedbackSync()
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-
         binding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
             feedbackFragment.setOnFeedbackSubmittedListener(this)
@@ -72,9 +69,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                 feedbackFragment.show(childFragmentManager, "")
             }
         }
-
         setupRealtimeSync()
-
         return binding.root
     }
 
@@ -112,46 +107,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         lifecycleScope.launch(dispatcherProvider.io) {
             updateServerIfNecessary(mapping)
             withContext(dispatcherProvider.main) {
-                startSyncManager()
+                viewModel.startFeedbackSync()
             }
         }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_feedback))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshFeedbackListData()
-                        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.FEEDBACK, true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startFeedbackSync() }.show()
-                    }
-                }
-            }
-        }, "full", listOf("feedback"))
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
@@ -171,6 +129,38 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private fun observeFeedbackList() {
         collectWhenStarted(viewModel.feedbackList) { feedbackList ->
             updatedFeedbackList(feedbackList)
+        }
+
+        collectWhenStarted(viewModel.syncStatus) { status ->
+            when (status) {
+                is FeedbackListViewModel.SyncStatus.Idle -> {
+                    // Do nothing
+                }
+                is FeedbackListViewModel.SyncStatus.Syncing -> {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_feedback))
+                        customProgressDialog?.show()
+                    }
+                }
+                is FeedbackListViewModel.SyncStatus.Success -> {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshFeedbackListData()
+                        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.FEEDBACK, true)
+                    }
+                }
+                is FeedbackListViewModel.SyncStatus.Error -> {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        Snackbar.make(binding.root, "Sync failed: ${status.message}", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") { startFeedbackSync() }.show()
+                    }
+                }
+            }
         }
     }
 
@@ -194,7 +184,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
         if (_binding == null) return
-        feedbackAdapter.submitList(updatedList)
+        feedbackAdapter.submitList(updatedList) {
+            binding.rvFeedback.scrollToPosition(0)
+        }
         val itemCount = updatedList?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")
         updateTextViewsVisibility(itemCount)

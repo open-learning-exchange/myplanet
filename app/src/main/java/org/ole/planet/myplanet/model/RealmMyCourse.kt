@@ -11,7 +11,6 @@ import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -66,7 +65,7 @@ open class RealmMyCourse : RealmObject() {
         private val concatenatedLinks = HashSet<String>()
 
         @JvmStatic
-        fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: SharedPrefManager) {
+        fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm, spm: SharedPrefManager, surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository) {
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
@@ -112,8 +111,8 @@ open class RealmMyCourse : RealmObject() {
                     }
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm, spm)
-                insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
-                insertSurvey(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate)
+                insertExam(stepJson, stepId, i + 1, myMyCoursesDB?.courseId, surveysRepository)
+                insertSurvey(stepJson, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate, surveysRepository)
                 step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
                 step.courseId = myMyCoursesDB?.courseId
                 courseStepsList.add(step)
@@ -143,20 +142,24 @@ open class RealmMyCourse : RealmObject() {
         }
 
 
-        private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+        private fun insertExam(stepContainer: JsonObject, stepId: String, i: Int, myCoursesID: String?, surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository) {
             if (stepContainer.has("exam")) {
                 val `object` = stepContainer.getAsJsonObject("exam")
                 `object`.addProperty("stepNumber", i)
-                insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
+                kotlinx.coroutines.runBlocking {
+                    surveysRepository.insertCourseStepsExams(myCoursesID, stepId, `object`)
+                }
             }
         }
 
-        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
+        private fun insertSurvey(stepContainer: JsonObject, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?, surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository) {
             if (stepContainer.has("survey")) {
                 val `object` = stepContainer.getAsJsonObject("survey")
                 `object`.addProperty("stepNumber", i)
                 `object`.addProperty("createdDate", createdDate)
-                insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
+                kotlinx.coroutines.runBlocking {
+                    surveysRepository.insertCourseStepsExams(myCoursesID, stepId, `object`)
+                }
             }
         }
 
@@ -176,13 +179,13 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: SharedPrefManager) {
+        fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: SharedPrefManager, surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
                 mRealm.beginTransaction()
             }
             try {
-                insertMyCourses("", myCoursesDoc, mRealm, spm)
+                insertMyCourses("", myCoursesDoc, mRealm, spm, surveysRepository)
                 if (startedTransaction) {
                     mRealm.commitTransaction()
                 }

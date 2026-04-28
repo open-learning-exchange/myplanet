@@ -1027,7 +1027,7 @@ class SyncManager @Inject constructor(
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
+                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager, dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository())
                                             "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++

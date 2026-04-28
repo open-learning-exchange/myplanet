@@ -675,7 +675,7 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
+            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager, dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository())
         }
     }
     override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
