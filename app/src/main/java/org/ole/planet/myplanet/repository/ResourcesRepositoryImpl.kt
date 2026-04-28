@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -39,7 +40,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
-    private val tagsRepository: TagsRepository
+    private val tagsRepository: TagsRepository,
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
     override suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData> {
@@ -101,9 +103,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
-        return withRealm { realm ->
-            realm.copyFromRealm(realm.where(RealmMyLibrary::class.java).findAll())
-        }
+        return queryList(RealmMyLibrary::class.java)
     }
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
@@ -115,8 +115,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+        return Normalizer.normalize(str, Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
+            .lowercase(Locale.ROOT)
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
@@ -238,6 +239,31 @@ class ResourcesRepositoryImpl @Inject constructor(
         save(item)
     }
 
+    override suspend fun saveLocalResource(
+        resource: RealmMyLibrary,
+        userId: String?,
+        isPrivateTeamResource: Boolean,
+        teamId: String?
+    ): Result<Unit> {
+        val title = resource.title ?: return Result.failure(Exception("Title is missing"))
+
+        if (resourceTitleExists(title)) {
+            return Result.failure(Exception("Resource title already exists"))
+        }
+
+        saveLibraryItem(resource)
+
+        if (!isPrivateTeamResource) {
+            markResourceAdded(userId, resource.id ?: "")
+        }
+
+        if (teamId != null) {
+            teamsRepositoryLazy.get().syncTeamActivities()
+        }
+
+        return Result.success(Unit)
+    }
+
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
         activitiesRepository.markResourceAdded(userId, resourceId)
     }
@@ -292,15 +318,6 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
-    }
-
-    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        val imageList = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", true)
-                .greaterThan("createdDate", timestamp)
-                .equalTo("mediaType", "image")
-        }
-        return imageList.mapNotNull { it.resourceRemoteAddress }
     }
 
     override fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {

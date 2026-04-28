@@ -45,6 +45,7 @@ open class RealmMyTeam : RealmObject() {
     var date: Long = 0
     var isPublic = false
     var updated = false
+    var isDeletePending = false
     var beginningBalance = 0
     var sales = 0
     var otherIncome = 0
@@ -145,6 +146,11 @@ open class RealmMyTeam : RealmObject() {
 
             JsonUtils.addString(`object`, "_id", team._id)
             JsonUtils.addString(`object`, "_rev", team._rev)
+
+            if (team.isDeletePending) {
+                `object`.addProperty("_deleted", true)
+                return `object`
+            }
 
             if (team.docType == "resourceLink") {
                 `object`.addProperty("resourceId", team.resourceId)

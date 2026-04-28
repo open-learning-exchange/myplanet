@@ -37,20 +37,16 @@ sealed class UploadSerializer<T : RealmObject> {
         val serialize: (T) -> JsonObject
     ) : UploadSerializer<T>()
 
-    data class WithRealm<T : RealmObject>(
-        val serialize: (Realm, T) -> JsonObject
-    ) : UploadSerializer<T>()
-
     data class WithContext<T : RealmObject>(
         val serialize: (T, Context) -> JsonObject
     ) : UploadSerializer<T>()
 
-    data class Full<T : RealmObject>(
-        val serialize: (Realm, T, Context) -> JsonObject
-    ) : UploadSerializer<T>()
-
     data class Async<T : RealmObject>(
         val serialize: suspend (T) -> JsonObject
+    ) : UploadSerializer<T>()
+
+    data class AsyncContext<T : RealmObject>(
+        val serialize: suspend (T, Context) -> JsonObject
     ) : UploadSerializer<T>()
 }
 
