@@ -53,6 +53,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
+
+    @Inject
+    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     @Inject
@@ -197,7 +200,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onMemberSelected(userModel: RealmUser?) {
         lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, userSessionManager) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
             FragmentNavigator.replaceFragment(
                 supportFragmentManager,
                 R.id.fragment_container,

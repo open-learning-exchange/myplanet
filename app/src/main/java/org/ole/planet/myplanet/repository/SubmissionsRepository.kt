@@ -38,6 +38,7 @@ interface SubmissionsRepository {
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
+    suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
     suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: org.ole.planet.myplanet.model.RealmStepExam, type: String?, teamId: String?): RealmSubmission?
     suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean
@@ -52,5 +53,5 @@ interface SubmissionsRepository {
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun insertSubmission(mRealm: io.realm.Realm, submission: com.google.gson.JsonObject)
     suspend fun getExamUploadPayload(submission: org.ole.planet.myplanet.model.RealmSubmission): com.google.gson.JsonObject
-    fun serializeSubmission(mRealm: io.realm.Realm, submission: org.ole.planet.myplanet.model.RealmSubmission, context: android.content.Context, source: String, parentCode: String): com.google.gson.JsonObject
+    suspend fun serializeSubmission(submission: org.ole.planet.myplanet.model.RealmSubmission, context: android.content.Context, source: String, parentCode: String): com.google.gson.JsonObject
 }

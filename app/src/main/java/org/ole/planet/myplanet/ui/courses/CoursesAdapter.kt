@@ -87,9 +87,30 @@ class CoursesAdapter(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun setTagsMap(tagsMap: Map<String, List<Tag>>) {
-        this.tagsMap = tagsMap
-        notifyItemRangeChanged(0, itemCount, TAG_PAYLOAD)
+    fun setTagsMap(newTagsMap: Map<String, List<Tag>>) {
+        val updatedCourseIds = mutableSetOf<String?>()
+
+        newTagsMap.forEach { (courseId, newTags) ->
+            if (tagsMap[courseId] != newTags) {
+                updatedCourseIds.add(courseId)
+            }
+        }
+
+        tagsMap.keys.filterNot { newTagsMap.containsKey(it) }.forEach { removedKey ->
+            updatedCourseIds.add(removedKey)
+        }
+
+        tagsMap = newTagsMap
+
+        updatedCourseIds.forEach { courseId ->
+            if (courseId.isNullOrEmpty()) {
+                return@forEach
+            }
+            val index = currentList.indexOfFirst { it.courseId == courseId }
+            if (index != -1) {
+                notifyItemChanged(index, TAG_PAYLOAD)
+            }
+        }
     }
 
     fun removeCourses(courseIds: List<String>) {
@@ -109,14 +130,43 @@ class CoursesAdapter(
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
+        val updatedCourseIds = mutableSetOf<String?>()
+
+        newMap.forEach { (courseId, newRating) ->
+            if (this.map[courseId] != newRating) {
+                updatedCourseIds.add(courseId)
+            }
+        }
+        this.map.keys.filterNot { newMap.containsKey(it) }.forEach { removedKey ->
+            updatedCourseIds.add(removedKey)
+        }
+
+        newProgressMap?.forEach { (courseId, newProgress) ->
+            if (this.progressMap?.get(courseId) != newProgress) {
+                updatedCourseIds.add(courseId)
+            }
+        }
+        this.progressMap?.keys?.filterNot { newProgressMap?.containsKey(it) == true }?.forEach { removedKey ->
+            updatedCourseIds.add(removedKey)
+        }
+
         this.map.clear()
         this.map.putAll(newMap)
         this.progressMap = newProgressMap
+
         submitList(newCourseList) {
             val bundle = Bundle()
             bundle.putBoolean(RATING_PAYLOAD, true)
             bundle.putBoolean(PROGRESS_PAYLOAD, true)
-            notifyItemRangeChanged(0, itemCount, bundle)
+            updatedCourseIds.forEach { courseId ->
+                if (courseId.isNullOrEmpty()) {
+                    return@forEach
+                }
+                val index = currentList.indexOfFirst { it.courseId == courseId }
+                if (index != -1) {
+                    notifyItemChanged(index, bundle)
+                }
+            }
         }
     }
 
