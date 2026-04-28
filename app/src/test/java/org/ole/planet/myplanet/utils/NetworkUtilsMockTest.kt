@@ -4,8 +4,8 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
+import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -16,7 +16,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
