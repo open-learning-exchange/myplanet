@@ -62,6 +62,44 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Custom URI scheme: myplanet://courses, myplanet://resources, etc. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="myplanet" />
+            </intent-filter>
+            <!--
+                HTTPS App Links for named Planet servers (domains only, not IPs).
+                Each host must serve /.well-known/assetlinks.json for verified (no-chooser) opening.
+                See: https://developer.android.com/training/app-links/verify-android-applinks
+                Links should use path prefix /app/, e.g. https://planet.learning.ole.org/app/courses
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="planet.learning.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.earth.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.somalia.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.vi.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.gt" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="sanpablo.planet.gt" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="uriur.planet.gt" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="embakasi.planet.gt" android:pathPrefix="/app/" />
+            </intent-filter>
+            <!-- HTTP for local network IP-based servers (no autoVerify — IPs cannot host assetlinks.json) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="192.168.48.253" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="10.82.1.31" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.1.73" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.1.66" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.1.148" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.68.126" android:pathPrefix="/app/" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ui.sync.LoginActivity"
