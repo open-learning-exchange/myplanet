@@ -12,7 +12,6 @@ import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider

@@ -24,18 +24,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -45,8 +41,6 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper

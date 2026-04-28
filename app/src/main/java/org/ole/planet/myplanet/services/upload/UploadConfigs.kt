@@ -8,7 +8,6 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
