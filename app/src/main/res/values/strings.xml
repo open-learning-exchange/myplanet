@@ -1077,6 +1077,7 @@
     <string name="beta_improved_sync">beta improved sync</string>
     <string name="beta_improved_sync_summary">Run the experimental sync manager during manual and auto syncs.</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
+    <string name="admin_login_not_allowed">Administrator accounts cannot log in to the mobile app.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
     <string name="welcome">Welcome %1$s</string>

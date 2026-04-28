@@ -43,7 +43,7 @@ class ImprovedSyncManager @Inject constructor(
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
-        "tablet_users",
+        "_users",
         "tags",
         "teams",
         "news",

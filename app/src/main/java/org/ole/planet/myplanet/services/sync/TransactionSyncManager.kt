@@ -60,7 +60,7 @@ class TransactionSyncManager @Inject constructor(
 ) {
     suspend fun authenticate(): Boolean {
         try {
-            val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
+            val targetUrl = "${UrlUtils.getUrl()}/_users/_all_docs"
             val response = apiInterface.getDocuments(
                 UrlUtils.header,
                 targetUrl
@@ -305,7 +305,7 @@ class TransactionSyncManager @Inject constructor(
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
                                                 when (table) {
-                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
+                            "_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                             "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
