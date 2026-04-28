@@ -59,11 +59,12 @@ All scoped paths are dispatched from `TransactionSyncManager.syncDb`. Three of t
 
 ### submissions
 
-- selector source: `RealmDeviceUser.userId`
-- selector: `userId: { "$in": [...] }`
+- selector source: `RealmDeviceUser.userId` (which holds `org.couchdb.user:<name>`)
+- selector: `user._id: { "$in": [...] }`
 - endpoint: `submissions/_find`
 - page size: 100, bookmark pagination
 - runs in the foreground phase once device users exist
+- planet stores submissions with a nested `user` object — the field path `user._id` (dotted) matches the server-side `user-id-index` Mango index
 
 ### login_activities
 
@@ -92,8 +93,8 @@ All scoped paths are dispatched from `TransactionSyncManager.syncDb`. Three of t
 ### notifications
 
 - deferred from bootstrap and run as a background follow-up after main sync once device users exist
-- not yet selector-scoped on the wire — still pulled via `_all_docs` inside the background job
-- the obvious next step is `user: { "$in": deviceUserNames }`; recency / unread filters can be added once the server side has matching indexes
+- pulled via `_all_docs` inside the background job — **intentionally not user-scoped**
+- planet writes some notifications with sentinel values like `user: 'SYSTEM'` (admin events such as cross-planet connection requests) and the planet UI's reader OR's the current user with `'SYSTEM'` for admins (`notifications.component.ts:67-71`). A strict `user IN [...]` selector on myplanet would silently drop those. Volume from issue `#9895` was small (~2.5k docs / 1m34s), so background `_all_docs` is a reasonable trade-off versus adding policy logic for sentinel values.
 
 ## Tables intentionally left on `_all_docs`
 
@@ -124,27 +125,25 @@ Issue `planet#9895` listed several heavy tables. Not all of them are user-scoped
 
 ## Server-side expectations
 
-For these `_find` selectors to scale on real data, Planet should add Mango indexes that match them. Without the indexes the server falls back to full table scans and most of the win is lost:
+These Mango indexes are required for the `_find` selectors to scale; without them the server falls back to full-table scans and most of the win is lost. They have been added to `couchdb-setup.sh` in the planet repo (under issue `planet#9895`):
 
-- `courses_progress`: index `userId`
-- `submissions`: index `userId`
-- `login_activities`: index `user`
-- `chat_history`: index `user`
-- `team_activities`: index `teamId`
-- `notifications`: index `user` (once selector-scoped)
+- `courses_progress`: index `userId` (`user-index`)
+- `submissions`: index `user._id` (`user-id-index`)
+- `login_activities`: index `user` (`user-index`)
+- `chat_history`: index `user` (`user-index`)
+- `team_activities`: index `teamId` (`team-index`)
+
+`notifications` is intentionally not indexed for user lookup — see the notifications section above.
 
 ## Known limitations
 
 - Bootstrap deferral is policy-based, not server-assisted — the server still has the full table available; we just stop pulling it client-side until we have a device scope.
 - No recency window on the activity / history tables yet; we still pull every matching doc for every device user.
-- The selector field choices (`courses_progress.userId`, `submissions.userId`, `login_activities.user`, `chat_history.user`) still need verification against real production documents.
-- `notifications` is backgrounded but not yet selector-scoped.
+- Selector fields verified against the planet codebase: `courses_progress.userId`, `submissions.user._id`, `login_activities.user`, `chat_history.user`, `team_activities.teamId` all match the actual document shape on Planet.
+- `notifications` is backgrounded on `_all_docs` rather than selector-scoped, by design — see the notifications section.
 - The branch was not fully compiled in the original sandbox environment because Gradle download was blocked; verify a clean build locally before merging.
 
 ## Suggested follow-ups
 
-1. Verify `courses_progress.userId`, `submissions.userId`, `login_activities.user`, and `chat_history.user` against real server documents.
-2. Add the Mango indexes listed above on the Planet side.
-3. Move `notifications` from "deferred + background" to a `user`-scoped `_find` matching the others.
-4. Add a recency window to `login_activities` and `chat_history` once the server indexes are in place.
-5. Re-run bootstrap and steady-state sync separately on real data to confirm the duration regressions from issue #9895 are gone.
+1. Add a recency window to `login_activities` and `chat_history` once we have a sense of how far back is useful on a real device.
+2. Re-run bootstrap and steady-state sync separately on real data to confirm the duration regressions from issue #9895 are gone.

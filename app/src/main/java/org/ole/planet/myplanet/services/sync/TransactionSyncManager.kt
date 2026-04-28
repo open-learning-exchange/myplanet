@@ -518,7 +518,7 @@ class TransactionSyncManager @Inject constructor(
 
         android.util.Log.d(
             "SyncPerf",
-            "    submissions selector: userId IN ${userIds.size} device users"
+            "    submissions selector: user._id IN ${userIds.size} device users"
         )
 
         while (true) {
@@ -526,7 +526,7 @@ class TransactionSyncManager @Inject constructor(
             val batchStartTime = System.currentTimeMillis()
             val requestBody = JsonObject().apply {
                 add("selector", JsonObject().apply {
-                    add("userId", JsonObject().apply {
+                    add("user._id", JsonObject().apply {
                         add("\$in", com.google.gson.JsonArray().apply {
                             userIds.forEach { add(it) }
                         })
