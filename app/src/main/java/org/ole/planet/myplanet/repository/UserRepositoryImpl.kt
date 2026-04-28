@@ -439,7 +439,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun fetchUserSecurityData(name: String) {
         try {
-            val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
+            val userDocUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$name"
             val response = withContext(dispatcherProvider.io) {
                 apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
             }

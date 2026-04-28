@@ -169,6 +169,13 @@ class LoginSyncManager @Inject constructor(
     }
 
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
+        if (jsonDoc?.get("isUserAdmin")?.asBoolean == true) {
+            withContext(dispatcherProvider.main) {
+                listener.onSyncFailed(context.getString(R.string.admin_login_not_allowed))
+            }
+            return
+        }
+
         if (!isManager(jsonDoc)) {
             withContext(dispatcherProvider.main) {
                 listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
@@ -184,7 +191,6 @@ class LoginSyncManager @Inject constructor(
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
         val roles = jsonDoc?.get("roles")?.asJsonArray
-        val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
-        return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
+        return roles.toString().lowercase(Locale.getDefault()).contains("manager")
     }
 }

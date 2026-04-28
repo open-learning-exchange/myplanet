@@ -210,9 +210,9 @@ class SyncManager @Inject constructor(
             coroutineScope {
                 val syncJobs = listOf(
                     async {
-                        logger.startProcess("tablet_users_sync")
-                        transactionSyncManager.syncDb("tablet_users")
-                        logger.endProcess("tablet_users_sync")
+                        logger.startProcess("_users_sync")
+                        transactionSyncManager.syncDb("_users")
+                        logger.endProcess("_users_sync")
                     },
                     async {
                         logger.startProcess("exams_sync")
@@ -363,12 +363,12 @@ class SyncManager @Inject constructor(
             initializeSync()
             coroutineScope {
                 val syncJobs = mutableListOf<Deferred<Unit>>()
-                if (syncTables?.contains("tablet_users") != false) {
+                if (syncTables?.contains("_users") != false) {
                     syncJobs.add(
                         async {
-                            logger.startProcess("tablet_users_sync")
-                            transactionSyncManager.syncDb("tablet_users")
-                            logger.endProcess("tablet_users_sync")
+                            logger.startProcess("_users_sync")
+                            transactionSyncManager.syncDb("_users")
+                            logger.endProcess("_users_sync")
                         })
 
                     syncJobs.add(
