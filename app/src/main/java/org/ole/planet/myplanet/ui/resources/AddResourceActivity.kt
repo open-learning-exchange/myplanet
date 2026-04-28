@@ -156,25 +156,25 @@ class AddResourceActivity : AppCompatActivity() {
         }
         binding.btnSubmit.isEnabled = false
         lifecycleScope.launch {
-            if (resourcesRepository.resourceTitleExists(title)) {
+            val result = resourcesRepository.saveLocalResource(
+                resource,
+                userModel?.id,
+                isPrivateTeamResource,
+                teamId
+            )
+
+            if (result.isSuccess) {
+                val message = if (isPrivateTeamResource) {
+                    getString(R.string.resource_added_to_team)
+                } else {
+                    getString(R.string.added_to_my_library)
+                }
+                toast(this@AddResourceActivity, message)
+                finish()
+            } else {
                 binding.tlTitle.error = getString(R.string.resource_title_already_exists)
                 binding.btnSubmit.isEnabled = true
-                return@launch
             }
-            resourcesRepository.saveLibraryItem(resource)
-            if (!isPrivateTeamResource) {
-                resourcesRepository.markResourceAdded(userModel?.id, id)
-            }
-            if (teamId != null) {
-                teamsRepository.syncTeamActivities()
-            }
-            val message = if (isPrivateTeamResource) {
-                getString(R.string.resource_added_to_team)
-            } else {
-                getString(R.string.added_to_my_library)
-            }
-            toast(this@AddResourceActivity, message)
-            finish()
         }
     }
 
