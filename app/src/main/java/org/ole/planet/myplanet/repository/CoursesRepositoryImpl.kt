@@ -219,11 +219,16 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
     private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
+        val normalized = Normalizer.normalize(str, Normalizer.Form.NFD)
+        val sb = java.lang.StringBuilder(normalized.length)
+        for (i in 0 until normalized.length) {
+            val c = normalized[i]
+            if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
+                sb.append(c)
+            }
+        }
+        return sb.toString().lowercase(java.util.Locale.ROOT)
     }
 
     override suspend fun search(query: String): List<RealmMyCourse> {
@@ -245,8 +250,17 @@ class CoursesRepositoryImpl @Inject constructor(
 
                 if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                     startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                    containsQuery.add(item)
+                } else {
+                    var matchesAll = true
+                    for (part in normalizedQueryParts) {
+                        if (!title.contains(part, ignoreCase = true)) {
+                            matchesAll = false
+                            break
+                        }
+                    }
+                    if (matchesAll) {
+                        containsQuery.add(item)
+                    }
                 }
             }
             realm.copyFromRealm(startsWithQuery + containsQuery)
@@ -648,8 +662,17 @@ class CoursesRepositoryImpl @Inject constructor(
 
                     if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                         startsWithQuery.add(item)
-                    } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                        containsQuery.add(item)
+                    } else {
+                        var matchesAll = true
+                        for (part in normalizedQueryParts) {
+                            if (!title.contains(part, ignoreCase = true)) {
+                                matchesAll = false
+                                break
+                            }
+                        }
+                        if (matchesAll) {
+                            containsQuery.add(item)
+                        }
                     }
                 }
                 val filteredData = startsWithQuery + containsQuery
