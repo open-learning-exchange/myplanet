@@ -34,7 +34,7 @@
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
         android:text="@string/credit"
-        android:textColor="@color/md_green_500"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_mid" />
 
     <TextView
@@ -44,7 +44,7 @@
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
         android:text="@string/debit"
-        android:textColor="@color/md_red_500"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_mid" />
 
     <TextView

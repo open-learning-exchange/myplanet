@@ -36,11 +36,9 @@ class EnterprisesFinancesAdapter(
     override fun onBindViewHolder(holder: FinanceViewHolder, position: Int) {
         val item = getItem(position)
         val binding = holder.binding
-        val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        binding.debit.setTextColor(textColor)
-        binding.credit.setTextColor(textColor)
+
         if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
