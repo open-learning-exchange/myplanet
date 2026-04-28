@@ -395,59 +395,15 @@ class SurveysRepositoryImpl @Inject constructor(
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
-        kotlinx.coroutines.runBlocking {
-            documentList.forEach { jsonDoc ->
-                insertCourseStepsExams("", "", jsonDoc, "")
-            }
+        documentList.forEach { jsonDoc ->
+            RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
         }
-    }
-
-    override suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject) {
-        insertCourseStepsExams(myCoursesID, stepId, exam, "")
-    }
-
-    override suspend fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: com.google.gson.JsonObject, parentId: String?) {
-        val performInsert: (io.realm.Realm) -> Unit = { mRealm ->
-            var myExam = mRealm.where(RealmStepExam::class.java).equalTo("id", JsonUtils.getString("_id", exam)).findFirst()
-            if (myExam == null) {
-                val id = JsonUtils.getString("_id", exam)
-                myExam = mRealm.createObject(RealmStepExam::class.java,
-                    if (TextUtils.isEmpty(id)) parentId else id
-                )
-            }
-            if (!TextUtils.isEmpty(myCoursesID)) myExam?.courseId = myCoursesID
-            if (!TextUtils.isEmpty(stepId)) myExam?.stepId = stepId
-            myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
-            myExam?.name = JsonUtils.getString("name", exam)
-            myExam?.description = JsonUtils.getString("description", exam)
-            myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
-            myExam?._rev = JsonUtils.getString("_rev", exam)
-            myExam?.createdBy = JsonUtils.getString("createdBy", exam)
-            myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
-            myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
-            myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
-            myExam?.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
-            myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
-            myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
-            myExam?.isFromNation = !TextUtils.isEmpty(parentId)
-            myExam?.teamId = JsonUtils.getString("teamId", exam)
-            myExam?.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-            myExam?.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
-            val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
-                .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
-            if (oldQuestions == null || oldQuestions.isEmpty()) {
-                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
-            }
-        }
-
-
-        executeTransaction { mRealm -> performInsert(mRealm) }
     }
 
     override fun dueRemindersFlow(): Flow<List<String>> = flow {
