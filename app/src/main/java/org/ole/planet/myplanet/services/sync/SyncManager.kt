@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
-import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.Rows
@@ -200,7 +199,7 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -339,7 +338,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {
@@ -687,7 +686,6 @@ class SyncManager @Inject constructor(
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        val idsWeAreProcessing = validDocuments.map { it.second }
                         val docs = validDocuments.map { it.first }
 
                         val realmInsertStartTime = System.currentTimeMillis()
@@ -875,7 +873,6 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("library_process_shelves")
-            val processStartTime = System.currentTimeMillis()
 
             coroutineScope {
                 val semaphore = Semaphore(6)
@@ -896,7 +893,6 @@ class SyncManager @Inject constructor(
                 processedItems = shelfJobs.awaitAll().sum()
             }
 
-            val processDuration = System.currentTimeMillis() - processStartTime
             logger.endProcess("library_process_shelves", processedItems)
 
             saveConcatenatedLinksToPrefs(sharedPrefManager)
@@ -1028,7 +1024,7 @@ class SyncManager @Inject constructor(
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager, dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository())
+                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
                                             "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++
@@ -1059,5 +1055,4 @@ class SyncManager @Inject constructor(
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
         return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }
-
 }
