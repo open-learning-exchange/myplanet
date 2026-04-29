@@ -10,13 +10,10 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTeamActionsListener
@@ -30,6 +27,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
@@ -265,14 +263,10 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
     }
 
     private fun observeTeamData() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.teamData.collectLatest { teamDataList ->
-                    teamListAdapter.submitList(teamDataList)
-                    onUpdateComplete(teamDataList.size)
-                    listContentDescription(conditionApplied)
-                }
-            }
+        collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
+            teamListAdapter.submitList(teamDataList)
+            onUpdateComplete(teamDataList.size)
+            listContentDescription(conditionApplied)
         }
     }
 

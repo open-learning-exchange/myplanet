@@ -8,7 +8,6 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -28,7 +27,9 @@ class UploadConfigs @Inject constructor(
     private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
+    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -58,7 +59,10 @@ class UploadConfigs @Inject constructor(
                 .isNull("_id").or().isEmpty("_id").or().equalTo("isUpdated", true)
                 .endGroup()
         },
-        serializer = UploadSerializer.WithRealm(RealmTeamTask::serialize),
+        serializer = UploadSerializer.Async { task ->
+            val user = userRepository.getUserById(task.assignee ?: "")
+            RealmTeamTask.serialize(task, user)
+        },
         idExtractor = { it.id }
     )
 
@@ -148,7 +152,10 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query ->
             query.isNotNull("sourceSurveyId").isNull("_rev")
         },
-        serializer = UploadSerializer.WithRealm(RealmStepExam::serializeExam),
+        serializer = UploadSerializer.Async { exam ->
+            val questions = surveysRepository.getExamQuestions(exam.id ?: "")
+            RealmStepExam.serializeExam(exam, questions)
+        },
         idExtractor = { it.id }
     )
 
@@ -216,8 +223,8 @@ class UploadConfigs @Inject constructor(
                     .isEmpty("_id")
                 .endGroup()
         },
-        serializer = UploadSerializer.Full { realm, submission, context ->
-            submissionsRepository.serializeSubmission(realm, submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
+        serializer = UploadSerializer.AsyncContext { submission, context ->
+            submissionsRepository.serializeSubmission(submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic

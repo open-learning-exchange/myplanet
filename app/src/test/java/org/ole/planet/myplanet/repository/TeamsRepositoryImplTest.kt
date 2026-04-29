@@ -31,6 +31,7 @@ class TeamsRepositoryImplTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -60,6 +61,7 @@ class TeamsRepositoryImplTest {
         val mockUserRepository = mockk<UserRepository>(relaxed = true)
 
         teamsRepository = TeamsRepositoryImpl(
+            activitiesRepository,
             databaseService,
             UnconfinedTestDispatcher(),
             userSessionManager,
@@ -69,7 +71,6 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            apiInterfaceMock,
             mockUserRepository
         )
     }

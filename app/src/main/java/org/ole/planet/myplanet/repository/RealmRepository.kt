@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
@@ -52,7 +51,7 @@ open class RealmRepository(
             realm.where(clazz).apply(builder).count()
         }
 
-    protected suspend fun <T : RealmObject> queryListFlow(
+    protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow<RealmResults<T>> {

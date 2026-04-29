@@ -3,16 +3,25 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
+data class CachedMyLifeItem(
+    val imageId: String?,
+    val title: String?,
+    val isVisible: Boolean,
+    val weight: Int
+)
+
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext context: Context) {
+class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
     val rawPreferences: SharedPreferences get() = pref
@@ -62,6 +71,7 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
+        private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     }
 
     enum class SyncKey(val key: String) {
@@ -129,11 +139,11 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    private fun isSynced(key: SyncKey): Boolean {
+    fun isSynced(key: SyncKey): Boolean {
         return pref.getBoolean(key.key, false)
     }
 
-    private fun setSynced(key: SyncKey, synced: Boolean) {
+    fun setSynced(key: SyncKey, synced: Boolean) {
         pref.edit {
             putBoolean(key.key, synced)
             if (synced) {
@@ -145,30 +155,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getSyncTime(key: SyncKey): Long {
         return pref.getLong("${key.key}_time", 0L)
     }
-
-    fun isChatHistorySynced(): Boolean = isSynced(SyncKey.CHAT_HISTORY)
-    fun setChatHistorySynced(synced: Boolean) = setSynced(SyncKey.CHAT_HISTORY, synced)
-
-    fun isTeamsSynced(): Boolean = isSynced(SyncKey.TEAMS)
-    fun setTeamsSynced(synced: Boolean) = setSynced(SyncKey.TEAMS, synced)
-
-    fun isFeedbackSynced(): Boolean = isSynced(SyncKey.FEEDBACK)
-    fun setFeedbackSynced(synced: Boolean) = setSynced(SyncKey.FEEDBACK, synced)
-
-    fun isAchievementsSynced(): Boolean = isSynced(SyncKey.ACHIEVEMENTS)
-    fun setAchievementsSynced(synced: Boolean) = setSynced(SyncKey.ACHIEVEMENTS, synced)
-
-    fun isHealthSynced(): Boolean = isSynced(SyncKey.HEALTH)
-    fun setHealthSynced(synced: Boolean) = setSynced(SyncKey.HEALTH, synced)
-
-    fun isCoursesSynced(): Boolean = isSynced(SyncKey.COURSES)
-    fun setCoursesSynced(synced: Boolean) = setSynced(SyncKey.COURSES, synced)
-
-    fun isResourcesSynced(): Boolean = isSynced(SyncKey.RESOURCES)
-    fun setResourcesSynced(synced: Boolean) = setSynced(SyncKey.RESOURCES, synced)
-
-    fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
-    fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
 
     fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
     fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
@@ -278,9 +264,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getLastWifiSsid(): String? = pref.getString(LAST_WIFI_SSID, null)
     fun setLastWifiSsid(ssid: String) = pref.edit { putString(LAST_WIFI_SSID, ssid) }
 
-    fun getIsExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
-    fun setIsExamsSynced(value: Boolean) = setSynced(SyncKey.EXAMS, value)
-
     fun getHasShownCongrats(): Boolean = pref.getBoolean(HAS_SHOWN_CONGRATS, false)
     fun setHasShownCongrats(value: Boolean) = pref.edit { putBoolean(HAS_SHOWN_CONGRATS, value) }
 
@@ -301,4 +284,35 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
     fun removeKey(key: String) = pref.edit { remove(key) }
+    fun clearPreferences() {
+        val editor = pref.edit()
+        val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
+        val tempStorage = HashMap<String, Boolean>()
+        for (key in keysToKeep) {
+            tempStorage[key] = pref.getBoolean(key, false)
+        }
+        editor.clear().apply()
+        for ((key, value) in tempStorage) {
+            editor.putBoolean(key, value)
+        }
+        editor.commit()
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        defaultPreferences.edit { clear() }
+    }
+
+    fun getCachedMyLifeItems(userId: String): List<CachedMyLifeItem>? {
+        val json = pref.getString("$MY_LIFE_CACHE_PREFIX$userId", null) ?: return null
+        return try {
+            val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
+            gson.fromJson(json, type)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {
+        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
+        pref.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
+    }
+
 }

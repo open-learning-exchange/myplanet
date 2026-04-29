@@ -664,26 +664,26 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
+            RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
         }
     }
-    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -694,12 +694,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+        val id = JsonUtils.getString("_id", doc)
         var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
         if (certification == null) {
             certification = realm.createObject(RealmCertification::class.java, id)
         }
-        certification?.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", doc)
-        certification?.setCourseIds(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("courseIds", doc))
+        certification?.name = JsonUtils.getString("name", doc)
+        certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", doc))
     }
 }

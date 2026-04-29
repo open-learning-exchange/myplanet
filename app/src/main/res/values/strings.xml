@@ -696,6 +696,8 @@
     <string name="turning_on_wifi_please_wait">Turning on Wifi. Please wait…</string>
     <string name="you_are_now_connected">"You are now connected "</string>
     <string name="press_back_again_to_exit">Press BACK again to exit</string>
+    <string name="press_back_again_to_logout">Press BACK again to log out</string>
+    <string name="exit">Exit</string>
     <string name="it_has_been_more_than">"It has been more than "</string>
     <string name="days_since_you_last_synced_this_device">" days since you last synced this device."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Connect it to the server over wifi and sync it to reactivate this tablet</string>
@@ -1042,7 +1044,7 @@
     <string name="no_voices_available">no voices available</string>
     <string name="new_voice">new voice</string>
     <string name="hide_new_voice">hide new voice</string>
-    <string name="summary_of_achievemnets">Summary of achievements - Briefly summarize your achievement and add related materials below</string>
+    <string name="summary_of_achievemnets">Summary of achievements - Briefly summarize your achievements</string>
     <string name="my_goals_description">My Goals - What are your goals for the next 10 years?</string>
     <string name="add_materials">Add any materials demonstrating your achievements below</string>
     <string name="my_purpose_description">My Purpose - What are your educational and professional ambitions?</string>

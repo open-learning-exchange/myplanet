@@ -26,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -41,8 +42,8 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -73,8 +74,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private var guest = false
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
-    private var backPressedTime: Long = 0
-    private val backPressedInterval: Long = 2000
+    private var exitSnackbar: Snackbar? = null
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
@@ -84,6 +84,29 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+
+        bindViews()
+        setupAvailableSpace()
+
+        changeLogoColor()
+        declareElements()
+        declareMoreElements()
+        showWifiDialog()
+        registerReceiver()
+
+        handleSyncAndUpdates()
+        checkUsagesPermission()
+
+        setupAdditionalListeners()
+        handleAutoLogin()
+
+        getTeamMembers()
+
+        setupOnBackPressed()
+        setupTeamAdapter()
+    }
+
+    private fun bindViews() {
         lblLastSyncDate = binding.lblLastSyncDate
         btnSignIn = binding.btnSignin
         syncIcon = binding.syncIcon
@@ -96,7 +119,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
+    }
 
+    private fun setupAvailableSpace() {
         lifecycleScope.launch {
             val storageText = withContext(Dispatchers.IO) {
                 FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity)
@@ -107,11 +132,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 append(storageText)
             }
         }
-        changeLogoColor()
-        declareElements()
-        declareMoreElements()
-        showWifiDialog()
-        registerReceiver()
+    }
+
+    private fun handleSyncAndUpdates() {
         forceSync = intent.getBooleanExtra("forceSync", false)
         processedUrl = getUrl()
         if (forceSync) {
@@ -129,9 +152,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             configurationsRepository.checkVersion(this, prefData)
         }
-        checkUsagesPermission()
         forceSyncTrigger()
+    }
 
+    private fun setupAdditionalListeners() {
         val url = getUrl()
         if (url.isNotEmpty() && url != "/db") {
             binding.openCommunity.visibility = View.VISIBLE
@@ -149,7 +173,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 settingDialog()
             }
         }
+        val selectDarkModeButton = binding.themeToggleButton
+        selectDarkModeButton.setOnClickListener {
+            ThemeManager.showThemeDialog(this)
+        }
+    }
 
+    private fun handleAutoLogin() {
         guest = intent.getBooleanExtra("guest", false)
 
         val encryptedUsername = sharedPrefManager.getNewLoginUsername()
@@ -169,24 +199,24 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 submitForm(username, password)
             }
         }
+    }
 
-        getTeamMembers()
-
+    private fun setupOnBackPressed() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
+                if (exitSnackbar?.isShown == true) {
+                    exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
-                    backPressedTime = System.currentTimeMillis()
+                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
+                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar?.show()
                 }
             }
         })
-        val selectDarkModeButton = binding.themeToggleButton
-        selectDarkModeButton.setOnClickListener {
-            ThemeManager.showThemeDialog(this)
-        }
+    }
 
+    private fun setupTeamAdapter() {
         teamList.add(getString(R.string.loading))
         teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
         teamAdapter?.setDropDownViewResource(R.layout.custom_simple_list_item_1)

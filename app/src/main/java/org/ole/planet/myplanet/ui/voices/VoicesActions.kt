@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -200,7 +199,7 @@ object VoicesActions {
 
     suspend fun showMemberDetails(
         userModel: RealmUser?,
-        profileDbHandler: UserSessionManager
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
@@ -210,8 +209,8 @@ object VoicesActions {
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            profileDbHandler.getOfflineVisits(userModel).toString(),
-            profileDbHandler.getLastVisit(userModel),
+            (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
+            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

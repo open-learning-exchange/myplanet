@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
@@ -176,38 +177,30 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun observeUserProfile() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.userModel.collect { userModel ->
-                    model = userModel
-                    if (userModel != null) {
-                        setupProfile()
-                        loadProfileImage()
-                        configureGuestView()
-                    }
-                }
+        collectWhenStarted(viewModel.userModel) { userModel ->
+            model = userModel
+            if (userModel != null) {
+                setupProfile()
+                loadProfileImage()
+                configureGuestView()
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.updateState.collect { state ->
-                    when (state) {
-                        ProfileUpdateState.Success -> {
-                            Utilities.toast(requireContext(), "User details updated successfully")
-                            editProfileDialog?.dismiss()
-                            editProfileDialog = null
-                            viewModel.resetUpdateState()
-                        }
-
-                        is ProfileUpdateState.Error -> {
-                            Utilities.toast(requireContext(), state.message)
-                            viewModel.resetUpdateState()
-                        }
-
-                        ProfileUpdateState.Idle -> Unit
-                    }
+        collectWhenStarted(viewModel.updateState) { state ->
+            when (state) {
+                ProfileUpdateState.Success -> {
+                    Utilities.toast(requireContext(), "User details updated successfully")
+                    editProfileDialog?.dismiss()
+                    editProfileDialog = null
+                    viewModel.resetUpdateState()
                 }
+
+                is ProfileUpdateState.Error -> {
+                    Utilities.toast(requireContext(), state.message)
+                    viewModel.resetUpdateState()
+                }
+
+                ProfileUpdateState.Idle -> Unit
             }
         }
     }

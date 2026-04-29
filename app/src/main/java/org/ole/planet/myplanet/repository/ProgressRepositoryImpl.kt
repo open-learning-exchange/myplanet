@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -24,7 +25,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
@@ -144,15 +146,26 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun submissionMap(
         submissions: List<RealmSubmission>, examIds: List<String>, obj: JsonObject
     ) {
+        val submissionIds = submissions.mapNotNull { it.id }.toTypedArray()
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else queryList(RealmAnswer::class.java) {
+            `in`("submissionId", submissionIds)
+        }
+
+        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct().toTypedArray()
+        val allQuestions = if (questionIds.isEmpty()) emptyList() else queryList(RealmExamQuestion::class.java) {
+            `in`("id", questionIds)
+        }
+        val questionsMap = allQuestions.associateBy { it.id }
+
+        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+
         var totalMistakes = 0
-        submissions.forEach {
-            val answers = queryList(RealmAnswer::class.java) {
-                equalTo("submissionId", it.id)
-            }
+        submissions.forEach { submission ->
+            val answers = answersBySubmissionId[submission.id] ?: emptyList()
             val mistakesMap = HashMap<String, Int>()
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
-                    val question = findByField(RealmExamQuestion::class.java, "id", questionId)
+                    val question = questionsMap[questionId]
                     if (question != null && examIds.contains(question.examId)) {
                         totalMistakes += r.mistakes
                         val examIndexKey = examIds.indexOf(question.examId).toString()
@@ -169,6 +182,37 @@ class ProgressRepositoryImpl @Inject constructor(
         queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
         }
+    }
+
+    override suspend fun getCompletedCourses(userId: String): List<CourseCompletion> = withContext(dispatcherProvider.io) {
+        val myCourses = coursesRepositoryLazy.get().getMyCourses(userId)
+        val allProgressRecords = getProgressRecords(userId)
+
+        val completedCourses = mutableListOf<CourseCompletion>()
+        myCourses.forEachIndexed { index, course ->
+            val hasValidId = !course.courseId.isNullOrBlank()
+            val hasValidTitle = !course.courseTitle.isNullOrBlank()
+
+            // Get progress records for this specific course
+            val courseProgressRecords = allProgressRecords.filter { it.courseId == course.courseId }
+
+            // Count UNIQUE steps that are passed (matches web: step.passed === true)
+            val passedStepNumbers = courseProgressRecords
+                .filter { it.passed }
+                .map { it.stepNum }
+                .toSet()
+            val passedSteps = passedStepNumbers.size
+            val totalSteps = course.courseSteps?.size ?: 0
+
+            // Web logic: ALL steps must be passed AND course must have at least one step
+            val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
+
+            // Match web behavior: Show badge if ALL steps are passed AND course has steps
+            if (allStepsPassed && hasValidId && hasValidTitle) {
+                completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
+            }
+        }
+        completedCourses
     }
 
     override suspend fun saveCourseProgress(
@@ -210,10 +254,12 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private fun insertCourseProgress(mRealm: Realm, act: JsonObject?) {
-        var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+        val docId = JsonUtils.getString("_id", act)
+        var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("id", docId).findFirst()
         if (courseProgress == null) {
-            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
+            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, docId)
         }
+        courseProgress?._id = docId
         courseProgress?._rev = JsonUtils.getString("_rev", act)
         courseProgress?.passed = JsonUtils.getBoolean("passed", act)
         courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)

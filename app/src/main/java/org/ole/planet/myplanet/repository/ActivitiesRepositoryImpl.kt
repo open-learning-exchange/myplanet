@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -8,24 +9,31 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context,
     private val teamsRepository: Lazy<TeamsRepository>,
-    private val userRepository: Lazy<UserRepository>
+    private val userRepository: Lazy<UserRepository>,
+    private val apiInterface: ApiInterface
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -39,6 +47,13 @@ class ActivitiesRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("type", UserSessionManager.KEY_LOGIN)
         }.size
+    }
+
+    override suspend fun getOfflineLoginCount(userName: String): Int {
+        return count(RealmOfflineActivity::class.java) {
+            equalTo("userName", userName)
+            equalTo("type", UserSessionManager.KEY_LOGIN)
+        }.toInt()
     }
 
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
@@ -177,6 +192,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                     val title = entry.value.first().title
                     Pair(count, title)
                 }
+                .filterValues { it.second != null }
 
             val maxEntry = resourceCounts.maxByOrNull { it.value.first }
 
@@ -285,6 +301,15 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun insertSearchActivityFromNewsLog(log: org.ole.planet.myplanet.model.RealmNewsLog) {
+        executeTransaction { realm ->
+            val activity = realm.createObject(org.ole.planet.myplanet.model.RealmSearchActivity::class.java, UUID.randomUUID().toString())
+            activity.user = log.userId ?: ""
+            activity.type = log.type ?: ""
+            activity.time = log.time ?: 0L
+        }
+    }
+
     override fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): com.google.gson.JsonObject {
         val ob = com.google.gson.JsonObject()
         ob.addProperty("user", activity.userName)
@@ -303,6 +328,42 @@ class ActivitiesRepositoryImpl @Inject constructor(
             ob.addProperty("_rev", activity._rev)
         }
         return ob
+    }
+
+        override suspend fun uploadActivities() {
+        val activitiesToUpload = getUnuploadedLoginActivities()
+
+        activitiesToUpload.chunked(50).forEach { batch ->
+            val successfulUpdates = mutableMapOf<String, com.google.gson.JsonObject?>()
+
+            val semaphore = Semaphore(6)
+            coroutineScope {
+                val deferreds = batch.map { activityData ->
+                    async {
+                        try {
+                            val `object` = semaphore.withPermit {
+                                apiInterface.postDoc(
+                                    UrlUtils.header, "application/json",
+                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized
+                                ).body()
+                            }
+                            activityData.id to `object`
+                        } catch (e: java.io.IOException) {
+                            Log.e("ActivitiesRepository", "Exception in UploadManager", e)
+                            null
+                        }
+                    }
+                }
+                deferreds.awaitAll().filterNotNull().forEach { (id, obj) ->
+                    successfulUpdates[id] = obj
+                }
+            }
+
+            if (successfulUpdates.isNotEmpty()) {
+                val idsToUpdate = successfulUpdates.keys.toTypedArray()
+                markActivitiesUploaded(idsToUpdate, successfulUpdates)
+            }
+        }
     }
 
     override fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {

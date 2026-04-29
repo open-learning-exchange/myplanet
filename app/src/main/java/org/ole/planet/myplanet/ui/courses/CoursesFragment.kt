@@ -24,18 +24,14 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -45,8 +41,6 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
@@ -85,12 +79,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var prefManager: SharedPrefManager
 
     @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-
-    @Inject
-    lateinit var syncManager: SyncManager
-
-    @Inject
     lateinit var userSessionManager: UserSessionManager
 
     private val serverUrl: String
@@ -100,70 +88,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
-    }
-
-    private fun startCoursesSync() {
-        val isFastSync = prefManager.getFastSync()
-        if (isFastSync && !prefManager.isCoursesSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            withContext(dispatcherProvider.io) {
-                updateServerIfNecessary(mapping)
-            }
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.setText(getString(R.string.loading_courses))
-                        delay(3000)
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        loadDataAsync()
-                        prefManager.setCoursesSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
-                            startCoursesSync()
-                        }.show()
-                    }
-                }
-            }
-        }, "full", listOf("courses"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
-            isServerReachable(url)
-        }
     }
 
     private fun scrollToTop() {
@@ -178,30 +102,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun loadDataAsync() {
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-                val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
-
-                val allCourses = coursesRepository.getAllCourses()
-                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-
-                val myCourses = if (isMyCourseLib) {
-                    coursesRepository.getMyCourses(userModel?.id, validCourses)
-                } else {
-                    emptyList()
-                }
-
-                val map = ratingsDeferred.await()
-                val progressMap = progressDeferred.await()
-
-                viewModel.processCourses(isMyCourseLib, userModel?.id, validCourses, myCourses, map, progressMap)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
@@ -211,38 +112,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             userModel = userSessionManager.getUserModel()
         }
 
-        val allCourses = coursesRepository.getAllCourses()
-        val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-
-        val myCourses = if (isMyCourseLib) {
-            coursesRepository.getMyCourses(model?.id, validCourses)
-        } else {
-            emptyList()
-        }
-
-        val (map, progressMap) = coroutineScope {
-            val ratingsDeferred = async { coursesRepository.getCourseRatings(model?.id) }
-            val progressDeferred = async { coursesRepository.getCourseProgress(model?.id) }
-            Pair(ratingsDeferred.await(), progressDeferred.await())
-        }
-
-        val allCourseIds = validCourses.mapNotNull { it.courseId }
-        val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
-            .mapValues { entry -> entry.value.map { it.toTag() } }
-
         adapterCourses = CoursesAdapter(
             hostActivity,
-            map,
+            HashMap(),
             userModel?.isGuest() ?: true,
             isMyCourseLib
         )
 
-        adapterCourses.setTagsMap(tagsMap)
-        viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
-        adapterCourses.setProgressMap(progressMap)
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
+        viewModel.loadCourses(isMyCourseLib, model?.id)
         return adapterCourses
     }
 
@@ -279,6 +159,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val courses = state.courses
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
+                adapterCourses.setTagsMap(state.tagsMap)
                 adapterCourses.submitList(courses) {
                     if (isAdded && ::selectAll.isInitialized) {
                         selectedItems?.clear()
@@ -290,9 +171,49 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
         }
 
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.syncStatus.collectLatest { status ->
+                when (status) {
+                    is SyncStatus.Idle -> { /* Do nothing */ }
+                    is SyncStatus.Syncing -> {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            if (customProgressDialog == null) {
+                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            }
+                            customProgressDialog?.setText(getString(R.string.syncing_courses_data))
+                            customProgressDialog?.show()
+                        }
+                    }
+                    is SyncStatus.Success -> {
+                        if (isAdded) {
+                            customProgressDialog?.setText(getString(R.string.loading_courses))
+                            delay(3000)
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            loadDataAsync()
+                            prefManager.setSynced(SharedPrefManager.SyncKey.COURSES, true)
+                            viewModel.resetSyncStatus()
+                        }
+                    }
+                    is SyncStatus.Failed -> {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            Snackbar.make(requireView(), "Sync failed: ${status.message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                                .setAction("Retry") {
+                                    viewModel.startCoursesSync()
+                                }.show()
+                            viewModel.resetSyncStatus()
+                        }
+                    }
+                }
+            }
+        }
+
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
-        startCoursesSync()
+        viewModel.startCoursesSync()
     }
 
     private fun setupButtonVisibility() {
@@ -549,17 +470,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val selectedSubject = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
         val tagNames = searchTags.mapNotNull { it.name }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = model?.id
-            val (filteredCourses, map, progressMap) = withContext(dispatcherProvider.io) {
-                val courses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val ratings = coursesRepository.getCourseRatings(userId)
-                val progress = coursesRepository.getCourseProgress(userId)
-                Triple(courses, ratings, progress)
-            }
-            viewModel.processCourses(isMyCourseLib, userId, filteredCourses, filteredCourses.filter { it.userId?.contains(userId) == true }, map, progressMap)
-            scrollToTop()
-        }
+        val userId = model?.id
+        viewModel.filterCourses(isMyCourseLib, userId, searchText, selectedGrade, selectedSubject, tagNames)
+        scrollToTop()
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -739,22 +652,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
-            if (::adapterCourses.isInitialized) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val map = coursesRepository.getCourseRatings(model?.id)
-                    val progressMap = coursesRepository.getCourseProgress(model?.id)
-                    val allCourses = coursesRepository.getAllCourses()
-                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
-                    val myCourses = if (isMyCourseLib) {
-                        coursesRepository.getMyCourses(model?.id, validCourses)
-                    } else {
-                        emptyList()
-                    }
-                    viewModel.processCourses(isMyCourseLib, model?.id, validCourses, myCourses, map, progressMap)
-                }
-            } else {
-                loadDataAsync()
-            }
+            loadDataAsync()
         }
     }
 
@@ -791,10 +689,4 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         )
     }
 
-    private fun RealmTag.toTag(): Tag {
-        return Tag(
-            id = this.id,
-            name = this.name
-        )
-    }
 }

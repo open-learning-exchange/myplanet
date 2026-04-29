@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -11,10 +10,12 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class HealthRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
         val userCopy = findByField(RealmUser::class.java, "id", userId)
@@ -29,7 +30,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun initHealth(): RealmMyHealth {
-        return withContext(Dispatchers.Default) {
+        return withContext(dispatcherProvider.default) {
             val health = RealmMyHealth()
             val profile = RealmMyHealth.RealmMyHealthProfile()
             health.lastExamination = Date().time
@@ -70,7 +71,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             user?.let { realm.copyToRealmOrUpdate(it) }
             pojo?.let { realm.copyToRealmOrUpdate(it) }
             examination?.let { realm.copyToRealmOrUpdate(it) }
@@ -78,9 +79,8 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateExaminationUserId(id: String, userId: String) {
-        databaseService.executeTransactionAsync { realm ->
-            val examination = realm.where(RealmHealthExamination::class.java).equalTo("_id", id).findFirst()
-            examination?.userId = userId
+        update(RealmHealthExamination::class.java, "_id", id) { examination ->
+            examination.userId = userId
         }
     }
 

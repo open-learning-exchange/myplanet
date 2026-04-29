@@ -81,4 +81,24 @@ class NetworkUtilsTest {
     fun extractProtocol_withEmptyString() {
         assertNull(NetworkUtils.extractProtocol(""))
     }
+
+    @Test
+    fun extractProtocol_withSpaces() {
+        assertEquals("http://", NetworkUtils.extractProtocol("  http://example.com  "))
+    }
+
+    @Test
+    fun extractProtocol_withMalformedUrl() {
+        assertNull(NetworkUtils.extractProtocol("htt p://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withInvalidSchemeCharacters() {
+        assertEquals("http#://", NetworkUtils.extractProtocol("http#://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withHttpUrlWithoutDomain() {
+        assertEquals("http://", NetworkUtils.extractProtocol("http://"))
+    }
 }

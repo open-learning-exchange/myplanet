@@ -51,4 +51,5 @@ interface VoicesRepository {
     suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
     suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
 }

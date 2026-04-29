@@ -9,9 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -22,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
@@ -41,14 +40,10 @@ class PlanFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                teamFlow.collect { updatedTeam ->
-                    if (updatedTeam != null) {
-                        updateUIWithTeamDetails(updatedTeam)
-                        updateButtonVisibility(updatedTeam)
-                    }
-                }
+        collectWhenStarted(teamFlow) { updatedTeam ->
+            if (updatedTeam != null) {
+                updateUIWithTeamDetails(updatedTeam)
+                updateButtonVisibility(updatedTeam)
             }
         }
         

@@ -31,6 +31,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
@@ -39,7 +40,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return parentId?.substringBefore("@")
     }
 
-    override suspend fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
+    override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
                 .equalTo("type", "survey")
@@ -401,6 +402,16 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return false
     }
 
+    override suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
+        val surveys = getSurveysByCourseId(courseId)
+        for (survey in surveys) {
+            if (!hasSubmission(survey.id, survey.courseId, userId, "survey")) {
+                return true
+            }
+        }
+        return false
+    }
+
     override suspend fun addSubmissionPhoto(
         submissionId: String?,
         examId: String?,
@@ -719,10 +730,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
             var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
             val isNewSubmission = sub == null
-            val hadLocalChanges = !isNewSubmission && sub?.isUpdated == true
+            val hadLocalChanges = !isNewSubmission && sub.isUpdated
             val serverStatus = org.ole.planet.myplanet.utils.JsonUtils.getString("status", submission)
             val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
-                (sub?.status == "complete" || sub?.status == "requires grading")
+                (sub.status == "complete" || sub.status == "requires grading")
             val skipOverwrite = hadLocalChanges || isStatusDowngrade
 
             if (sub == null) {
@@ -881,7 +892,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
         `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
         if (exam != null) {
-            `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+            val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
+            `object`.add("parent", RealmStepExam.serializeExam(exam, questions))
         } else {
             val parent = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
@@ -894,7 +906,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`
     }
 
-    override fun serializeSubmission(mRealm: io.realm.Realm, submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {
@@ -902,7 +914,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             if (submission.parentId?.contains("@") == true) {
                 examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
             }
-            val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+            val exam = examId?.let { getExamById(it) }
 
             if (!submission._id.isNullOrEmpty()) {
                 jsonObject.addProperty("_id", submission._id)
@@ -925,7 +937,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             jsonObject.addProperty("parentCode", parentCode)
             jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
             if (exam != null) {
-                jsonObject.add("parent", RealmStepExam.serializeExam(mRealm, exam))
+                val questions = exam.id?.let { surveysRepositoryProvider.get().getExamQuestions(it) } ?: emptyList()
+                jsonObject.add("parent", RealmStepExam.serializeExam(exam, questions))
             } else if (!submission.parent.isNullOrEmpty()) {
                 jsonObject.add("parent", com.google.gson.JsonParser.parseString(submission.parent))
             }
