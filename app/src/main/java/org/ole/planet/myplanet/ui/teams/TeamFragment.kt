@@ -187,45 +187,37 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         team: TeamDetails, name: String, description: String, services: String, rules: String,
         userModel: RealmUser, dialog: AlertDialog, failureMessage: String
     ) {
-        val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
-        val excludeTeamId = team._id ?: team.teamId
-        val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
-
-        if (nameExists) {
-            val duplicateMessage = if (type == "enterprise") {
-                getString(R.string.enterprise_name_already_exists)
-            } else {
-                getString(R.string.team_name_already_exists)
-            }
-            Utilities.toast(activity, duplicateMessage)
-            alertCreateTeamBinding.etName.error = duplicateMessage
-            return
-        }
-
         val targetTeamId = team._id ?: team.teamId
-        if (targetTeamId.isNullOrBlank()) {
-            Utilities.toast(activity, failureMessage)
-            return
-        }
-        teamsRepository.updateTeam(
+        val result = viewModel.updateTeam(
             teamId = targetTeamId,
             name = name,
             description = description,
             services = services,
             rules = rules,
-            updatedBy = userModel._id,
-        ).onSuccess { updated ->
-            if (updated) {
+            category = type,
+            userModel = userModel
+        )
+
+        when (result) {
+            is TeamActionResult.NameExists -> {
+                val duplicateMessage = if (type == "enterprise") {
+                    getString(R.string.enterprise_name_already_exists)
+                } else {
+                    getString(R.string.team_name_already_exists)
+                }
+                Utilities.toast(activity, duplicateMessage)
+                alertCreateTeamBinding.etName.error = duplicateMessage
+            }
+            is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
                 binding.tableTitle.visibility = View.VISIBLE
                 Utilities.toast(activity, getString(R.string.team_created))
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
-            } else {
+            }
+            is TeamActionResult.Failure -> {
                 Utilities.toast(activity, failureMessage)
             }
-        }.onFailure {
-            Utilities.toast(activity, failureMessage)
         }
     }
 
