@@ -179,7 +179,12 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login handles network error`() = runTest {
-        coEvery { apiInterface.getJsonObject(any(), any()) } throws java.net.UnknownHostException()
+        val exception = object : java.net.UnknownHostException() {
+            override fun printStackTrace() {
+                // Do nothing to avoid polluting test logs
+            }
+        }
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws exception
 
         loginSyncManager.login("testUser", "testPass", listener)
 
