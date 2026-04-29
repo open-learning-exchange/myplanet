@@ -113,6 +113,20 @@ class ChatRepositoryImpl @Inject constructor(
         docs.forEach { insertChatHistory(realm, it) }
     }
 
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val docs = mutableListOf<JsonObject>()
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                docs.add(jsonDoc)
+            }
+        }
+        insertChatHistoryBatch(realm, jsonArray)
+        docs.forEach { insertChatHistory(realm, it) }
+    }
+
     private fun insertChatHistory(realm: io.realm.Realm, json: JsonObject) {
         val chatHistoryId = JsonUtils.getString("_id", json)
         val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
