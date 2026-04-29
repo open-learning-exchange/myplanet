@@ -103,14 +103,8 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-        override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val docs = mutableListOf<JsonObject>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            docs.add(jsonDoc)
-        }
-        docs.forEach { insertChatHistory(realm, it) }
+    override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        bulkInsertFromSync(realm, jsonArray)
     }
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
@@ -123,7 +117,6 @@ class ChatRepositoryImpl @Inject constructor(
                 docs.add(jsonDoc)
             }
         }
-        insertChatHistoryBatch(realm, jsonArray)
         docs.forEach { insertChatHistory(realm, it) }
     }
 
