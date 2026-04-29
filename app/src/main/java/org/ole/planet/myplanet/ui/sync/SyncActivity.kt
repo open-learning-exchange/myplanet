@@ -741,21 +741,25 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope, configurationsRepository)
-        if (cancelable || getCustomDeviceName(this).endsWith("###")) {
-            builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
-                continueSyncProcess()
+        runOnUiThread {
+            val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
+            if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
+                builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
+                    continueSyncProcess()
+                }
+            } else {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    configurationsRepository.clearAllData()
+                }
             }
-        } else {
-            lifecycleScope.launch(Dispatchers.IO) {
-                configurationsRepository.clearAllData()
-            }
+            builder.setCancelable(cancelable)
+            builder.show()
         }
-        builder.setCancelable(cancelable)
-        builder.show()
     }
 
-    override fun onCheckingVersion() {}
+    override fun onCheckingVersion() {
+        // Can add UI updates here if needed, running on UI thread. E.g., runOnUiThread { ... }
+    }
 
     fun registerReceiver() {
         collectWhenStarted(broadcastService.events) { intent ->
@@ -766,19 +770,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        Utilities.toast(this, msg)
-        if (msg.startsWith("Config")) {
-            settingDialog()
-        }
-        if (customProgressDialog.isShowing()) {
-            customProgressDialog.dismiss()
-        }
-        if (!blockSync) {
-            continueSyncProcess()
-        } else {
-            if (::syncIconDrawable.isInitialized) {
-                syncIconDrawable.stop()
-                syncIconDrawable.selectDrawable(0)
+        runOnUiThread {
+            Utilities.toast(this@SyncActivity, msg)
+            if (msg.startsWith("Config")) {
+                settingDialog()
+            }
+            if (customProgressDialog.isShowing()) {
+                customProgressDialog.dismiss()
+            }
+            if (!blockSync) {
+                continueSyncProcess()
+            } else {
+                if (::syncIconDrawable.isInitialized) {
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
+                }
             }
         }
     }

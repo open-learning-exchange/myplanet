@@ -70,52 +70,56 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        MainApplication.applicationScope.let { scope ->
-            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, scope, configurationsRepository)
+        MainApplication.applicationScope.launch(Dispatchers.Main) {
+            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, MainApplication.applicationScope, configurationsRepository)
         }
     }
 
-    override fun onCheckingVersion() {}
+    override fun onCheckingVersion() {
+        // Background check, no UI needed.
+    }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        if (!blockSync) {
-            syncManager.start(this, "upload")
-            uploadToShelfService.uploadUserData {
-                MainApplication.applicationScope.launch {
-                    val status = configurationsRepository.checkHealth()
-                    Log.d("AutoSyncWorker", "Health check completed with status: $status")
-                    uploadToShelfService.uploadHealth()
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            if (!blockSync) {
+                syncManager.start(this@AutoSyncWorker, "upload")
+                uploadToShelfService.uploadUserData {
+                    MainApplication.applicationScope.launch {
+                        val status = configurationsRepository.checkHealth()
+                        Log.d("AutoSyncWorker", "Health check completed with status: $status")
+                        uploadToShelfService.uploadHealth()
+                    }
                 }
-            }
-            if (!MainApplication.isSyncRunning) {
-                MainApplication.isSyncRunning = true
-                MainApplication.applicationScope.let { scope ->
-                    scope.launch {
-                        try {
-                            uploadManager.uploadExamResult(this@AutoSyncWorker)
-                            uploadManager.uploadFeedback()
-                            uploadManager.uploadAchievement()
-                            uploadManager.uploadResourceActivities("")
-                            uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                            uploadManager.uploadCourseActivities()
-                            uploadManager.uploadSearchActivity()
-                            uploadManager.uploadRating()
-                            uploadManager.uploadResource(this@AutoSyncWorker)
-                            uploadManager.uploadNews()
-                            uploadManager.uploadTeams()
-                            uploadManager.uploadTeamTask()
-                            uploadManager.uploadMeetups()
-                            uploadManager.uploadAdoptedSurveys()
-                            uploadManager.uploadCrashLog()
-                            uploadManager.uploadSubmissions()
-                            uploadManager.uploadActivities(null)
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (e: Exception) {
-                            Log.e("AutoSyncWorker", "error: ${e.message}")
-                            onSyncFailed(e.message)
-                        } finally {
-                            MainApplication.isSyncRunning = false
+                if (!MainApplication.isSyncRunning) {
+                    MainApplication.isSyncRunning = true
+                    MainApplication.applicationScope.let { scope ->
+                        scope.launch {
+                            try {
+                                uploadManager.uploadExamResult(this@AutoSyncWorker)
+                                uploadManager.uploadFeedback()
+                                uploadManager.uploadAchievement()
+                                uploadManager.uploadResourceActivities("")
+                                uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                                uploadManager.uploadCourseActivities()
+                                uploadManager.uploadSearchActivity()
+                                uploadManager.uploadRating()
+                                uploadManager.uploadResource(this@AutoSyncWorker)
+                                uploadManager.uploadNews()
+                                uploadManager.uploadTeams()
+                                uploadManager.uploadTeamTask()
+                                uploadManager.uploadMeetups()
+                                uploadManager.uploadAdoptedSurveys()
+                                uploadManager.uploadCrashLog()
+                                uploadManager.uploadSubmissions()
+                                uploadManager.uploadActivities(null)
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Log.e("AutoSyncWorker", "error: ${e.message}")
+                                onSyncFailed(e.message)
+                            } finally {
+                                MainApplication.isSyncRunning = false
+                            }
                         }
                     }
                 }
