@@ -108,5 +108,5 @@ interface UserRepository {
     suspend fun markAchievementUploaded(id: String, rev: String?)
     fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences)
-    suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject
+    suspend fun uploadShelfData(user: RealmUser)
 }
