@@ -757,9 +757,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    override fun onCheckingVersion() {
-        // Can add UI updates here if needed, running on UI thread. E.g., runOnUiThread { ... }
-    }
+    override fun onCheckingVersion() {}
 
     fun registerReceiver() {
         collectWhenStarted(broadcastService.events) { intent ->

@@ -13,7 +13,7 @@ interface ConfigurationsRepository {
     suspend fun getMinApk(url: String, pin: String): ConfigurationResult
 
     /**
-     * Note: callbacks may be invoked off the main thread. Implementers must post UI work explicitly using their own scope.
+     * Note: callbacks may be invoked off the main thread.
      */
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)

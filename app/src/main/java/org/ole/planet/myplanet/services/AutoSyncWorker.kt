@@ -75,9 +75,7 @@ class AutoSyncWorker @AssistedInject constructor(
         }
     }
 
-    override fun onCheckingVersion() {
-        // Background check, no UI needed.
-    }
+    override fun onCheckingVersion() {}
 
     override fun onError(msg: String, blockSync: Boolean) {
         MainApplication.applicationScope.launch(Dispatchers.IO) {
