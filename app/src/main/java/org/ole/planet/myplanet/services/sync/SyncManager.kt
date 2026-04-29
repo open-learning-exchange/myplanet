@@ -72,7 +72,7 @@ class SyncManager @Inject constructor(
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
+    private val teamsRepository: org.ole.planet.myplanet.repository.TeamSyncRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -1025,7 +1025,7 @@ class SyncManager @Inject constructor(
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
+                                            "teams" -> teamsRepository.insertMyTeam(doc)
                                         }
                                         processedCount++
                                     } catch (e: Exception) {

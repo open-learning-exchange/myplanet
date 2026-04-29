@@ -52,7 +52,7 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
+        teamsRepository: org.ole.planet.myplanet.repository.TeamSyncRepository
     ): SyncManager {
         return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository)
     }
@@ -120,7 +120,7 @@ object ServiceModule {
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
+        teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamSyncRepository>,
         notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
         tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
         ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,

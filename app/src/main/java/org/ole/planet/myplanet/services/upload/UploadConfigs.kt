@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.services.upload
 
+import org.ole.planet.myplanet.repository.TeamSyncRepository
+
+
 import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,7 +29,7 @@ class UploadConfigs @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamSyncRepository>,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository
@@ -70,28 +73,10 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.WithContext { log, context -> serializeTeamActivities(log, context) },
+        serializer = UploadSerializer.WithContext { log, context -> teamsRepository.get().serializeTeamActivities(log, context) },
         idExtractor = { it.id }
     )
 
-    private fun serializeTeamActivities(log: RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject {
-        val ob = com.google.gson.JsonObject()
-        ob.addProperty("user", log.user)
-        ob.addProperty("type", log.type)
-        ob.addProperty("createdOn", log.createdOn)
-        ob.addProperty("parentCode", log.parentCode)
-        ob.addProperty("teamType", log.teamType)
-        ob.addProperty("time", log.time)
-        ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
-        ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
-        if (!android.text.TextUtils.isEmpty(log._rev)) {
-            ob.addProperty("_rev", log._rev)
-            ob.addProperty("_id", log._id)
-        }
-        return ob
-    }
 
     val SearchActivity = UploadConfig(
         modelClass = RealmSearchActivity::class,

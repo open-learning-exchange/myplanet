@@ -44,7 +44,7 @@ class TransactionSyncManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val userRepository: UserRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
-    private val teamsRepository: Lazy<TeamsRepository> = mockk()
+    private val teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamSyncRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
     private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository = mockk()
     private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository = mockk()

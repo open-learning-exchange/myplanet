@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.services.sync
 
+import org.ole.planet.myplanet.repository.TeamSyncRepository
+
+
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
@@ -45,7 +48,7 @@ class TransactionSyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamSyncRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
     private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
     private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
@@ -307,7 +310,7 @@ class TransactionSyncManager @Inject constructor(
                                                 when (table) {
                             "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
+                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
@@ -317,8 +320,8 @@ class TransactionSyncManager @Inject constructor(
                                 org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                             }
                             "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
-                            "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
-                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
+                            "teams" -> teamsRepository.get().bulkInsertFromSync(arr)
+                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(arr)
                             "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
                             "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                             "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
