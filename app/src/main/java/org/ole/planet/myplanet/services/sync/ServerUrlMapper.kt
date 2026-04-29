@@ -4,11 +4,15 @@ import android.content.SharedPreferences
 import android.net.Uri
 import androidx.core.net.toUri
 import javax.inject.Inject
+import kotlinx.coroutines.withContext
 import javax.inject.Singleton
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Singleton
-class ServerUrlMapper @Inject constructor() {
+class ServerUrlMapper @Inject constructor(
+    private val dispatcherProvider: DispatcherProvider
+) {
     private val serverMappings = mapOf(
         "http://${BuildConfig.PLANET_SANPABLO_URL}" to "https://${BuildConfig.PLANET_SANPABLO_CLONE_URL}",
         "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
@@ -87,7 +91,7 @@ class ServerUrlMapper @Inject constructor() {
         mapping: UrlMapping,
         settings: SharedPreferences,
         isServerReachable: suspend (String) -> Boolean
-    ) {
+    ) = withContext(dispatcherProvider.io) {
         val primaryAvailable = isServerReachable(mapping.primaryUrl)
         val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
