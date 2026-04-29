@@ -12,7 +12,7 @@ import io.realm.RealmResults
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
 
-class UserRepositoryImplBulkInsertBenchmarkTest {
+class UserRepositoryBulkInsertTest {
 
     @Test
     fun `benchmark bulkInsertUsersFromSync`() {
