@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -44,6 +45,7 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
@@ -305,7 +307,7 @@ class TransactionSyncManager @Inject constructor(
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
                                                 when (table) {
-                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
+                            "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                             "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
@@ -316,7 +318,7 @@ class TransactionSyncManager @Inject constructor(
                                 coursesRepository.bulkInsertFromSync(mRealm, arr)
                                 org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                             }
-                            "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
+                            "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
                             "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
                             "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)

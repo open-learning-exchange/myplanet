@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -49,6 +50,7 @@ class UploadToShelfService @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
     private val healthRepository: HealthRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
@@ -382,7 +384,7 @@ class UploadToShelfService @Inject constructor(
                                     val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
                                     val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                                     val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                                    val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
+                                    val shelfData = userSyncRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
                                     shelfData.addProperty("_rev", getString("_rev", jsonDoc))
                                     apiInterface.putDoc(
                                         UrlUtils.header,
@@ -419,7 +421,7 @@ class UploadToShelfService @Inject constructor(
                     val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
                     val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
                     val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                    val shelfObject = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
+                    val shelfObject = userSyncRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
                     shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
                     val targetUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"

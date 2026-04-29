@@ -54,7 +54,7 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher), UserRepository {
+) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
@@ -104,7 +104,7 @@ class UserRepositoryImpl @Inject constructor(
         }.firstOrNull()
     }
 
-    override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
+    override suspend fun createGuestUser(username: String): RealmUser? {
         return withRealm { realm ->
             val `object` = JsonObject()
             `object`.addProperty("_id", "guest_$username")
@@ -115,7 +115,7 @@ class UserRepositoryImpl @Inject constructor(
             `object`.add("roles", rolesArray)
             val startedTransaction = !realm.isInTransaction
             if (startedTransaction) realm.beginTransaction()
-            val user = populateUser(`object`, realm, settings)
+            val user = populateUser(`object`, realm)
             if (startedTransaction && realm.isInTransaction) {
                 realm.commitTransaction()
             }
@@ -327,7 +327,7 @@ class UserRepositoryImpl @Inject constructor(
         return null
     }
 
-    override fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser? {
+    private fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?): RealmUser? {
         if (jsonDoc == null || mRealm == null) return null
         try {
             val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
@@ -401,15 +401,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveUser(
         jsonDoc: JsonObject?,
-        settings: SharedPreferences,
         key: String?,
-        iv: String?,
+        iv: String?
     ): RealmUser? {
         if (jsonDoc == null) return null
 
         var userId: String? = null
         withRealm { realm ->
-            val managedUser = populateUser(jsonDoc, realm, settings)
+            val managedUser = populateUser(jsonDoc, realm)
             userId = managedUser?.id
         }
 
@@ -640,7 +639,7 @@ class UserRepositoryImpl @Inject constructor(
 
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
-            saveUser(obj, settings, keyString, iv)
+            saveUser(obj, keyString, iv)
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
@@ -665,7 +664,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.let { saveUser(it, settings) }
+                    response.body()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -1077,7 +1076,7 @@ class UserRepositoryImpl @Inject constructor(
         achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
         achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
     }
-    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
+    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -1088,7 +1087,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            populateUser(jsonDoc, realm, settings)
+            populateUser(jsonDoc, realm)
         }
     }
 
