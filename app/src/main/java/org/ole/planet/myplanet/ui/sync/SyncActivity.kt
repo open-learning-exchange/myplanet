@@ -225,6 +225,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun onClearDataDialog() {
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                 }
+
+                override fun onBetaSyncSaveOnly() {
+                    val serverUrlToPin = prefData.getServerUrl().removePrefix("https://").removePrefix("http://")
+                    if (serverUrlToPin.isNotEmpty() && serverListAddresses.any {
+                        it.url.replace(urlProtocolRegex, "") == serverUrlToPin
+                    }) {
+                        prefData.setPinnedServerUrl(serverUrlToPin)
+                    }
+                    currentDialog?.dismiss()
+                    showSnack(
+                        this@SyncActivity.findViewById(android.R.id.content),
+                        getString(R.string.server_configuration_saved)
+                    )
+                }
             }
         )
     }

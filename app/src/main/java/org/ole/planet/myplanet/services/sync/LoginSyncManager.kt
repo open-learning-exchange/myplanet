@@ -30,7 +30,6 @@ class LoginSyncManager @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
 ) {
-
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
         applicationScope.launch(dispatcherProvider.io) {
             try {
@@ -169,7 +168,7 @@ class LoginSyncManager @Inject constructor(
     }
 
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
-        if (!isManager(jsonDoc)) {
+        if (!isManager(jsonDoc) && !sharedPrefManager.getFastSync()) {
             withContext(dispatcherProvider.main) {
                 listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
             }

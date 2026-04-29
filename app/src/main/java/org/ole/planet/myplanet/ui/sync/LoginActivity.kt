@@ -602,7 +602,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private fun submitForm(name: String?, password: String?) {
         lifecycleScope.launch(Dispatchers.Main) {
-            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
+            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password, sharedPrefManager.getFastSync())
         }
     }
 
