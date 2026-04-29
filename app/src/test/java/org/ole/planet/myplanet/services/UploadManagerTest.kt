@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.services.upload.delegate.PhotoUploadDelegate
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -60,6 +61,7 @@ class UploadManagerTest {
     private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
+    private lateinit var photoUploadDelegate: PhotoUploadDelegate
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -73,6 +75,8 @@ class UploadManagerTest {
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
+
+        photoUploadDelegate = PhotoUploadDelegate(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher))
 
         uploadManager = spyk(
             UploadManager(
@@ -92,7 +96,8 @@ class UploadManagerTest {
                 apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
-                testScope
+                testScope,
+                photoUploadDelegate
             )
         )
     }
