@@ -19,7 +19,7 @@ object AuthUtils {
         return userRepository.validateUsername(username)
     }
 
-    suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?) {
+    suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?, isFastSync: Boolean = false) {
         if (activity.forceSyncTrigger()) return
 
         val settings = activity.settings
@@ -27,12 +27,16 @@ object AuthUtils {
             SecurePrefs.saveCredentials(activity, settings, name, password)
         }
 
-        val isLoggedIn = activity.authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            activity.onLogin()
-            activity.saveUsers(name, password, "member")
-            return
+        // When fastSync is on there may be no local users yet, so skip the offline-only path
+        // and go straight to the server endpoint.
+        if (!isFastSync) {
+            val isLoggedIn = activity.authenticateUser(settings, name, password, false)
+            if (isLoggedIn) {
+                Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                activity.onLogin()
+                activity.saveUsers(name, password, "member")
+                return
+            }
         }
 
         val syncResult = suspendCancellableCoroutine<Boolean> { continuation ->
@@ -62,7 +66,9 @@ object AuthUtils {
         }
 
         if (syncResult) {
-            val log = activity.authenticateUser(activity.settings, name, password, true)
+            // fastSync: user was just authenticated against the server and saved locally,
+            // so authenticate without the manager restriction.
+            val log = activity.authenticateUser(activity.settings, name, password, !isFastSync)
             if (log) {
                 Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                 activity.onLogin()

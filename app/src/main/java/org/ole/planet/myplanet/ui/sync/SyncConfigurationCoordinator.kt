@@ -30,7 +30,7 @@ class SyncConfigurationCoordinator(
         fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String)
         fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, defaultUrl: String)
         fun onClearDataDialog()
-        fun onBetaSyncSaveOnly()
+        fun onBetaSyncConfigSaved(url: String, defaultUrl: String, isAlternativeUrl: Boolean)
     }
 
     fun checkMinApk(
