@@ -220,15 +220,26 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun normalizeText(str: String): String {
-        val normalized = Normalizer.normalize(str, Normalizer.Form.NFD)
-        val sb = java.lang.StringBuilder(normalized.length)
+        val lowercased = str.lowercase(Locale.getDefault())
+        val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
+        val sb = StringBuilder(normalized.length)
         for (i in 0 until normalized.length) {
             val c = normalized[i]
+            // NON_SPACING_MARK matches Unicode category Mn (Combining Diacritical Marks)
             if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
                 sb.append(c)
             }
         }
-        return sb.toString().lowercase(java.util.Locale.ROOT)
+        return sb.toString()
+    }
+
+    private fun matchesAllParts(title: String, parts: List<String>): Boolean {
+        for (part in parts) {
+            if (!title.contains(part)) {
+                return false
+            }
+        }
+        return true
     }
 
     override suspend fun search(query: String): List<RealmMyCourse> {
@@ -248,19 +259,10 @@ class CoursesRepositoryImpl @Inject constructor(
             for (item in data) {
                 val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
-                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                if (title.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
-                } else {
-                    var matchesAll = true
-                    for (part in normalizedQueryParts) {
-                        if (!title.contains(part, ignoreCase = true)) {
-                            matchesAll = false
-                            break
-                        }
-                    }
-                    if (matchesAll) {
-                        containsQuery.add(item)
-                    }
+                } else if (matchesAllParts(title, normalizedQueryParts)) {
+                    containsQuery.add(item)
                 }
             }
             realm.copyFromRealm(startsWithQuery + containsQuery)
@@ -660,19 +662,10 @@ class CoursesRepositoryImpl @Inject constructor(
                 for (item in data) {
                     val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
-                    if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    if (title.startsWith(normalizedQuery)) {
                         startsWithQuery.add(item)
-                    } else {
-                        var matchesAll = true
-                        for (part in normalizedQueryParts) {
-                            if (!title.contains(part, ignoreCase = true)) {
-                                matchesAll = false
-                                break
-                            }
-                        }
-                        if (matchesAll) {
-                            containsQuery.add(item)
-                        }
+                    } else if (matchesAllParts(title, normalizedQueryParts)) {
+                        containsQuery.add(item)
                     }
                 }
                 val filteredData = startsWithQuery + containsQuery
