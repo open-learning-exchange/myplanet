@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
-import org.ole.planet.myplanet.services.upload.delegate.PhotoUploadDelegate
+import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -69,7 +69,7 @@ class UploadManager @Inject constructor(
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
-    private val photoUploadDelegate: PhotoUploadDelegate
+    private val photoUploader: PhotoUploader
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -204,7 +204,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        photoUploadDelegate.uploadSubmitPhotos(this, listener, ::notifyListener)
+        photoUploader.uploadSubmitPhotos(this, listener, ::notifyListener)
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.services.upload.delegate
+package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
 import kotlinx.coroutines.withContext
@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 import javax.inject.Inject
 
-class PhotoUploadDelegate @Inject constructor(
+class PhotoUploader @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider
