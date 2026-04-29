@@ -118,8 +118,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     val defaultPref: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
-    @Inject
-    lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -384,13 +382,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (settings != null) {
                 this.settings = settings
             }
-            if (!withContext(Dispatchers.IO) { userRepository.hasAtLeastOneUser() }) {
+            if (!userRepository.hasAtLeastOneUser()) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
                 val user = userRepository.authenticateUser(username, password, isManagerMode)
                 if (user != null) {
-                    saveUserInfoPref(this.settings, password, user)
+                    profileDbHandler.saveUserInfoPref(this.settings, password, user)
                     true
                 } else {
                     false
