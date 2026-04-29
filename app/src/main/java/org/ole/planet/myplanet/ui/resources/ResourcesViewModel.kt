@@ -39,6 +39,7 @@ class ResourcesViewModel @Inject constructor(
             serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
                 isServerReachable(url)
             }
+            // startSyncManager enqueues UI callbacks, so we run it on Main
             startSyncManager()
         }
     }

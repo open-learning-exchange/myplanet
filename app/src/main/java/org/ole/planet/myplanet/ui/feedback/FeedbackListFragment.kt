@@ -104,11 +104,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(dispatcherProvider.io) {
+        lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            withContext(dispatcherProvider.main) {
-                viewModel.startFeedbackSync()
-            }
+            // viewModel.startFeedbackSync enqueues UI callbacks, so we run it on Main
+            viewModel.startFeedbackSync()
         }
     }
 

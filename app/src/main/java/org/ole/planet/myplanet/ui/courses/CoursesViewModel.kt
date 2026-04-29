@@ -68,9 +68,8 @@ class CoursesViewModel @Inject constructor(
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                updateServerIfNecessary(mapping)
-            }
+            updateServerIfNecessary(mapping)
+            // startSyncManager enqueues UI callbacks, so we run it on Main
             startSyncManager()
         }
     }

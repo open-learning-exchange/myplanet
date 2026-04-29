@@ -182,11 +182,10 @@ class SurveysViewModel @Inject constructor(
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                    MainApplication.isServerReachable(url)
-                }
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                MainApplication.isServerReachable(url)
             }
+            // startSyncManager enqueues UI callbacks, so we run it on Main
             startSyncManager()
         }
     }

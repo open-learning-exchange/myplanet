@@ -97,6 +97,7 @@ class AchievementFragment : BaseContainerFragment() {
 
         lifecycleScope.launch {
             updateServerIfNecessary(mapping)
+            // startSyncManager enqueues UI callbacks, so we run it on Main
             startSyncManager()
         }
     }
