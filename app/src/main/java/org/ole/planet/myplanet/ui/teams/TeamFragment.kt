@@ -250,7 +250,7 @@ class TeamFragment : Fragment() {
         teamListAdapter = TeamsAdapter(
             isGuestUser = user?.isGuest() == true,
             onItemClick = { team ->
-                val activity = context as? AppCompatActivity ?: return@TeamsAdapter
+                val activity = getActivity() as? AppCompatActivity ?: return@TeamsAdapter
                 val fragment = TeamDetailFragment.newInstance(
                     teamId = team._id.orEmpty(),
                     teamName = "${team.name}",
