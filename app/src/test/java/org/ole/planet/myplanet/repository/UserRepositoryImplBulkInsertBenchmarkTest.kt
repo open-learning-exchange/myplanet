@@ -38,6 +38,9 @@ class UserRepositoryImplBulkInsertBenchmarkTest {
         every { realmQuery.findAll() } returns realmResults
         every { realmResults.iterator() } returns mutableListOf<RealmUser>().iterator()
 
+        val mockUser = mockk<RealmUser>(relaxed = true)
+        every { realm.createObject(RealmUser::class.java, any<String>()) } returns mockUser
+
         val jsonArray = JsonArray()
         for (i in 1..10) {
             val jObj = JsonObject()
