@@ -72,7 +72,8 @@ class SyncManager @Inject constructor(
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
+    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
+    private val teamSyncHandler: TeamSyncHandler
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -255,11 +256,6 @@ class SyncManager @Inject constructor(
                         logger.endProcess("feedback_sync")
                     },
                     async {
-                        logger.startProcess("tasks_sync")
-                        transactionSyncManager.syncDb("tasks")
-                        logger.endProcess("tasks_sync")
-                    },
-                    async {
                         logger.startProcess("login_activities_sync")
                         transactionSyncManager.syncDb("login_activities")
                         logger.endProcess("login_activities_sync")
@@ -275,19 +271,12 @@ class SyncManager @Inject constructor(
                         logger.endProcess("certifications_sync")
                     },
                     async {
-                        logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb("team_activities")
-                        logger.endProcess("team_activities_sync")
-                    },
-                    async {
                         logger.startProcess("chat_history_sync")
                         transactionSyncManager.syncDb("chat_history")
                         logger.endProcess("chat_history_sync")
                     },
                     async {
-                        logger.startProcess("teams_sync")
-                        transactionSyncManager.syncDb("teams")
-                        logger.endProcess("teams_sync")
+                        teamSyncHandler.syncFull()
                     },
                     async {
                         logger.startProcess("meetups_sync")
@@ -387,13 +376,6 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(
                         async {
-                            logger.startProcess("teams_sync")
-                            transactionSyncManager.syncDb("teams")
-                            logger.endProcess("teams_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
                             logger.startProcess("news_sync")
                             transactionSyncManager.syncDb("news")
                             logger.endProcess("news_sync")
@@ -453,15 +435,6 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("tasks") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tasks_sync")
-                            transactionSyncManager.syncDb("tasks")
-                            logger.endProcess("tasks_sync")
-                        })
-                }
-
                 if (syncTables?.contains("meetups") == true) {
                     syncJobs.add(
                         async {
@@ -471,14 +444,12 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                if (syncTables?.contains("team_activities") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("team_activities_sync")
-                            transactionSyncManager.syncDb("team_activities")
-                            logger.endProcess("team_activities_sync")
-                        })
-                }
+                syncJobs.add(
+                    async {
+                        teamSyncHandler.syncFast(syncTables)
+                        Unit
+                    }
+                )
 
                 if (syncTables?.contains("chat_history") == true) {
                     syncJobs.add(
