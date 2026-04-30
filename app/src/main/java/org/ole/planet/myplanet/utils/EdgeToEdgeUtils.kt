@@ -28,7 +28,7 @@ object EdgeToEdgeUtils {
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
+            windowInsets
         }
     }
 
@@ -58,9 +58,9 @@ object EdgeToEdgeUtils {
                 systemBarsInsets.left,
                 systemBarsInsets.top,
                 systemBarsInsets.right,
-                maxOf(systemBarsInsets.bottom, imeInsets.bottom)
+                systemBarsInsets.bottom
             )
-            WindowInsetsCompat.CONSUMED
+            windowInsets
         }
     }
 

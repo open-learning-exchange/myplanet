@@ -160,8 +160,18 @@ abstract class BaseResourceFragment : Fragment() {
             convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            val titleView = TextView(requireContext()).apply {
+                text = getString(R.string.download_suggestion)
+                setPadding(48, 40, 48, 0)
+                textSize = 18f
+                maxLines = 5
+                setSingleLine(false)
+                setTextColor(resources.getColor(android.R.color.white, null))
+            }
             alertDialogBuilder.setView(convertView)
-                .setTitle(R.string.download_suggestion)
+                .setCustomTitle(titleView)
+
+
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         if (configurationsRepository.checkServerAvailability()) {
