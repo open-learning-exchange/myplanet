@@ -261,14 +261,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun insertActivityInternal(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
+    private fun insertActivityInternal(realm: io.realm.Realm, json: com.google.gson.JsonObject, existingActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null) {
         val serverIdStr = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
         val loginTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", json)
         val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
 
-        var activities = realm.where(RealmOfflineActivity::class.java)
-            .equalTo("_id", serverIdStr)
-            .findFirst()
+        var activities = if (existingActivitiesMap != null) {
+            existingActivitiesMap[serverIdStr]
+        } else {
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("_id", serverIdStr)
+                .findFirst()
+        }
 
         if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
             activities = realm.where(RealmOfflineActivity::class.java)
@@ -279,6 +283,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         if (activities == null) {
             activities = realm.createObject(RealmOfflineActivity::class.java, serverIdStr)
+            existingActivitiesMap?.put(serverIdStr, activities)
         }
         if (activities != null) {
             activities._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", json)
@@ -368,16 +373,32 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
+
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                if (id.isNotEmpty()) {
+                    ids.add(id)
+                }
             }
         }
+
+        val existingActivitiesMap = if (ids.isNotEmpty()) {
+            realm.where(RealmOfflineActivity::class.java)
+                .`in`("_id", ids.toTypedArray())
+                .findAll()
+                .associateBy { it._id!! }
+                .toMutableMap()
+        } else {
+            mutableMapOf<String, RealmOfflineActivity>()
+        }
+
         documentList.forEach { jsonDoc ->
-            insertActivityInternal(realm, jsonDoc)
+            insertActivityInternal(realm, jsonDoc, existingActivitiesMap)
         }
     }
 }
