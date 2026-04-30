@@ -15,6 +15,8 @@ class ResourceDownloadCoordinator @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationContext private val context: Context
 ) {
+
+    // Starts a background download if the server is available
     fun startBackgroundDownload(urls: ArrayList<String>) {
         MainApplication.applicationScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
