@@ -18,12 +18,10 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation
@@ -37,8 +35,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils
 
@@ -56,15 +52,10 @@ class ChatHistoryFragment : Fragment() {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
-    
-    @Inject
-    lateinit var syncManager: SyncManager
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
@@ -80,7 +71,6 @@ class ChatHistoryFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startChatHistorySync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -96,6 +86,7 @@ class ChatHistoryFragment : Fragment() {
 
         setupRealtimeSync()
         checkAiProvidersIfNeeded()
+        startChatHistorySync()
         binding.toggleGroup.visibility = View.GONE
         binding.newChat.setOnClickListener {
             sharedViewModel.clearChatState()
@@ -178,68 +169,40 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun startChatHistorySync() {
-        val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.CHAT_HISTORY)) {
-            checkServerAndStartSync()
+        val alreadySynced = sharedPrefManager.isSynced(SharedPrefManager.SyncKey.CHAT_HISTORY)
+        val syncTime = sharedPrefManager.getSyncTime(SharedPrefManager.SyncKey.CHAT_HISTORY)
+        android.util.Log.d("ChatHistorySync", "startChatHistorySync — alreadySynced=$alreadySynced lastSyncTime=$syncTime")
+        if (alreadySynced) {
+            android.util.Log.d("ChatHistorySync", "skipping fetch — already synced at $syncTime")
+            return
         }
+        fetchUserChatHistory()
     }
 
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
+    private fun fetchUserChatHistory() {
         lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
+            if (!isAdded) return@launch
+            val userName = sharedPrefManager.getUserName()
+            android.util.Log.d("ChatHistorySync", "sync started for user=$userName")
+            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+            customProgressDialog?.setText(getString(R.string.syncing_chat_history))
+            customProgressDialog?.show()
 
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                if (view != null && isAdded) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        if (isAdded && !requireActivity().isFinishing) {
-                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            customProgressDialog?.setText(getString(R.string.syncing_chat_history))
-                            customProgressDialog?.show()
-                        }
-                    }
-                }
+            val success = chatRepository.fetchAndSaveUserChatHistory(userName)
+
+            if (!isAdded || _binding == null) return@launch
+            customProgressDialog?.dismiss()
+            customProgressDialog = null
+
+            if (success) {
+                android.util.Log.d("ChatHistorySync", "sync complete for user=$userName")
+                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
+            } else {
+                android.util.Log.w("ChatHistorySync", "sync failed for user=$userName")
+                Snackbar.make(binding.root, getString(R.string.sync_failed), Snackbar.LENGTH_LONG)
+                    .setAction("Retry") { startChatHistorySync() }.show()
             }
-
-            override fun onSyncComplete() {
-                if (view != null && isAdded) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
-
-                            refreshChatHistory()
-                        }
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                if (view != null && isAdded) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            refreshChatHistory()
-
-                            Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                                .setAction("Retry") { startChatHistorySync() }.show()
-                        }
-                    }
-                }
-            } }, "full", listOf("chat_history"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
+            refreshChatHistory()
         }
     }
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AiProvider
@@ -23,12 +24,14 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val chatApiService: ChatApiService,
+    private val apiInterface: ApiInterface,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
@@ -100,6 +103,35 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun insertChatHistoryList(chats: List<JsonObject>) {
         executeTransaction { realm ->
             chats.forEach { insertChatHistory(realm, it) }
+        }
+    }
+
+    override suspend fun fetchAndSaveUserChatHistory(userName: String): Boolean {
+        return try {
+            val url = "${UrlUtils.getUrl()}/chat_history/_find"
+            android.util.Log.d("ChatHistorySync", "fetch started — user=$userName url=$url")
+            val selector = JsonObject().apply {
+                add("selector", JsonObject().apply { addProperty("user", userName) })
+            }
+            val response = apiInterface.findDocs(UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) {
+                android.util.Log.w("ChatHistorySync", "fetch failed — HTTP ${response.code()}")
+                return false
+            }
+            val docs = JsonUtils.getJsonArray("docs", response.body())
+            val chatList = mutableListOf<JsonObject>()
+            for (element in docs) {
+                val doc = element.asJsonObject
+                if (!JsonUtils.getString("_id", doc).startsWith("_design")) {
+                    chatList.add(doc)
+                }
+            }
+            android.util.Log.d("ChatHistorySync", "fetch succeeded — ${chatList.size} doc(s) for user=$userName")
+            if (chatList.isNotEmpty()) insertChatHistoryList(chatList)
+            true
+        } catch (e: Exception) {
+            android.util.Log.e("ChatHistorySync", "fetch threw exception: ${e.message}", e)
+            false
         }
     }
 
