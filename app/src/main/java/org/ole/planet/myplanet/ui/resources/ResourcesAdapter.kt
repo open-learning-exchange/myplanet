@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -15,110 +16,81 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
-import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
-import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
     private val context: Context,
-    private var ratingMap: HashMap<String?, JsonObject>,
     private val isGuest: Boolean,
-    private var tagsMap: Map<String, List<TagItem>>,
     private var openedResourceIds: Set<String>
-) : ListAdapter<ResourceItem, RecyclerView.ViewHolder>(
-    DiffUtils.itemCallback(
-        { oldItem, newItem -> oldItem.id == newItem.id },
-        { oldItem, newItem -> oldItem._rev == newItem._rev && oldItem.uploadDate == newItem.uploadDate }
-    )
-), OnDiffRefreshListener {
+) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(
+    object : DiffUtil.ItemCallback<ResourceListModel>() {
+        override fun areItemsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
+            return oldItem.item.id == newItem.item.id
+        }
 
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
+        override fun areContentsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
+            return oldItem == newItem
+        }
     }
+) {
 
-
-    private val selectedItems: MutableList<ResourceItem> = ArrayList()
+    private val selectedItems: MutableList<ResourceListModel> = ArrayList()
     private var listener: OnLibraryItemSelectedListener? = null
-    private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
+    private val config: ChipCloudConfig = org.ole.planet.myplanet.utils.Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+
     private var isAscending = true
-    private var isTitleAscending = false
+    private var isTitleAscending = true
 
     companion object {
-        private const val TAGS_PAYLOAD = "payload_tags"
-        private const val RATING_PAYLOAD = "payload_rating"
-        private const val SELECTION_PAYLOAD = "payload_selection"
-        private const val OPENED_RESOURCE_PAYLOAD = "payload_opened_resource"
-    }
-
-    init {
-        if (context is OnHomeItemClickListener) {
-            homeItemClickListener = context
-        }
-    }
-
-    fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
-        this.ratingChangeListener = ratingChangeListener
-    }
-
-    fun getLibraryList(): List<ResourceItem> {
-        return currentList
-    }
-
-    fun setLibraryList(libraryList: List<ResourceItem?>, onComplete: (() -> Unit)? = null) {
-        val filteredList = libraryList.filterNotNull()
-        if (onComplete != null) {
-            submitList(filteredList) { onComplete() }
-        } else {
-            submitList(filteredList)
-        }
+        private const val SELECTION_PAYLOAD = "SELECTION_PAYLOAD"
+        private const val RATING_PAYLOAD = "RATING_PAYLOAD"
+        private const val OPENED_RESOURCE_PAYLOAD = "OPENED_RESOURCE_PAYLOAD"
+        private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
     }
 
     fun setListener(listener: OnLibraryItemSelectedListener?) {
         this.listener = listener
     }
 
+    fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
+        this.ratingChangeListener = ratingChangeListener
+    }
+
+    fun getLibraryList(): List<ResourceListModel> {
+        return currentList
+    }
+
+    fun setLibraryList(libraryList: List<ResourceListModel?>, onComplete: (() -> Unit)? = null) {
+        submitList(libraryList.filterNotNull(), onComplete)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val rowLibraryBinding =
-            RowLibraryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val rowLibraryBinding = RowLibraryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ResourcesViewHolder(rowLibraryBinding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ResourcesViewHolder) {
-            val library = getItem(position) ?: return
-            holder.bind()
-            holder.rowLibraryBinding.title.text = library.title ?: ""
-            setMarkdownText(holder.rowLibraryBinding.description, library.description ?: "")
-            holder.rowLibraryBinding.description.setOnClickListener {
-                openLibrary(library)
-            }
-            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, library.timesRated)
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
-            val selectedText = context.getString(R.string.selected)
-            val libraryTitle = library.title.orEmpty()
-            holder.rowLibraryBinding.checkbox.contentDescription =
-                if (libraryTitle.isNotEmpty()) "$selectedText $libraryTitle" else selectedText
-            holder.rowLibraryBinding.rating.text =
-                if (TextUtils.isEmpty(library.averageRating)) {
-                    "0.0"
-                } else {
-                    String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDouble())
-                }
-            holder.rowLibraryBinding.tvDate.text = library.createdDate.let { formatDate(it, "MMM dd, yyyy") }
+            val model = getItem(position) ?: return
+            val library = model.item
+            holder.rowLibraryBinding.title.text = library.title
+            holder.rowLibraryBinding.description.text = library.description
+            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.rating_count_format, library.timesRated)
+            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
+            holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(library.averageRating)) "0.0" else String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDoubleOrNull() ?: 0.0)
+            holder.rowLibraryBinding.tvDate.text = org.ole.planet.myplanet.utils.TimeUtils.formatDate(library.createdDate)
+
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener {
-                openLibrary(library)
+                openLibrary(model)
             }
             val isResourceOpened = openedResourceIds.contains(library.id)
             if (library.isOffline || isResourceOpened) {
@@ -132,7 +104,7 @@ class ResourcesAdapter(
                 } else {
                     context.getString(R.string.download)
                 }
-            bindRating(holder, library)
+            bindRating(holder, model)
 
             if (!isGuest) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
@@ -140,13 +112,13 @@ class ResourcesAdapter(
                         context.getString(R.string.select_res_course, library.title ?: "")
                     val isChecked = (view as CheckBox).isChecked
                     if (isChecked) {
-                        if (!selectedItems.contains(library)) {
-                            selectedItems.add(library)
+                        if (!selectedItems.contains(model)) {
+                            selectedItems.add(model)
                         }
                     } else {
-                        selectedItems.remove(library)
+                        selectedItems.remove(model)
                     }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems)
+                    if (listener != null) listener?.onSelectedListChange(selectedItems.map { it.item })
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -169,12 +141,12 @@ class ResourcesAdapter(
         notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
 
         if (listener != null) {
-            listener?.onSelectedListChange(selectedItems)
+            listener?.onSelectedListChange(selectedItems.map { it.item })
         }
     }
 
-    private fun openLibrary(library: ResourceItem) {
-        listener?.onResourceClicked(library)
+    private fun openLibrary(model: ResourceListModel) {
+        listener?.onResourceClicked(model.item)
     }
 
     override fun onBindViewHolder(
@@ -183,14 +155,15 @@ class ResourcesAdapter(
         payloads: MutableList<Any>
     ) {
         if (holder is ResourcesViewHolder && payloads.isNotEmpty()) {
-            val library = getItem(position) ?: return
+            val model = getItem(position) ?: return
+            val library = model.item
             var handled = false
             if (payloads.contains(RATING_PAYLOAD)) {
-                bindRating(holder, library)
+                bindRating(holder, model)
                 handled = true
             }
             if (payloads.contains(SELECTION_PAYLOAD)) {
-                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(library)
+                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
                 handled = true
             }
             if (payloads.contains(OPENED_RESOURCE_PAYLOAD)) {
@@ -214,38 +187,12 @@ class ResourcesAdapter(
         }
     }
 
-    fun setTagsMap(newTagsMap: Map<String, List<TagItem>>) {
-        val updatedResourceIds = mutableSetOf<String?>()
-
-        newTagsMap.forEach { (resourceId, newTags) ->
-            if (tagsMap[resourceId] != newTags) {
-                updatedResourceIds.add(resourceId)
-            }
-        }
-
-        tagsMap.keys.filterNot { newTagsMap.containsKey(it) }.forEach { removedKey ->
-            updatedResourceIds.add(removedKey)
-        }
-
-        tagsMap = newTagsMap
-
-        updatedResourceIds.forEach { resourceId ->
-            if (resourceId.isNullOrEmpty()) {
-                return@forEach
-            }
-            val index = currentList.indexOfFirst { it.id == resourceId }
-            if (index != -1) {
-                notifyItemChanged(index, TAGS_PAYLOAD)
-            }
-        }
-    }
-
     fun setOpenedResourceIds(openedResourceIds: Set<String>) {
         val oldOpenedResourceIds = this.openedResourceIds
         this.openedResourceIds = openedResourceIds
-        currentList.forEachIndexed { index, library ->
-            val wasOpened = oldOpenedResourceIds.contains(library.id)
-            val isOpened = openedResourceIds.contains(library.id)
+        currentList.forEachIndexed { index, model ->
+            val wasOpened = oldOpenedResourceIds.contains(model.item.id)
+            val isOpened = openedResourceIds.contains(model.item.id)
             if (wasOpened != isOpened) {
                 notifyItemChanged(index, OPENED_RESOURCE_PAYLOAD)
             }
@@ -254,12 +201,12 @@ class ResourcesAdapter(
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {
         val flexboxDrawable = holder.rowLibraryBinding.flexboxDrawable
-        val resourceId = getItem(position)?.id
-        if (resourceId == null) {
+        val model = getItem(position)
+        if (model == null) {
             flexboxDrawable.removeAllViews()
             return
         }
-        val tags = tagsMap[resourceId].orEmpty()
+        val tags = model.tags
         renderTagCloud(flexboxDrawable, tags)
     }
 
@@ -295,64 +242,36 @@ class ResourcesAdapter(
         setLibraryList(sortLibraryList(), onComplete)
     }
 
-    private fun sortLibraryListByTitle(): List<ResourceItem> {
+    private fun sortLibraryListByTitle(): List<ResourceListModel> {
         return if (isTitleAscending) {
-            currentList.sortedBy { it.title?.lowercase(Locale.ROOT) }
+            currentList.sortedBy { it.item.title?.lowercase(Locale.ROOT) }
         } else {
-            currentList.sortedByDescending { it.title?.lowercase(Locale.ROOT) }
+            currentList.sortedByDescending { it.item.title?.lowercase(Locale.ROOT) }
         }
     }
 
-    private fun sortLibraryList(): List<ResourceItem> {
+    private fun sortLibraryList(): List<ResourceListModel> {
         return if (isAscending) {
-            currentList.sortedBy { it.createdDate }
+            currentList.sortedBy { it.item.createdDate }
         } else {
-            currentList.sortedByDescending { it.createdDate }
+            currentList.sortedByDescending { it.item.createdDate }
         }
     }
 
-    fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
-        val updatedResourceIds = mutableSetOf<String?>()
-
-        newRatingMap.forEach { (resourceId, newRating) ->
-            if (ratingMap[resourceId] != newRating) {
-                updatedResourceIds.add(resourceId)
-            }
-        }
-
-        ratingMap.keys.filterNot { newRatingMap.containsKey(it) }.forEach { removedKey ->
-            updatedResourceIds.add(removedKey)
-        }
-
-        ratingMap.clear()
-        ratingMap.putAll(newRatingMap)
-
-        updatedResourceIds.forEach { resourceId ->
-            if (resourceId.isNullOrEmpty()) {
-                return@forEach
-            }
-            val index = currentList.indexOfFirst { it.resourceId == resourceId }
-            if (index != -1) {
-                notifyItemChanged(index, RATING_PAYLOAD)
-            }
-        }
-    }
-
-    private fun bindRating(holder: ResourcesViewHolder, library: ResourceItem) {
-        if (ratingMap.containsKey(library.resourceId)) {
-            val ratingData = ratingMap[library.resourceId]
+    private fun bindRating(holder: ResourcesViewHolder, model: ResourceListModel) {
+        if (model.rating != null) {
             CourseRatingUtils.showRating(
                 context,
-                ratingData,
+                model.rating,
                 holder.rowLibraryBinding.rating,
                 holder.rowLibraryBinding.timesRated,
                 holder.rowLibraryBinding.ratingBar
             )
         } else {
-            val averageRating = library.averageRating?.toFloatOrNull() ?: 0f
+            val averageRating = model.item.averageRating?.toFloatOrNull() ?: 0f
             holder.rowLibraryBinding.rating.text = String.format(Locale.getDefault(), "%.2f", averageRating)
             holder.rowLibraryBinding.timesRated.text =
-                context.getString(R.string.rating_count_format, library.timesRated)
+                context.getString(R.string.rating_count_format, model.item.timesRated)
             holder.rowLibraryBinding.ratingBar.rating = averageRating
         }
     }
@@ -365,12 +284,12 @@ class ResourcesAdapter(
                         val adapterPosition = bindingAdapterPosition
                         if (adapterPosition != RecyclerView.NO_POSITION) {
                             if (adapterPosition < currentList.size) {
-                                val library = getItem(adapterPosition)
+                                val model = getItem(adapterPosition)
                                 if (!isGuest) {
                                     homeItemClickListener?.showRatingDialog(
                                         "resource",
-                                        library?.resourceId,
-                                        library?.title,
+                                        model?.item?.resourceId,
+                                        model?.item?.title,
                                         ratingChangeListener
                                     )
                                 }

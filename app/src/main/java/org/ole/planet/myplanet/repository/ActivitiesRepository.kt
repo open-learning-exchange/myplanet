@@ -28,4 +28,5 @@ interface ActivitiesRepository {
     fun serializeLoginActivities(activity: RealmOfflineActivity, context: android.content.Context): JsonObject
     fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     suspend fun uploadActivities()
+    suspend fun uploadMyPlanetActivities(userModel: org.ole.planet.myplanet.model.RealmUser)
 }
