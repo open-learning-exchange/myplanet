@@ -20,5 +20,4 @@ interface RepositoryDependenciesEntryPoint {
     fun teamsRepository(): TeamsRepository
     fun submissionsRepository(): SubmissionsRepository
     fun resourcesRepository(): ResourcesRepository
-    fun surveysRepository(): SurveysRepository
 }
