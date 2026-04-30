@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
@@ -136,7 +137,8 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperation(operation: RealmRetryOperation): Boolean {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal suspend fun processOperation(operation: RealmRetryOperation): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
             withTimeout(30_000L) {
@@ -153,7 +155,8 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperationInternal(operation: RealmRetryOperation): Boolean {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal suspend fun processOperationInternal(operation: RealmRetryOperation): Boolean {
         return try {
             retryQueue.markInProgress(operation.id)
 
