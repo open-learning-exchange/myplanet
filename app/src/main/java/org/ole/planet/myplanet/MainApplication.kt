@@ -289,13 +289,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private suspend fun setupAnrWatchdog() {
         withContext(dispatcherProvider.default) {
-            anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
-                override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
-                    applicationScope.launch {
-                        createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+            anrWatchdog = ANRWatchdog(
+                timeout = 5000L,
+                listener = object : ANRWatchdog.ANRListener {
+                    override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
+                        applicationScope.launch {
+                            createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                        }
                     }
-                }
-            })
+                },
+                dispatcherProvider = dispatcherProvider
+            )
             anrWatchdog.start()
         }
     }

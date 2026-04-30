@@ -15,6 +15,7 @@ interface UserRepository {
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
     suspend fun getUserById(userId: String): RealmUser?
+    suspend fun getUsersByIds(userIds: List<String>): List<RealmUser>
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun findUserByName(name: String): RealmUser?
