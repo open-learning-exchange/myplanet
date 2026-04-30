@@ -314,23 +314,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(this@ProcessUserDataActivity, settings, user?.name, password)
-        }
-        this.settings = settings
-        prefData.setUserId(user?.id ?: "")
-        prefData.setUserName(user?.name ?: "")
-        prefData.rawPreferences.edit().apply {
-            remove("password")
-            putString("firstName", user?.firstName)
-            putString("lastName", user?.lastName)
-            putString("middleName", user?.middleName)
-            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", System.currentTimeMillis())
-            apply()
-        }
-    }
 
     fun alertDialogOkay(message: String?) {
         val builder1 = AlertDialog.Builder(this, R.style.AlertDialogTheme)

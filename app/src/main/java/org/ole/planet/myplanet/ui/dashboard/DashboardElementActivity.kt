@@ -28,8 +28,12 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.data.DatabaseService
+import javax.inject.Inject
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var navigationView: BottomNavigationView
     private lateinit var goOnline: MenuItem
     var c = 0
