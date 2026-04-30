@@ -27,7 +27,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.services.CachedMyLifeItem
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnDashboardActionListener
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -39,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.services.CachedMyLifeItem
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
