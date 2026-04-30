@@ -1,0 +1,720 @@
+Initialized native services in: /home/jules/.gradle/native
+Initialized jansi services in: /home/jules/.gradle/native
+The client will now receive all logging from the daemon (pid: 8220). The daemon log file: /home/jules/.gradle/daemon/9.5.0/daemon-8220.out.log
+Starting 43rd build in daemon [uptime: 20 mins 17.833 secs, performance: 99%, GC rate: 0.01/s, heap usage: 6% of 2.6 GiB]
+Using 4 worker leases.
+Operational build model parameters: {cachingModelBuilding=false, configurationCache=true, configurationCacheDisabledReason=null, configurationCacheParallelLoad=true, configurationCacheParallelStore=false, configureOnDemand=false, invalidateCoupledProjects=false, isolatedProjects=false, modelAsProjectDependency=false, modelBuilding=false, parallelModelBuilding=false, parallelProjectConfiguration=false, parallelProjectExecution=true, resilientModelBuilding=false}
+Encryption key source: default Gradle keystore (pkcs12)
+Now considering [/app] as hierarchies to watch
+Reusing configuration cache.
+Now considering [/app] as hierarchies to watch
+Watching the file system is configured to be enabled
+File system watching is active
+Tasks to be executed: [task ':app:preBuild', task ':app:preDefaultDebugBuild', task ':app:dataBindingMergeDependencyArtifactsDefaultDebug', task ':app:generateDefaultDebugResValues', task ':app:generateDefaultDebugResources', task ':app:mergeDefaultDebugResources', task ':app:dataBindingGenBaseClassesDefaultDebug', task ':app:dataBindingTriggerDefaultDebug', task ':app:generateDefaultDebugBuildConfig', task ':app:packageDefaultDebugResources', task ':app:processDefaultDebugNavigationResources', task ':app:parseDefaultDebugLocalResources', task ':app:generateDefaultDebugRFile', task ':app:kspDefaultDebugKotlin', task ':app:kaptGenerateStubsDefaultDebugKotlin', task ':app:kaptDefaultDebugKotlin', task ':app:compileDefaultDebugKotlin', task ':app:javaPreCompileDefaultDebug', task ':app:compileDefaultDebugJavaWithJavac', task ':app:hiltSyncDefaultDebug', task ':app:hiltAggregateDepsDefaultDebug', task ':app:hiltJavaCompileDefaultDebug', task ':app:checkDefaultDebugAarMetadata', task ':app:mapDefaultDebugSourceSetPaths', task ':app:compileDefaultDebugNavigationResources', task ':app:createDefaultDebugCompatibleScreenManifests', task ':app:extractDeepLinksDefaultDebug', task ':app:processDefaultDebugMainManifest', task ':app:processDefaultDebugManifest', task ':app:processDefaultDebugManifestForPackage', task ':app:processDefaultDebugResources', task ':app:defaultDebugRealmAccessorsTransformer', task ':app:transformDefaultDebugClassesWithAsm', task ':app:bundleDefaultDebugClassesToRuntimeJar', task ':app:generateDefaultDebugAssets', task ':app:mergeDefaultDebugAssets', task ':app:preDefaultDebugUnitTestBuild', task ':app:packageDefaultDebugUnitTestForUnitTest', task ':app:processDefaultDebugUnitTestManifest', task ':app:generateDefaultDebugUnitTestConfig', task ':app:processDefaultDebugJavaRes', task ':app:bundleDefaultDebugClassesToCompileJar', task ':app:kspDefaultDebugUnitTestKotlin', task ':app:kaptGenerateStubsDefaultDebugUnitTestKotlin', task ':app:kaptDefaultDebugUnitTestKotlin', task ':app:compileDefaultDebugUnitTestKotlin', task ':app:processDefaultDebugUnitTestJavaRes', task ':app:javaPreCompileDefaultDebugUnitTest', task ':app:compileDefaultDebugUnitTestJavaWithJavac', task ':app:hiltSyncDefaultDebugUnitTest', task ':app:hiltAggregateDepsDefaultDebugUnitTest', task ':app:hiltJavaCompileDefaultDebugUnitTest', task ':app:transformDefaultDebugUnitTestClassesWithAsm', task ':app:testDefaultDebugUnitTest']
+Tasks that were excluded: []
+Resolve mutations for :app:preBuild (Thread[#1778,Execution worker,5,main]) started.
+:app:preBuild (Thread[#1778,Execution worker,5,main]) started.
+Resolve mutations for :app:generateDefaultDebugAssets (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:generateDefaultDebugAssets (Thread[#1779,Execution worker Thread 2,5,main]) started.
+work action Unknown value (Thread[#1777,included builds,5,main]) started.
+
+> Task :app:preBuild UP-TO-DATE
+Skipping task ':app:preBuild' as it has no actions.
+
+> Task :app:generateDefaultDebugAssets UP-TO-DATE
+Skipping task ':app:generateDefaultDebugAssets' as it has no actions.
+Resolve mutations for :app:preDefaultDebugBuild (Thread[#1778,Execution worker,5,main]) started.
+Build ce3f26ab-8f26-4c44-80d4-5a37569e149b is started
+Resolve mutations for :app:preDefaultDebugUnitTestBuild (Thread[#1777,included builds,5,main]) started.
+:app:preDefaultDebugBuild (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+Skipping task ':app:preDefaultDebugBuild' as it has no actions.
+:app:preDefaultDebugUnitTestBuild (Thread[#1777,included builds,5,main]) started.
+Resolve mutations for :app:dataBindingMergeDependencyArtifactsDefaultDebug (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:preDefaultDebugUnitTestBuild UP-TO-DATE
+Skipping task ':app:preDefaultDebugUnitTestBuild' as it has no actions.
+Resolve mutations for :app:generateDefaultDebugResValues (Thread[#1778,Execution worker,5,main]) started.
+Resolve mutations for :app:dataBindingTriggerDefaultDebug (Thread[#1777,included builds,5,main]) started.
+:app:dataBindingMergeDependencyArtifactsDefaultDebug (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:generateDefaultDebugResValues (Thread[#1778,Execution worker,5,main]) started.
+:app:dataBindingTriggerDefaultDebug (Thread[#1777,included builds,5,main]) started.
+Resolve mutations for :app:generateDefaultDebugBuildConfig (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:dataBindingTriggerDefaultDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:dataBindingTriggerDefaultDebug' as it is up-to-date.
+:app:generateDefaultDebugBuildConfig (Thread[#1779,Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:processDefaultDebugNavigationResources (Thread[#1777,included builds,5,main]) started.
+:app:processDefaultDebugNavigationResources (Thread[#1777,included builds,5,main]) started.
+
+> Task :app:generateDefaultDebugResValues UP-TO-DATE
+Caching disabled for task ':app:generateDefaultDebugResValues' because:
+  Build cache is disabled
+Skipping task ':app:generateDefaultDebugResValues' as it is up-to-date.
+Resolve mutations for :app:generateDefaultDebugResources (Thread[#1778,Execution worker,5,main]) started.
+:app:generateDefaultDebugResources (Thread[#1778,Execution worker,5,main]) started.
+
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+Caching disabled for task ':app:generateDefaultDebugBuildConfig' because:
+  Build cache is disabled
+Skipping task ':app:generateDefaultDebugBuildConfig' as it is up-to-date.
+
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+Caching disabled for task ':app:generateDefaultDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:generateDefaultDebugResources' as it is up-to-date.
+Resolve mutations for :app:javaPreCompileDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:mergeDefaultDebugResources (Thread[#1778,Execution worker,5,main]) started.
+Resolve mutations for :app:packageDefaultDebugResources (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:packageDefaultDebugResources (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:mergeDefaultDebugResources (Thread[#1778,Execution worker,5,main]) started.
+
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+Caching disabled for task ':app:packageDefaultDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:packageDefaultDebugResources' as it is up-to-date.
+:app:javaPreCompileDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:javaPreCompileDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDefaultDebug' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDefaultDebug' as it is up-to-date.
+Resolve mutations for :app:checkDefaultDebugAarMetadata (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:checkDefaultDebugAarMetadata (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+Caching disabled for task ':app:processDefaultDebugNavigationResources' because:
+  Build cache is disabled
+Skipping task ':app:processDefaultDebugNavigationResources' as it is up-to-date.
+Resolve mutations for :app:parseDefaultDebugLocalResources (Thread[#1777,included builds,5,main]) started.
+:app:parseDefaultDebugLocalResources (Thread[#1777,included builds,5,main]) started.
+
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+Caching disabled for task ':app:parseDefaultDebugLocalResources' because:
+  Build cache is disabled
+Skipping task ':app:parseDefaultDebugLocalResources' as it is up-to-date.
+Resolve mutations for :app:generateDefaultDebugRFile (Thread[#1777,included builds,5,main]) started.
+:app:generateDefaultDebugRFile (Thread[#1777,included builds,5,main]) started.
+
+> Task :app:checkDefaultDebugAarMetadata UP-TO-DATE
+Caching disabled for task ':app:checkDefaultDebugAarMetadata' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:checkDefaultDebugAarMetadata' as it is up-to-date.
+Resolve mutations for :app:mapDefaultDebugSourceSetPaths (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:mapDefaultDebugSourceSetPaths (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:mapDefaultDebugSourceSetPaths UP-TO-DATE
+Caching disabled for task ':app:mapDefaultDebugSourceSetPaths' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:mapDefaultDebugSourceSetPaths' as it is up-to-date.
+Resolve mutations for :app:compileDefaultDebugNavigationResources (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:compileDefaultDebugNavigationResources (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:compileDefaultDebugNavigationResources UP-TO-DATE
+Caching disabled for task ':app:compileDefaultDebugNavigationResources' because:
+  Build cache is disabled
+Skipping task ':app:compileDefaultDebugNavigationResources' as it is up-to-date.
+Resolve mutations for :app:createDefaultDebugCompatibleScreenManifests (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:createDefaultDebugCompatibleScreenManifests (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:createDefaultDebugCompatibleScreenManifests UP-TO-DATE
+Caching disabled for task ':app:createDefaultDebugCompatibleScreenManifests' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:createDefaultDebugCompatibleScreenManifests' as it is up-to-date.
+Resolve mutations for :app:extractDeepLinksDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:extractDeepLinksDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:dataBindingMergeDependencyArtifactsDefaultDebug' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:dataBindingMergeDependencyArtifactsDefaultDebug' as it is up-to-date.
+Resolve mutations for :app:mergeDefaultDebugAssets (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:mergeDefaultDebugAssets (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:extractDeepLinksDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:extractDeepLinksDefaultDebug' because:
+  Build cache is disabled
+Skipping task ':app:extractDeepLinksDefaultDebug' as it is up-to-date.
+Resolve mutations for :app:processDefaultDebugMainManifest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+Caching disabled for task ':app:mergeDefaultDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:mergeDefaultDebugResources' as it is up-to-date.
+Resolve mutations for :app:dataBindingGenBaseClassesDefaultDebug (Thread[#1778,Execution worker,5,main]) started.
+:app:dataBindingGenBaseClassesDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:processDefaultDebugMainManifest (Thread[#1778,Execution worker,5,main]) started.
+
+> Task :app:mergeDefaultDebugAssets UP-TO-DATE
+Caching disabled for task ':app:mergeDefaultDebugAssets' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:mergeDefaultDebugAssets' as it is up-to-date.
+work action resolve navigation.json (project :app) (Thread[#1780,Execution worker Thread 3,5,main]) started.
+Resolve mutations for :app:javaPreCompileDefaultDebugUnitTest (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:javaPreCompileDefaultDebugUnitTest (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:javaPreCompileDefaultDebugUnitTest UP-TO-DATE
+Caching disabled for task ':app:javaPreCompileDefaultDebugUnitTest' because:
+  Build cache is disabled
+Skipping task ':app:javaPreCompileDefaultDebugUnitTest' as it is up-to-date.
+
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+Caching disabled for task ':app:generateDefaultDebugRFile' because:
+  Build cache is disabled
+Skipping task ':app:generateDefaultDebugRFile' as it is up-to-date.
+
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:dataBindingGenBaseClassesDefaultDebug' because:
+  Build cache is disabled
+Skipping task ':app:dataBindingGenBaseClassesDefaultDebug' as it is up-to-date.
+Resolve mutations for :app:kspDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:kspDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:kspDefaultDebugKotlin UP-TO-DATE
+Caching disabled for task ':app:kspDefaultDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:kspDefaultDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:kaptGenerateStubsDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:kaptGenerateStubsDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDefaultDebugMainManifest UP-TO-DATE
+Caching disabled for task ':app:processDefaultDebugMainManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDefaultDebugMainManifest' as it is up-to-date.
+Resolve mutations for :app:processDefaultDebugManifest (Thread[#1777,included builds,5,main]) started.
+:app:processDefaultDebugManifest (Thread[#1777,included builds,5,main]) started.
+Resolve mutations for :app:processDefaultDebugUnitTestManifest (Thread[#1778,Execution worker,5,main]) started.
+:app:processDefaultDebugUnitTestManifest (Thread[#1778,Execution worker,5,main]) started.
+
+> Task :app:processDefaultDebugManifest UP-TO-DATE
+Caching disabled for task ':app:processDefaultDebugManifest' because:
+  Build cache is disabled
+Skipping task ':app:processDefaultDebugManifest' as it is up-to-date.
+Resolve mutations for :app:processDefaultDebugManifestForPackage (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:processDefaultDebugManifestForPackage (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:processDefaultDebugManifestForPackage UP-TO-DATE
+Caching disabled for task ':app:processDefaultDebugManifestForPackage' because:
+  Build cache is disabled
+Skipping task ':app:processDefaultDebugManifestForPackage' as it is up-to-date.
+Resolve mutations for :app:processDefaultDebugResources (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:processDefaultDebugResources (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:processDefaultDebugUnitTestManifest UP-TO-DATE
+Caching disabled for task ':app:processDefaultDebugUnitTestManifest' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:processDefaultDebugUnitTestManifest' as it is up-to-date.
+
+> Task :app:kaptGenerateStubsDefaultDebugKotlin UP-TO-DATE
+file or directory '/app/app/src/main/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/default/kotlin', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/debug/kotlin', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/defaultDebug/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/main/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/default/kotlin', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/debug/kotlin', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/defaultDebug/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+Caching disabled for task ':app:kaptGenerateStubsDefaultDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:kaptGenerateStubsDefaultDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:kaptDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:kaptDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDefaultDebugResources UP-TO-DATE
+Caching disabled for task ':app:processDefaultDebugResources' because:
+  Build cache is disabled
+Skipping task ':app:processDefaultDebugResources' as it is up-to-date.
+Resolve mutations for :app:packageDefaultDebugUnitTestForUnitTest (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:packageDefaultDebugUnitTestForUnitTest (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:packageDefaultDebugUnitTestForUnitTest UP-TO-DATE
+Caching disabled for task ':app:packageDefaultDebugUnitTestForUnitTest' because:
+  Build cache is disabled
+  Simple merging task
+Skipping task ':app:packageDefaultDebugUnitTestForUnitTest' as it is up-to-date.
+Resolve mutations for :app:generateDefaultDebugUnitTestConfig (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:generateDefaultDebugUnitTestConfig (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:generateDefaultDebugUnitTestConfig UP-TO-DATE
+Caching disabled for task ':app:generateDefaultDebugUnitTestConfig' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:generateDefaultDebugUnitTestConfig' as it is up-to-date.
+
+> Task :app:kaptDefaultDebugKotlin UP-TO-DATE
+Caching disabled for task ':app:kaptDefaultDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:kaptDefaultDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:compileDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:compileDefaultDebugKotlin (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:compileDefaultDebugKotlin UP-TO-DATE
+file or directory '/app/app/src/main/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/default/kotlin', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/debug/kotlin', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/defaultDebug/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/main/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/default/kotlin', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/debug/kotlin', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/defaultDebug/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/main/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/default/kotlin', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/debug/kotlin', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+file or directory '/app/app/src/defaultDebug/kotlin', not found
+file or directory '/app/app/src/default/java', not found
+file or directory '/app/app/src/debug/java', not found
+file or directory '/app/app/src/defaultDebug/java', not found
+Caching disabled for task ':app:compileDefaultDebugKotlin' because:
+  Build cache is disabled
+Skipping task ':app:compileDefaultDebugKotlin' as it is up-to-date.
+Resolve mutations for :app:compileDefaultDebugJavaWithJavac (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:compileDefaultDebugJavaWithJavac (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:compileDefaultDebugJavaWithJavac UP-TO-DATE
+Caching disabled for task ':app:compileDefaultDebugJavaWithJavac' because:
+  Build cache is disabled
+Skipping task ':app:compileDefaultDebugJavaWithJavac' as it is up-to-date.
+No compile result for :app:compileDefaultDebugJavaWithJavac
+No compile result for :app:compileDefaultDebugJavaWithJavac
+Resolve mutations for :app:hiltSyncDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:processDefaultDebugJavaRes (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:hiltSyncDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:hiltSyncDefaultDebug UP-TO-DATE
+Skipping task ':app:hiltSyncDefaultDebug' as it has no actions.
+:app:processDefaultDebugJavaRes (Thread[#1780,Execution worker Thread 3,5,main]) started.
+Resolve mutations for :app:hiltAggregateDepsDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:hiltAggregateDepsDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDefaultDebugJavaRes UP-TO-DATE
+file or directory '/app/app/src/main/resources', not found
+file or directory '/app/app/src/default/resources', not found
+file or directory '/app/app/src/debug/resources', not found
+file or directory '/app/app/src/defaultDebug/resources', not found
+Caching disabled for task ':app:processDefaultDebugJavaRes' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:processDefaultDebugJavaRes' as it is up-to-date.
+work action resolve out (project :app) (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:hiltAggregateDepsDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:hiltAggregateDepsDefaultDebug' because:
+  Build cache is disabled
+Skipping task ':app:hiltAggregateDepsDefaultDebug' as it is up-to-date.
+Resolve mutations for :app:hiltJavaCompileDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:hiltJavaCompileDefaultDebug (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:hiltJavaCompileDefaultDebug UP-TO-DATE
+Caching disabled for task ':app:hiltJavaCompileDefaultDebug' because:
+  Build cache is disabled
+Skipping task ':app:hiltJavaCompileDefaultDebug' as it is up-to-date.
+No compile result for :app:hiltJavaCompileDefaultDebug
+No compile result for :app:hiltJavaCompileDefaultDebug
+Resolve mutations for :app:defaultDebugRealmAccessorsTransformer (Thread[#1779,Execution worker Thread 2,5,main]) started.
+Resolve mutations for :app:bundleDefaultDebugClassesToCompileJar (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:bundleDefaultDebugClassesToCompileJar (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:defaultDebugRealmAccessorsTransformer (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:bundleDefaultDebugClassesToCompileJar UP-TO-DATE
+Caching disabled for task ':app:bundleDefaultDebugClassesToCompileJar' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:bundleDefaultDebugClassesToCompileJar' as it is up-to-date.
+work action resolve classes.jar (project :app) (Thread[#1780,Execution worker Thread 3,5,main]) started.
+Resolve mutations for :app:kspDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+AggregatedPackagesTransform (Thread[#1778,Execution worker,5,main]) started.
+:app:kspDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:defaultDebugRealmAccessorsTransformer UP-TO-DATE
+Caching disabled for task ':app:defaultDebugRealmAccessorsTransformer' because:
+  Build cache is disabled
+  Caching has not been enabled for the task
+Skipping task ':app:defaultDebugRealmAccessorsTransformer' as it is up-to-date.
+Resolve mutations for :app:transformDefaultDebugClassesWithAsm (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:transformDefaultDebugClassesWithAsm (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:transformDefaultDebugClassesWithAsm UP-TO-DATE
+Caching disabled for task ':app:transformDefaultDebugClassesWithAsm' because:
+  Build cache is disabled
+Skipping task ':app:transformDefaultDebugClassesWithAsm' as it is up-to-date.
+Resolve mutations for :app:bundleDefaultDebugClassesToRuntimeJar (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:bundleDefaultDebugClassesToRuntimeJar (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:bundleDefaultDebugClassesToRuntimeJar UP-TO-DATE
+Caching disabled for task ':app:bundleDefaultDebugClassesToRuntimeJar' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:bundleDefaultDebugClassesToRuntimeJar' as it is up-to-date.
+work action resolve classes.jar (project :app) (Thread[#1779,Execution worker Thread 2,5,main]) started.
+AggregatedPackagesTransform (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:kspDefaultDebugUnitTestKotlin
+Caching disabled for task ':app:kspDefaultDebugUnitTestKotlin' because:
+  Build cache is disabled
+Task ':app:kspDefaultDebugUnitTestKotlin' is not up-to-date because:
+  Input property 'kspConfig.javaSourceRoots' file /app/app/src/test/java/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.kt has changed.
+Resolve mutations for :app:kaptGenerateStubsDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:kaptGenerateStubsDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:kaptGenerateStubsDefaultDebugUnitTestKotlin
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+Caching disabled for task ':app:kaptGenerateStubsDefaultDebugUnitTestKotlin' because:
+  Build cache is disabled
+Task ':app:kaptGenerateStubsDefaultDebugUnitTestKotlin' is not up-to-date because:
+  Input property 'sources' file /app/app/src/test/java/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.kt has changed.
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: /home/jules/.gradle/jdks/jetbrains_s_r_o_-21-amd64-linux.2
+i: Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExtensions=[], generateCompilerRefIndex=false), sourceChanges=org.jetbrains.kotlin.buildtools.api.SourcesChanges$Known@4f8bc8c7, classpathChanges=NoChanges, workingDir=/app/app/build/kotlin/kaptGenerateStubsDefaultDebugUnitTestKotlin/cacheable, multiModuleICSettings=null, icFeatures=IncrementalCompilationFeatures(usePreciseJavaTracking=true, withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=false, enableMonotonousIncrementalCompileSetExpansion=true), outputFiles=[/app/app/build/intermediates/built_in_kapt_stubs_incremental_data/defaultDebugUnitTest/kaptGenerateStubsDefaultDebugUnitTestKotlin, /app/app/build/intermediates/built_in_kapt_stubs/defaultDebugUnitTest/kaptGenerateStubsDefaultDebugUnitTestKotlin, /app/app/build/kotlin/kaptGenerateStubsDefaultDebugUnitTestKotlin/cacheable, /app/app/build/kotlin/kaptGenerateStubsDefaultDebugUnitTestKotlin/local-state])
+i: Finished executing kotlin compiler using DAEMON strategy
+Resolve mutations for :app:kaptDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:kaptDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:kaptDefaultDebugUnitTestKotlin SKIPPED
+No annotation processors provided. Skip KAPT processing.
+Skipping task ':app:kaptDefaultDebugUnitTestKotlin' as task onlyIf 'Task satisfies onlyIf spec' is false.
+Resolve mutations for :app:compileDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:compileDefaultDebugUnitTestKotlin (Thread[#1780,Execution worker Thread 3,5,main]) started.
+
+> Task :app:compileDefaultDebugUnitTestKotlin
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+Caching disabled for task ':app:compileDefaultDebugUnitTestKotlin' because:
+  Build cache is disabled
+Task ':app:compileDefaultDebugUnitTestKotlin' is not up-to-date because:
+  Input property 'sources' file /app/app/src/test/java/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.kt has changed.
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+file or directory '/app/app/build/generated/source/kapt/test/default/debug', not found
+file or directory '/app/app/build/generated/source/kaptKotlin/test/default/debug', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+file or directory '/app/app/build/generated/source/kapt/test/default/debug', not found
+file or directory '/app/app/build/generated/source/kaptKotlin/test/default/debug', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+file or directory '/app/app/build/generated/source/kapt/test/default/debug', not found
+file or directory '/app/app/build/generated/source/kaptKotlin/test/default/debug', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/test/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDefault/kotlin', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefaultDebug/kotlin', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDefault/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/src/testDefaultDebug/java', not found
+file or directory '/app/app/build/generated/ksp/defaultDebugUnitTest/kotlin', not found
+file or directory '/app/app/build/generated/source/kapt/test/default/debug', not found
+file or directory '/app/app/build/generated/source/kaptKotlin/test/default/debug', not found
+Kotlin source files: /app/app/src/test/java/org/ole/planet/myplanet/MainDispatcherRule.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/NotificationActionReceiverTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/AudioRecorderTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/FileUploaderTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/VoicesLabelManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/retry/RetryQueueTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/SharedPrefManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/FreeSpaceWorkerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/UploadManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/DownloadServiceTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/UserSessionManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/BroadcastServiceTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/ThemeManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/sync/RealtimeSyncManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/sync/TransactionSyncManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/sync/LoginSyncManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/sync/RealmConnectionPoolTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/sync/ThreadSafeRealmManagerTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/sync/AdaptiveBatchProcessorTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/services/SubmissionUploadExecutorTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/RealmRepositoryTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/NotificationsRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/DownloadRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/TeamsRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/ChatRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/VoicesRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/UserRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/UserRepositoryBulkInsertTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/ConfigurationsRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/LifeRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/HealthRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/TagsRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/ProgressRepositoryImplTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/repository/RoundToSupportedRatingTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/FileUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/JsonUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/ServerConfigUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/MainDispatcherRule.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/ConstantsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/UrlUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/DispatcherProviderDITest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/NetworkUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/NetworkUtilsMockTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/MarkdownUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/NotificationUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/TestDispatcherProvider.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/ImageUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/ExamAnswerUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/DownloadUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/AndroidDecrypterTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/DispatcherProviderIntegrationTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/IntentUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/Sha256UtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/CourseRatingUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/DiffUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/TimeUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/RetryUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/WebViewSafetyTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/VersionUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/EdgeToEdgeUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/DispatcherProviderGuardTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/utils/KeyboardUtilsTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/data/api/RetryInterceptorTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/data/api/ChatApiServiceTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/data/DatabaseServiceTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/data/auth/AuthSessionUpdaterTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/di/ServiceModuleTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/di/NetworkModuleTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmExamQuestionTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmMeetupTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmStepExamTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmUserTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmCourseProgressTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmRatingTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmFeedbackTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmMyPersonalTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmRemovedLogTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/model/RealmUserEncodeImageTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/MainApplicationTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/health/AddExaminationViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/dashboard/DashboardViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/courses/CourseProgressViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/courses/ProgressViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/surveys/SurveysViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/user/UserProfileViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/notifications/NotificationsViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/voices/NewsViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/feedback/FeedbackListViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/feedback/FeedbackDetailViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/chat/ChatViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/chat/ChatDetailFragmentInjectionTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/teams/members/RequestsViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/teams/TeamViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/submissions/SubmissionViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/ui/ratings/RatingsViewModelTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/base/BaseExamFragmentTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/base/BasePermissionActivityTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/base/BaseRecyclerFragmentTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/base/BaseContainerFragmentTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/base/BaseResourceFragmentTest.kt, /app/app/src/test/java/org/ole/planet/myplanet/base/BaseRecyclerFragmentCompanionTest.kt
+Java source files: /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/internal/aggregatedroot/codegen/_org_ole_planet_myplanet_utils_NetworkUtilsTest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/internal/aggregatedroot/codegen/_org_ole_planet_myplanet_utils_DispatcherProviderDITest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/internal/aggregatedroot/codegen/_org_ole_planet_myplanet_utils_MarkdownUtilsTest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/internal/aggregatedroot/codegen/_org_ole_planet_myplanet_services_SubmissionUploadExecutorTest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/internal/aggregatedroot/codegen/_org_ole_planet_myplanet_utils_DispatcherProviderIntegrationTest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/internal/aggregatedroot/codegen/_org_ole_planet_myplanet_utils_IntentUtilsTest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/dagger/hilt/android/internal/uninstallmodules/codegen/_org_ole_planet_myplanet_services_SubmissionUploadExecutorTest.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_services_SubmissionUploadExecutorTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_utils_MarkdownUtilsTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_services_SubmissionUploadExecutorTest_BindValueModule.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_utils_NetworkUtilsTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_utils_DispatcherProviderDITest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_utils_DispatcherProviderIntegrationTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/hilt_aggregated_deps/_org_ole_planet_myplanet_utils_IntentUtilsTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/services/SubmissionUploadExecutorTest_BindValueModule_ProvidesDispatcherProviderFactory.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/services/SubmissionUploadExecutorTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/services/SubmissionUploadExecutorTest_MembersInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/services/SubmissionUploadExecutorTest_BindValueModule.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/services/SubmissionUploadExecutorTest_BindValueModule_ProvidesSubmissionUploadExecutorTestFactory.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/NetworkUtilsTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/DispatcherProviderDITest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/DispatcherProviderIntegrationTest_MembersInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/IntentUtilsTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/MarkdownUtilsTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/DispatcherProviderIntegrationTest_GeneratedInjector.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/MyService_Factory.java, /app/app/build/generated/ksp/defaultDebugUnitTest/java/org/ole/planet/myplanet/utils/DispatcherProviderDITest_MembersInjector.java
+Script source files:
+Script file extensions:
+Using Kotlin/JVM incremental compilation
+[KOTLIN] Kotlin compilation 'jdkHome' argument: /home/jules/.gradle/jdks/jetbrains_s_r_o_-21-amd64-linux.2
+i: Options for KOTLIN DAEMON: IncrementalCompilationOptions(super=CompilationOptions(compilerMode=INCREMENTAL_COMPILER, targetPlatform=JVM, reportCategories=[0], reportSeverity=2, requestedCompilationResults=[0], kotlinScriptExtensions=[], generateCompilerRefIndex=false), sourceChanges=org.jetbrains.kotlin.buildtools.api.SourcesChanges$Known@56ddd0f2, classpathChanges=NoChanges, workingDir=/app/app/build/kotlin/compileDefaultDebugUnitTestKotlin/cacheable, multiModuleICSettings=null, icFeatures=IncrementalCompilationFeatures(usePreciseJavaTracking=true, withAbiSnapshot=false, preciseCompilationResultsBackup=true, keepIncrementalCompilationCachesInMemory=true, enableUnsafeIncrementalCompilationForMultiplatform=false, enableMonotonousIncrementalCompileSetExpansion=true), outputFiles=[/app/app/build/intermediates/built_in_kotlinc/defaultDebugUnitTest/compileDefaultDebugUnitTestKotlin/classes, /app/app/build/kotlin/compileDefaultDebugUnitTestKotlin/cacheable, /app/app/build/kotlin/compileDefaultDebugUnitTestKotlin/local-state])
+i: Finished executing kotlin compiler using DAEMON strategy
+Resolve mutations for :app:processDefaultDebugUnitTestJavaRes (Thread[#1780,Execution worker Thread 3,5,main]) started.
+Resolve mutations for :app:compileDefaultDebugUnitTestJavaWithJavac (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:processDefaultDebugUnitTestJavaRes (Thread[#1780,Execution worker Thread 3,5,main]) started.
+:app:compileDefaultDebugUnitTestJavaWithJavac (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:processDefaultDebugUnitTestJavaRes UP-TO-DATE
+file or directory '/app/app/src/test/resources', not found
+file or directory '/app/app/src/testDefault/resources', not found
+file or directory '/app/app/src/testDebug/resources', not found
+file or directory '/app/app/src/testDefaultDebug/resources', not found
+Caching disabled for task ':app:processDefaultDebugUnitTestJavaRes' because:
+  Build cache is disabled
+  Caching has been disabled for the task
+Skipping task ':app:processDefaultDebugUnitTestJavaRes' as it is up-to-date.
+
+> Task :app:compileDefaultDebugUnitTestJavaWithJavac UP-TO-DATE
+Caching disabled for task ':app:compileDefaultDebugUnitTestJavaWithJavac' because:
+  Build cache is disabled
+Task ':app:compileDefaultDebugUnitTestJavaWithJavac' is not up-to-date because:
+  Input property 'classpath' file /app/app/build/intermediates/built_in_kotlinc/defaultDebugUnitTest/compileDefaultDebugUnitTestKotlin/classes/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.class has changed.
+Compilation mode: in-process compilation
+Created classpath snapshot for incremental compilation in 0.046 secs.
+None of the classes needs to be compiled! Analysis took 0.068 secs.
+Resolve mutations for :app:hiltSyncDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:hiltSyncDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:hiltSyncDefaultDebugUnitTest
+Skipping task ':app:hiltSyncDefaultDebugUnitTest' as it has no actions.
+Resolve mutations for :app:hiltAggregateDepsDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:hiltAggregateDepsDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:hiltAggregateDepsDefaultDebugUnitTest UP-TO-DATE
+Caching disabled for CopyTransform: /app/app/build/intermediates/built_in_kotlinc/defaultDebugUnitTest/compileDefaultDebugUnitTestKotlin/classes because:
+  Build cache is disabled
+  Caching not enabled.
+Caching disabled for AggregatedPackagesTransform: /app/app/build/intermediates/built_in_kotlinc/defaultDebugUnitTest/compileDefaultDebugUnitTestKotlin/classes because:
+  Build cache is disabled
+Caching disabled for task ':app:hiltAggregateDepsDefaultDebugUnitTest' because:
+  Build cache is disabled
+Skipping task ':app:hiltAggregateDepsDefaultDebugUnitTest' as it is up-to-date.
+Resolve mutations for :app:hiltJavaCompileDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:hiltJavaCompileDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:hiltJavaCompileDefaultDebugUnitTest UP-TO-DATE
+Caching disabled for task ':app:hiltJavaCompileDefaultDebugUnitTest' because:
+  Build cache is disabled
+Task ':app:hiltJavaCompileDefaultDebugUnitTest' is not up-to-date because:
+  Input property 'classpath' file /app/app/build/intermediates/built_in_kotlinc/defaultDebugUnitTest/compileDefaultDebugUnitTestKotlin/classes/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.class has changed.
+Compilation mode: in-process compilation
+Created classpath snapshot for incremental compilation in 0.055 secs.
+None of the classes needs to be compiled! Analysis took 0.093 secs.
+Resolve mutations for :app:transformDefaultDebugUnitTestClassesWithAsm (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:transformDefaultDebugUnitTestClassesWithAsm (Thread[#1779,Execution worker Thread 2,5,main]) started.
+
+> Task :app:transformDefaultDebugUnitTestClassesWithAsm
+Caching disabled for task ':app:transformDefaultDebugUnitTestClassesWithAsm' because:
+  Build cache is disabled
+Task ':app:transformDefaultDebugUnitTestClassesWithAsm' is not up-to-date because:
+  Input property 'inputClassesDir' file /app/app/build/intermediates/built_in_kotlinc/defaultDebugUnitTest/compileDefaultDebugUnitTestKotlin/classes/org/ole/planet/myplanet/services/retry/RetryQueueWorkerTest.class has changed.
+Resolve mutations for :app:testDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+:app:testDefaultDebugUnitTest (Thread[#1779,Execution worker Thread 2,5,main]) started.
+Gradle Test Executor 41 started executing tests.
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :app:testDefaultDebugUnitTest
+Caching disabled for task ':app:testDefaultDebugUnitTest' because:
+  Build cache is disabled
+Task ':app:testDefaultDebugUnitTest' is not up-to-date because:
+  Task has failed previously.
+Starting process 'Gradle Test Executor 41'. Working directory: /app/app Command: /home/jules/.gradle/jdks/jetbrains_s_r_o_-21-amd64-linux.2/bin/java -Djava.awt.headless=true -Djava.library.path=/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib:/app/app/src/testDefaultDebug/jniLibs:/app/app/src/testDebug/jniLibs:/app/app/src/testDefault/jniLibs:/app/app/src/test/jniLibs -Dorg.gradle.internal.worker.tmpdir=/app/app/build/tmp/testDefaultDebugUnitTest/work --add-opens=java.base/java.io=ALL-UNNAMED @/home/jules/.gradle/.tmp/gradle-worker-classpath10810885542922840544txt -Xmx512m -Dfile.encoding=UTF-8 -Duser.country -Duser.language=en -Duser.variant -ea worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 41'
+Successfully started process 'Gradle Test Executor 41'
+
+RetryQueueWorkerTest > triggerImmediateRetry_enqueuesOneTimeWork STANDARD_ERROR
+    WARNING: A Java agent has been loaded dynamically (/home/jules/.gradle/caches/9.5.0/transforms/9dd1064cf138d963a6b7f887d762b6d0/transformed/jetified-byte-buddy-agent-1.18.2.jar)
+    WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+    WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+    WARNING: Dynamic loading of agents will be disallowed by default in a future release
+
+Gradle Test Executor 41 finished executing tests.
+
+> Task :app:testDefaultDebugUnitTest
+Generating HTML test report...
+Finished generating test html results (0.004 secs) into: /app/app/build/reports/tests/testDefaultDebugUnitTest
+Finished generating test XML results (0.0 secs) into: /app/app/build/test-results/testDefaultDebugUnitTest
+Build ce3f26ab-8f26-4c44-80d4-5a37569e149b is closed
+
+BUILD SUCCESSFUL in 6s
+47 actionable tasks: 5 executed, 42 up-to-date
+Configuration cache entry reused.

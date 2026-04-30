@@ -1,0 +1,4 @@
+--- app/build.gradle
++++ app/build.gradle
+@@ -1,5 +1,6 @@
++def noRealmTests = true
