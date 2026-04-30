@@ -10,9 +10,9 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import okio.Buffer
 import okio.buffer
 import okio.sink
@@ -27,13 +27,14 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
-    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService
+    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService,
+    private val dispatcherProvider: DispatcherProvider
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(dispatcherProvider.io) {
         try {
             val urlsKey = inputData.getString("urls_key") ?: "url_list_key"
             val fromSync = inputData.getBoolean("fromSync", false)
