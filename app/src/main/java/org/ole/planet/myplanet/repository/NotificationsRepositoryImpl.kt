@@ -293,8 +293,13 @@ class NotificationsRepositoryImpl @Inject constructor(
         val map = mutableMapOf<String, Pair<String, String>>()
         val userIds = intermediateList.map { it.second }.filter { it.isNotEmpty() }.distinct()
         val userMap = mutableMapOf<String, String>()
-        for (uid in userIds) {
-            userMap[uid] = userRepository.get().getUserById(uid)?.name ?: "Unknown User"
+        if (userIds.isNotEmpty()) {
+            val users = userRepository.get().getUsersByIds(userIds)
+            for (user in users) {
+                user.id?.let { id ->
+                    userMap[id] = user.name ?: "Unknown User"
+                }
+            }
         }
 
         for (triple in intermediateList) {
