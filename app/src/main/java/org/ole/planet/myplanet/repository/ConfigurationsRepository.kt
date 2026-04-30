@@ -12,9 +12,6 @@ interface ConfigurationsRepository {
     suspend fun clearAllData()
     suspend fun getMinApk(url: String, pin: String): ConfigurationResult
 
-    /**
-     * Note: callbacks may be invoked off the main thread.
-     */
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
         fun onCheckingVersion()
