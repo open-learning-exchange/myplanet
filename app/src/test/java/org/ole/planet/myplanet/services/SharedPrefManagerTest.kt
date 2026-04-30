@@ -170,6 +170,26 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testGetAndSetLoggedIn() {
+        // Test isLoggedIn
+        every { mockSharedPreferences.getBoolean("isLoggedIn", false) } returns true
+        assertTrue(sharedPrefManager.isLoggedIn())
+
+        every { mockSharedPreferences.getBoolean("isLoggedIn", false) } returns false
+        assertEquals(false, sharedPrefManager.isLoggedIn())
+
+        // Test setLoggedIn true
+        sharedPrefManager.setLoggedIn(true)
+        verify { mockEditor.putBoolean("isLoggedIn", true) }
+        verify { mockEditor.apply() }
+
+        // Test setLoggedIn false
+        sharedPrefManager.setLoggedIn(false)
+        verify { mockEditor.putBoolean("isLoggedIn", false) }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
     fun testRawString() {
         every { mockSharedPreferences.getString("test_key", "") } returns "test_val"
         assertEquals("test_val", sharedPrefManager.getRawString("test_key", ""))
