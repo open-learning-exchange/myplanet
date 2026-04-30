@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import kotlin.system.measureTimeMillis
-import org.junit.Assert.assertEquals
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryBenchmarkTest {
@@ -84,7 +83,7 @@ class TeamsRepositoryBenchmarkTest {
         every { realm.where(RealmTeamLog::class.java) } returns query
         every { query.`in`(any<String>(), any<Array<String>>()) } returns query
         every { query.findAll() } returns results
-        every { results.iterator() } returns emptyList<RealmTeamLog>().iterator()
+        every { results.iterator() } returns mutableListOf<RealmTeamLog>().iterator()
 
         every { realm.createObject(RealmTeamLog::class.java, any()) } returns RealmTeamLog()
 
@@ -106,7 +105,7 @@ class TeamsRepositoryBenchmarkTest {
         every { realm.where(RealmTeamLog::class.java) } returns query
         every { query.`in`(any<String>(), any<Array<String>>()) } returns query
         every { query.findAll() } returns results
-        every { results.iterator() } returns emptyList<RealmTeamLog>().iterator()
+        every { results.iterator() } returns mutableListOf<RealmTeamLog>().iterator()
 
         // Mock createObject to return a new object each time, but we expect it to be called only once
         every { realm.createObject(RealmTeamLog::class.java, "dup_id") } returns RealmTeamLog().apply { _id = "dup_id" }
