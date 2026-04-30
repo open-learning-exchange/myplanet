@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -247,6 +248,7 @@ class TeamFragment : Fragment() {
 
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        (binding.rvTeamList.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
         teamListAdapter = TeamsAdapter(
             isGuestUser = user?.isGuest() == true,
             onItemClick = { team ->
