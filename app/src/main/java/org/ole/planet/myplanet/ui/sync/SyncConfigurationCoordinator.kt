@@ -84,10 +84,7 @@ class SyncConfigurationCoordinator(
                 prefData.setConfigurationId(id)
                 prefData.setCommunityName(code)
             }
-            if (isAlternativeUrl) {
-                ServerConfigUtils.saveAlternativeUrl(url, prefData.getServerPin(), prefData)
-            }
-            callback.onBetaSyncSaveOnly()
+            callback.onBetaSyncConfigSaved(url, defaultUrl, isAlternativeUrl)
             return
         }
 

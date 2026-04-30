@@ -226,18 +226,29 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                 }
 
-                override fun onBetaSyncSaveOnly() {
-                    val serverUrlToPin = prefData.getServerUrl().removePrefix("https://").removePrefix("http://")
-                    if (serverUrlToPin.isNotEmpty() && serverListAddresses.any {
-                        it.url.replace(urlProtocolRegex, "") == serverUrlToPin
-                    }) {
-                        prefData.setPinnedServerUrl(serverUrlToPin)
+                override fun onBetaSyncConfigSaved(url: String, defaultUrl: String, isAlternativeUrl: Boolean) {
+                    val resolvedUrl = if (isAlternativeUrl) {
+                        val password = prefData.getServerPin()
+                        val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, prefData)
+                        if (isUrlValid(url)) setUrlParts(defaultUrl, password)
+                        couchdbURL
+                    } else {
+                        val protocol = prefData.getServerProtocol()
+                        val savedUrl = prefData.getServerUrl()
+                        val pin = prefData.getServerPin()
+                        val fullUrl = protocol + savedUrl
+                        if (isUrlValid(fullUrl)) setUrlParts(fullUrl, pin) else ""
                     }
+                    if (resolvedUrl.isNotEmpty()) processedUrl = resolvedUrl
+
+                    val urlToPin = ServerConfigUtils.removeProtocol(prefData.getServerUrl())
+                    if (urlToPin.isNotEmpty() && serverListAddresses.any {
+                        it.url.replace(urlProtocolRegex, "") == urlToPin
+                    }) {
+                        prefData.setPinnedServerUrl(urlToPin)
+                    }
+
                     currentDialog?.dismiss()
-                    showSnack(
-                        this@SyncActivity.findViewById(android.R.id.content),
-                        getString(R.string.server_configuration_saved)
-                    )
                 }
             }
         )
