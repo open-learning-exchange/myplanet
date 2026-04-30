@@ -377,7 +377,8 @@ class DownloadService : Service() {
     override fun onDestroy() {
         try {
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping foreground service", e)
         }
         downloadJob.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
