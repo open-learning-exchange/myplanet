@@ -11,6 +11,11 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.SyncState
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.TagItem
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -19,7 +24,8 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 class ResourcesViewModel @Inject constructor(
     private val syncManager: SyncManager,
     private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper
+    private val serverUrlMapper: ServerUrlMapper,
+    private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
@@ -62,5 +68,40 @@ class ResourcesViewModel @Inject constructor(
 
     fun resetSyncState() {
         _syncState.value = SyncState.Idle
+    }
+
+    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
+        val allLibraryItems = if (isMyCourseLib) {
+            resourcesRepository.getMyLibrary(modelId)
+        } else {
+            resourcesRepository.getAllLibraryItems().filter {
+                !it.isPrivate && it.userId?.contains(modelId) == false
+            }
+        }
+
+        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+
+        val map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, modelId))
+        val tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
+
+        return allLibraryItems.map { library ->
+            val resourceId = library.resourceId ?: library.id
+            val item = ResourceItem(
+                id = library.id,
+                title = library.title,
+                description = library.description,
+                createdDate = library.createdDate,
+                averageRating = library.averageRating,
+                timesRated = library.timesRated,
+                resourceId = library.resourceId,
+                isOffline = library.isResourceOffline(),
+                _rev = library._rev,
+                uploadDate = library.uploadDate,
+                filename = library.filename
+            )
+            val rating = resourceId?.let { map[it] }
+            val tags = resourceId?.let { tagsMap[it]?.map { tag -> TagItem(tag.id, tag.name) } } ?: emptyList()
+            ResourceListModel(library, item, rating, tags)
+        }
     }
 }
