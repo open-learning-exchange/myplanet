@@ -18,13 +18,11 @@ import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
@@ -233,17 +231,17 @@ class VoicesFragment : BaseVoicesFragment() {
                 return@VoicesAdapter { job.cancel() }
             },
             getUserFn = { userId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val job = viewLifecycleOwner.lifecycleScope.launch {
                     val result = userRepository.getUserById(userId)
-                    withContext(Dispatchers.Main) { onResult(result) }
+                    onResult(result)
                 }
                 return@VoicesAdapter { job.cancel() }
             },
             getReplyCountFn = { newsId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val job = viewLifecycleOwner.lifecycleScope.launch {
                     try {
                         val result = voicesRepository.getReplyCount(newsId)
-                        withContext(Dispatchers.Main) { onResult(result) }
+                        onResult(result)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -251,23 +249,23 @@ class VoicesFragment : BaseVoicesFragment() {
                 return@VoicesAdapter { job.cancel() }
             },
             deletePostFn = { newsId, onComplete ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val job = viewLifecycleOwner.lifecycleScope.launch {
                     voicesRepository.deletePost(newsId, "")
-                    withContext(Dispatchers.Main) { onComplete() }
+                    onComplete()
                 }
                 return@VoicesAdapter { job.cancel() }
             },
             shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val job = viewLifecycleOwner.lifecycleScope.launch {
                     val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                    withContext(Dispatchers.Main) { onResult(result) }
+                    onResult(result)
                 }
                 return@VoicesAdapter { job.cancel() }
             },
             getLibraryResourceFn = { resourceId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                val job = viewLifecycleOwner.lifecycleScope.launch {
                     val result = voicesRepository.getLibraryResource(resourceId)
-                    withContext(Dispatchers.Main) { onResult(result) }
+                    onResult(result)
                 }
                 return@VoicesAdapter { job.cancel() }
             },
