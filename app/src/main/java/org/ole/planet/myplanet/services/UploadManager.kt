@@ -33,13 +33,13 @@ import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.services.upload.PhotoUploader
+import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
 
-private const val BATCH_SIZE = 50
 
 private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
     chunked(BATCH_SIZE).forEach { chunk ->
@@ -204,7 +204,10 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        photoUploader.uploadSubmitPhotos(this, listener, ::notifyListener)
+        val resultMessage = photoUploader.uploadSubmitPhotos(listener)
+        resultMessage?.let {
+            notifyListener(listener, it)
+        }
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
