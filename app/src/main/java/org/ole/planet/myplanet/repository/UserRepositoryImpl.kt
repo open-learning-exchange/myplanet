@@ -49,6 +49,8 @@ class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
+    private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
+    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
@@ -1142,7 +1144,26 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
+
+    override suspend fun uploadShelfData(user: RealmUser) {
+        try {
+            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
+            val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
+            val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
+            val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
+            shelfData.addProperty("_rev", JsonUtils.getString("_rev", jsonDoc))
+            apiInterface.putDoc(
+                UrlUtils.header,
+                "application/json",
+                "${UrlUtils.getUrl()}/shelf/${user._id}",
+                shelfData
+            )
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
         return withRealm { realm ->
             val myMeetups = getMyMeetUpIds(realm, userId)
             val removedResources = listOf(*removedIds(realm, "resources", userId))

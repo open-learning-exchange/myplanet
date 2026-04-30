@@ -27,9 +27,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.HealthRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
@@ -46,8 +44,6 @@ class UploadToShelfService @Inject constructor(
     private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    private val resourcesRepository: ResourcesRepository,
-    private val coursesRepository: CoursesRepository,
     private val userRepository: UserRepository,
     private val healthRepository: HealthRepository,
     @ApplicationScope private val appScope: CoroutineScope,
@@ -379,17 +375,7 @@ class UploadToShelfService @Inject constructor(
                         async {
                             semaphore.withPermit {
                                 try {
-                                    val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}").body()
-                                    val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
-                                    val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                                    val shelfData = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
-                                    shelfData.addProperty("_rev", getString("_rev", jsonDoc))
-                                    apiInterface.putDoc(
-                                        UrlUtils.header,
-                                        "application/json",
-                                        "${UrlUtils.getUrl()}/shelf/${model._id}",
-                                        shelfData
-                                    )
+                                    userRepository.uploadShelfData(model)
                                 } catch (e: Throwable) {
                                     e.printStackTrace()
                                 }
@@ -415,15 +401,7 @@ class UploadToShelfService @Inject constructor(
                 val model = userName?.let { userRepository.getSyncedUserByName(it) }
 
                 if (model != null) {
-                    val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                    val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, shelfUrl).body()
-                    val myLibs = resourcesRepository.getMyLibIds(model.id ?: "")
-                    val myCourseIds = coursesRepository.getMyCourseIds(model.id ?: "")
-                    val shelfObject = userRepository.getShelfData(model.id, jsonDoc, myLibs, myCourseIds)
-                    shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
-
-                    val targetUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                    apiInterface.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)
+                    userRepository.uploadShelfData(model)
                 }
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Single user shelf sync completed successfully")
