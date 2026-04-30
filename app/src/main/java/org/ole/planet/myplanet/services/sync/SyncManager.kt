@@ -1052,6 +1052,57 @@ class SyncManager @Inject constructor(
         return processedCount
     }
 
+    suspend fun syncUserShelfFast(): Int {
+        val userName = sharedPrefManager.getUserName()
+        val shelfId = "org.couchdb.user:$userName"
+        Log.d("ShelfSync", "── syncUserShelfFast START — user=$userName shelfId=$shelfId")
+        return try {
+            val url = "${UrlUtils.getUrl()}/shelf/_find"
+            Log.d("ShelfSync", "fetching shelf doc — url=$url")
+            val selector = com.google.gson.JsonObject().apply {
+                add("selector", com.google.gson.JsonObject().apply { addProperty("_id", shelfId) })
+            }
+            val response = apiInterface.findDocs(UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) {
+                Log.w("ShelfSync", "fetch failed — HTTP ${response.code()}")
+                return 0
+            }
+            val docs = getJsonArray("docs", response.body())
+            if (docs.size() == 0) {
+                Log.d("ShelfSync", "no shelf doc found for $shelfId — nothing to sync")
+                return 0
+            }
+            val shelfDoc = docs[0].asJsonObject
+            Constants.shelfDataList.forEach { shelfData ->
+                val count = getJsonArray(shelfData.key, shelfDoc).size()
+                Log.d("ShelfSync", "  shelf doc — ${shelfData.key}: $count id(s)")
+            }
+
+            var processedItems = 0
+            coroutineScope {
+                val jobs = Constants.shelfDataList.mapNotNull { shelfData ->
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+                    if (array.size() > 0) {
+                        async(dispatcherProvider.io) {
+                            val count = processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
+                            Log.d("ShelfSync", "  synced ${shelfData.type} (${shelfData.key}): $count item(s) saved")
+                            count
+                        }
+                    } else {
+                        Log.d("ShelfSync", "  skipping ${shelfData.type} (${shelfData.key}): empty")
+                        null
+                    }
+                }
+                processedItems = jobs.awaitAll().sum()
+            }
+            Log.d("ShelfSync", "── syncUserShelfFast DONE — total saved=$processedItems")
+            processedItems
+        } catch (e: Exception) {
+            Log.e("ShelfSync", "── syncUserShelfFast ERROR: ${e.message}", e)
+            0
+        }
+    }
+
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
         return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }

@@ -156,6 +156,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 return@launch
             }
 
+            if (isFirstLaunch && prefData.getFastSync()) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    syncManager.syncUserShelfFast()
+                }
+            }
+
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
