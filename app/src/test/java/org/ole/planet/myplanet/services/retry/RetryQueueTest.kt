@@ -54,6 +54,20 @@ class RetryQueueTest {
     }
 
     @Test
+    fun isCurrentlyProcessing_defaultIsFalse() {
+        assertFalse(retryQueue.isCurrentlyProcessing())
+    }
+
+    @Test
+    fun isCurrentlyProcessing_reflectsSetProcessing() {
+        retryQueue.setProcessing(true)
+        assertTrue(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(false)
+        assertFalse(retryQueue.isCurrentlyProcessing())
+    }
+
+    @Test
     fun recoverStuckOperations_delegatesToRepository() = runTest {
         coEvery { retryRepository.recoverStuckOperations() } returns Unit
 
