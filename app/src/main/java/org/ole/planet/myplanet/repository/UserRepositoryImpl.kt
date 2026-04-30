@@ -64,6 +64,13 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUsersByIds(userIds: List<String>): List<RealmUser> {
+        if (userIds.isEmpty()) return emptyList()
+        return queryList(RealmUser::class.java) {
+            `in`("id", userIds.toTypedArray())
+        }
+    }
+
     override suspend fun getUserByAnyId(id: String): RealmUser? {
         return findByField(RealmUser::class.java, "_id", id)
             ?: findByField(RealmUser::class.java, "id", id)
