@@ -24,7 +24,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -112,16 +111,8 @@ class DashboardViewModel @Inject constructor(
         notificationsRepository.updateResourceNotification(userId, resourceCount)
     }
 
-    suspend fun getSurveySubmissionCount(userId: String?): Int {
-        return surveysRepository.getSurveySubmissionCount(userId)
-    }
-
     suspend fun getUnreadNotificationsSize(userId: String?, isAdmin: Boolean = false): Int {
         return notificationsRepository.getUnreadCount(userId, isAdmin)
-    }
-
-    suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        return notificationsRepository.getTeamNotificationInfo(teamId, userId)
     }
 
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
@@ -185,10 +176,6 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getTeamType(teamId: String): String? {
         return teamsRepository.getTeamType(teamId)
-    }
-
-    suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
-        return activitiesRepository.getOfflineActivities(userName, type)
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
