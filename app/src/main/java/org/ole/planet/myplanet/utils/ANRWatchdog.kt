@@ -12,7 +12,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
+class ANRWatchdog(
+    private val timeout: Long = DEFAULT_ANR_TIMEOUT,
+    private val listener: ANRListener? = null,
+    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
+) {
     private var scope: CoroutineScope? = null
     private var job: Job? = null
     companion object {
@@ -42,7 +46,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
         tick = SystemClock.elapsedRealtime()
         mainHandler.post(tickUpdater)
 
-        scope = CoroutineScope(Dispatchers.Default)
+        scope = CoroutineScope(dispatcherProvider.default)
         job = scope?.launch {
             while (isWatching && isActive) {
                 val lastTick = tick
