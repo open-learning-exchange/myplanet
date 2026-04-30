@@ -33,7 +33,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val userRepository: Lazy<UserRepository>,
-    private val apiInterface: ApiInterface
+    private val apiInterface: ApiInterface,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -400,6 +401,37 @@ class ActivitiesRepositoryImpl @Inject constructor(
         documentList.forEach { jsonDoc ->
             insertActivityInternal(realm, jsonDoc, existingActivitiesMap)
         }
+    }
+
+    override suspend fun uploadMyPlanetActivities(userModel: org.ole.planet.myplanet.model.RealmUser) {
+        apiInterface.postDoc(
+            UrlUtils.header,
+            "application/json",
+            "${UrlUtils.getUrl()}/myplanet_activities",
+            org.ole.planet.myplanet.model.MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+        )
+
+        val response = apiInterface.getJsonObject(
+            UrlUtils.header,
+            "${UrlUtils.getUrl()}/myplanet_activities/${org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}"
+        )
+
+        var `object` = response.body()
+
+        if (`object` != null) {
+            val usages = `object`.getAsJsonArray("usages")
+            usages.addAll(org.ole.planet.myplanet.model.MyPlanet.getTabletUsages(context))
+            `object`.add("usages", usages)
+        } else {
+            `object` = org.ole.planet.myplanet.model.MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+        }
+
+        apiInterface.postDoc(
+            UrlUtils.header,
+            "application/json",
+            "${UrlUtils.getUrl()}/myplanet_activities",
+            `object`
+        )
     }
 }
 
