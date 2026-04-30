@@ -140,6 +140,7 @@ abstract class RepositoryModule {
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 
     @Binds
+    @Singleton
     abstract fun bindUserSyncRepository(impl: UserRepositoryImpl): UserSyncRepository
 
     @Binds
