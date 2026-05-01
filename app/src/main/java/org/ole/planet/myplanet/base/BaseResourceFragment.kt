@@ -166,7 +166,7 @@ abstract class BaseResourceFragment : Fragment() {
                 textSize = 18f
                 maxLines = 5
                 setSingleLine(false)
-                setTextColor(resources.getColor(android.R.color.white, null))
+                setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             }
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)
