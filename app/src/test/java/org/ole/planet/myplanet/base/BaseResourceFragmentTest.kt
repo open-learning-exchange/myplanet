@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.base
 
 import android.text.TextUtils
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -16,13 +15,12 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -30,14 +28,11 @@ import org.ole.planet.myplanet.utils.DialogUtils
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaseResourceFragmentTest {
 
-    @get:Rule
-    val instantTaskExecutorRule = InstantTaskExecutorRule()
-
     private lateinit var fragment: BaseResourceFragment
     private lateinit var mockPrgDialog: DialogUtils.CustomProgressDialog
     private lateinit var mockLifecycleOwner: LifecycleOwner
     private lateinit var mockActivity: FragmentActivity
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
@@ -78,10 +73,8 @@ class BaseResourceFragmentTest {
     fun `showProgressDialog shows dialog when fragment is active`() = runTest {
         fragment.showProgressDialog()
 
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        verify { mockPrgDialog.setIndeterminateMode(true) }
-        verify { mockPrgDialog.show() }
+        verify(exactly = 1) { mockPrgDialog.setIndeterminateMode(true) }
+        verify(exactly = 1) { mockPrgDialog.show() }
     }
 
     @Test
@@ -89,7 +82,6 @@ class BaseResourceFragmentTest {
         every { fragment.isAdded } returns false
 
         fragment.showProgressDialog()
-        testDispatcher.scheduler.advanceUntilIdle()
 
         verify(exactly = 0) { mockPrgDialog.setIndeterminateMode(any()) }
         verify(exactly = 0) { mockPrgDialog.show() }
@@ -100,7 +92,26 @@ class BaseResourceFragmentTest {
         every { mockActivity.isFinishing } returns true
 
         fragment.showProgressDialog()
-        testDispatcher.scheduler.advanceUntilIdle()
+
+        verify(exactly = 0) { mockPrgDialog.setIndeterminateMode(any()) }
+        verify(exactly = 0) { mockPrgDialog.show() }
+    }
+
+    @Test
+    fun `showProgressDialog does not show dialog when activity is destroyed`() = runTest {
+        every { mockActivity.isDestroyed } returns true
+
+        fragment.showProgressDialog()
+
+        verify(exactly = 0) { mockPrgDialog.setIndeterminateMode(any()) }
+        verify(exactly = 0) { mockPrgDialog.show() }
+    }
+
+    @Test
+    fun `showProgressDialog does not show dialog when activity is null`() = runTest {
+        every { fragment.activity } returns null
+
+        fragment.showProgressDialog()
 
         verify(exactly = 0) { mockPrgDialog.setIndeterminateMode(any()) }
         verify(exactly = 0) { mockPrgDialog.show() }
