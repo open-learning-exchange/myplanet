@@ -25,6 +25,18 @@
             android:id="@+id/appBarBell"
             layout="@layout/app_bar_bell" />
 
+        <TextView
+            android:id="@+id/dashboard_last_sync_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:background="@color/card_bg"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="12sp"
+            android:text="" />
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/top_bar_navigation"
