@@ -10,7 +10,6 @@ import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -52,7 +51,6 @@ class ResourceDownloadCoordinatorTest {
 
     @After
     fun tearDown() {
-        (MainApplication.applicationScope as? TestScope)?.cancel()
         Dispatchers.resetMain()
         unmockkAll()
     }
