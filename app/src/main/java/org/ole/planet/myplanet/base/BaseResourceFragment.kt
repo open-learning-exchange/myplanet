@@ -118,11 +118,6 @@ abstract class BaseResourceFragment : Fragment() {
     protected fun trackDownloadUrls(urls: Collection<String>) {
         pendingDownloadUrls.clear()
         pendingDownloadUrls.addAll(urls)
-        val pref = context?.getSharedPreferences(org.ole.planet.myplanet.utils.Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        val downloadedUrls = pref?.getString("downloaded_urls", "")
-        val list = downloadedUrls?.split(",")?.filter { it.isNotEmpty() }?.toMutableList() ?: mutableListOf()
-        list.addAll(urls)
-        pref?.edit()?.putString("downloaded_urls", list.joinToString(","))?.apply()
     }
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
