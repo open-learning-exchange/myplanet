@@ -28,6 +28,7 @@ class BaseResourceFragmentTest {
         fragment = spyk(object : BaseResourceFragment() {})
         mockPrgDialog = mockk(relaxed = true)
         fragment.prgDialog = mockPrgDialog
+        mockkStatic(Utilities::class)
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
             val str = it.invocation.args[0] as? CharSequence
@@ -88,7 +89,7 @@ class BaseResourceFragmentTest {
     }
     @Test
     fun `showNotConnectedToast shows toast when fragment is active`() {
-        val mockActivity = mockk<FragmentActivity>(relaxed = true)
+        val mockActivity = mockk<androidx.fragment.app.FragmentActivity>(relaxed = true)
         every { fragment.isAdded } returns true
         every { fragment.activity } returns mockActivity
         every { fragment.requireActivity() } returns mockActivity
@@ -101,20 +102,20 @@ class BaseResourceFragmentTest {
 
         every { fragment.getString(R.string.device_not_connected_to_planet) } returns "Device not connected to planet."
 
-        mockkStatic(Utilities::class)
         every { Utilities.toast(any(), any()) } just Runs
 
         fragment.showNotConnectedToast()
 
         verify { Utilities.toast(mockActivity, "Device not connected to planet.") }
+
+        // Assert the isFinishing/isDestroyed path
+        verify(atLeast = 1) { mockActivity.isFinishing }
+        verify(atLeast = 1) { mockActivity.isDestroyed }
     }
 
     @Test
     fun `showNotConnectedToast does nothing when fragment is not active`() {
         every { fragment.isAdded } returns false
-        every { fragment.activity } returns null
-
-        mockkStatic(Utilities::class)
 
         fragment.showNotConnectedToast()
 
