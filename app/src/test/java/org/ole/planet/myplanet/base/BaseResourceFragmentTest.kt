@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.text.TextUtils
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -21,12 +22,16 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DialogUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaseResourceFragmentTest {
+
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var fragment: BaseResourceFragment
     private lateinit var mockPrgDialog: DialogUtils.CustomProgressDialog
