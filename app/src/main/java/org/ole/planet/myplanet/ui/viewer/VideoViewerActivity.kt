@@ -90,7 +90,7 @@ class VideoViewerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
         val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
         auth = headerAuth[0]
-        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+        lifecycleScope.launch {
             streamVideoFromUrl(videoURL, auth)
             if (videoType == "online" && !FileUtils.checkFileExist(this@VideoViewerActivity, videoURL)) {
                 try {

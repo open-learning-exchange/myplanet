@@ -14,6 +14,8 @@ import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
@@ -102,5 +104,18 @@ class NetworkUtilsMockTest {
         every { mockWifiManager.isWifiEnabled } returns false
         every { mockBluetoothAdapter.isEnabled } returns false
         assertFalse(NetworkUtils.isWifiBluetoothEnabled())
+    }
+
+    @Test
+    fun `getCustomDeviceName returns correct name from SharedPrefManager`() {
+        val mockEntryPoint = mockk<CoreDependenciesEntryPoint>(relaxed = true)
+        val mockSharedPrefManager = mockk<SharedPrefManager>()
+        every { mockSharedPrefManager.getCustomDeviceName() } returns "Test Device Name"
+        every { mockEntryPoint.sharedPrefManager() } returns mockSharedPrefManager
+        every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
+
+        val result = NetworkUtils.getCustomDeviceName(mockContext)
+
+        assertEquals("Test Device Name", result)
     }
 }

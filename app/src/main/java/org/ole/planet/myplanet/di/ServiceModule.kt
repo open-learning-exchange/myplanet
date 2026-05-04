@@ -97,8 +97,6 @@ object ServiceModule {
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
-        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
         userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
         healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
@@ -106,7 +104,7 @@ object ServiceModule {
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
     }
 
     @Provides

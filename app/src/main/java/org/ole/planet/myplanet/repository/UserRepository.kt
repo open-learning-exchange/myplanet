@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Sort
@@ -15,6 +14,7 @@ interface UserRepository {
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
     suspend fun getUserById(userId: String): RealmUser?
+    suspend fun getUsersByIds(userIds: List<String>): List<RealmUser>
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun findUserByName(name: String): RealmUser?
