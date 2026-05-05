@@ -118,8 +118,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     val defaultPref: SharedPreferences by lazy {
         PreferenceManager.getDefaultSharedPreferences(applicationContext)
     }
-    @Inject
-    lateinit var databaseService: DatabaseService
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -160,7 +158,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 is SyncManager.SyncStatus.Syncing -> {
                     withContext(Dispatchers.Main) {
-                        onSyncStarted()
+                        val s = status
+                        if (s.phase.isEmpty()) {
+                            onSyncStarted()
+                        } else {
+                            customProgressDialog.setSyncPhase(
+                                s.phase, s.phaseIndex, s.totalPhases,
+                                getString(R.string.sync_step_of, s.phaseIndex, s.totalPhases)
+                            )
+                            val label = s.countLabel.ifEmpty {
+                                if (s.itemsTotal > 0) getString(R.string.sync_items_of, s.itemsDone, s.itemsTotal) else ""
+                            }
+                            if (label.isNotEmpty() && s.itemsTotal > 0) {
+                                customProgressDialog.setSyncItemProgress(s.itemsDone, s.itemsTotal, label)
+                            }
+                        }
                     }
                 }
 
@@ -409,13 +421,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (settings != null) {
                 this.settings = settings
             }
-            if (!withContext(Dispatchers.IO) { userRepository.hasAtLeastOneUser() }) {
+            if (!userRepository.hasAtLeastOneUser()) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
                 val user = userRepository.authenticateUser(username, password, isManagerMode)
                 if (user != null) {
-                    saveUserInfoPref(this.settings, password, user)
+                    profileDbHandler.saveUserInfoPref(this.settings, password, user)
                     true
                 } else {
                     false
@@ -474,6 +486,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     private suspend fun onSyncStarted() {
         withContext(Dispatchers.Main) {
+            customProgressDialog.resetSyncProgress()
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
             isProgressDialogShowing = true
@@ -766,18 +779,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        val builder = getUpdateDialog(this, info, customProgressDialog, lifecycleScope, configurationsRepository)
-        if (cancelable || getCustomDeviceName(this).endsWith("###")) {
-            builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
-                continueSyncProcess()
+        runOnUiThread {
+            val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
+            if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
+                builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
+                    continueSyncProcess()
+                }
+            } else {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    configurationsRepository.clearAllData()
+                }
             }
-        } else {
-            lifecycleScope.launch(Dispatchers.IO) {
-                configurationsRepository.clearAllData()
-            }
+            builder.setCancelable(cancelable)
+            builder.show()
         }
-        builder.setCancelable(cancelable)
-        builder.show()
     }
 
     override fun onCheckingVersion() {}
@@ -791,19 +806,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        Utilities.toast(this, msg)
-        if (msg.startsWith("Config")) {
-            settingDialog()
-        }
-        if (customProgressDialog.isShowing()) {
-            customProgressDialog.dismiss()
-        }
-        if (!blockSync) {
-            continueSyncProcess()
-        } else {
-            if (::syncIconDrawable.isInitialized) {
-                syncIconDrawable.stop()
-                syncIconDrawable.selectDrawable(0)
+        runOnUiThread {
+            Utilities.toast(this@SyncActivity, msg)
+            if (msg.startsWith("Config")) {
+                settingDialog()
+            }
+            if (customProgressDialog.isShowing()) {
+                customProgressDialog.dismiss()
+            }
+            if (!blockSync) {
+                continueSyncProcess()
+            } else {
+                if (::syncIconDrawable.isInitialized) {
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
+                }
             }
         }
     }

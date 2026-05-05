@@ -21,8 +21,13 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
+import org.ole.planet.myplanet.data.DatabaseService
+import javax.inject.Inject
+
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
