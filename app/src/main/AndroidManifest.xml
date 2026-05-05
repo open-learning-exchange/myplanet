@@ -40,11 +40,9 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
-
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
@@ -67,7 +65,6 @@
             android:name=".ui.sync.LoginActivity"
             android:exported="false"
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
-
         <activity
             android:name=".ui.user.BecomeMemberActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
@@ -75,7 +72,6 @@
         <activity
             android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
-
         <activity
             android:name=".ui.health.AddHealthActivity"
             android:theme="@style/AppTheme" />
@@ -135,7 +131,6 @@
             android:enabled="true"
             android:permission="android.permission.FOREGROUND_SERVICE"
             android:exported="false"/>
-
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -146,7 +141,6 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
-
         <receiver android:name=".services.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
