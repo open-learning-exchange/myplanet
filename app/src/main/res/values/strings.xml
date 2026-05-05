@@ -1223,5 +1223,8 @@
     <string name="no_references_added">No references added</string>
     <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
     <string name="already_shared">Already shared</string>
+    <string name="status_not_started">Not Started</string>
+    <string name="status_in_progress">In Progress</string>
+    <string name="status_completed">Completed</string>
 
 </resources>

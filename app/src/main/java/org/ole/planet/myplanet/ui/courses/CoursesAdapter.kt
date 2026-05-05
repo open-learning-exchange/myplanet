@@ -525,6 +525,19 @@ class CoursesAdapter(
             } else {
                 rowCourseBinding.courseProgress.visibility = View.GONE
             }
+            val badge = rowCourseBinding.statusBadge
+            val current = getInt("current", progress)
+            val max = getInt("max", progress)
+            val (statusText, statusColor) = when {
+                progress == null -> Pair(context.getString(R.string.status_not_started), "#9E9E9E")
+                current >= max   -> Pair(context.getString(R.string.status_completed),   "#4CAF50")
+                current > 0      -> Pair(context.getString(R.string.status_in_progress), "#FFC107")
+                else             -> Pair(context.getString(R.string.status_not_started), "#9E9E9E")
+            }
+            badge.text = statusText
+            badge.visibility = View.VISIBLE
+            (badge.background as? android.graphics.drawable.GradientDrawable)
+                ?.setColor(android.graphics.Color.parseColor(statusColor))
         }
 
         private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {

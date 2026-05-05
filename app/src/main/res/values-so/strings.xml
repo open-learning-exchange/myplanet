@@ -1223,5 +1223,8 @@
     <string name="no_references_added">Tixraac lama darin</string>
     <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
     <string name="already_shared">Hore loo wadaagay</string>
+    <string name="status_not_started">Lama bilaaban</string>
+    <string name="status_in_progress">Socda</string>
+    <string name="status_completed">Dhammaystay</string>
 
 </resources>
