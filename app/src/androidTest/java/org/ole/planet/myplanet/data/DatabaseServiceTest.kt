@@ -111,6 +111,33 @@ class DatabaseServiceTest {
     }
 
     @Test
+    fun testClearAll_removesAllData() = runBlocking {
+        // Arrange: Insert some test data
+        databaseService.executeTransactionAsync { realm ->
+            val meetup1 = realm.createObject(RealmMeetup::class.java, "test-id-1")
+            meetup1.title = "Test Meetup 1"
+
+            val meetup2 = realm.createObject(RealmMeetup::class.java, "test-id-2")
+            meetup2.title = "Test Meetup 2"
+        }
+
+        // Verify data was inserted
+        databaseService.withRealmAsync { realm ->
+            val count = realm.where(RealmMeetup::class.java).count()
+            assertEquals(2L, count)
+        }
+
+        // Act: Call clearAll
+        databaseService.clearAll()
+
+        // Assert: Verify all data is removed
+        databaseService.withRealmAsync { realm ->
+            val count = realm.where(RealmMeetup::class.java).count()
+            assertEquals(0L, count)
+        }
+    }
+
+    @Test
     fun testConcurrency_doesNotLeaveRealmsOpen() = runBlocking {
         val initialGlobalCount = Realm.getGlobalInstanceCount(realmConfiguration)
 
