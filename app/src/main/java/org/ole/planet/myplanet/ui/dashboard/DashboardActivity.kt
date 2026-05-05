@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -696,8 +697,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         lifecycleScope.launch {
             val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-            if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
-                showGuestDialog()
+            if (user?.id?.startsWith("guest") == true) {
+                when {
+                    offlineVisits >= 3 -> showGuestDialog()
+                    offlineVisits == 2 -> showVisitLimitWarning()
+                }
             }
         }
     }
@@ -729,6 +733,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
+    }
+
+    private fun showVisitLimitWarning() {
+        // Clear any existing banner first
+        binding.bannerContainer.removeAllViews()
+        
+        // Inflate the banner layout
+        val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
+        
+        // Set up close button
+        val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
+        closeButton.setOnClickListener {
+            binding.bannerContainer.removeView(bannerView.parent as? android.view.View ?: bannerView)
+        }
+        
+        // Auto-dismiss after 10 seconds
+        lifecycleScope.launch {
+            delay(10000)
+            if (binding.bannerContainer.childCount > 0) {
+                binding.bannerContainer.removeAllViews()
+            }
+        }
     }
 
     private fun topBarVisible(){
