@@ -63,12 +63,17 @@ class RealmUserTest {
         val mockAppScope = CoroutineScope(Dispatchers.Unconfined)
         val mockDispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
 
+        val mockResourcesRepository = mockk<dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>>(relaxed = true)
+        val mockCoursesRepository = mockk<dagger.Lazy<org.ole.planet.myplanet.repository.CoursesRepository>>(relaxed = true)
+
         userRepository = UserRepositoryImpl(
             databaseService,
             Dispatchers.Unconfined,
             mockSettings,
             mockSharedPrefManager,
             mockApiInterface,
+            mockResourcesRepository,
+            mockCoursesRepository,
             mockUploadToShelfService,
             mockContext,
             mockConfigurationsRepository,
