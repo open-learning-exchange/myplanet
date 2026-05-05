@@ -157,8 +157,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
 
             if (isFirstLaunch && prefData.getFastSync()) {
+                val userId = prefData.getUserId()
                 lifecycleScope.launch(Dispatchers.IO) {
                     syncManager.syncUserShelfFast()
+                    withContext(Dispatchers.Main) {
+                        dashboardViewModel.loadUserContent(userId)
+                    }
                 }
             }
 
