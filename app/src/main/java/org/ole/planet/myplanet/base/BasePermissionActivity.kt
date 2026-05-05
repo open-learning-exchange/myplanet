@@ -48,7 +48,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             }
             mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
         } catch (e: Exception) {
-            android.util.Log.e("BasePermissionActivity", "Error checking usages permission", e)
+            Log.e("BasePermissionActivity", "Error checking usages permission", e)
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {
@@ -115,7 +115,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             packageInfo.requestedPermissions?.contains(permission) == true
         } catch (e: Exception) {
-            android.util.Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
+            Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
             false
         }
     }
