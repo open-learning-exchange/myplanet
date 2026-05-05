@@ -58,7 +58,7 @@ object EdgeToEdgeUtils {
                 systemBarsInsets.left,
                 systemBarsInsets.top,
                 systemBarsInsets.right,
-                maxOf(systemBarsInsets.bottom, imeInsets.bottom)
+                systemBarsInsets.bottom
             )
             WindowInsetsCompat.CONSUMED
         }
