@@ -1025,7 +1025,7 @@ class SyncManager @Inject constructor(
                                             "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
                                             "meetups" -> insert(realmTx, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> teamsRepository.insertMyTeam(doc)
+                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
                                         }
                                         processedCount++
                                     } catch (e: Exception) {
