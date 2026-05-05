@@ -722,6 +722,14 @@
     <string name="syncing_data_please_wait">डाटा सिंक गरिंदै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="sync_failed">सिंक असफल भयो</string>
     <string name="sync_completed">सिंक सम्पन्न भयो</string>
+    <string name="sync_phase_account_data">खाता डाटा सिंक गरिंदै…</string>
+    <string name="sync_phase_resources">स्रोतहरू सिंक गरिंदै…</string>
+    <string name="sync_phase_library">पुस्तकालय सिंक गरिंदै…</string>
+    <string name="sync_phase_finalizing">अन्तिम रूप दिंदै…</string>
+    <string name="sync_step_of">चरण %1$d मध्ये %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d तालिकाहरू</string>
+    <string name="sync_shelves_progress">%1$d / %2$d शेल्फहरू</string>
     <string name="team_leader">टिम नेता</string>
     <string name="select_resource">"स्रोत छान्नुहोस्: "</string>
     <string name="add">थप्नुहोस्</string>
