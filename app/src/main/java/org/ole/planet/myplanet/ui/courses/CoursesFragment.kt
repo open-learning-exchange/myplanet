@@ -122,6 +122,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
+        
+        val cachedState = viewModel.coursesState.value
+        if (cachedState.courses.isNotEmpty()) {
+            adapterCourses.setProgressMap(cachedState.progressMap)
+            adapterCourses.setRatingMap(cachedState.map)
+            adapterCourses.setTagsMap(cachedState.tagsMap)
+            adapterCourses.submitList(cachedState.courses) {
+                if (isAdded) showNoData(tvMessage, cachedState.courses.size, "courses")
+            }
+        }
+
         viewModel.loadCourses(isMyCourseLib, model?.id)
         return adapterCourses
     }
