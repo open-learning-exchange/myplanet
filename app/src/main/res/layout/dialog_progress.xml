@@ -15,7 +15,6 @@
         android:visibility="gone"
         android:textAlignment="center"
         android:textColor="@color/daynight_textColor" />
-
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -25,7 +24,6 @@
         android:indeterminate="true"
         android:indeterminateTint="@color/mainColor"
         android:max="100"/>
-
     <TextView
         android:id="@+id/syncPhaseLabel"
         android:layout_width="match_parent"
@@ -34,7 +32,6 @@
         android:textColor="@color/daynight_textColor"
         android:textSize="13sp"
         android:visibility="gone" />
-
     <ProgressBar
         android:id="@+id/syncItemProgressBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -46,7 +43,6 @@
         android:progressTint="@color/mainColor"
         android:max="100"
         android:visibility="gone" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -62,14 +58,12 @@
             android:layout_weight="1"
             android:textColor="@color/daynight_textColor"
             android:textSize="11sp" />
-
         <TextView
             android:id="@+id/syncStepText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/daynight_textColor"
             android:textSize="11sp" />
-
     </LinearLayout>
 
     <TextView
@@ -80,7 +74,6 @@
         android:visibility="gone"
         android:textAlignment="center"
         android:textColor="@color/daynight_textColor" />
-
     <LinearLayout
         android:id="@+id/buttonLayout"
         android:layout_width="match_parent"
@@ -96,7 +89,6 @@
             android:textColor="@color/daynight_textColor"
             style="?android:attr/borderlessButtonStyle"
             android:layout_height="wrap_content" />
-
         <Button
             android:id="@+id/buttonPositive"
             android:layout_width="wrap_content"
