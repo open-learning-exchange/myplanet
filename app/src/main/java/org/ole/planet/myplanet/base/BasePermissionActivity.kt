@@ -343,7 +343,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            android.util.Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
         }
     }
 
@@ -355,7 +355,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            android.util.Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 
