@@ -11,15 +11,18 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class FeedbackRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val gson: Gson
+    private val gson: Gson,
+    private val apiInterface: ApiInterface
 ) : RealmRepository(databaseService, realmDispatcher), FeedbackRepository {
 
     override fun createFeedback(
@@ -106,6 +109,29 @@ class FeedbackRepositoryImpl @Inject constructor(
             jsonObjects.forEach { jsonObject ->
                 insertFeedbackToRealm(realm, jsonObject)
             }
+        }
+    }
+
+    override suspend fun fetchAndSaveFeedbackForUser(userName: String): Boolean {
+        return try {
+            val url = "${UrlUtils.getUrl()}/feedback/_find"
+            val selector = JsonObject().apply {
+                add("selector", JsonObject().apply { addProperty("owner", userName) })
+            }
+            val response = apiInterface.findDocs(UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) return false
+            val docs = JsonUtils.getJsonArray("docs", response.body())
+            val feedbackList = ArrayList<JsonObject>(docs.size())
+            for (j in docs) {
+                val jsonDoc = j.asJsonObject
+                val id = JsonUtils.getString("_id", jsonDoc)
+                if (!id.startsWith("_design")) feedbackList.add(jsonDoc)
+            }
+            insertFeedbackList(feedbackList)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 

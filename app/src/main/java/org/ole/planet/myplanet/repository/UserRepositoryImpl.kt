@@ -1051,6 +1051,23 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun fetchAndSaveAchievementsForUser(userName: String): Boolean {
+        return try {
+            val url = "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/achievements/_find"
+            val selector = com.google.gson.JsonObject().apply {
+                add("selector", com.google.gson.JsonObject().apply { addProperty("username", userName) })
+            }
+            val response = apiInterface.findDocs(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) return false
+            val docs = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("docs", response.body())
+            executeTransaction { realm -> bulkInsertAchievementsFromSync(realm, docs) }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
     override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         val ids = mutableListOf<String>()
