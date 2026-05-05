@@ -1464,11 +1464,18 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun insertTeamLogs(logs: List<JsonObject>) {
         executeTransaction { realm ->
+            val ids = logs.map { JsonUtils.getString("_id", it) }.toTypedArray()
+            val existingLogs = if (ids.isNotEmpty()) {
+                realm.where(RealmTeamLog::class.java).`in`("_id", ids).findAll().associateBy { it._id }.toMutableMap()
+            } else {
+                mutableMapOf()
+            }
             for (json in logs) {
-                var tag = realm.where(RealmTeamLog::class.java)
-                    .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
+                val id = JsonUtils.getString("_id", json)
+                var tag = existingLogs[id]
                 if (tag == null) {
-                    tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
+                    tag = realm.createObject(RealmTeamLog::class.java, id)
+                    existingLogs[id] = tag
                 }
                 if (tag != null) {
                     tag._rev = JsonUtils.getString("_rev", json)
@@ -1622,11 +1629,18 @@ class TeamsRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
+        val ids = documentList.map { JsonUtils.getString("_id", it) }.toTypedArray()
+        val existingLogs = if (ids.isNotEmpty()) {
+            realm.where(RealmTeamLog::class.java).`in`("_id", ids).findAll().associateBy { it._id }.toMutableMap()
+        } else {
+            mutableMapOf()
+        }
         for (json in documentList) {
-            var tag = realm.where(RealmTeamLog::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
+            val id = JsonUtils.getString("_id", json)
+            var tag = existingLogs[id]
             if (tag == null) {
-                tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
+                tag = realm.createObject(RealmTeamLog::class.java, id)
+                existingLogs[id] = tag
             }
             if (tag != null) {
                 tag._rev = JsonUtils.getString("_rev", json)
