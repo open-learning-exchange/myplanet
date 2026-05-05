@@ -421,7 +421,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val userId = currentUser.id
         val viewableBy = news.viewableBy
         val viewableId = news.viewableId
-        val newsId = news.id
+        val newsId = news._id ?: news.id
         val messageType = news.messageType
         val messagePlanetCode = news.messagePlanetCode
         val viewIn = news.viewIn
