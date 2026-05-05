@@ -213,13 +213,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return@launch
             }
 
+            val isVideo = FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4"
+            val isAudio = FileUtils.getFileExtension(items.resourceLocalAddress) == "mp3" ||
+                    FileUtils.getFileExtension(items.resourceLocalAddress) == "aac" ||
+                    FileUtils.getFileExtension(items.resourceLocalAddress) == "wav"
+
             when {
                 items.isResourceOffline() -> ResourceOpener.openFileType(
                     requireActivity(), items, "offline", profileDbHandler
                 )
-                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(
-                    requireActivity(), items, "online", profileDbHandler
-                )
+                isVideo || isAudio -> {
+                    ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+                    val arrayList = arrayListOf(UrlUtils.getUrl(items))
+                    DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)
+                }
                 else -> {
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     startDownloadWithAutoOpen(arrayList, items)
