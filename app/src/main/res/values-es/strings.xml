@@ -722,6 +722,14 @@
     <string name="syncing_data_please_wait">Sincronizando datos, por favor espera…</string>
     <string name="sync_failed">Sincronización fallida</string>
     <string name="sync_completed">Sincronización completada</string>
+    <string name="sync_phase_account_data">Sincronizando datos de cuenta…</string>
+    <string name="sync_phase_resources">Sincronizando recursos…</string>
+    <string name="sync_phase_library">Sincronizando biblioteca…</string>
+    <string name="sync_phase_finalizing">Finalizando…</string>
+    <string name="sync_step_of">Paso %1$d de %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tablas</string>
+    <string name="sync_shelves_progress">%1$d / %2$d estantes</string>
     <string name="team_leader">Líder de equipo</string>
     <string name="select_resource">"Seleccionar recurso: "</string>
     <string name="add">Agregar</string>
