@@ -1524,6 +1524,10 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override fun insertMyTeam(realm: Realm, doc: JsonObject) {
+        insertMyTeam(realm, doc, null)
+    }
+
+    private fun insertMyTeam(realm: Realm, doc: JsonObject, existingTeams: MutableMap<String, RealmMyTeam>?) {
         val status = JsonUtils.getString("status", doc)
         if (status == "archived") {
             return
@@ -1552,9 +1556,16 @@ class TeamsRepositoryImpl @Inject constructor(
             if (alreadyMember) return
         }
 
-        var myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        var myTeams: RealmMyTeam? = null
+        if (existingTeams != null) {
+            myTeams = existingTeams[teamId]
+        } else {
+            myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        }
+
         if (myTeams == null) {
             myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
+            existingTeams?.put(teamId, myTeams!!)
         }
         myTeams?.let {
             RealmMyTeam.populateTeamFields(doc, it, true)
@@ -1564,16 +1575,27 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                ids.add(id)
             }
         }
+        val existingTeams = if (ids.isNotEmpty()) {
+            realm.where(RealmMyTeam::class.java)
+                .`in`("_id", ids.toTypedArray())
+                .findAll()
+                .associateBy { it._id!! }
+                .toMutableMap()
+        } else {
+            mutableMapOf<String, RealmMyTeam>()
+        }
         documentList.forEach { jsonDoc ->
-            insertMyTeam(realm, jsonDoc)
+            insertMyTeam(realm, jsonDoc, existingTeams)
         }
     }
     override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
