@@ -15,6 +15,7 @@ interface UserRepository {
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
     suspend fun getUserById(userId: String): RealmUser?
+    suspend fun getUsersByIds(userIds: List<String>): List<RealmUser>
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
     suspend fun findUserByName(name: String): RealmUser?
@@ -108,5 +109,5 @@ interface UserRepository {
     suspend fun markAchievementUploaded(id: String, rev: String?)
     fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences)
-    suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject
+    suspend fun uploadShelfData(user: RealmUser)
 }

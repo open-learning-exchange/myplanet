@@ -82,6 +82,8 @@ class UserRepositoryImplTest {
             settings,
             sharedPrefManager,
             apiInterface,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
             uploadToShelfService,
             context,
             configurationsRepository,

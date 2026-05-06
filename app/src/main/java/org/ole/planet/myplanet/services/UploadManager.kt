@@ -95,34 +95,7 @@ class UploadManager @Inject constructor(
             }
 
             try {
-                apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/myplanet_activities",
-                    MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
-                )
-
-                val response = apiInterface.getJsonObject(
-                    UrlUtils.header,
-                    "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
-                )
-
-                var `object` = response.body()
-
-                if (`object` != null) {
-                    val usages = `object`.getAsJsonArray("usages")
-                    usages.addAll(MyPlanet.getTabletUsages(context))
-                    `object`.add("usages", usages)
-                } else {
-                    `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, model)
-                }
-
-                apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/myplanet_activities",
-                    `object`
-                )
+                activitiesRepository.uploadMyPlanetActivities(model)
                 notifyListener(listener, "My planet activities uploaded successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Exception in UploadManager", e)
