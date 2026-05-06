@@ -158,7 +158,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 is SyncManager.SyncStatus.Syncing -> {
                     withContext(Dispatchers.Main) {
-                        onSyncStarted()
+                        val s = status
+                        if (s.phase.isEmpty()) {
+                            onSyncStarted()
+                        } else {
+                            customProgressDialog.setSyncPhase(
+                                s.phase, s.phaseIndex, s.totalPhases,
+                                getString(R.string.sync_step_of, s.phaseIndex, s.totalPhases)
+                            )
+                            val label = s.countLabel.ifEmpty {
+                                if (s.itemsTotal > 0) getString(R.string.sync_items_of, s.itemsDone, s.itemsTotal) else ""
+                            }
+                            if (label.isNotEmpty() && s.itemsTotal > 0) {
+                                customProgressDialog.setSyncItemProgress(s.itemsDone, s.itemsTotal, label)
+                            }
+                        }
                     }
                 }
 
@@ -447,6 +461,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     private suspend fun onSyncStarted() {
         withContext(Dispatchers.Main) {
+            customProgressDialog.resetSyncProgress()
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
             isProgressDialogShowing = true
