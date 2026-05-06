@@ -24,7 +24,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import androidx.fragment.app.FragmentActivity
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.model.Download
