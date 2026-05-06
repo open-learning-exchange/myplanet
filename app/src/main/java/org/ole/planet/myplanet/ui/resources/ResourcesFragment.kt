@@ -462,6 +462,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    override fun onShareClicked(item: ResourceItem) {
+        val intent = android.content.Intent(requireContext(), P2pTransferActivity::class.java).apply {
+            putExtra("resourceId", item.id)
+        }
+        startActivity(intent)
+    }
+
     override fun onTagClicked(tag: RealmTag) {
         tvSelected.visibility = View.VISIBLE
         flexBoxTags.removeAllViews()

@@ -98,6 +98,16 @@ class ResourcesAdapter(
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
             }
+
+            if (library.isOffline) {
+                holder.rowLibraryBinding.ivShare.visibility = View.VISIBLE
+                holder.rowLibraryBinding.ivShare.setOnClickListener {
+                    listener?.onShareClicked(library)
+                }
+            } else {
+                holder.rowLibraryBinding.ivShare.visibility = View.GONE
+            }
+
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
                 if (library.isOffline) {
                     context.getString(R.string.view)
