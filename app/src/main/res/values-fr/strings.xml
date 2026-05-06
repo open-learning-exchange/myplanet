@@ -1043,6 +1043,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">L\'activation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
     <string name="chart_description">Graphique d\'Activité de Connexion</string>
     <string name="chart_label">Nbre de connexions</string>
+    <string name="no_login_activity">Aucune activité de connexion enregistrée pour l\'instant</string>
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
     <string name="mark_all_as_read">Marquer tout comme lu</string>
     <string name="no_notifications">Aucune notification</string>
