@@ -126,6 +126,17 @@ class RetryQueueTest {
     }
 
     @Test
+    fun setProcessing_updatesCurrentlyProcessing() = runTest {
+        assertFalse(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(true)
+        assertTrue(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(false)
+        assertFalse(retryQueue.isCurrentlyProcessing())
+    }
+
+    @Test
     fun safeClearQueue_isProcessing_returnsFalse() = runTest {
         retryQueue.setProcessing(true)
 
