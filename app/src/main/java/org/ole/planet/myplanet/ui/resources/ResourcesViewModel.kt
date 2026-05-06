@@ -84,8 +84,10 @@ class ResourcesViewModel @Inject constructor(
         val map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, modelId))
         val tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
 
-        return allLibraryItems.map { library ->
-            val resourceId = library.resourceId ?: library.id
+        return allLibraryItems
+            .sortedByDescending { it.isResourceOffline() }
+            .map { library ->
+                val resourceId = library.resourceId ?: library.id
             val item = ResourceItem(
                 id = library.id,
                 title = library.title,
