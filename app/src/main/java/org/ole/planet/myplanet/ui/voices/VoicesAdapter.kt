@@ -16,8 +16,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.AsyncDifferConfig
+import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -69,11 +71,10 @@ class VoicesAdapter(
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
     private val userRepository: org.ole.planet.myplanet.repository.UserRepository
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
-    DiffUtils.itemCallback(
+) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+    private val diffCallback = DiffUtils.itemCallback<RealmNews>(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
-            if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
 
             try {
                 val oId = oldItem.takeIf { it.isValid }?.id
@@ -85,7 +86,6 @@ class VoicesAdapter(
         },
         areContentsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
-            if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
 
             try {
                 if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
@@ -99,7 +99,40 @@ class VoicesAdapter(
             }
         }
     )
-) {
+
+    private val mDiffer = AsyncListDiffer(
+        object : ListUpdateCallback {
+            override fun onInserted(position: Int, count: Int) {
+                notifyItemRangeInserted(if (parentNews != null) position + 1 else position, count)
+            }
+            override fun onRemoved(position: Int, count: Int) {
+                notifyItemRangeRemoved(if (parentNews != null) position + 1 else position, count)
+            }
+            override fun onMoved(fromPosition: Int, toPosition: Int) {
+                notifyItemMoved(
+                    if (parentNews != null) fromPosition + 1 else fromPosition,
+                    if (parentNews != null) toPosition + 1 else toPosition
+                )
+            }
+            override fun onChanged(position: Int, count: Int, payload: Any?) {
+                notifyItemRangeChanged(if (parentNews != null) position + 1 else position, count, payload)
+            }
+        },
+        AsyncDifferConfig.Builder(diffCallback).build()
+    )
+
+    val currentList: List<RealmNews?> get() = mDiffer.currentList
+
+    fun submitList(list: List<RealmNews?>?) {
+        list?.forEach { preParseNews(it) }
+        mDiffer.submitList(list as List<RealmNews>?)
+    }
+
+    fun submitList(list: List<RealmNews?>?, commitCallback: Runnable?) {
+        list?.forEach { preParseNews(it) }
+        mDiffer.submitList(list as List<RealmNews>?, commitCallback)
+    }
+
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
     private var listener: OnNewsItemClickListener? = null
     @Inject
@@ -308,22 +341,22 @@ class VoicesAdapter(
                 val pos = holder.bindingAdapterPosition
                 val snapshotList = currentList.toMutableList()
                 val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
+                val newsToDelete = if (parentNews != null && pos == 0) parentNews else snapshotList[adjustedPos]
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        if (adjustedPos >= 0 && adjustedPos < snapshotList.size) {
-                            val newsToDelete = snapshotList[adjustedPos]
-                            newsToDelete?.id?.let { id ->
-                                deletePostFn(id) {
+                        newsToDelete?.id?.let { id ->
+                            deletePostFn(id) {
+                                if (!(parentNews != null && pos == 0)) {
                                     val newList = snapshotList.toMutableList().apply { removeAt(adjustedPos) }
                                     submitList(newList)
-                                    parentNews?.id?.let { pid ->
-                                        val current = replyCountCache[pid]
-                                        replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
-                                        notifyItemChanged(0)
-                                    }
-                                    listener?.onDataChanged()
                                 }
+                                parentNews?.id?.let { pid ->
+                                    val current = replyCountCache[pid]
+                                    replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
+                                    notifyItemChanged(0)
+                                }
+                                listener?.onDataChanged()
                             }
                         }
                     }
@@ -486,15 +519,6 @@ class VoicesAdapter(
         }
     }
 
-    override fun submitList(list: List<RealmNews?>?) {
-        list?.forEach { preParseNews(it) }
-        super.submitList(list)
-    }
-
-    override fun submitList(list: List<RealmNews?>?, commitCallback: Runnable?) {
-        list?.forEach { preParseNews(it) }
-        super.submitList(list, commitCallback)
-    }
     private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUser?, currentLeader: RealmUser?) {
         if (!fromLogin) {
             holder.binding.imgUser.setOnClickListener {
@@ -582,11 +606,11 @@ class VoicesAdapter(
                 parentNews
             } else {
                 (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
-                getItem(position - 1)
+                currentList[position - 1]
             }
         } else {
             (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
-            getItem(position)
+            currentList[position]
         }
         return news
     }
@@ -635,7 +659,7 @@ class VoicesAdapter(
     }
 
     override fun getItemCount(): Int {
-        return if (parentNews == null) super.getItemCount() else super.getItemCount() + 1
+        return if (parentNews == null) currentList.size else currentList.size + 1
     }
 
 

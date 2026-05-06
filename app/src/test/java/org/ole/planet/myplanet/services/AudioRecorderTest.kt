@@ -52,6 +52,27 @@ class AudioRecorderTest {
     }
 
     @Test
+    fun testForceStopWhenRecording() {
+        val mockMediaRecorder = mockk<MediaRecorder>(relaxed = true)
+
+        val field = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        field.isAccessible = true
+        field.set(audioRecorder, mockMediaRecorder)
+
+        audioRecorder.setAudioRecordListener(mockListener)
+        audioRecorder.forceStop()
+
+        verify { mockMediaRecorder.stop() }
+        verify { mockMediaRecorder.release() }
+        val fieldAfter = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        fieldAfter.isAccessible = true
+        val myAudioRecorder = fieldAfter.get(audioRecorder)
+        assertTrue(myAudioRecorder == null)
+        assertFalse(audioRecorder.isRecording())
+        verify { mockListener.onError("Recording stopped") }
+    }
+
+    @Test
     fun testForceStopWhenNotRecording() {
         audioRecorder.setAudioRecordListener(mockListener)
         audioRecorder.forceStop()
