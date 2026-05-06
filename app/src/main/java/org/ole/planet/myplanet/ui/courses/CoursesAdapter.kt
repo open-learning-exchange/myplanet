@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
+import androidx.core.content.ContextCompat
 
 class CoursesAdapter(
     private val context: Context,
@@ -529,15 +530,15 @@ class CoursesAdapter(
             val current = getInt("current", progress)
             val max = getInt("max", progress)
             val (statusText, statusColor) = when {
-                progress == null -> Pair(context.getString(R.string.status_not_started), "#9E9E9E")
-                current >= max   -> Pair(context.getString(R.string.status_completed),   "#4CAF50")
-                current > 0      -> Pair(context.getString(R.string.status_in_progress), "#FFC107")
-                else             -> Pair(context.getString(R.string.status_not_started), "#9E9E9E")
+                progress == null -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+                current >= max   -> Pair(context.getString(R.string.status_completed),   R.color.status_completed)
+                current > 0      -> Pair(context.getString(R.string.status_in_progress), R.color.status_in_progress)
+                else             -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
             }
             badge.text = statusText
             badge.visibility = View.VISIBLE
             (badge.background as? android.graphics.drawable.GradientDrawable)
-                ?.setColor(android.graphics.Color.parseColor(statusColor))
+                ?.setColor(ContextCompat.getColor(context, statusColor))
         }
 
         private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {
