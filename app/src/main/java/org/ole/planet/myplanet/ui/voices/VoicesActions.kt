@@ -138,7 +138,6 @@ object VoicesActions {
         val imagesToRemoveCopy = imagesToRemove.toSet()
         imagesToRemove.clear()
         dialog.dismiss()
-        listener?.clearImages()
         try {
             if (isEdit) {
                 news?.id?.let {
@@ -149,6 +148,7 @@ object VoicesActions {
                     repository.postReply(s, news, currentUser, imageList)
                 }
             }
+            listener?.clearImages()
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
             onSuccess()
         } catch (e: Exception) {

@@ -10,8 +10,10 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -51,6 +53,22 @@ class RetryQueueTest {
     @After
     fun tearDown() {
         unmockkStatic(Log::class)
+    }
+
+    @Test
+    fun isCurrentlyProcessing_threadSafety_concurrentAccess() = runTest {
+        val jobs = (1..100).map { i ->
+            launch(Dispatchers.Default) {
+                if (i % 2 == 0) {
+                    retryQueue.setProcessing(true)
+                } else {
+                    retryQueue.setProcessing(false)
+                }
+                val state = retryQueue.isCurrentlyProcessing()
+                assertTrue(state == true || state == false)
+            }
+        }
+        jobs.forEach { it.join() }
     }
 
     @Test
@@ -123,6 +141,17 @@ class RetryQueueTest {
 
         coVerify(exactly = 1) { retryRepository.updateAttempt("op1", error) }
         coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun setProcessing_updatesCurrentlyProcessing() = runTest {
+        assertFalse(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(true)
+        assertTrue(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(false)
+        assertFalse(retryQueue.isCurrentlyProcessing())
     }
 
     @Test
