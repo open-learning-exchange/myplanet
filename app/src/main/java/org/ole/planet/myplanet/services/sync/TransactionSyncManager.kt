@@ -262,16 +262,27 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else if (table == "team_activities") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
-                    for (j in arr) {
-                        var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
-                        if (!id.startsWith("_design")) {
-                            docs.add(jsonDoc)
-                        }
-                    }
-                    teamsRepository.get().insertTeamLogs(docs)
+                    teamsRepository.get().bulkInsertTeamActivitiesFromSync(arr)
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "teams") {
+                    val insertStartTime = System.currentTimeMillis()
+                    teamsRepository.get().bulkInsertFromSync(arr)
+                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "tasks") {
+                    val insertStartTime = System.currentTimeMillis()
+                    teamsRepository.get().bulkInsertTasksFromSync(arr)
                     val insertDuration = System.currentTimeMillis() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
@@ -307,7 +318,6 @@ class TransactionSyncManager @Inject constructor(
                                                 when (table) {
                             "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
@@ -317,8 +327,6 @@ class TransactionSyncManager @Inject constructor(
                                 org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                             }
                             "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
-                            "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
-                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
                             "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
                             "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                             "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)

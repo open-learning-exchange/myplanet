@@ -1505,7 +1505,21 @@ class TeamsRepositoryImpl @Inject constructor(
         org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
     }
 
-    override fun insertMyTeam(realm: Realm, doc: JsonObject) {
+
+    override suspend fun insertMyTeams(docs: List<JsonObject>) {
+        executeTransaction { realm ->
+            for (doc in docs) {
+                insertMyTeamInternal(realm, doc)
+            }
+        }
+    }
+    override suspend fun insertMyTeam(doc: JsonObject) {
+        executeTransaction { realm ->
+            insertMyTeamInternal(realm, doc)
+        }
+    }
+
+    private fun insertMyTeamInternal(realm: Realm, doc: JsonObject) {
         val status = JsonUtils.getString("status", doc)
         if (status == "archived") {
             return
@@ -1544,7 +1558,8 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+    override suspend fun bulkInsertFromSync(jsonArray: com.google.gson.JsonArray) {
+        executeTransaction { realm ->
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -1555,10 +1570,12 @@ class TeamsRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            insertMyTeam(realm, jsonDoc)
+            insertMyTeamInternal(realm, jsonDoc)
+        }
         }
     }
-    override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+    override suspend fun bulkInsertTasksFromSync(jsonArray: com.google.gson.JsonArray) {
+        executeTransaction { realm ->
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -1571,8 +1588,10 @@ class TeamsRepositoryImpl @Inject constructor(
         documentList.forEach { jsonDoc ->
             RealmTeamTask.insert(realm, jsonDoc)
         }
+        }
     }
-    override fun bulkInsertTeamActivitiesFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+    override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: com.google.gson.JsonArray) {
+        executeTransaction { realm ->
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -1599,6 +1618,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 tag.teamId = JsonUtils.getString("teamId", json)
                 tag.teamType = JsonUtils.getString("teamType", json)
             }
+        }
         }
     }
 }

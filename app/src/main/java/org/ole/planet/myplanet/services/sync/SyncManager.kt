@@ -1017,19 +1017,27 @@ class SyncManager @Inject constructor(
                     // Batch insert documents in chunks to reduce transaction overhead
                     val chunkSize = 50  // Increased from processing one batch at a time
                     documentsToProcess.chunked(chunkSize).forEach { chunk ->
-                        safeRealmOperation { realm ->
-                            realm.executeTransaction { realmTx ->
-                                chunk.forEach { doc ->
-                                    try {
-                                        when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
-                                            "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
+                        if (shelfData.type == "teams") {
+                            try {
+                                teamsRepository.insertMyTeams(chunk)
+                                processedCount += chunk.size
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        } else {
+                            safeRealmOperation { realm ->
+                                realm.executeTransaction { realmTx ->
+                                    chunk.forEach { doc ->
+                                        try {
+                                            when (shelfData.type) {
+                                                "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
+                                                "meetups" -> insert(realmTx, doc)
+                                                "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
+                                            }
+                                            processedCount++
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
                                         }
-                                        processedCount++
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
                                     }
                                 }
                             }
