@@ -24,6 +24,9 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import androidx.fragment.app.FragmentActivity
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DialogUtils
 
@@ -61,6 +64,7 @@ class BaseResourceFragmentTest {
         every { mockActivity.isFinishing } returns false
         every { mockActivity.isDestroyed } returns false
 
+        mockkStatic(Utilities::class)
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
             val str = it.invocation.args[0] as? CharSequence
@@ -167,5 +171,39 @@ class BaseResourceFragmentTest {
         verify { mockPrgDialog.setProgress(100) }
         verify { mockPrgDialog.setTitle("test_file.txt") }
         verify { fragment.onDownloadComplete() }
+    }
+    @Test
+    fun `showNotConnectedToast shows toast when fragment is active`() {
+        val mockActivity = mockk<androidx.fragment.app.FragmentActivity>(relaxed = true)
+        every { fragment.isAdded } returns true
+        every { fragment.activity } returns mockActivity
+        every { fragment.requireActivity() } returns mockActivity
+        every { fragment.context } returns mockActivity
+        every { mockActivity.isFinishing } returns false
+        every { mockActivity.isDestroyed } returns false
+
+        every { fragment.requireContext() } returns mockActivity
+        every { fragment.resources } returns mockk(relaxed = true)
+
+        every { fragment.getString(R.string.device_not_connected_to_planet) } returns "Device not connected to planet."
+
+        every { Utilities.toast(any(), any()) } just Runs
+
+        fragment.showNotConnectedToast()
+
+        verify { Utilities.toast(mockActivity, "Device not connected to planet.") }
+
+        // Assert the isFinishing/isDestroyed path
+        verify(atLeast = 1) { mockActivity.isFinishing }
+        verify(atLeast = 1) { mockActivity.isDestroyed }
+    }
+
+    @Test
+    fun `showNotConnectedToast does nothing when fragment is not active`() {
+        every { fragment.isAdded } returns false
+
+        fragment.showNotConnectedToast()
+
+        verify(exactly = 0) { Utilities.toast(any(), any()) }
     }
 }
