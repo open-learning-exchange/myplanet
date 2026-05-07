@@ -121,14 +121,15 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
+            val effectiveTeamId = getEffectiveTeamId()
+            val realmNewsList = voicesRepository.getFilteredNews(effectiveTeamId)
             val count = realmNewsList.size
-            voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
+            voicesRepository.updateTeamNotification(effectiveTeamId, count)
             showRecyclerView(realmNewsList)
 
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    voicesRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
+                    voicesRepository.getDiscussionsByTeamIdFlow(effectiveTeamId).collect {
                         setData(it)
                     }
                 }
@@ -172,12 +173,13 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+            val effectiveTeamName = getEffectiveTeamName()
             val adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,
                     parentNews = null,
-                    teamName = getEffectiveTeamName(),
+                    teamName = effectiveTeamName,
                     teamId = teamId,
                     userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
@@ -209,7 +211,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     },
                     deletePostFn = { newsId, onComplete ->
                         val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            voicesRepository.deletePost(newsId, getEffectiveTeamName())
+                            voicesRepository.deletePost(newsId, effectiveTeamName)
                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
                         }
                         return@VoicesAdapter { job.cancel() }
