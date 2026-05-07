@@ -10,10 +10,14 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.lifecycleScope
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
@@ -23,11 +27,13 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.NotificationUtils.create
+import org.ole.planet.myplanet.utils.TTSManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -35,13 +41,17 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
     private lateinit var binding: ActivityPdfreaderBinding
     private lateinit var audioRecorder: AudioRecorder
     private var fileName: String? = null
-    @Inject
-    lateinit var personalsRepository: PersonalsRepository
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
+
+    @Inject lateinit var personalsRepository: PersonalsRepository
+    @Inject lateinit var resourcesRepository: ResourcesRepository
+    @Inject lateinit var userSessionManager: UserSessionManager
+    @Inject lateinit var dispatcherProvider: DispatcherProvider
+    @Inject lateinit var ttsManager: TTSManager
+
     private lateinit var library: RealmMyLibrary
+    private var pdfText: String = ""
+    private var isExtractingText = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPdfreaderBinding.inflate(layoutInflater)
@@ -58,17 +68,18 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
             }
         }
         renderPdfFile()
-        binding.fabRecord.setOnClickListener { audioRecorder.onRecordClicked()}
+        extractPdfTextAsync()
+        binding.fabRecord.setOnClickListener { audioRecorder.onRecordClicked() }
         binding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
                 openAudioFile(this, library.translationAudioPath)
             }
         }
+        setupTts()
     }
 
     private fun renderPdfFile() {
-        val pdfOpenIntent = intent
-        fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
+        fileName = intent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
             binding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
             binding.pdfFileName.visibility = View.VISIBLE
@@ -102,11 +113,55 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
                 Toast.makeText(applicationContext, getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show()
             }
         } else {
-            Toast.makeText(applicationContext, "File not found: $fileName", Toast.LENGTH_LONG)
-                .show()
+            Toast.makeText(applicationContext, "File not found: $fileName", Toast.LENGTH_LONG).show()
         }
     }
 
+    private fun extractPdfTextAsync() {
+        val file = File(getExternalFilesDir(null), "ole/$fileName")
+        if (!file.exists()) return
+        isExtractingText = true
+        lifecycleScope.launch(dispatcherProvider.io) {
+            pdfText = try {
+                PDFBoxResourceLoader.init(applicationContext)
+                val document = PDDocument.load(file)
+                val text = PDFTextStripper().getText(document).trim()
+                document.close()
+                text
+            } catch (e: Exception) {
+                ""
+            }
+            withContext(dispatcherProvider.main) {
+                isExtractingText = false
+                updateReadAloudIcon()
+            }
+        }
+    }
+
+    private fun setupTts() {
+        binding.fabReadAloud.setOnClickListener {
+            if (isExtractingText) {
+                Toast.makeText(this, getString(R.string.pdf_extracting_text), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+            } else if (pdfText.isNotBlank()) {
+                ttsManager.speak(pdfText)
+            } else {
+                Toast.makeText(this, getString(R.string.pdf_no_text_layer), Toast.LENGTH_SHORT).show()
+            }
+        }
+        lifecycleScope.launch {
+            ttsManager.state.collect { updateReadAloudIcon() }
+        }
+    }
+
+    private fun updateReadAloudIcon() {
+        binding.fabReadAloud.setImageResource(
+            if (ttsManager.isSpeaking) R.drawable.ic_stop else R.drawable.ic_play
+        )
+    }
 
     override fun onRecordStarted() {
         Utilities.toast(this, getString(R.string.recording_started))
@@ -148,6 +203,11 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
                 )
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        ttsManager.stop()
     }
 
     override fun onDestroy() {
