@@ -1248,6 +1248,9 @@
     <string name="file_not_found">الملف غير موجود: %s</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
+    <string name="status_not_started">لم يبدأ</string>
+    <string name="status_in_progress">قيد التنفيذ</string>
+    <string name="status_completed">مكتمل</string>
     <string name="read_aloud">اقرأ بصوت عالٍ</string>
     <string name="stop_reading">توقف عن القراءة</string>
     <string name="tts_not_available">ميزة تحويل النص إلى كلام غير متوفرة على هذا الجهاز</string>

@@ -8,6 +8,8 @@ import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.PeriodicWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
@@ -39,20 +41,7 @@ class RetryQueueWorker @AssistedInject constructor(
         private const val BATCH_SIZE = 50
 
         fun schedule(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
-            val workRequest = PeriodicWorkRequestBuilder<RetryQueueWorker>(
-                15, TimeUnit.MINUTES
-            )
-                .setConstraints(constraints)
-                .setBackoffCriteria(
-                    BackoffPolicy.EXPONENTIAL,
-                    WorkRequest.MIN_BACKOFF_MILLIS,
-                    TimeUnit.MILLISECONDS
-                )
-                .build()
+            val workRequest = createScheduleWorkRequest()
 
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
@@ -63,17 +52,40 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Scheduled RetryQueueWorker")
         }
 
-        fun triggerImmediateRetry(context: Context) {
+        @androidx.annotation.VisibleForTesting
+        internal fun createScheduleWorkRequest(): PeriodicWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val workRequest = OneTimeWorkRequestBuilder<RetryQueueWorker>()
+            return PeriodicWorkRequestBuilder<RetryQueueWorker>(
+                15, TimeUnit.MINUTES
+            )
                 .setConstraints(constraints)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    WorkRequest.MIN_BACKOFF_MILLIS,
+                    TimeUnit.MILLISECONDS
+                )
                 .build()
+        }
+
+        fun triggerImmediateRetry(context: Context) {
+            val workRequest = createImmediateRetryWorkRequest()
 
             WorkManager.getInstance(context).enqueue(workRequest)
             Log.d(TAG, "Triggered immediate retry")
+        }
+
+        @androidx.annotation.VisibleForTesting
+        internal fun createImmediateRetryWorkRequest(): OneTimeWorkRequest {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            return OneTimeWorkRequestBuilder<RetryQueueWorker>()
+                .setConstraints(constraints)
+                .build()
         }
     }
 
