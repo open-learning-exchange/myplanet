@@ -17,7 +17,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.time.Instant
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -39,12 +38,16 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
@@ -97,9 +100,9 @@ class AchievementFragment : BaseContainerFragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 startSyncManager()
             }
         }
