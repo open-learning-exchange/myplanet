@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.content.Context
 import android.util.Log
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ListenableWorker.Result
 import androidx.work.OneTimeWorkRequest
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import androidx.work.Operation
 import androidx.work.WorkerParameters
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
