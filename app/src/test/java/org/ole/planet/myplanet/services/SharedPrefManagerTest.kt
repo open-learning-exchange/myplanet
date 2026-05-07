@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.reflect.TypeToken
+import org.ole.planet.myplanet.model.RealmMyLife
 import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import io.mockk.every
@@ -196,6 +198,68 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testCacheMyLifeItems() {
+        val userId = "user123"
+        val myLifeItems = listOf(
+            RealmMyLife("img1", "user123", "Title 1").apply {
+                _id = "id1"
+                weight = 1
+            },
+            RealmMyLife("img2", "user123", "Title 2").apply {
+                _id = "id2"
+                weight = 2
+            }
+        )
+
+        val jsonSlot = slot<String>()
+        sharedPrefManager.cacheMyLifeItems(userId, myLifeItems)
+
+        verify { mockEditor.putString("myLifeCache_$userId", capture(jsonSlot)) }
+        verify { mockEditor.apply() }
+
+        val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
+        val cachedItems: List<CachedMyLifeItem> = Gson().fromJson(jsonSlot.captured, type)
+
+        assertEquals(2, cachedItems.size)
+        assertEquals("img1", cachedItems[0].imageId)
+        assertEquals("Title 1", cachedItems[0].title)
+        assertTrue(cachedItems[0].isVisible)
+        assertEquals(1, cachedItems[0].weight)
+
+        assertEquals("img2", cachedItems[1].imageId)
+        assertEquals("Title 2", cachedItems[1].title)
+        assertTrue(cachedItems[1].isVisible)
+        assertEquals(2, cachedItems[1].weight)
+    }
+
+    @Test
+    fun testGetCachedMyLifeItems() {
+        val userId = "user123"
+
+        // Test with empty/null state
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
+        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
+
+        // Test with valid JSON
+        val cachedItems = listOf(
+            CachedMyLifeItem("img1", "Title 1", true, 1),
+            CachedMyLifeItem("img2", "Title 2", false, 2)
+        )
+        val json = Gson().toJson(cachedItems)
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
+
+        val retrievedItems = sharedPrefManager.getCachedMyLifeItems(userId)
+        assertEquals(2, retrievedItems?.size)
+        assertEquals("img1", retrievedItems?.get(0)?.imageId)
+        assertEquals("Title 1", retrievedItems?.get(0)?.title)
+        assertEquals(true, retrievedItems?.get(0)?.isVisible)
+        assertEquals(1, retrievedItems?.get(0)?.weight)
+
+        // Test with invalid JSON
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
+        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
+    }
+
     fun testClearPreferences() {
         mockkStatic(PreferenceManager::class)
         val mockDefaultSharedPreferences: SharedPreferences = mockk()
