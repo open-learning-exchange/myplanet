@@ -31,11 +31,16 @@ class InlineResourceAdapter(
     DiffUtils.itemCallback<RealmMyLibrary>(
         areItemsTheSame = { old, new -> old.id == new.id },
         areContentsTheSame = { old, new ->
-            old._rev == new._rev &&
-                old.downloadedRev == new.downloadedRev &&
-                old.resourceLocalAddress == new.resourceLocalAddress &&
+            old.resourceLocalAddress == new.resourceLocalAddress &&
                 old.title == new.title &&
                 old.isResourceOffline() == new.isResourceOffline()
+        },
+        getChangePayload = { old, new ->
+            val payloads = mutableListOf<String>()
+            if (old.title != new.title) payloads.add("TITLE")
+            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add("ADDRESS")
+            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add("STATUS")
+            if (payloads.isEmpty()) null else payloads
         }
     )
 ) {
@@ -52,13 +57,46 @@ class InlineResourceAdapter(
         return ViewHolder(binding)
     }
 
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+            return
+        }
+
+        val resource = getItem(position)
+        val context = holder.itemView.context
+        val binding = holder.binding
+
+        payloads.forEach { payloadList ->
+            if (payloadList is List<*>) {
+                payloadList.forEach { payload ->
+                    when (payload) {
+                        "TITLE" -> binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                        "ADDRESS", "STATUS" -> updateStatusAndPreview(binding, context, resource)
+                    }
+                }
+            }
+        }
+
+        binding.cardResource.setOnClickListener {
+            onResourceClick(resource)
+        }
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val resource = getItem(position)
         val context = holder.itemView.context
         val binding = holder.binding
 
         binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+        updateStatusAndPreview(binding, context, resource)
 
+        binding.cardResource.setOnClickListener {
+            onResourceClick(resource)
+        }
+    }
+
+    private fun updateStatusAndPreview(binding: ItemInlineResourceBinding, context: Context, resource: RealmMyLibrary) {
         val isDownloaded = resource.isResourceOffline() ||
             FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
 
@@ -107,10 +145,6 @@ class InlineResourceAdapter(
         binding.ivResourceIcon.setImageResource(
             ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
         )
-
-        binding.cardResource.setOnClickListener {
-            onResourceClick(resource)
-        }
     }
 
     private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
