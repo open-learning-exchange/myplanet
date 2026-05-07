@@ -61,6 +61,10 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
             }
         }
+
+        collectWhenStarted(viewModel.stepItems) { steps ->
+            setStepsList(steps)
+        }
     }
 
     private fun bindCourseData(state: CourseDetailUiState.Success) {
@@ -85,7 +89,6 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
         setResourceButton(state.resources, binding.btnResources)
         setOpenResourceButton(state.downloadedResources, binding.btnOpen)
-        setStepsList(state.stepItems)
 
         if (!isRatingViewInitialized) {
             initRatingView("course", course.courseId, course.courseTitle, this@CourseDetailFragment)

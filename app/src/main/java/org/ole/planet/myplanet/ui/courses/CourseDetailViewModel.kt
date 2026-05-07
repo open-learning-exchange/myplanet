@@ -26,7 +26,6 @@ sealed interface CourseDetailUiState {
         val examCount: Int,
         val resources: List<RealmMyLibrary>,
         val downloadedResources: List<RealmMyLibrary>,
-        val stepItems: List<StepItem>,
         val ratingSummary: JsonObject?,
         val user: RealmUser?
     ) : CourseDetailUiState
@@ -54,6 +53,9 @@ class CourseDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
     val uiState: StateFlow<CourseDetailUiState> = _uiState
+
+    private val _stepItems = MutableStateFlow<List<StepItem>>(emptyList())
+    val stepItems: StateFlow<List<StepItem>> = _stepItems
 
     fun loadCourseDetail(courseId: String) {
         viewModelScope.launch {
@@ -107,12 +109,12 @@ class CourseDetailViewModel @Inject constructor(
                     return@launch
                 }
 
+                _stepItems.value = result.stepItems
                 _uiState.value = CourseDetailUiState.Success(
                     course = result.course,
                     examCount = result.examCount,
                     resources = result.resources,
                     downloadedResources = result.downloadedResources,
-                    stepItems = result.stepItems,
                     ratingSummary = result.ratingSummaryObject,
                     user = result.user
                 )
@@ -123,16 +125,12 @@ class CourseDetailViewModel @Inject constructor(
     }
 
     fun toggleStepDescription(stepId: String) {
-        val currentState = _uiState.value
-        if (currentState is CourseDetailUiState.Success) {
-            val updatedSteps = currentState.stepItems.map { step ->
-                if (step.id == stepId) {
-                    step.copy(isDescriptionVisible = !step.isDescriptionVisible)
-                } else {
-                    if (step.isDescriptionVisible) step.copy(isDescriptionVisible = false) else step
-                }
+        _stepItems.value = _stepItems.value.map { step ->
+            if (step.id == stepId) {
+                step.copy(isDescriptionVisible = !step.isDescriptionVisible)
+            } else {
+                if (step.isDescriptionVisible) step.copy(isDescriptionVisible = false) else step
             }
-            _uiState.value = currentState.copy(stepItems = updatedSteps)
         }
     }
 
