@@ -574,16 +574,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         var processedCount = 0
         try {
             withRealm { realm ->
-                val chunkSize = 50
-                documents.chunked(chunkSize).forEach { chunk ->
-                    realm.executeTransaction { realmTx ->
-                        chunk.forEach { doc ->
-                            try {
-                                RealmMyLibrary.insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
-                                processedCount++
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            RealmMyLibrary.insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
                     }
                 }
