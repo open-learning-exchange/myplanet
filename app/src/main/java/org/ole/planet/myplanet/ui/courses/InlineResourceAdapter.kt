@@ -72,7 +72,11 @@ class InlineResourceAdapter(
                 payloadList.forEach { payload ->
                     when (payload) {
                         "TITLE" -> binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                        "ADDRESS", "STATUS" -> updateStatusAndPreview(binding, context, resource)
+                        "ADDRESS" -> {
+                            binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                            updateStatusAndPreview(binding, context, resource)
+                        }
+                        "STATUS" -> updateStatusAndPreview(binding, context, resource)
                     }
                 }
             }
