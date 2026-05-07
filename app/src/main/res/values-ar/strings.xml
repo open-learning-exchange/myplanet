@@ -1240,5 +1240,10 @@
     <string name="no_references_added">لم تتم إضافة مراجع</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
+    <string name="read_aloud">اقرأ بصوت عالٍ</string>
+    <string name="stop_reading">توقف عن القراءة</string>
+    <string name="tts_not_available">ميزة تحويل النص إلى كلام غير متوفرة على هذا الجهاز</string>
+    <string name="pdf_no_text_layer">لا يحتوي ملف PDF هذا على نص قابل للقراءة</string>
+    <string name="pdf_extracting_text">جارٍ تحضير النص، يرجى الانتظار…</string>
 
 </resources>
