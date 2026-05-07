@@ -20,7 +20,6 @@
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
-
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -48,5 +47,4 @@
         android:layout_margin="16dp"
         android:contentDescription="@string/read_aloud"
         app:srcCompat="@drawable/ic_play" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
