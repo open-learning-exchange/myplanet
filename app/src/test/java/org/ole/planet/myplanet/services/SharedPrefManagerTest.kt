@@ -191,4 +191,11 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("test_key", "new_val") }
         verify { mockEditor.apply() }
     }
+
+    @Test
+    fun testRemoveKey() {
+        sharedPrefManager.removeKey("some_key")
+        verify { mockEditor.remove("some_key") }
+        verify { mockEditor.apply() }
+    }
 }
