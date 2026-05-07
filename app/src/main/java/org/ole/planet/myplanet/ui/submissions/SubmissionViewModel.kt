@@ -85,11 +85,17 @@ class SubmissionViewModel @Inject constructor(
         Triple(uniqueSubmissions, submissionCountMap, filtered)
     }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
+    val submissions: StateFlow<List<SubmissionUiModel>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
         uniqueSubmissions.map { viewData ->
-            viewData.submission.apply {
+            SubmissionUiModel(
+                id = viewData.submission.id,
+                status = viewData.submission.status,
+                startTime = viewData.submission.startTime,
+                lastUpdateTime = viewData.submission.lastUpdateTime,
+                parentId = viewData.submission.parentId,
+                userId = viewData.submission.userId,
                 submitterName = viewData.submitterName
-            }
+            )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
