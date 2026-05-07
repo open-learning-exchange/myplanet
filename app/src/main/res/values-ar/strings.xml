@@ -1238,6 +1238,14 @@
     <string name="no_goal_added">لم يتم تحديد أي أهداف بعد</string>
     <string name="no_achievement_added">ملخص الإنجازات</string>
     <string name="no_references_added">لم تتم إضافة مراجع</string>
+    <string name="upload_cv_label">قم بتحميل سيرتك الذاتية أدناه (PDF فقط)</string>
+    <string name="no_file_chosen">لم يتم اختيار ملف</string>
+    <string name="delete_cv">حذف السيرة الذاتية</string>
+    <string name="cv_resume">السيرة الذاتية</string>
+    <string name="view_cv">عرض السيرة الذاتية</string>
+    <string name="current_cv">السيرة الذاتية الحالية: %s</string>
+    <string name="select_pdf_only">يرجى اختيار ملف PDF</string>
+    <string name="file_not_found">الملف غير موجود: %s</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
     <string name="status_not_started">لم يبدأ</string>

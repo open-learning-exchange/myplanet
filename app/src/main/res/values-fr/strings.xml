@@ -1226,6 +1226,14 @@
     <string name="no_goal_added">Aucun objectif n\'a encore été défini</string>
     <string name="no_achievement_added">Résumé des réalisations</string>
     <string name="no_references_added">Aucune référence ajoutée</string>
+    <string name="upload_cv_label">Téléchargez votre CV/curriculum vitae ci-dessous (PDF uniquement)</string>
+    <string name="no_file_chosen">Aucun fichier sélectionné</string>
+    <string name="delete_cv">Supprimer le CV</string>
+    <string name="cv_resume">CV / Curriculum vitae</string>
+    <string name="view_cv">Voir le CV</string>
+    <string name="current_cv">CV actuel : %s</string>
+    <string name="select_pdf_only">Veuillez sélectionner un fichier PDF</string>
+    <string name="file_not_found">Fichier introuvable : %s</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="already_shared">Déjà partagé</string>
     <string name="status_not_started">Non commencé</string>

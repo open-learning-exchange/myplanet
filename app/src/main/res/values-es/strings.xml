@@ -1225,6 +1225,14 @@
     <string name="no_goal_added">Aún no se han establecido objetivos</string>
     <string name="no_achievement_added">Resumen de logros</string>
     <string name="no_references_added">No se agregaron referencias</string>
+    <string name="upload_cv_label">Sube tu CV/currículum a continuación (solo PDF)</string>
+    <string name="no_file_chosen">Ningún archivo seleccionado</string>
+    <string name="delete_cv">Eliminar CV</string>
+    <string name="cv_resume">CV / Currículum</string>
+    <string name="view_cv">Ver CV/Currículum</string>
+    <string name="current_cv">CV/Currículum actual: %s</string>
+    <string name="select_pdf_only">Por favor selecciona un archivo PDF</string>
+    <string name="file_not_found">Archivo no encontrado: %s</string>
     <string name="chat_already_shared_to_destination">Este chat ya ha sido compartido a este destino</string>
     <string name="already_shared">Ya compartido</string>
     <string name="status_not_started">No iniciado</string>

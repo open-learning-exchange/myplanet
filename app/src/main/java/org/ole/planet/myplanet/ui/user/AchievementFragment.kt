@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -15,6 +16,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.time.Instant
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +40,9 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
@@ -173,6 +177,7 @@ class AchievementFragment : BaseContainerFragment() {
             setupAchievementHeader(it)
             populateAchievements(it)
             setupReferences(it)
+            setupCv(it)
         }
     }
 
@@ -304,6 +309,25 @@ class AchievementFragment : BaseContainerFragment() {
             }
         }
         return btnBinding.root
+    }
+
+    private fun setupCv(data: AchievementData) {
+        val cvFilename = data.resumeFileName
+        if (cvFilename.isEmpty()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$cvFilename")
+        if (!cvFile.exists()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        binding.cvCard.visibility = View.VISIBLE
+        binding.btnViewCv.setOnClickListener {
+            val intent = Intent(requireContext(), PDFReaderActivity::class.java)
+            intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            startActivity(intent)
+        }
     }
 
     private fun setupReferences(data: AchievementData) {
