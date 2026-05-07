@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -54,17 +52,10 @@ class AchievementFragment : BaseContainerFragment() {
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
-    @Inject
-    lateinit var syncManager: SyncManager
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = prefData.getServerUrl()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        startAchievementSync()
-    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -97,49 +88,32 @@ class AchievementFragment : BaseContainerFragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!isAdded || requireActivity().isFinishing) return@launch
+
+            withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
+
+            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+            customProgressDialog?.setText(getString(R.string.syncing_achievements))
+            customProgressDialog?.show()
+
+            val userName = user?.name ?: ""
+            val success = withContext(Dispatchers.IO) {
+                userRepository.fetchAndSaveAchievementsForUser(userName)
+            }
+
+            customProgressDialog?.dismiss()
+            customProgressDialog = null
+
+            if (success) {
+                prefData.setSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS, true)
+                refreshAchievementData()
+            } else {
+                Snackbar.make(binding.root, getString(R.string.sync_failed), Snackbar.LENGTH_LONG)
+                    .setAction("Retry") { startAchievementSync() }
+                    .show()
             }
         }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_achievements))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshAchievementData()
-                        prefData.setSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS, true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startAchievementSync() }
-                            .show()
-                    }
-                }
-            }
-        }, "full", listOf("achievements"))
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
@@ -184,6 +158,7 @@ class AchievementFragment : BaseContainerFragment() {
             setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()
+            startAchievementSync()
         }
     }
 
