@@ -1226,7 +1226,7 @@
     <string name="no_references_added">No se agregaron referencias</string>
     <string name="chat_already_shared_to_destination">Este chat ya ha sido compartido a este destino</string>
     <string name="already_shared">Ya compartido</string>
-    <string name="offline_visit_limit_warning">Tienes 1 intento de inicio de sesión restante antes de ser bloqueado.</string>
+    <string name="guest_visit_limit_warning">Tienes 1 intento de inicio de sesión restante antes de ser bloqueado.</string>
     <string name="warning_icon">Icono de advertencia</string>
     <string name="close_banner">Cerrar banner de advertencia</string>
 

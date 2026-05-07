@@ -1223,7 +1223,7 @@
     <string name="no_references_added">कुनै सन्दर्भ थपिएको छैन</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
-    <string name="offline_visit_limit_warning">तपाईंको खाता ब्लक हुनु अघि १ लगइन बाकी छ।</string>
+    <string name="guest_visit_limit_warning">तपाईंको खाता ब्लक हुनु अघि १ लगइन बाकी छ।</string>
     <string name="warning_icon">चेतावनी आइकन</string>
     <string name="close_banner">चेतावनी ब्यानर बन्द गर्नुहोस्</string>
 

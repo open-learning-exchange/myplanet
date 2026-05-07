@@ -1239,7 +1239,7 @@
     <string name="no_references_added">لم تتم إضافة مراجع</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
-    <string name="offline_visit_limit_warning">لديك محاولة تسجيل دخول واحدة متبقية قبل حظر حسابك.</string>
+    <string name="guest_visit_limit_warning">لديك محاولة تسجيل دخول واحدة متبقية قبل حظر حسابك.</string>
     <string name="warning_icon">أيقونة التحذير</string>
     <string name="close_banner">إغلاق لافتة التحذير</string>
 

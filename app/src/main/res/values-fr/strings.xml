@@ -1227,8 +1227,8 @@
     <string name="no_references_added">Aucune référence ajoutée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="already_shared">Déjà partagé</string>
-    <string name="offline_visit_limit_warning">Vous avez 1 tentative de connexion restante avant d'être bloqué.</string>
-    <string name="warning_icon">Icône d'avertissement</string>
-    <string name="close_banner">Fermer la bannière d'avertissement</string>
+    <string name="guest_visit_limit_warning">Vous avez 1 tentative de connexion restante avant d\'être bloqué.</string>
+    <string name="warning_icon">Icône d\'avertissement</string>
+    <string name="close_banner">Fermer la bannière d\'avertissement</string>
 
 </resources>
