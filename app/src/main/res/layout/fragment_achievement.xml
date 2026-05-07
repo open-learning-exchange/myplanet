@@ -364,7 +364,6 @@
                             android:theme="@style/PrimaryButton" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
