@@ -135,6 +135,8 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindTeamsRepository(impl: TeamsRepositoryImpl): TeamsRepository
 
+    // Dual-binding: UserRepositoryImpl serves both general user data operations (UserRepository)
+    // and sync-specific operations (UserSyncRepository) using a single instance.
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
