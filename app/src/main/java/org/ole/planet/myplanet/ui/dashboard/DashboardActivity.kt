@@ -83,6 +83,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -573,6 +574,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun updateLastSyncStatus() {
+        val lastSyncMillis = prefData.getLastSync()
+        val statusText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        } else {
+            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis)
+        }
+        binding.dashboardLastSyncStatus.text = statusText
+    }
+
     private fun onRealmDataChange() {
         if (notificationsShownThisSession) {
             val currentTime = System.currentTimeMillis()
@@ -1031,6 +1042,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onResume() {
         super.onResume()
         checkNotificationPermissionStatus()
+        updateLastSyncStatus()
     }
 
     override fun onNewIntent(intent: Intent?) {

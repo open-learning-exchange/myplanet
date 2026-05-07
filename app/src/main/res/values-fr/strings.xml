@@ -1043,6 +1043,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">L\'activation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
     <string name="chart_description">Graphique d\'Activité de Connexion</string>
     <string name="chart_label">Nbre de connexions</string>
+    <string name="no_login_activity">Aucune activité de connexion enregistrée pour l\'instant</string>
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
     <string name="mark_all_as_read">Marquer tout comme lu</string>
     <string name="no_notifications">Aucune notification</string>
@@ -1227,5 +1228,10 @@
     <string name="no_references_added">Aucune référence ajoutée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="already_shared">Déjà partagé</string>
+    <string name="read_aloud">Lire à haute voix</string>
+    <string name="stop_reading">Arrêter la lecture</string>
+    <string name="tts_not_available">La synthèse vocale n\'est pas disponible sur cet appareil</string>
+    <string name="pdf_no_text_layer">Ce PDF ne contient pas de texte lisible</string>
+    <string name="pdf_extracting_text">Préparation du texte, veuillez patienter…</string>
 
 </resources>
