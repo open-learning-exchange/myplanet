@@ -722,6 +722,14 @@
     <string name="syncing_data_please_wait">جارٍ مزامنة البيانات، يرجى الانتظار…</string>
     <string name="sync_failed">فشلت المزامنة</string>
     <string name="sync_completed">اكتملت المزامنة</string>
+    <string name="sync_phase_account_data">جارٍ مزامنة بيانات الحساب…</string>
+    <string name="sync_phase_resources">جارٍ مزامنة الموارد…</string>
+    <string name="sync_phase_library">جارٍ مزامنة المكتبة…</string>
+    <string name="sync_phase_finalizing">جارٍ الإنهاء…</string>
+    <string name="sync_step_of">الخطوة %1$d من %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d جداول</string>
+    <string name="sync_shelves_progress">%1$d / %2$d أرفف</string>
     <string name="team_leader">قائد الفريق</string>
     <string name="select_resource">اختر المصدر:</string>
     <string name="add">إضافة</string>
@@ -1038,6 +1046,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">سيؤدي تشغيل التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
     <string name="chart_description">مخطط نشاط تسجيل الدخول</string>
     <string name="chart_label">عدد مرات تسجيل الدخول</string>
+    <string name="no_login_activity">لم يتم تسجيل أي نشاط تسجيل دخول بعد</string>
     <string name="copied_to_clipboard">تم نسخه إلى الحافظة</string>
     <string name="mark_all_as_read">وضع علامة "مقروء" على الجميع</string>
     <string name="no_notifications">لا توجد إشعارات</string>

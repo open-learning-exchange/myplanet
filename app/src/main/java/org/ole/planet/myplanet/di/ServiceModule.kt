@@ -85,9 +85,10 @@ object ServiceModule {
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         apiInterface: ApiInterface,
         @ApplicationScope scope: CoroutineScope,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        photoUploader: org.ole.planet.myplanet.services.upload.PhotoUploader
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader)
     }
 
     @Provides
