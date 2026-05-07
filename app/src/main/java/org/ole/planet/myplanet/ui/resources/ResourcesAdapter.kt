@@ -21,26 +21,23 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class ResourcesAdapter(
     private val context: Context,
     private val isGuest: Boolean,
     private var openedResourceIds: Set<String>
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(
-    object : DiffUtil.ItemCallback<ResourceListModel>() {
-        override fun areItemsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-            return oldItem.item.id == newItem.item.id
-        }
-
-        override fun areContentsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-            return oldItem == newItem
-        }
-    }
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.item.id == newItem.item.id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
 ) {
 
-    private val selectedItems: MutableList<ResourceListModel> = ArrayList()
+    private val selectedItems: MutableMap<String, ResourceItem> = HashMap()
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -84,7 +81,7 @@ class ResourcesAdapter(
             holder.rowLibraryBinding.title.text = library.title
             holder.rowLibraryBinding.description.text = library.description
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.rating_count_format, library.timesRated)
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
+            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.containsKey(library.id)
             holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(library.averageRating)) "0.0" else String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDoubleOrNull() ?: 0.0)
             holder.rowLibraryBinding.tvDate.text = org.ole.planet.myplanet.utils.TimeUtils.formatDate(library.createdDate)
 
@@ -112,13 +109,15 @@ class ResourcesAdapter(
                         context.getString(R.string.select_res_course, library.title ?: "")
                     val isChecked = (view as CheckBox).isChecked
                     if (isChecked) {
-                        if (!selectedItems.contains(model)) {
-                            selectedItems.add(model)
+                        library.id?.let { id ->
+                            selectedItems[id] = library
                         }
                     } else {
-                        selectedItems.remove(model)
+                        library.id?.let { id ->
+                            selectedItems.remove(id)
+                        }
                     }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems.map { it.item })
+                    if (listener != null) listener?.onSelectedListChange(selectedItems.values.toList())
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -133,7 +132,11 @@ class ResourcesAdapter(
     fun selectAllItems(selectAll: Boolean) {
         if (selectAll) {
             selectedItems.clear()
-            selectedItems.addAll(currentList)
+            currentList.forEach { model ->
+                model.item.id?.let { id ->
+                    selectedItems[id] = model.item
+                }
+            }
         } else {
             selectedItems.clear()
         }
@@ -141,7 +144,7 @@ class ResourcesAdapter(
         notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
 
         if (listener != null) {
-            listener?.onSelectedListChange(selectedItems.map { it.item })
+            listener?.onSelectedListChange(selectedItems.values.toList())
         }
     }
 
@@ -163,7 +166,7 @@ class ResourcesAdapter(
                 handled = true
             }
             if (payloads.contains(SELECTION_PAYLOAD)) {
-                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
+                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.containsKey(library.id)
                 handled = true
             }
             if (payloads.contains(OPENED_RESOURCE_PAYLOAD)) {
