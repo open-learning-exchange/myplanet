@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
+import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -13,6 +15,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -37,6 +40,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
+    private val voicesViewModel: VoicesViewModel by viewModels()
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -181,56 +185,61 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamId = teamId,
                     userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
-                                teamsRepository.isTeamLeader(teamId, user?._id)
-                            }
-                            onResult(result ?: false)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = voicesViewModel.isTeamLeader(teamId, user?._id)
+                            onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getUserFn = { userId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = userRepository.getUserById(userId)
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = voicesViewModel.getUserById(userId)
+                            onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getReplyCountFn = { newsId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            try {
-                                val result = voicesRepository.getReplyCount(newsId)
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = voicesViewModel.getReplyCount(newsId)
+                            onResult(result)
+                        }
+                    },
+                    deletePostFn = { newsId ->
+                        voicesViewModel.deletePost(newsId, getEffectiveTeamName()) {
+                            (binding.rvDiscussion.adapter as? VoicesAdapter)?.removePost(newsId)
+                        }
+                    },
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                        voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
+                            if (result.isSuccess) {
+                                org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), requireContext().getString(R.string.shared_to_community))
+                            } else {
+                                org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), "Failed to share news")
                             }
                         }
-                        return@VoicesAdapter { job.cancel() }
-                    },
-                    deletePostFn = { newsId, onComplete ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            voicesRepository.deletePost(newsId, getEffectiveTeamName())
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
-                        }
-                        return@VoicesAdapter { job.cancel() }
-                    },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
-                        }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            val result = voicesRepository.getLibraryResource(resourceId)
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = voicesViewModel.getLibraryResource(resourceId)
+                            onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
-                    launchCoroutine = { action ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch { action() }
-                        return@VoicesAdapter { job.cancel() }
+                    onEditAction = { action ->
+                        viewLifecycleOwner.lifecycleScope.launch { action() }
+                    },
+                    onAnimateTyping = { response, onUpdate, onComplete ->
+                        var cancelJob: (() -> Unit)? = null
+                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                            cancelJob = { }
+                            var currentIndex = 0
+                            while (currentIndex < response.length) {
+                                if (!isActive) return@launch
+                                onUpdate(response.substring(0, currentIndex + 1))
+                                currentIndex++
+                                kotlinx.coroutines.delay(10L)
+                            }
+                            onComplete()
+                        }
+                        cancelJob = { job.cancel() }
+                        cancelJob
                     },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
