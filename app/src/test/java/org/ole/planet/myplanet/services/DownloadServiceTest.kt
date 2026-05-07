@@ -84,4 +84,47 @@ class DownloadServiceTest {
         assertEquals("http://example.com/file1", result?.url)
         assertEquals(false, result?.isPriority)
     }
+
+    // --- Tests for getNextPriorityUrl ---
+
+    @Test
+    fun `test getNextPriorityUrl returns null when queue is empty`() {
+        val result = DownloadService.getNextPriorityUrl(emptyList())
+        assertNull(result)
+    }
+
+    @Test
+    fun `test getNextPriorityUrl returns single item`() {
+        val queue = listOf(DownloadService.QueuedUrl("url1", true, 5))
+        val result = DownloadService.getNextPriorityUrl(queue)
+        assertNotNull(result)
+        assertEquals("url1", result?.url)
+        assertEquals(5, result?.priority)
+    }
+
+    @Test
+    fun `test getNextPriorityUrl returns item with highest priority`() {
+        val queue = listOf(
+            DownloadService.QueuedUrl("url1", true, 5),
+            DownloadService.QueuedUrl("url2", true, 10),
+            DownloadService.QueuedUrl("url3", true, 3)
+        )
+        val result = DownloadService.getNextPriorityUrl(queue)
+        assertNotNull(result)
+        assertEquals("url2", result?.url)
+        assertEquals(10, result?.priority)
+    }
+
+    @Test
+    fun `test getNextPriorityUrl returns first item if multiple have same max priority`() {
+        val queue = listOf(
+            DownloadService.QueuedUrl("url1", true, 10),
+            DownloadService.QueuedUrl("url2", true, 10),
+            DownloadService.QueuedUrl("url3", true, 5)
+        )
+        val result = DownloadService.getNextPriorityUrl(queue)
+        assertNotNull(result)
+        assertEquals("url1", result?.url)
+        assertEquals(10, result?.priority)
+    }
 }

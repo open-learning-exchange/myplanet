@@ -722,6 +722,14 @@
     <string name="syncing_data_please_wait">Syncing data, Please wait…</string>
     <string name="sync_failed">Sync Failed</string>
     <string name="sync_completed">Sync Completed</string>
+    <string name="sync_phase_account_data">Syncing account data…</string>
+    <string name="sync_phase_resources">Syncing resources…</string>
+    <string name="sync_phase_library">Syncing library…</string>
+    <string name="sync_phase_finalizing">Finalizing…</string>
+    <string name="sync_step_of">Step %1$d of %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_shelves_progress">%1$d / %2$d shelves</string>
     <string name="team_leader">Team Leader</string>
     <string name="select_resource">"Select Resource: "</string>
     <string name="add">Add</string>
@@ -1034,6 +1042,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">switching on manual configuration will clear all data, are you sure you want to continue?</string>
     <string name="chart_description">Login Activity Chart</string>
     <string name="chart_label">No. of login</string>
+    <string name="no_login_activity">No login activity recorded yet</string>
     <string name="copied_to_clipboard">copied to clipboard</string>
     <string name="mark_all_as_read">Mark all as read</string>
     <string name="no_notifications">No notifications</string>
@@ -1215,5 +1224,10 @@
     <string name="no_references_added">No references added</string>
     <string name="chat_already_shared_to_destination">This chat has already been shared to this destination</string>
     <string name="already_shared">Already shared</string>
+    <string name="read_aloud">Read aloud</string>
+    <string name="stop_reading">Stop reading</string>
+    <string name="tts_not_available">Text-to-speech is not available on this device</string>
+    <string name="pdf_no_text_layer">This PDF doesn\'t contain readable text</string>
+    <string name="pdf_extracting_text">Preparing text, please wait…</string>
 
 </resources>

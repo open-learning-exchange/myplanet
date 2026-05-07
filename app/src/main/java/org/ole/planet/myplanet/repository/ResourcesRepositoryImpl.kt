@@ -12,6 +12,7 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
+import androidx.annotation.VisibleForTesting
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -110,14 +111,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         return queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
         }
-    }
-
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str, Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-            .lowercase(Locale.ROOT)
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
@@ -638,5 +631,16 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
         return tagsRepository.getTagsForResources(ids)
+    }
+
+    companion object {
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
+        @VisibleForTesting
+        internal fun normalizeText(str: String): String {
+            return Normalizer.normalize(str, Normalizer.Form.NFD)
+                .replace(DIACRITICS_REGEX, "")
+                .lowercase(Locale.ROOT)
+        }
     }
 }
