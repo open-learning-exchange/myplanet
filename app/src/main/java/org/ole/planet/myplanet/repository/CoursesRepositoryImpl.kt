@@ -167,44 +167,42 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseIds.isEmpty()) {
-                    return@runCatching false
-                }
+        return runCatching {
+            if (courseIds.isEmpty()) {
+                return@runCatching false
+            }
 
-                var courseFound = false
-                executeTransaction { realm ->
-                    val validCourseIds = courseIds.filter { it.isNotBlank() }
-                    if (validCourseIds.isEmpty()) return@executeTransaction
+            var courseFound = false
+            executeTransaction { realm ->
+                val validCourseIds = courseIds.filter { it.isNotBlank() }
+                if (validCourseIds.isEmpty()) return@executeTransaction
 
-                    val chunkSize = 1000
-                    validCourseIds.chunked(chunkSize).forEach { chunk ->
-                        val courses = realm.where(RealmMyCourse::class.java)
-                            .`in`("courseId", chunk.toTypedArray())
-                            .findAll()
+                val chunkSize = 1000
+                validCourseIds.chunked(chunkSize).forEach { chunk ->
+                    val courses = realm.where(RealmMyCourse::class.java)
+                        .`in`("courseId", chunk.toTypedArray())
+                        .findAll()
 
-                        if (courses.isNotEmpty()) {
-                            courses.forEach { course ->
-                                course.setUserId(userId)
-                            }
-
-                            val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
-                            if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
-                                realm.where(RealmRemovedLog::class.java)
-                                    .equalTo("type", "courses")
-                                    .equalTo("userId", userId)
-                                    .`in`("docId", foundCourseIds)
-                                    .findAll()
-                                    .deleteAllFromRealm()
-                            }
-                            courseFound = true
+                    if (courses.isNotEmpty()) {
+                        courses.forEach { course ->
+                            course.setUserId(userId)
                         }
+
+                        val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
+                        if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
+                            realm.where(RealmRemovedLog::class.java)
+                                .equalTo("type", "courses")
+                                .equalTo("userId", userId)
+                                .`in`("docId", foundCourseIds)
+                                .findAll()
+                                .deleteAllFromRealm()
+                        }
+                        courseFound = true
                     }
                 }
-
-                courseFound
             }
+
+            courseFound
         }
     }
 
@@ -342,45 +340,41 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun joinCourse(courseId: String, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseId.isBlank() || userId.isBlank()) return@runCatching
+        return runCatching {
+            if (courseId.isBlank() || userId.isBlank()) return@runCatching
 
-                executeTransaction { realm ->
-                    val course = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
+            executeTransaction { realm ->
+                val course = realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+
+                course?.let {
+                    if (it.userId?.contains(userId) == false) {
+                        it.setUserId(userId)
+                    }
+
+                    val removedLog = realm.where(RealmRemovedLog::class.java)
+                        .equalTo("type", "courses")
+                        .equalTo("userId", userId)
+                        .equalTo("docId", courseId)
                         .findFirst()
 
-                    course?.let {
-                        if (it.userId?.contains(userId) == false) {
-                            it.setUserId(userId)
-                        }
-
-                        val removedLog = realm.where(RealmRemovedLog::class.java)
-                            .equalTo("type", "courses")
-                            .equalTo("userId", userId)
-                            .equalTo("docId", courseId)
-                            .findFirst()
-
-                        removedLog?.deleteFromRealm()
-                    }
+                    removedLog?.deleteFromRealm()
                 }
             }
         }
     }
 
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                executeTransaction { realm ->
-                    val course = realm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
-                    course?.removeUserId(userId)
-                    RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
-                }
-                RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+        return runCatching {
+            executeTransaction { realm ->
+                val course = realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+                course?.removeUserId(userId)
+                RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
             }
+            RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
 
