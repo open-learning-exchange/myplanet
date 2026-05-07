@@ -22,7 +22,6 @@
             android:textColor="@color/text_color"
             android:textSize="18sp"
             android:textStyle="bold" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -36,7 +35,7 @@
                 android:textColor="@color/text_color" />
         </LinearLayout>
     </LinearLayout>
-
+    
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabTts"
         android:layout_width="wrap_content"
@@ -45,5 +44,4 @@
         android:layout_margin="16dp"
         android:contentDescription="@string/read_aloud"
         app:srcCompat="@drawable/ic_play" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
