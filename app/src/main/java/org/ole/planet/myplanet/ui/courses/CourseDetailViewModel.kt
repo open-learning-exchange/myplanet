@@ -122,6 +122,20 @@ class CourseDetailViewModel @Inject constructor(
         }
     }
 
+    fun toggleStepDescription(stepId: String) {
+        val currentState = _uiState.value
+        if (currentState is CourseDetailUiState.Success) {
+            val updatedSteps = currentState.stepItems.map { step ->
+                if (step.id == stepId) {
+                    step.copy(isDescriptionVisible = !step.isDescriptionVisible)
+                } else {
+                    if (step.isDescriptionVisible) step.copy(isDescriptionVisible = false) else step
+                }
+            }
+            _uiState.value = currentState.copy(stepItems = updatedSteps)
+        }
+    }
+
     fun refreshRatings(courseId: String) {
         viewModelScope.launch {
             val currentState = _uiState.value

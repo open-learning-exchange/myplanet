@@ -25,6 +25,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var id: String? = null
     private val viewModel: CourseDetailViewModel by viewModels()
     private var isRatingViewInitialized = false
+    private var stepsAdapter: CoursesStepsAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,10 +104,14 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList(steps: List<StepItem>) {
-        binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = CoursesStepsAdapter(requireActivity())
-        binding.stepsList.adapter = adapter
-        adapter.submitList(steps)
+        if (stepsAdapter == null) {
+            binding.stepsList.layoutManager = LinearLayoutManager(activity)
+            stepsAdapter = CoursesStepsAdapter(requireActivity()) { stepId ->
+                viewModel.toggleStepDescription(stepId)
+            }
+            binding.stepsList.adapter = stepsAdapter
+        }
+        stepsAdapter?.submitList(steps)
     }
 
     override fun onRatingChanged() {
@@ -124,6 +129,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDestroyView() {
         _binding = null
+        stepsAdapter = null
         super.onDestroyView()
     }
 }
