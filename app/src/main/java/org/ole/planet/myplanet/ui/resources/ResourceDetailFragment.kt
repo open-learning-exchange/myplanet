@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -162,21 +162,37 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private fun updateDownloadButtonState() {
         val isDownloaded = library.isResourceOffline()
         val mediaType = library.mediaType?.lowercase().orEmpty()
-        val fileExtension = getFileExtension(library.resourceLocalAddress)?.lowercase().orEmpty()
+        val fileExtension = getFileExtension(library.resourceLocalAddress).lowercase()
         val isVideo = mediaType.startsWith("video") || fileExtension == "mp4"
+        val isAudio = mediaType.startsWith("audio") || fileExtension == "mp3" || fileExtension == "aac" || fileExtension == "wav"
 
         when {
-            !isDownloaded -> {
-                binding.btnDownload.setImageResource(R.drawable.ic_download)
-                binding.btnDownload.contentDescription = getString(R.string.download)
-            }
             isVideo -> {
-                binding.btnDownload.setImageResource(R.drawable.ic_play)
-                binding.btnDownload.contentDescription = getString(R.string.view)
+                if (isDownloaded || NetworkUtils.isNetworkConnected) {
+                    binding.btnDownload.setImageResource(R.drawable.ic_play)
+                    binding.btnDownload.contentDescription = getString(R.string.view)
+                } else {
+                    binding.btnDownload.setImageResource(R.drawable.ic_download)
+                    binding.btnDownload.contentDescription = getString(R.string.download)
+                }
+            }
+            isAudio -> {
+                if (isDownloaded) {
+                    binding.btnDownload.setImageResource(R.drawable.ic_play)
+                    binding.btnDownload.contentDescription = getString(R.string.view)
+                } else {
+                    binding.btnDownload.setImageResource(R.drawable.ic_download)
+                    binding.btnDownload.contentDescription = getString(R.string.download)
+                }
             }
             else -> {
-                binding.btnDownload.setImageResource(R.drawable.ic_eye)
-                binding.btnDownload.contentDescription = getString(R.string.view)
+                if (isDownloaded) {
+                    binding.btnDownload.setImageResource(R.drawable.ic_eye)
+                    binding.btnDownload.contentDescription = getString(R.string.view)
+                } else {
+                    binding.btnDownload.setImageResource(R.drawable.ic_download)
+                    binding.btnDownload.contentDescription = getString(R.string.download)
+                }
             }
         }
     }

@@ -1042,6 +1042,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">Activar la configuración manual borrará todos los datos, ¿Está seguro de que desea continuar?</string>
     <string name="chart_description">Gráfico de actividad de inicio de sesión</string>
     <string name="chart_label">N.º de inicios de sesión</string>
+    <string name="no_login_activity">Aún no se ha registrado ninguna actividad de inicio de sesión</string>
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
     <string name="no_notifications">Sin notificaciones</string>

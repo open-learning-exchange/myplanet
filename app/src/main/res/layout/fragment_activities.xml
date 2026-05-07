@@ -27,5 +27,15 @@
             android:layout_width="match_parent"
             android:layout_height="300dp"
             android:layout_marginTop="50dp"/>
+        <TextView
+            android:id="@+id/emptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="80dp"
+            android:text="@string/no_login_activity"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="16sp"
+            android:visibility="gone"/>
     </LinearLayout>
 </FrameLayout>
